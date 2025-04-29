@@ -1,0 +1,13 @@
+body {
+    font-family: 'Arial', sans-serif;
+}
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.4rem;
+}
+.footer {
+    font-size: 0.9rem;
+}
+.btn-outline-light {
+    border-width: 2px;
+}

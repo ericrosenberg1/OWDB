@@ -1,0 +1,5 @@
+wrestlingdb.org, www.wrestlingdb.org {
+    reverse_proxy localhost:8000
+    encode gzip
+    tls your-email@example.com
+}

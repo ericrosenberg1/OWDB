@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Welcome to WrestlingDB</h1>
+<p>The open wrestling database — curated by fans, for fans.</p>
+
+<div class="row mt-4">
+    <div class="col-md-4">
+        <h3>Featured Wrestler</h3>
+        <!-- Example featured wrestler block -->
+        <p><a href="/wrestlers/1">The Rock</a></p>
+    </div>
+    <div class="col-md-4">
+        <h3>Featured Match</h3>
+        <p><a href="/matches/1">The Rock vs. Stone Cold (WrestleMania X-Seven)</a></p>
+    </div>
+    <div class="col-md-4">
+        <h3>Featured Event</h3>
+        <p><a href="/events/1">WrestleMania X-Seven</a></p>
+    </div>
+</div>
+{% endblock %}

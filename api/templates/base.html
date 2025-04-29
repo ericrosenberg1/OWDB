@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title or "WrestlingDB" }}</title>
+
+    <meta name="description" content="{{ description or 'The Open Wrestling Database for fans and developers.' }}">
+    <meta property="og:title" content="{{ title or 'WrestlingDB' }}">
+    <meta property="og:description" content="{{ description or 'The Open Wrestling Database for fans and developers.' }}">
+    <meta property="og:url" content="{{ url or 'https://wrestlingdb.org' }}">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/custom.css" rel="stylesheet">
+
+    <script src="/static/js/darkmode.js" defer></script>
+    <script src="/static/js/tinymce/tinymce.min.js"></script>
+    <script src="/static/js/tinymce_config.js"></script>
+</head>
+<body>
+    <header class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">WrestlingDB</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="/wrestlers">Wrestlers</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/events">Events</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/matches">Matches</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/titles">Titles</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/games">Games</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/podcasts">Podcasts</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/books">Books</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/specials">Specials</a></li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    {% if user %}
+                        <li class="nav-item"><a class="nav-link" href="/profile">{{ user.username }}</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
+                    {% else %}
+                        <li class="nav-item"><a class="nav-link" href="/signup">Sign Up</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <button onclick="toggleDarkMode()" class="btn btn-outline-light btn-sm ms-2">Dark Mode</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mt-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer mt-auto py-3 bg-dark text-center text-light">
+        <div class="container">
+            Open Wrestling Database — Wrestling fans own the data. <br>
+            <small id="random-quote"></small>
+        </div>
+    </footer>
+
+    <script>
+    const quotes = [
+        "And that's the bottom line, 'cause Stone Cold said so!",
+        "If ya smell what The Rock is cookin'!",
+        "Rest... in... peace.",
+        "Viva la Raza!",
+        "To be the man, you gotta beat the man!"
+    ];
+    document.getElementById('random-quote').innerText = quotes[Math.floor(Math.random() * quotes.length)];
+    </script>
+</body>
+</html>

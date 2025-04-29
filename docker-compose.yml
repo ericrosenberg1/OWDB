@@ -1,0 +1,28 @@
+version: "3.9"
+services:
+  db:
+    image: mariadb:latest
+    restart: always
+    environment:
+      MYSQL_DATABASE: owdb
+      MYSQL_USER: owdb
+      MYSQL_PASSWORD: yourpassword
+      MYSQL_ROOT_PASSWORD: yourpassword
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  app:
+    build: .
+    restart: always
+    env_file: .env
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+
+volumes:
+  db_data:

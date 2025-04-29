@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ user.username }}'s Profile</h1>
+
+<p><strong>Email:</strong> {{ user.email }}</p>
+<p><strong>Role:</strong> {{ user.role }}</p>
+<p><strong>Joined:</strong> {{ user.created_at }}</p>
+
+{% if user.role == "superadmin" %}
+    <h3>Admin Actions</h3>
+    <a href="/admin/users" class="btn btn-outline-primary">Manage Users</a>
+{% endif %}
+{% endblock %}

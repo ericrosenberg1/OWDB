@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Matches</h1>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Match</th>
+            <th>Event</th>
+            <th>Result</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for match in matches %}
+        <tr>
+            <td>{{ match.match_text }}</td>
+            <td>{{ match.event_id }}</td>
+            <td>{{ match.result or '—' }}</td>
+            <td>
+            {% if user and user.role in ["editor", "admin", "superadmin"] %}
+                <a href="/edit/match/{{ match.id }}" class="btn btn-sm btn-outline-primary">Edit</a>
+            {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

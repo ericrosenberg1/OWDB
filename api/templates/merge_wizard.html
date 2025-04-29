@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Merge Wrestlers</h1>
+
+<form action="/admin/merge/wrestlers" method="post" class="mt-4">
+    <div class="mb-3">
+        <label for="wrestler_id_1" class="form-label">Select Wrestler 1</label>
+        <input name="wrestler_id_1" type="number" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="wrestler_id_2" class="form-label">Select Wrestler 2</label>
+        <input name="wrestler_id_2" type="number" class="form-control" required>
+    </div>
+
+    <button type="submit" class="btn btn-danger">Merge Wrestlers</button>
+</form>
+
+<p><strong>Warning:</strong> This operation is permanent and cannot be undone.</p>
+{% endblock %}

@@ -19,7 +19,7 @@
             <td>{{ event.promotion }}</td>
             <td>{{ event.date }}</td>
             <td>
-            {% if user and user.role in ["editor", "admin", "superadmin"] %}
+            {% if user and user.is_staff %}
                 <a href="/edit/event/{{ event.id }}" class="btn btn-sm btn-outline-primary">Edit</a>
             {% endif %}
             </td>

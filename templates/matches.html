@@ -19,7 +19,7 @@
             <td>{{ match.event_id }}</td>
             <td>{{ match.result or '—' }}</td>
             <td>
-            {% if user and user.role in ["editor", "admin", "superadmin"] %}
+            {% if user and user.is_staff %}
                 <a href="/edit/match/{{ match.id }}" class="btn btn-sm btn-outline-primary">Edit</a>
             {% endif %}
             </td>

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Podcasts</h1>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Hosts</th>
+            <th>Launch Year</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for podcast in podcasts %}
+        <tr>
+            <td><a href="/podcasts/{{ podcast.id }}">{{ podcast.name }}</a></td>
+            <td>{{ podcast.hosts or '—' }}</td>
+            <td>{{ podcast.launch_year or '—' }}</td>
+            <td>{% if user and user.is_staff %}<a href="/edit/podcast/{{ podcast.id }}" class="btn btn-sm btn-outline-primary">Edit</a>{% endif %}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

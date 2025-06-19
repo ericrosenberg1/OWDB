@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Specials & Movies</h1>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Year</th>
+            <th>Type</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for special in specials %}
+        <tr>
+            <td><a href="/specials/{{ special.id }}">{{ special.title }}</a></td>
+            <td>{{ special.release_year or '—' }}</td>
+            <td>{{ special.type or '—' }}</td>
+            <td>{% if user and user.is_staff %}<a href="/edit/special/{{ special.id }}" class="btn btn-sm btn-outline-primary">Edit</a>{% endif %}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

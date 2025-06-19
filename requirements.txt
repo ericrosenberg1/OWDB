@@ -1,8 +1,2 @@
-fastapi
-uvicorn
-sqlmodel
+Django>=4.2
 pymysql
-passlib[bcrypt]
-python-multipart
-pyjwt
-itsdangerous

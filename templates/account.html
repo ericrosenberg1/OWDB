@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Account Management</h1>
+<p class="mb-3">Manage your profile and API keys.</p>
+
+<h3>Generate New API Key</h3>
+<form method="post" class="mb-4">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary">Create API Key</button>
+</form>
+
+<h3>Your API Keys</h3>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Key</th>
+            <th>Last Reset</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for key in api_keys %}
+        <tr>
+            <td>{{ key.key }}</td>
+            <td>{{ key.last_reset }}</td>
+            <td>{{ "Active" if key.is_active else "Inactive" }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

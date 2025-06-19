@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Titles</h1>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Promotion</th>
+            <th>Debut</th>
+            <th>Retired</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for title in titles %}
+        <tr>
+            <td><a href="/titles/{{ title.id }}">{{ title.name }}</a></td>
+            <td>{{ title.promotion_id }}</td>
+            <td>{{ title.debut_year or '—' }}</td>
+            <td>{{ title.retirement_year or '—' }}</td>
+            <td>{% if user and user.is_staff %}<a href="/edit/title/{{ title.id }}" class="btn btn-sm btn-outline-primary">Edit</a>{% endif %}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

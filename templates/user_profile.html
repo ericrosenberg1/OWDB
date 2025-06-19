@@ -4,10 +4,10 @@
 <h1>{{ user.username }}'s Profile</h1>
 
 <p><strong>Email:</strong> {{ user.email }}</p>
-<p><strong>Role:</strong> {{ user.role }}</p>
+<p><strong>Role:</strong> {{ user.is_staff|yesno:"Staff,User" }}</p>
 <p><strong>Joined:</strong> {{ user.created_at }}</p>
 
-{% if user.role == "superadmin" %}
+{% if user.is_superuser %}
     <h3>Admin Actions</h3>
     <a href="/admin/users" class="btn btn-outline-primary">Manage Users</a>
 {% endif %}

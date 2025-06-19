@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from api.database import engine
-from api.schemas import Promotion
-from api.auth import get_current_user
+from api.schemas import Promotion, APIKey, User
+from api.auth import get_verified_user, require_api_key
 
 router = APIRouter(
     prefix="/promotions",
@@ -10,13 +10,13 @@ router = APIRouter(
 )
 
 @router.get("/")
-def list_promotions():
+def list_promotions(api_key: APIKey = Depends(require_api_key)):
     with Session(engine) as session:
         promotions = session.exec(select(Promotion)).all()
         return promotions
 
 @router.get("/{promotion_id}")
-def get_promotion(promotion_id: int):
+def get_promotion(promotion_id: int, api_key: APIKey = Depends(require_api_key)):
     with Session(engine) as session:
         promotion = session.get(Promotion, promotion_id)
         if not promotion:
@@ -24,9 +24,11 @@ def get_promotion(promotion_id: int):
         return promotion
 
 @router.patch("/{promotion_id}")
-def update_promotion(promotion_id: int, promotion: Promotion, user=Depends(get_current_user)):
-    if user.role not in ["editor", "admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Not authorized")
+def update_promotion(
+    promotion_id: int,
+    promotion: Promotion,
+    user: User = Depends(get_verified_user),
+):
     with Session(engine) as session:
         db_promotion = session.get(Promotion, promotion_id)
         if not db_promotion:

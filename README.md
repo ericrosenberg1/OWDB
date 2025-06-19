@@ -17,6 +17,8 @@ Website: [https://wrestlingdb.org](https://wrestlingdb.org)
 - Dark Mode support
 - SEO-ready meta tags and OpenGraph integration
 - Open, extensible, free for everyone
+- Email verification for new accounts
+- Free and paid API keys with rate limiting
 
 ---
 
@@ -27,3 +29,6 @@ git clone https://github.com/yourusername/wrestlingdb.git
 cd wrestlingdb
 cp .env.example .env
 docker-compose up --build
+```
+
+After signing up, check the console output for a verification link.

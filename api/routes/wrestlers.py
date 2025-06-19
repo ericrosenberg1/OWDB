@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from api.database import engine
-from api.schemas import Wrestler
-from api.auth import get_current_user
+from api.schemas import Wrestler, APIKey, User
+from api.auth import get_verified_user, require_api_key
 
 router = APIRouter(
     prefix="/wrestlers",
@@ -10,13 +10,13 @@ router = APIRouter(
 )
 
 @router.get("/")
-def list_wrestlers():
+def list_wrestlers(api_key: APIKey = Depends(require_api_key)):
     with Session(engine) as session:
         wrestlers = session.exec(select(Wrestler)).all()
         return wrestlers
 
 @router.get("/{wrestler_id}")
-def get_wrestler(wrestler_id: int):
+def get_wrestler(wrestler_id: int, api_key: APIKey = Depends(require_api_key)):
     with Session(engine) as session:
         wrestler = session.get(Wrestler, wrestler_id)
         if not wrestler:
@@ -24,9 +24,11 @@ def get_wrestler(wrestler_id: int):
         return wrestler
 
 @router.patch("/{wrestler_id}")
-def update_wrestler(wrestler_id: int, wrestler: Wrestler, user=Depends(get_current_user)):
-    if user.role not in ["editor", "admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Not authorized")
+def update_wrestler(
+    wrestler_id: int,
+    wrestler: Wrestler,
+    user: User = Depends(get_verified_user),
+):
     with Session(engine) as session:
         db_wrestler = session.get(Wrestler, wrestler_id)
         if not db_wrestler:

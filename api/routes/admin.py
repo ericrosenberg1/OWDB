@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from api.database import engine
 from api.schemas import Wrestler, Event, Match
-from api.auth import get_current_user
+from api.auth import get_verified_user
 
 router = APIRouter(
     prefix="/admin",
@@ -10,7 +10,7 @@ router = APIRouter(
 )
 
 @router.post("/merge/wrestlers")
-def merge_wrestlers(wrestler_id_1: int, wrestler_id_2: int, user=Depends(get_current_user)):
+def merge_wrestlers(wrestler_id_1: int, wrestler_id_2: int, user=Depends(get_verified_user)):
     if user.role != "superadmin":
         raise HTTPException(status_code=403, detail="Only Superadmins can merge")
 

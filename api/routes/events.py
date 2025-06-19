@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from api.database import engine
-from api.schemas import Event
-from api.auth import get_current_user
+from api.schemas import Event, APIKey, User
+from api.auth import get_verified_user, require_api_key
 
 router = APIRouter(
     prefix="/events",
@@ -10,13 +10,13 @@ router = APIRouter(
 )
 
 @router.get("/")
-def list_events():
+def list_events(api_key: APIKey = Depends(require_api_key)):
     with Session(engine) as session:
         events = session.exec(select(Event)).all()
         return events
 
 @router.get("/{event_id}")
-def get_event(event_id: int):
+def get_event(event_id: int, api_key: APIKey = Depends(require_api_key)):
     with Session(engine) as session:
         event = session.get(Event, event_id)
         if not event:
@@ -24,9 +24,11 @@ def get_event(event_id: int):
         return event
 
 @router.patch("/{event_id}")
-def update_event(event_id: int, event: Event, user=Depends(get_current_user)):
-    if user.role not in ["editor", "admin", "superadmin"]:
-        raise HTTPException(status_code=403, detail="Not authorized")
+def update_event(
+    event_id: int,
+    event: Event,
+    user: User = Depends(get_verified_user),
+):
     with Session(engine) as session:
         db_event = session.get(Event, event_id)
         if not db_event:

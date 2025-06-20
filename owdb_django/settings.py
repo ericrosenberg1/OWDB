@@ -4,8 +4,26 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('APP_SECRET_KEY', 'django-insecure-key')
+
+# Toggle debug via APP_ENV; defaults to True unless APP_ENV=production
 DEBUG = os.getenv('APP_ENV', 'development') != 'production'
-ALLOWED_HOSTS = ['*']
+
+# Only allow your real domains (and localhost for testing)
+ALLOWED_HOSTS = [
+    'wrestlingdb.org',
+    'www.wrestlingdb.org',
+    'localhost',
+    '127.0.0.1',
+]
+
+# If you're behind Caddy (which terminates TLS), trust its X-Forwarded-Proto header
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# For Django's CSRF checks when serving HTTPS
+CSRF_TRUSTED_ORIGINS = [
+    'https://wrestlingdb.org',
+    'https://www.wrestlingdb.org',
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -53,7 +71,7 @@ DATABASES = {
         'NAME': os.getenv('DB_NAME', 'owdb'),
         'USER': os.getenv('DB_USER', 'root'),
         'PASSWORD': os.getenv('DB_PASSWORD', 'password'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'HOST': os.getenv('DB_HOST', 'db'),
         'PORT': os.getenv('DB_PORT', '3306'),
     }
 }
@@ -71,7 +89,9 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
+# Static files (CSS, JS, images)
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'static_collected'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

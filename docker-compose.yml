@@ -2,11 +2,13 @@ services:
   db:
     image: mariadb:10.11
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE:      ${DB_NAME}
+      MARIADB_USER:          ${DB_USER}
+      MARIADB_PASSWORD:      ${DB_PASSWORD}
     volumes:
       - db_data:/var/lib/mysql
     ports:
@@ -15,14 +17,26 @@ services:
   app:
     build: .
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - .env
     depends_on:
       - db
     ports:
       - "8000:8000"
     volumes:
       - .:/app/OWDB
-    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    command: >
+      sh -c "
+        echo '⏳ Waiting for database…';
+        until python manage.py migrate --noinput; do
+          sleep 2;
+          echo '…still waiting';
+        done;
+        echo '✅ Database is up, running collectstatic…';
+        python manage.py collectstatic --noinput;
+        echo '🚀 Starting Django…';
+        python manage.py runserver 0.0.0.0:8000
+      "
 
 volumes:
   db_data:

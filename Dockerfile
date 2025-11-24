@@ -4,15 +4,12 @@ FROM python:3.11-slim
 # Ensure Python output is unbuffered (useful for Docker logs)
 ENV PYTHONUNBUFFERED=1
 
-# Install system dependencies for mysqlclient and pkg-config
+# Install system dependencies for PostgreSQL
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
        gcc \
-       pkg-config \
-       default-libmysqlclient-dev \
-       build-essential \
-       libssl-dev \
-       libffi-dev \
+       postgresql-client \
+       libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory inside the container

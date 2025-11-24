@@ -1,18 +1,17 @@
 services:
   db:
-    image: mariadb:10.11
+    image: postgres:15-alpine
     restart: unless-stopped
     env_file:
       - .env
     environment:
-      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MARIADB_DATABASE:      ${DB_NAME}
-      MARIADB_USER:          ${DB_USER}
-      MARIADB_PASSWORD:      ${DB_PASSWORD}
+      POSTGRES_DB:       ${DB_NAME}
+      POSTGRES_USER:     ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - db_data:/var/lib/mysql
+      - db_data:/var/lib/postgresql/data
     ports:
-      - "3306:3306"
+      - "5432:5432"
 
   app:
     build: .

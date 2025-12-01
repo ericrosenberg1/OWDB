@@ -1,10 +1,54 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Login</h1>
-<form method="post" class="mt-4">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-primary">Login</button>
-</form>
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card">
+            <div class="card-header text-center">Login</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <div class="text-danger mt-1">
+                            {% for error in field.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </form>
+                <hr>
+                <p class="text-center mb-0">
+                    Don't have an account? <a href="{% url 'signup' %}">Sign up</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Style Django form widgets */
+    #id_username, #id_password {
+        background-color: var(--wwf-dark);
+        border: 1px solid var(--wwf-gray);
+        color: var(--wwf-white);
+        border-radius: var(--border-radius);
+        padding: var(--space-sm) var(--space-md);
+    }
+    #id_username:focus, #id_password:focus {
+        border-color: var(--wwf-gold);
+        box-shadow: 0 0 0 3px rgba(207, 181, 59, 0.25);
+    }
+</style>
 {% endblock %}

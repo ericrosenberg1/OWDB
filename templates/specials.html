@@ -1,24 +1,35 @@
 {% extends "base.html" %}
+
 {% block content %}
 <h1>Specials & Movies</h1>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Title</th>
-            <th>Year</th>
-            <th>Type</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-    {% for special in specials %}
-        <tr>
-            <td><a href="/specials/{{ special.id }}">{{ special.title }}</a></td>
-            <td>{{ special.release_year or '—' }}</td>
-            <td>{{ special.type or '—' }}</td>
-            <td>{% if user and user.is_staff %}<a href="/edit/special/{{ special.id }}" class="btn btn-sm btn-outline-primary">Edit</a>{% endif %}</td>
-        </tr>
-    {% endfor %}
-    </tbody>
-</table>
+
+{% include "partials/search_form.html" %}
+
+{% if specials %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Year</th>
+                <th>Type</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for special in specials %}
+            <tr>
+                <td><a href="{% url 'special_detail' special.pk %}">{{ special.title }}</a></td>
+                <td>{{ special.release_year|default:"—" }}</td>
+                <td>{{ special.get_type_display|default:"—" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+
+{% else %}
+{% include "partials/empty_state.html" with icon="🎬" title="No Specials Found" message="No specials or movies match your search criteria." %}
+{% endif %}
 {% endblock %}

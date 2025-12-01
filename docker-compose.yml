@@ -1,41 +1,166 @@
+# =============================================================================
+# WrestlingDB Docker Compose - Production Ready
+# =============================================================================
+#
+# Services:
+#   - db: PostgreSQL 15 database
+#   - redis: Redis 7 for caching and Celery broker
+#   - web: Django application with Gunicorn
+#   - celery_worker: Background task processor
+#   - celery_beat: Scheduled task scheduler
+#
+# Usage:
+#   Development: docker-compose up
+#   Production:  docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# =============================================================================
+
 services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
   db:
     image: postgres:15-alpine
     restart: unless-stopped
     env_file:
       - .env
     environment:
-      POSTGRES_DB:       ${DB_NAME}
-      POSTGRES_USER:     ${DB_USER}
+      POSTGRES_DB: ${DB_NAME:-owdb}
+      POSTGRES_USER: ${DB_USER:-owdb}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - db_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-owdb} -d ${DB_NAME:-owdb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
-  app:
+  # ---------------------------------------------------------------------------
+  # Redis Cache & Message Broker
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Django Web Application
+  # ---------------------------------------------------------------------------
+  web:
     build: .
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      USE_POSTGRES: "true"
+      USE_REDIS: "true"
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "8000:8000"
     volumes:
-      - .:/app/OWDB
+      - static_files:/app/static_collected
     command: >
       sh -c "
-        echo '⏳ Waiting for database…';
-        until python manage.py migrate --noinput; do
-          sleep 2;
-          echo '…still waiting';
-        done;
-        echo '✅ Database is up, running collectstatic…';
+        echo '⏳ Running migrations…';
+        python manage.py migrate --noinput;
+        echo '📦 Collecting static files…';
         python manage.py collectstatic --noinput;
-        echo '🚀 Starting Django…';
-        python manage.py runserver 0.0.0.0:8000
+        echo '🚀 Starting Gunicorn…';
+        gunicorn --bind 0.0.0.0:8000 --workers 2 --threads 4 --worker-class gthread --access-logfile - --error-logfile - owdb_django.wsgi:application
       "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
+  # ---------------------------------------------------------------------------
+  # Celery Worker - Background Tasks
+  # ---------------------------------------------------------------------------
+  celery_worker:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      USE_POSTGRES: "true"
+      USE_REDIS: "true"
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A owdb_django worker --loglevel=info --concurrency=2
+    healthcheck:
+      test: ["CMD", "celery", "-A", "owdb_django", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Celery Beat - Scheduled Tasks
+  # ---------------------------------------------------------------------------
+  celery_beat:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      USE_POSTGRES: "true"
+      USE_REDIS: "true"
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      celery_worker:
+        condition: service_started
+    command: celery -A owdb_django beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - celery_beat_schedule:/app/celerybeat-schedule
+
+# =============================================================================
+# Volumes
+# =============================================================================
 volumes:
   db_data:
+    driver: local
+  redis_data:
+    driver: local
+  static_files:
+    driver: local
+  celery_beat_schedule:
+    driver: local

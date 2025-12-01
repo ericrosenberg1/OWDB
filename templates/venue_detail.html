@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="detail-header">
+    <h1 class="detail-title">{{ venue.name }}</h1>
+    <div class="detail-meta">
+        {% if venue.location %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Location:</span> {{ venue.location }}
+        </div>
+        {% endif %}
+        {% if venue.capacity %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Capacity:</span> {{ venue.capacity|floatformat:0 }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if events %}
+<div class="card mb-4">
+    <div class="card-header">Events at This Venue</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>Promotion</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for event in events %}
+                    <tr>
+                        <td><a href="{% url 'event_detail' event.pk %}">{{ event.name }}</a></td>
+                        <td><a href="{% url 'promotion_detail' event.promotion.pk %}">{{ event.promotion.name }}</a></td>
+                        <td>{{ event.date|date:"M j, Y" }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<a href="{% url 'venues' %}" class="btn btn-secondary">&larr; Back to Venues</a>
+{% endblock %}

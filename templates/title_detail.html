@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="detail-header">
+    <h1 class="detail-title">{{ title.name }}</h1>
+    <div class="detail-meta">
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Promotion:</span>
+            <a href="{% url 'promotion_detail' title.promotion.pk %}">{{ title.promotion.name }}</a>
+        </div>
+        {% if title.debut_year %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Debut:</span> {{ title.debut_year }}
+        </div>
+        {% endif %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Status:</span>
+            {% if title.is_active %}
+            <span class="badge badge-gold">Active</span>
+            {% else %}
+            <span class="badge badge-silver">Retired ({{ title.retirement_year }})</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if title.about %}
+<div class="card mb-4">
+    <div class="card-header">About</div>
+    <div class="card-body">
+        <p>{{ title.about|linebreaks }}</p>
+    </div>
+</div>
+{% endif %}
+
+{% if title_matches %}
+<div class="card mb-4">
+    <div class="card-header">Title Matches</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Match</th>
+                        <th>Event</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for match in title_matches %}
+                    <tr>
+                        <td><a href="{% url 'match_detail' match.pk %}">{{ match.match_text }}</a></td>
+                        <td><a href="{% url 'event_detail' match.event.pk %}">{{ match.event.name }}</a></td>
+                        <td>{{ match.result|default:"—" }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<a href="{% url 'titles' %}" class="btn btn-secondary">&larr; Back to Titles</a>
+{% endblock %}

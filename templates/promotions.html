@@ -1,24 +1,41 @@
 {% extends "base.html" %}
+
 {% block content %}
 <h1>Promotions</h1>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Founded</th>
-            <th>Website</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-    {% for promotion in promotions %}
-        <tr>
-            <td><a href="/promotions/{{ promotion.id }}">{{ promotion.name }}</a></td>
-            <td>{{ promotion.founded_year or '—' }}</td>
-            <td>{% if promotion.website %}<a href="{{ promotion.website }}" target="_blank">{{ promotion.website }}</a>{% else %}—{% endif %}</td>
-            <td>{% if user and user.is_staff %}<a href="/edit/promotion/{{ promotion.id }}" class="btn btn-sm btn-outline-primary">Edit</a>{% endif %}</td>
-        </tr>
-    {% endfor %}
-    </tbody>
-</table>
+
+{% include "partials/search_form.html" %}
+
+{% if promotions %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Abbreviation</th>
+                <th>Founded</th>
+                <th>Website</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for promotion in promotions %}
+            <tr>
+                <td><a href="{% url 'promotion_detail' promotion.pk %}">{{ promotion.name }}</a></td>
+                <td>{{ promotion.abbreviation|default:"—" }}</td>
+                <td>{{ promotion.founded_year|default:"—" }}</td>
+                <td>
+                    {% if promotion.website %}
+                    <a href="{{ promotion.website }}" target="_blank" rel="noopener">Visit</a>
+                    {% else %}—{% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+
+{% else %}
+{% include "partials/empty_state.html" with icon="🏢" title="No Promotions Found" message="No promotions match your search criteria." %}
+{% endif %}
 {% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="detail-header">
+    <h1 class="detail-title">{{ match.match_text }}</h1>
+    <div class="detail-meta">
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Event:</span>
+            <a href="{% url 'event_detail' match.event.pk %}">{{ match.event.name }}</a>
+        </div>
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Promotion:</span>
+            <a href="{% url 'promotion_detail' match.event.promotion.pk %}">{{ match.event.promotion.name }}</a>
+        </div>
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Date:</span> {{ match.event.date|date:"F j, Y" }}
+        </div>
+        {% if match.match_type %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Match Type:</span> {{ match.match_type }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        {% if match.title %}
+        <div class="alert alert-warning">
+            <strong>Title Match:</strong> {{ match.title.name }}
+        </div>
+        {% endif %}
+
+        {% if match.result %}
+        <div class="card mb-4">
+            <div class="card-header">Result</div>
+            <div class="card-body">
+                <p class="mb-0">{{ match.result }}</p>
+                {% if match.winner %}
+                <p class="mt-2 mb-0"><strong>Winner:</strong> <a href="{% url 'wrestler_detail' match.winner.pk %}">{{ match.winner.name }}</a></p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if match.about %}
+        <div class="card mb-4">
+            <div class="card-header">Match Notes</div>
+            <div class="card-body">
+                <p>{{ match.about|linebreaks }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-4">
+        {% if match.wrestlers.exists %}
+        <div class="card mb-4">
+            <div class="card-header">Participants</div>
+            <ul class="list-group list-group-flush">
+                {% for wrestler in match.wrestlers.all %}
+                <li class="list-group-item bg-transparent">
+                    <a href="{% url 'wrestler_detail' wrestler.pk %}">{{ wrestler.name }}</a>
+                    {% if wrestler == match.winner %}
+                    <span class="badge badge-gold ms-2">Winner</span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<a href="{% url 'event_detail' match.event.pk %}" class="btn btn-secondary">&larr; Back to Event</a>
+<a href="{% url 'matches' %}" class="btn btn-outline-light ms-2">All Matches</a>
+{% endblock %}

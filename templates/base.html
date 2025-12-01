@@ -1,77 +1,197 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
+<html lang="en" data-bs-theme="{% block theme %}dark{% endblock %}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title or "WrestlingDB" }}</title>
+    <title>{% block title %}{{ page_title|default:"WrestlingDB" }}{% endblock %} | WrestlingDB</title>
 
-    <meta name="description" content="{{ description or 'The Open Wrestling Database for fans and developers.' }}">
-    <meta property="og:title" content="{{ title or 'WrestlingDB' }}">
-    <meta property="og:description" content="{{ description or 'The Open Wrestling Database for fans and developers.' }}">
-    <meta property="og:url" content="{{ url or 'https://wrestlingdb.org' }}">
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="{% block meta_description %}{{ page_description|default:'The Open Wrestling Database - the most complete free metadata source for professional wrestling from inception to date.' }}{% endblock %}">
+    <meta name="keywords" content="wrestling, WWE, AEW, pro wrestling, database, wrestlers, matches, events">
+    <meta name="author" content="WrestlingDB">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="{% block og_title %}{{ page_title|default:'WrestlingDB' }}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{{ page_description|default:'The Open Wrestling Database for fans and developers.' }}{% endblock %}">
+    <meta property="og:url" content="{% block og_url %}https://wrestlingdb.org{{ request.path }}{% endblock %}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="WrestlingDB">
+
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ page_title|default:'WrestlingDB' }}">
+    <meta name="twitter:description" content="{{ page_description|default:'The Open Wrestling Database for fans and developers.' }}">
 
-    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/static/css/styles.css" rel="stylesheet">
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
 
-    <script src="/static/js/darkmode.js" defer></script>
-    <script src="/static/js/tinymce/tinymce.min.js"></script>
-    <script src="/static/js/tinymce_config.js"></script>
+    <!-- Bootstrap CSS (CDN with SRI) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+
+    <!-- Custom Styles -->
+    <link href="{% static 'css/styles.css' %}" rel="stylesheet">
+
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <header class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/">WrestlingDB</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarContent">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="/wrestlers">Wrestlers</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/events">Events</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/matches">Matches</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/titles">Titles</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/games">Games</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/podcasts">Podcasts</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/books">Books</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/specials">Specials</a></li>
-                </ul>
-                <ul class="navbar-nav ms-auto">
-                    {% if user %}
-                        <li class="nav-item"><a class="nav-link" href="/profile">{{ user.username }}</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
-                    {% else %}
-                        <li class="nav-item"><a class="nav-link" href="/signup">Sign Up</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
-                    {% endif %}
-                    <li class="nav-item">
-                        <button onclick="toggleDarkMode()" class="btn btn-outline-light btn-sm ms-2">Dark Mode</button>
-                    </li>
-                </ul>
+    <!-- Skip Link for Accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Navigation -->
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark sticky-top" role="navigation" aria-label="Main navigation">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="{% url 'index' %}">WrestlingDB</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarContent">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'wrestlers' or request.resolver_match.url_name == 'wrestler_detail' %}active{% endif %}" href="{% url 'wrestlers' %}">Wrestlers</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'promotions' or request.resolver_match.url_name == 'promotion_detail' %}active{% endif %}" href="{% url 'promotions' %}">Promotions</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'events' or request.resolver_match.url_name == 'event_detail' %}active{% endif %}" href="{% url 'events' %}">Events</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'matches' or request.resolver_match.url_name == 'match_detail' %}active{% endif %}" href="{% url 'matches' %}">Matches</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'titles' or request.resolver_match.url_name == 'title_detail' %}active{% endif %}" href="{% url 'titles' %}">Titles</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                More
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-dark">
+                                <li><a class="dropdown-item" href="{% url 'venues' %}">Venues</a></li>
+                                <li><a class="dropdown-item" href="{% url 'games' %}">Video Games</a></li>
+                                <li><a class="dropdown-item" href="{% url 'podcasts' %}">Podcasts</a></li>
+                                <li><a class="dropdown-item" href="{% url 'books' %}">Books</a></li>
+                                <li><a class="dropdown-item" href="{% url 'specials' %}">Specials</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav ms-auto">
+                        {% if user.is_authenticated %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'account' %}">{{ user.username }}</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                            </li>
+                        {% else %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'signup' %}">Sign Up</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'login' %}">Login</a>
+                            </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <button onclick="toggleDarkMode()" class="btn btn-outline-light btn-sm ms-2" aria-label="Toggle dark mode">
+                                <span id="theme-icon">🌙</span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
             </div>
-        </div>
+        </nav>
     </header>
 
-    <main class="container mt-4">
+    <!-- Flash Messages -->
+    {% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main id="main-content" class="container mt-4 mb-4">
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="footer mt-auto py-3 bg-dark text-center text-light">
-        <div class="container">
-            Open Wrestling Database — Wrestling fans own the data. <br>
+    <!-- Footer -->
+    <footer class="footer mt-auto py-4">
+        <div class="container text-center">
+            <p class="mb-2">
+                <strong>WrestlingDB</strong> — The Open Wrestling Database
+            </p>
+            <p class="mb-2">
+                <a href="{% url 'index' %}">Home</a> |
+                <a href="{% url 'account' %}">API Access</a> |
+                <a href="https://github.com/wrestlingdb" target="_blank" rel="noopener">GitHub</a>
+            </p>
             <small id="random-quote"></small>
+            <p class="mt-3 mb-0">
+                <small>&copy; {% now "Y" %} WrestlingDB. Wrestling fans own the data.</small>
+            </p>
         </div>
     </footer>
 
+    <!-- Bootstrap JS Bundle (CDN with SRI) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+
+    <!-- Dark Mode Script -->
     <script>
-    const quotes = [
-        "And that's the bottom line, 'cause Stone Cold said so!",
-        "If ya smell what The Rock is cookin'!",
-        "Rest... in... peace.",
-        "Viva la Raza!",
-        "To be the man, you gotta beat the man!"
-    ];
-    document.getElementById('random-quote').innerText = quotes[Math.floor(Math.random() * quotes.length)];
+        // Wrestling quotes for the footer
+        const quotes = [
+            "And that's the bottom line, 'cause Stone Cold said so!",
+            "If ya smell what The Rock is cookin'!",
+            "Rest... in... peace.",
+            "Viva la Raza!",
+            "To be the man, you gotta beat the man! Wooo!",
+            "Whatcha gonna do when Hulkamania runs wild on you?!",
+            "I'm the best there is, the best there was, and the best there ever will be.",
+            "Have a nice day!",
+            "Yes! Yes! Yes!",
+            "It doesn't matter what you think!",
+            "You can't see me!",
+            "Do you smell what The Rock is cookin'?",
+            "Austin 3:16 says I just whipped your ass!",
+            "That's not a prediction, that's a spoiler."
+        ];
+
+        // Display random quote
+        const quoteEl = document.getElementById('random-quote');
+        if (quoteEl) {
+            quoteEl.innerText = '"' + quotes[Math.floor(Math.random() * quotes.length)] + '"';
+        }
+
+        // Dark mode toggle with localStorage persistence
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        }
+
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('theme-icon');
+            if (icon) {
+                icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+            }
+        }
+
+        // Load saved theme preference
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+        });
     </script>
+
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

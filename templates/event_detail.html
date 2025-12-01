@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="detail-header">
+    <h1 class="detail-title">{{ event.name }}</h1>
+    <div class="detail-meta">
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Promotion:</span>
+            <a href="{% url 'promotion_detail' event.promotion.pk %}">{{ event.promotion.name }}</a>
+        </div>
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Date:</span> {{ event.date|date:"F j, Y" }}
+        </div>
+        {% if event.venue %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Venue:</span>
+            <a href="{% url 'venue_detail' event.venue.pk %}">{{ event.venue.name }}</a>
+        </div>
+        {% endif %}
+        {% if event.attendance %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Attendance:</span> {{ event.attendance|floatformat:0 }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if event.about %}
+<div class="card mb-4">
+    <div class="card-header">About</div>
+    <div class="card-body">
+        <p>{{ event.about|linebreaks }}</p>
+    </div>
+</div>
+{% endif %}
+
+{% if matches %}
+<div class="card mb-4">
+    <div class="card-header">Match Card</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Match</th>
+                        <th>Type</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for match in matches %}
+                    <tr>
+                        <td>{{ match.match_order|default:forloop.counter }}</td>
+                        <td>
+                            <a href="{% url 'match_detail' match.pk %}">{{ match.match_text }}</a>
+                            {% if match.title %}
+                            <br><small class="text-muted">for the <a href="{% url 'title_detail' match.title.pk %}">{{ match.title.name }}</a></small>
+                            {% endif %}
+                        </td>
+                        <td>{{ match.match_type|default:"Standard" }}</td>
+                        <td>{{ match.result|default:"—" }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card mb-4">
+    <div class="card-body text-center py-5">
+        <p class="mb-0 text-muted">No matches have been added to this event yet.</p>
+    </div>
+</div>
+{% endif %}
+
+<a href="{% url 'events' %}" class="btn btn-secondary">&larr; Back to Events</a>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="detail-header">
+    <h1 class="detail-title">{{ podcast.name }}</h1>
+    <div class="detail-meta">
+        {% if podcast.hosts %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Hosts:</span> {{ podcast.hosts }}
+        </div>
+        {% endif %}
+        {% if podcast.launch_year %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Launch Year:</span> {{ podcast.launch_year }}
+        </div>
+        {% endif %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Status:</span>
+            {% if podcast.is_active %}
+            <span class="badge badge-gold">Active</span>
+            {% else %}
+            <span class="badge badge-silver">Ended ({{ podcast.end_year }})</span>
+            {% endif %}
+        </div>
+        {% if podcast.url %}
+        <div class="detail-meta-item">
+            <a href="{{ podcast.url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-light">Listen Now</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if podcast.about %}
+<div class="card mb-4">
+    <div class="card-header">About</div>
+    <div class="card-body">
+        <p>{{ podcast.about|linebreaks }}</p>
+    </div>
+</div>
+{% endif %}
+
+{% if podcast.related_wrestlers.exists %}
+<div class="card mb-4">
+    <div class="card-header">Related Wrestlers</div>
+    <ul class="list-group list-group-flush">
+        {% for wrestler in podcast.related_wrestlers.all %}
+        <li class="list-group-item bg-transparent">
+            <a href="{% url 'wrestler_detail' wrestler.pk %}">{{ wrestler.name }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<a href="{% url 'podcasts' %}" class="btn btn-secondary">&larr; Back to Podcasts</a>
+{% endblock %}

@@ -3,28 +3,39 @@
 {% block content %}
 <h1>Matches</h1>
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Match</th>
-            <th>Event</th>
-            <th>Result</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-    {% for match in matches %}
-        <tr>
-            <td>{{ match.match_text }}</td>
-            <td>{{ match.event_id }}</td>
-            <td>{{ match.result or '—' }}</td>
-            <td>
-            {% if user and user.is_staff %}
-                <a href="/edit/match/{{ match.id }}" class="btn btn-sm btn-outline-primary">Edit</a>
-            {% endif %}
-            </td>
-        </tr>
-    {% endfor %}
-    </tbody>
-</table>
+{% include "partials/search_form.html" %}
+
+{% if matches %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Match</th>
+                <th>Event</th>
+                <th>Type</th>
+                <th>Result</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for match in matches %}
+            <tr>
+                <td><a href="{% url 'match_detail' match.pk %}">{{ match.match_text }}</a></td>
+                <td>
+                    {% if match.event %}
+                    <a href="{% url 'event_detail' match.event.pk %}">{{ match.event.name }}</a>
+                    {% else %}—{% endif %}
+                </td>
+                <td>{{ match.match_type|default:"Standard" }}</td>
+                <td>{{ match.result|default:"—" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+
+{% else %}
+{% include "partials/empty_state.html" with icon="🥊" title="No Matches Found" message="No matches match your search criteria." %}
+{% endif %}
 {% endblock %}

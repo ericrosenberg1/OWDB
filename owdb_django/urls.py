@@ -1,19 +1,71 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path
 from owdb_django.owdbapp import views
 
 urlpatterns = [
+    # Admin
     path('admin/', admin.site.urls),
-    path('', views.index, name='index'),
-    path('promotions/', views.promotions, name='promotions'),
-    path('games/', views.games, name='games'),
-    path('podcasts/', views.podcasts, name='podcasts'),
-    path('books/', views.books, name='books'),
-    path('specials/', views.specials, name='specials'),
-    path('titles/', views.titles, name='titles'),
-    path('venues/', views.venues, name='venues'),
-    path('account/', views.account, name='account'),
+
+    # Homepage
+    path('', views.IndexView.as_view(), name='index'),
+
+    # Wrestlers
+    path('wrestlers/', views.WrestlerListView.as_view(), name='wrestlers'),
+    path('wrestlers/<int:pk>/', views.WrestlerDetailView.as_view(), name='wrestler_detail'),
+    path('wrestlers/<slug:slug>/', views.WrestlerDetailView.as_view(), name='wrestler_detail_slug'),
+
+    # Promotions
+    path('promotions/', views.PromotionListView.as_view(), name='promotions'),
+    path('promotions/<int:pk>/', views.PromotionDetailView.as_view(), name='promotion_detail'),
+    path('promotions/<slug:slug>/', views.PromotionDetailView.as_view(), name='promotion_detail_slug'),
+
+    # Events
+    path('events/', views.EventListView.as_view(), name='events'),
+    path('events/<int:pk>/', views.EventDetailView.as_view(), name='event_detail'),
+    path('events/<slug:slug>/', views.EventDetailView.as_view(), name='event_detail_slug'),
+
+    # Matches
+    path('matches/', views.MatchListView.as_view(), name='matches'),
+    path('matches/<int:pk>/', views.MatchDetailView.as_view(), name='match_detail'),
+
+    # Titles
+    path('titles/', views.TitleListView.as_view(), name='titles'),
+    path('titles/<int:pk>/', views.TitleDetailView.as_view(), name='title_detail'),
+    path('titles/<slug:slug>/', views.TitleDetailView.as_view(), name='title_detail_slug'),
+
+    # Venues
+    path('venues/', views.VenueListView.as_view(), name='venues'),
+    path('venues/<int:pk>/', views.VenueDetailView.as_view(), name='venue_detail'),
+    path('venues/<slug:slug>/', views.VenueDetailView.as_view(), name='venue_detail_slug'),
+
+    # Video Games
+    path('games/', views.VideoGameListView.as_view(), name='games'),
+    path('games/<int:pk>/', views.VideoGameDetailView.as_view(), name='game_detail'),
+    path('games/<slug:slug>/', views.VideoGameDetailView.as_view(), name='game_detail_slug'),
+
+    # Podcasts
+    path('podcasts/', views.PodcastListView.as_view(), name='podcasts'),
+    path('podcasts/<int:pk>/', views.PodcastDetailView.as_view(), name='podcast_detail'),
+    path('podcasts/<slug:slug>/', views.PodcastDetailView.as_view(), name='podcast_detail_slug'),
+
+    # Books
+    path('books/', views.BookListView.as_view(), name='books'),
+    path('books/<int:pk>/', views.BookDetailView.as_view(), name='book_detail'),
+    path('books/<slug:slug>/', views.BookDetailView.as_view(), name='book_detail_slug'),
+
+    # Specials
+    path('specials/', views.SpecialListView.as_view(), name='specials'),
+    path('specials/<int:pk>/', views.SpecialDetailView.as_view(), name='special_detail'),
+    path('specials/<slug:slug>/', views.SpecialDetailView.as_view(), name='special_detail_slug'),
+
+    # Authentication
     path('signup/', views.signup, name='signup'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+
+    # Account
+    path('account/', views.account, name='account'),
+
+    # Health check for Docker/load balancers
+    path('health/', views.health_check, name='health'),
 ]

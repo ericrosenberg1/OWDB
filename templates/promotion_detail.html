@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="detail-header">
+    <h1 class="detail-title">{{ promotion.name }}</h1>
+    <div class="detail-meta">
+        {% if promotion.abbreviation %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Abbreviation:</span> {{ promotion.abbreviation }}
+        </div>
+        {% endif %}
+        {% if promotion.founded_year %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Founded:</span> {{ promotion.founded_year }}
+        </div>
+        {% endif %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Status:</span>
+            {% if promotion.is_active %}
+            <span class="badge badge-gold">Active</span>
+            {% else %}
+            <span class="badge badge-silver">Closed ({{ promotion.closed_year }})</span>
+            {% endif %}
+        </div>
+        {% if promotion.website %}
+        <div class="detail-meta-item">
+            <a href="{{ promotion.website }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-light">Visit Website</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        {% if promotion.about %}
+        <div class="card mb-4">
+            <div class="card-header">About</div>
+            <div class="card-body">
+                <p>{{ promotion.about|linebreaks }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if events %}
+        <div class="card mb-4">
+            <div class="card-header">Recent Events</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Event</th>
+                                <th>Date</th>
+                                <th>Venue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for event in events %}
+                            <tr>
+                                <td><a href="{% url 'event_detail' event.pk %}">{{ event.name }}</a></td>
+                                <td>{{ event.date|date:"M j, Y" }}</td>
+                                <td>
+                                    {% if event.venue %}
+                                    <a href="{% url 'venue_detail' event.venue.pk %}">{{ event.venue.name }}</a>
+                                    {% else %}—{% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-4">
+        {% if titles %}
+        <div class="card mb-4">
+            <div class="card-header">Championships</div>
+            <ul class="list-group list-group-flush">
+                {% for title in titles %}
+                <li class="list-group-item bg-transparent">
+                    <a href="{% url 'title_detail' title.pk %}">{{ title.name }}</a>
+                    {% if title.is_active %}
+                    <span class="badge badge-gold ms-2">Active</span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if promotion.nicknames %}
+        <div class="card mb-4">
+            <div class="card-header">Also Known As</div>
+            <div class="card-body">
+                <p class="mb-0">{{ promotion.nicknames }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<a href="{% url 'promotions' %}" class="btn btn-secondary">&larr; Back to Promotions</a>
+{% endblock %}

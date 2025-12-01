@@ -1,0 +1,8 @@
+<div class="empty-state">
+    <div class="empty-state-icon">{{ icon|default:'📭' }}</div>
+    <h3>{{ title|default:'No Results Found' }}</h3>
+    <p>{{ message|default:'There are no items to display yet.' }}</p>
+    {% if action_url and action_text %}
+    <a href="{{ action_url }}" class="btn btn-primary">{{ action_text }}</a>
+    {% endif %}
+</div>

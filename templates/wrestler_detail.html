@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="detail-header">
+    <h1 class="detail-title">{{ wrestler.name }}</h1>
+    <div class="detail-meta">
+        {% if wrestler.real_name %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Real Name:</span> {{ wrestler.real_name }}
+        </div>
+        {% endif %}
+        {% if wrestler.debut_year %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Debut:</span> {{ wrestler.debut_year }}
+        </div>
+        {% endif %}
+        {% if wrestler.hometown %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Hometown:</span> {{ wrestler.hometown }}
+        </div>
+        {% endif %}
+        {% if wrestler.nationality %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Nationality:</span> {{ wrestler.nationality }}
+        </div>
+        {% endif %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Status:</span>
+            {% if wrestler.is_active %}
+            <span class="badge badge-gold">Active</span>
+            {% else %}
+            <span class="badge badge-silver">Retired ({{ wrestler.retirement_year }})</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        {% if wrestler.about %}
+        <div class="card mb-4">
+            <div class="card-header">Biography</div>
+            <div class="card-body">
+                <p>{{ wrestler.about|linebreaks }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if matches %}
+        <div class="card mb-4">
+            <div class="card-header">Recent Matches</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Match</th>
+                                <th>Event</th>
+                                <th>Result</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for match in matches %}
+                            <tr>
+                                <td><a href="{% url 'match_detail' match.pk %}">{{ match.match_text }}</a></td>
+                                <td><a href="{% url 'event_detail' match.event.pk %}">{{ match.event.name }}</a></td>
+                                <td>{{ match.result|default:"—" }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-4">
+        {% if wrestler.finishers %}
+        <div class="card mb-4">
+            <div class="card-header">Finishing Moves</div>
+            <ul class="list-group list-group-flush">
+                {% for move in wrestler.get_finishers_list %}
+                <li class="list-group-item bg-transparent">{{ move }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if wrestler.aliases %}
+        <div class="card mb-4">
+            <div class="card-header">Also Known As</div>
+            <ul class="list-group list-group-flush">
+                {% for alias in wrestler.get_aliases_list %}
+                <li class="list-group-item bg-transparent">{{ alias }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<a href="{% url 'wrestlers' %}" class="btn btn-secondary">&larr; Back to Wrestlers</a>
+{% endblock %}

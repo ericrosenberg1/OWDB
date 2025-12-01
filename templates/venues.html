@@ -1,24 +1,35 @@
 {% extends "base.html" %}
+
 {% block content %}
 <h1>Venues</h1>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Location</th>
-            <th>Capacity</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-    {% for venue in venues %}
-        <tr>
-            <td><a href="/venues/{{ venue.id }}">{{ venue.name }}</a></td>
-            <td>{{ venue.location or '—' }}</td>
-            <td>{{ venue.capacity or '—' }}</td>
-            <td>{% if user and user.is_staff %}<a href="/edit/venue/{{ venue.id }}" class="btn btn-sm btn-outline-primary">Edit</a>{% endif %}</td>
-        </tr>
-    {% endfor %}
-    </tbody>
-</table>
+
+{% include "partials/search_form.html" %}
+
+{% if venues %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Location</th>
+                <th>Capacity</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for venue in venues %}
+            <tr>
+                <td><a href="{% url 'venue_detail' venue.pk %}">{{ venue.name }}</a></td>
+                <td>{{ venue.location|default:"—" }}</td>
+                <td>{% if venue.capacity %}{{ venue.capacity|floatformat:0 }}{% else %}—{% endif %}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+
+{% else %}
+{% include "partials/empty_state.html" with icon="🏟️" title="No Venues Found" message="No venues match your search criteria." %}
+{% endif %}
 {% endblock %}

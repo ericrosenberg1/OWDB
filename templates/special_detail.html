@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="detail-header">
+    <h1 class="detail-title">{{ special.title }}</h1>
+    <div class="detail-meta">
+        {% if special.release_year %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Release Year:</span> {{ special.release_year }}
+        </div>
+        {% endif %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Type:</span> {{ special.get_type_display }}
+        </div>
+    </div>
+</div>
+
+{% if special.about %}
+<div class="card mb-4">
+    <div class="card-header">About</div>
+    <div class="card-body">
+        <p>{{ special.about|linebreaks }}</p>
+    </div>
+</div>
+{% endif %}
+
+{% if special.related_wrestlers.exists %}
+<div class="card mb-4">
+    <div class="card-header">Featured Wrestlers</div>
+    <ul class="list-group list-group-flush">
+        {% for wrestler in special.related_wrestlers.all %}
+        <li class="list-group-item bg-transparent">
+            <a href="{% url 'wrestler_detail' wrestler.pk %}">{{ wrestler.name }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<a href="{% url 'specials' %}" class="btn btn-secondary">&larr; Back to Specials</a>
+{% endblock %}

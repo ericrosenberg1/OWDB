@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="detail-header">
+    <h1 class="detail-title">{{ game.name }}</h1>
+    <div class="detail-meta">
+        {% if game.release_year %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Release Year:</span> {{ game.release_year }}
+        </div>
+        {% endif %}
+        {% if game.systems %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Platforms:</span> {{ game.systems }}
+        </div>
+        {% endif %}
+        {% if game.developer %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Developer:</span> {{ game.developer }}
+        </div>
+        {% endif %}
+        {% if game.publisher %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Publisher:</span> {{ game.publisher }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if game.about %}
+<div class="card mb-4">
+    <div class="card-header">About</div>
+    <div class="card-body">
+        <p>{{ game.about|linebreaks }}</p>
+    </div>
+</div>
+{% endif %}
+
+{% if game.promotions.exists %}
+<div class="card mb-4">
+    <div class="card-header">Featured Promotions</div>
+    <ul class="list-group list-group-flush">
+        {% for promo in game.promotions.all %}
+        <li class="list-group-item bg-transparent">
+            <a href="{% url 'promotion_detail' promo.pk %}">{{ promo.name }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<a href="{% url 'games' %}" class="btn btn-secondary">&larr; Back to Video Games</a>
+{% endblock %}

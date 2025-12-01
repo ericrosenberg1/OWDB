@@ -1,26 +1,37 @@
 {% extends "base.html" %}
+
 {% block content %}
 <h1>Books</h1>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Title</th>
-            <th>Author</th>
-            <th>Published</th>
-            <th>ISBN</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-    {% for book in books %}
-        <tr>
-            <td><a href="/books/{{ book.id }}">{{ book.title }}</a></td>
-            <td>{{ book.author or '—' }}</td>
-            <td>{{ book.publication_year or '—' }}</td>
-            <td>{{ book.isbn or '—' }}</td>
-            <td>{% if user and user.is_staff %}<a href="/edit/book/{{ book.id }}" class="btn btn-sm btn-outline-primary">Edit</a>{% endif %}</td>
-        </tr>
-    {% endfor %}
-    </tbody>
-</table>
+
+{% include "partials/search_form.html" %}
+
+{% if books %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Published</th>
+                <th>ISBN</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for book in books %}
+            <tr>
+                <td><a href="{% url 'book_detail' book.pk %}">{{ book.title }}</a></td>
+                <td>{{ book.author|default:"—" }}</td>
+                <td>{{ book.publication_year|default:"—" }}</td>
+                <td>{{ book.isbn|default:"—" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+
+{% else %}
+{% include "partials/empty_state.html" with icon="📚" title="No Books Found" message="No books match your search criteria." %}
+{% endif %}
 {% endblock %}

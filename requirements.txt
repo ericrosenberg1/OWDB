@@ -18,3 +18,8 @@ whitenoise>=6.6
 
 # Utilities
 python-dotenv>=1.0
+
+# Web scraping
+requests>=2.31
+beautifulsoup4>=4.12
+lxml>=5.0

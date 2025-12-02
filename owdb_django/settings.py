@@ -182,7 +182,122 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'owdb_django.owdbapp.tasks.cleanup_inactive_api_keys',
         'schedule': 604800.0,  # Every 7 days
     },
+    # Scraping tasks - staggered throughout the day
+    'scrape-wikipedia-wrestlers': {
+        'task': 'owdb_django.owdbapp.tasks.scrape_wikipedia_wrestlers',
+        'schedule': 14400.0,  # Every 4 hours
+        'args': (50,),
+    },
+    'scrape-wikipedia-promotions': {
+        'task': 'owdb_django.owdbapp.tasks.scrape_wikipedia_promotions',
+        'schedule': 43200.0,  # Every 12 hours
+        'args': (25,),
+    },
+    'scrape-wikipedia-events': {
+        'task': 'owdb_django.owdbapp.tasks.scrape_wikipedia_events',
+        'schedule': 14400.0,  # Every 4 hours
+        'args': (50,),
+    },
+    'scrape-cagematch-wrestlers': {
+        'task': 'owdb_django.owdbapp.tasks.scrape_cagematch_wrestlers',
+        'schedule': 21600.0,  # Every 6 hours
+        'args': (25,),
+    },
+    'scrape-cagematch-events': {
+        'task': 'owdb_django.owdbapp.tasks.scrape_cagematch_events',
+        'schedule': 21600.0,  # Every 6 hours
+        'args': (25,),
+    },
+    'scrape-profightdb-wrestlers': {
+        'task': 'owdb_django.owdbapp.tasks.scrape_profightdb_wrestlers',
+        'schedule': 28800.0,  # Every 8 hours
+        'args': (25,),
+    },
+    'scrape-profightdb-events': {
+        'task': 'owdb_django.owdbapp.tasks.scrape_profightdb_events',
+        'schedule': 28800.0,  # Every 8 hours
+        'args': (25,),
+    },
+    'get-scraper-stats': {
+        'task': 'owdb_django.owdbapp.tasks.get_scraper_stats',
+        'schedule': 3600.0,  # Every hour
+    },
+    # API tasks - movies, games, books, podcasts
+    'fetch-tmdb-specials': {
+        'task': 'owdb_django.owdbapp.tasks.fetch_tmdb_specials',
+        'schedule': 43200.0,  # Every 12 hours
+        'args': (30,),
+    },
+    'fetch-rawg-videogames': {
+        'task': 'owdb_django.owdbapp.tasks.fetch_rawg_videogames',
+        'schedule': 86400.0,  # Every 24 hours (limited monthly quota)
+        'args': (30,),
+    },
+    'fetch-openlibrary-books': {
+        'task': 'owdb_django.owdbapp.tasks.fetch_openlibrary_books',
+        'schedule': 43200.0,  # Every 12 hours
+        'args': (30,),
+    },
+    'fetch-googlebooks-books': {
+        'task': 'owdb_django.owdbapp.tasks.fetch_googlebooks_books',
+        'schedule': 86400.0,  # Every 24 hours (daily quota)
+        'args': (20,),
+    },
+    'fetch-itunes-podcasts': {
+        'task': 'owdb_django.owdbapp.tasks.fetch_itunes_podcasts',
+        'schedule': 43200.0,  # Every 12 hours
+        'args': (30,),
+    },
+    'fetch-podcastindex-podcasts': {
+        'task': 'owdb_django.owdbapp.tasks.fetch_podcastindex_podcasts',
+        'schedule': 43200.0,  # Every 12 hours
+        'args': (30,),
+    },
 }
+
+# =============================================================================
+# Scraper & API Configuration
+# =============================================================================
+
+SCRAPER_CONFIG = {
+    # Global settings
+    'enabled': os.getenv('SCRAPER_ENABLED', 'true').lower() == 'true',
+    'user_agent': 'OWDBBot/1.0 (+https://wrestlingdb.org/about/bot)',
+
+    # Wikipedia settings
+    'wikipedia': {
+        'enabled': True,
+        'requests_per_minute': 30,
+        'requests_per_hour': 500,
+        'requests_per_day': 5000,
+    },
+
+    # Cagematch settings (more conservative - fan-run site)
+    'cagematch': {
+        'enabled': True,
+        'requests_per_minute': 5,
+        'requests_per_hour': 60,
+        'requests_per_day': 500,
+    },
+
+    # ProFightDB settings
+    'profightdb': {
+        'enabled': True,
+        'requests_per_minute': 5,
+        'requests_per_hour': 60,
+        'requests_per_day': 500,
+    },
+}
+
+# API Keys (set via environment variables)
+TMDB_API_KEY = os.getenv('TMDB_API_KEY')
+RAWG_API_KEY = os.getenv('RAWG_API_KEY')
+IGDB_CLIENT_ID = os.getenv('IGDB_CLIENT_ID')
+IGDB_CLIENT_SECRET = os.getenv('IGDB_CLIENT_SECRET')
+GOOGLE_BOOKS_API_KEY = os.getenv('GOOGLE_BOOKS_API_KEY')
+PODCAST_INDEX_API_KEY = os.getenv('PODCAST_INDEX_API_KEY')
+PODCAST_INDEX_API_SECRET = os.getenv('PODCAST_INDEX_API_SECRET')
+LISTEN_NOTES_API_KEY = os.getenv('LISTEN_NOTES_API_KEY')
 
 # =============================================================================
 # Password Validation

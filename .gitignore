@@ -3,3 +3,7 @@ __pycache__/
 .env
 venv/
 instance/
+logs/
+*.log
+db.sqlite3
+static_collected/

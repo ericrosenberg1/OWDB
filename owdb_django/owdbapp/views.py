@@ -1,11 +1,17 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
+from django.contrib.auth.models import User
 from django.views.generic import ListView, DetailView, TemplateView
 from django.db.models import Q, Count
+from django.core.mail import send_mail
+from django.conf import settings
+from django.utils import timezone
+from django import forms
+from datetime import timedelta
 
 from .models import (
     Wrestler,
@@ -19,7 +25,56 @@ from .models import (
     Book,
     Special,
     APIKey,
+    UserProfile,
+    EmailVerificationToken,
 )
+
+
+# =============================================================================
+# Custom Forms
+# =============================================================================
+
+class SignupForm(forms.Form):
+    """Custom signup form with email requirement."""
+    username = forms.CharField(
+        max_length=150,
+        min_length=3,
+        help_text='Required. 3-150 characters. Letters, digits and @/./+/-/_ only.'
+    )
+    email = forms.EmailField(
+        help_text='Required. A valid email address for verification.'
+    )
+    password1 = forms.CharField(
+        label='Password',
+        widget=forms.PasswordInput,
+        min_length=8,
+        help_text='At least 8 characters.'
+    )
+    password2 = forms.CharField(
+        label='Confirm Password',
+        widget=forms.PasswordInput,
+        help_text='Enter the same password again.'
+    )
+
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if User.objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError('This username is already taken.')
+        return username
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError('This email is already registered.')
+        return email
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get('password1')
+        password2 = cleaned_data.get('password2')
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError('Passwords do not match.')
+        return cleaned_data
 
 
 class PaginatedListView(ListView):
@@ -423,18 +478,150 @@ def signup(request):
     if request.user.is_authenticated:
         return redirect('index')
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = SignupForm(request.POST)
         if form.is_valid():
-            user = form.save()
+            # Create user
+            user = User.objects.create_user(
+                username=form.cleaned_data['username'],
+                email=form.cleaned_data['email'],
+                password=form.cleaned_data['password1']
+            )
+            # Create user profile (email not verified yet)
+            UserProfile.objects.create(user=user, email_verified=False, can_contribute=False)
+
+            # Create verification token
+            token = EmailVerificationToken.generate_token()
+            expiry_hours = getattr(settings, 'EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS', 24)
+            EmailVerificationToken.objects.create(
+                user=user,
+                token=token,
+                expires_at=timezone.now() + timedelta(hours=expiry_hours)
+            )
+
+            # Send verification email
+            verification_url = request.build_absolute_uri(f'/verify-email/{token}/')
+            try:
+                send_mail(
+                    subject='Verify your OWDB account',
+                    message=f'''Welcome to OWDB - The Open Wrestling Database!
+
+Please click the link below to verify your email address:
+
+{verification_url}
+
+This link will expire in {expiry_hours} hours.
+
+If you didn't create an account on OWDB, you can ignore this email.
+
+And that's the bottom line, 'cause OWDB said so!
+''',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
+                messages.success(request, 'Account created! Please check your email to verify your account.')
+            except Exception as e:
+                messages.warning(request, 'Account created, but we could not send verification email. Please contact support.')
+
+            # Log user in but they won't be able to contribute until verified
             login(request, user)
-            messages.success(request, 'Account created successfully! Welcome to WrestlingDB.')
-            return redirect('index')
+            return redirect('verification_pending')
     else:
-        form = UserCreationForm()
+        form = SignupForm()
     return render(request, 'signup.html', {
         'form': form,
         'page_title': 'Sign Up'
     })
+
+
+def verify_email(request, token):
+    """Handle email verification link clicks."""
+    try:
+        verification = EmailVerificationToken.objects.get(token=token)
+        if not verification.is_valid:
+            if verification.used:
+                messages.info(request, 'This verification link has already been used.')
+            else:
+                messages.error(request, 'This verification link has expired. Please request a new one.')
+            return redirect('login')
+
+        # Mark token as used
+        verification.used = True
+        verification.save()
+
+        # Update user profile
+        profile, created = UserProfile.objects.get_or_create(user=verification.user)
+        profile.email_verified = True
+        profile.can_contribute = True
+        profile.save()
+
+        messages.success(request, 'Email verified! You can now contribute to OWDB. Welcome to the community!')
+
+        # Log the user in if not already
+        if not request.user.is_authenticated:
+            login(request, verification.user)
+
+        return redirect('index')
+
+    except EmailVerificationToken.DoesNotExist:
+        messages.error(request, 'Invalid verification link.')
+        return redirect('login')
+
+
+def verification_pending(request):
+    """Show verification pending page."""
+    return render(request, 'verification_pending.html', {
+        'page_title': 'Verify Your Email'
+    })
+
+
+@login_required
+def resend_verification(request):
+    """Resend verification email."""
+    try:
+        profile = request.user.profile
+        if profile.email_verified:
+            messages.info(request, 'Your email is already verified!')
+            return redirect('account')
+    except UserProfile.DoesNotExist:
+        UserProfile.objects.create(user=request.user, email_verified=False, can_contribute=False)
+
+    # Invalidate old tokens
+    EmailVerificationToken.objects.filter(user=request.user, used=False).update(used=True)
+
+    # Create new token
+    token = EmailVerificationToken.generate_token()
+    expiry_hours = getattr(settings, 'EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS', 24)
+    EmailVerificationToken.objects.create(
+        user=request.user,
+        token=token,
+        expires_at=timezone.now() + timedelta(hours=expiry_hours)
+    )
+
+    # Send email
+    verification_url = request.build_absolute_uri(f'/verify-email/{token}/')
+    try:
+        send_mail(
+            subject='Verify your OWDB account',
+            message=f'''Hi {request.user.username},
+
+Please click the link below to verify your email address:
+
+{verification_url}
+
+This link will expire in {expiry_hours} hours.
+
+And that's the bottom line, 'cause OWDB said so!
+''',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[request.user.email],
+            fail_silently=False,
+        )
+        messages.success(request, 'Verification email sent! Please check your inbox.')
+    except Exception as e:
+        messages.error(request, 'Failed to send verification email. Please try again later.')
+
+    return redirect('verification_pending')
 
 
 def login_view(request):

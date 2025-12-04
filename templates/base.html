@@ -95,11 +95,6 @@
                         </li>
                     </ul>
                     <ul class="navbar-nav ms-auto align-items-center">
-                        <li class="nav-item">
-                            <button onclick="toggleDarkMode()" class="btn btn-link nav-link p-1" aria-label="Toggle dark mode" title="Toggle theme">
-                                <span id="theme-icon" class="theme-toggle-icon"></span>
-                            </button>
-                        </li>
                         {% if user.is_authenticated %}
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle user-avatar-link" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -233,15 +228,6 @@
             quoteEl.innerText = '"' + quotes[Math.floor(Math.random() * quotes.length)] + '"';
         }
 
-        // Dark mode toggle
-        function toggleDarkMode() {
-            const html = document.documentElement;
-            const currentTheme = html.getAttribute('data-bs-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            html.setAttribute('data-bs-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-        }
-
         // Search toggle
         function toggleSearch() {
             const searchBar = document.getElementById('searchBar');
@@ -264,11 +250,6 @@
             }
         });
 
-        // Load saved theme
-        document.addEventListener('DOMContentLoaded', function() {
-            const savedTheme = localStorage.getItem('theme') || 'dark';
-            document.documentElement.setAttribute('data-bs-theme', savedTheme);
-        });
     </script>
 
     {% block extra_js %}{% endblock %}

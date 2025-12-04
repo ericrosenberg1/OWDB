@@ -317,6 +317,49 @@ class Special(TimeStampedModel):
         return f"{self.title} ({self.release_year or 'TBD'})"
 
 
+class UserProfile(TimeStampedModel):
+    """Extended user profile with email verification status."""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    email_verified = models.BooleanField(default=False)
+    can_contribute = models.BooleanField(default=False, help_text="Can add/edit content after email verification")
+
+    class Meta:
+        verbose_name = 'User Profile'
+        verbose_name_plural = 'User Profiles'
+
+    def __str__(self):
+        return f"Profile for {self.user.username}"
+
+
+class EmailVerificationToken(TimeStampedModel):
+    """Token for email verification."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='verification_tokens')
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    expires_at = models.DateTimeField()
+    used = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = 'Email Verification Token'
+        verbose_name_plural = 'Email Verification Tokens'
+        indexes = [
+            models.Index(fields=['token']),
+            models.Index(fields=['user']),
+        ]
+
+    def __str__(self):
+        return f"Verification token for {self.user.username}"
+
+    @classmethod
+    def generate_token(cls):
+        """Generate a secure verification token."""
+        return secrets.token_urlsafe(32)
+
+    @property
+    def is_valid(self):
+        """Check if the token is still valid (not expired and not used)."""
+        return not self.used and self.expires_at > timezone.now()
+
+
 class APIKey(TimeStampedModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='api_keys')
     key = models.CharField(max_length=64, unique=True, db_index=True)

@@ -100,33 +100,23 @@ TEMPLATES = [
 WSGI_APPLICATION = 'owdb_django.wsgi.application'
 
 # =============================================================================
-# Database Configuration
+# Database Configuration (PostgreSQL only)
 # =============================================================================
 
-# Use SQLite for local development, PostgreSQL for production
-if APP_ENV == 'production' or os.getenv('USE_POSTGRES', 'false').lower() == 'true':
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME', 'owdb'),
-            'USER': os.getenv('DB_USER', 'owdb'),
-            'PASSWORD': os.getenv('DB_PASSWORD', ''),
-            'HOST': os.getenv('DB_HOST', 'db'),
-            'PORT': os.getenv('DB_PORT', '5432'),
-            'CONN_MAX_AGE': 60,  # Connection pooling
-            'OPTIONS': {
-                'connect_timeout': 10,
-            },
-        }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME', 'owdb'),
+        'USER': os.getenv('DB_USER', 'owdb'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
+        'CONN_MAX_AGE': 60,  # Connection pooling
+        'OPTIONS': {
+            'connect_timeout': 10,
+        },
     }
-else:
-    # Local SQLite for development
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+}
 
 # =============================================================================
 # Cache Configuration (Redis)
@@ -134,26 +124,20 @@ else:
 
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 
-if APP_ENV == 'production' or os.getenv('USE_REDIS', 'false').lower() == 'true':
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-            'LOCATION': REDIS_URL,
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            },
-            'KEY_PREFIX': 'owdb',
-        }
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': REDIS_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'owdb',
     }
-    # Use Redis for sessions in production
-    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-    SESSION_CACHE_ALIAS = 'default'
-else:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        }
-    }
+}
+
+# Use Redis for sessions
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'default'
 
 # =============================================================================
 # Celery Configuration
@@ -343,6 +327,24 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'index'
 LOGOUT_REDIRECT_URL = 'index'
+
+# =============================================================================
+# Email Configuration
+# =============================================================================
+
+# Email backend - use SMTP for production
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'true').lower() == 'true'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'OWDB <noreply@wrestlingdb.org>')
+
+# Email verification settings
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS = 24
 
 # =============================================================================
 # Logging

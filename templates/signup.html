@@ -42,7 +42,7 @@
 {% block extra_css %}
 <style>
     /* Style Django form widgets */
-    input[type="text"], input[type="password"] {
+    input[type="text"], input[type="password"], input[type="email"] {
         background-color: var(--wwf-dark);
         border: 1px solid var(--wwf-gray);
         color: var(--wwf-white);
@@ -50,7 +50,7 @@
         padding: var(--space-sm) var(--space-md);
         width: 100%;
     }
-    input[type="text"]:focus, input[type="password"]:focus {
+    input[type="text"]:focus, input[type="password"]:focus, input[type="email"]:focus {
         border-color: var(--wwf-gold);
         box-shadow: 0 0 0 3px rgba(207, 181, 59, 0.25);
         outline: none;

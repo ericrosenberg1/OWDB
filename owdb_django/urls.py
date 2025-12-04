@@ -66,6 +66,11 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
 
+    # Email Verification
+    path('verify-email/<str:token>/', views.verify_email, name='verify_email'),
+    path('verification-pending/', views.verification_pending, name='verification_pending'),
+    path('resend-verification/', views.resend_verification, name='resend_verification'),
+
     # Account
     path('account/', views.account, name='account'),
 

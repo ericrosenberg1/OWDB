@@ -126,7 +126,11 @@
                 <div class="involved-card">
                     <h3>Use the API</h3>
                     <p>Building a wrestling app, website, or tool? Our API gives you access to all our data. Free tier includes 100 requests per hour - plenty to get started!</p>
-                    <a href="{% url 'account' %}" class="btn btn-gold">Get API Access</a>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'account' %}" class="btn btn-gold">Manage API Keys</a>
+                    {% else %}
+                    <a href="{% url 'signup' %}" class="btn btn-gold">Get API Access</a>
+                    {% endif %}
                 </div>
                 <div class="involved-card">
                     <h3>Code with Us</h3>

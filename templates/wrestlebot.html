@@ -1,0 +1,379 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Hero Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark border-secondary">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bot-icon me-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary">
+                                <rect width="18" height="10" x="3" y="11" rx="2"/>
+                                <circle cx="12" cy="5" r="2"/>
+                                <path d="M12 7v4"/>
+                                <line x1="8" x2="8" y1="16" y2="16"/>
+                                <line x1="16" x2="16" y1="16" y2="16"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="mb-0">WrestleBot</h1>
+                            <p class="text-muted mb-0">AI-Powered Wrestling Data Discovery</p>
+                        </div>
+                        <div class="ms-auto">
+                            {% if stats.enabled %}
+                                <span class="badge bg-success fs-6">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary fs-6">Paused</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <p class="lead">
+                        WrestleBot is our self-hosted AI assistant that automatically discovers and adds
+                        wrestling data from Wikipedia. It runs 24/7, slowly and respectfully gathering
+                        factual information about wrestlers, promotions, events, and championships.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-body text-center">
+                    <h3 class="text-primary mb-0">{{ stats.total_added|default:0 }}</h3>
+                    <small class="text-muted">Total Items Added</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-body text-center">
+                    <h3 class="text-success mb-0">{{ stats.added_today|default:0 }}</h3>
+                    <small class="text-muted">Added Today</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-body text-center">
+                    <h3 class="text-info mb-0">{{ stats.added_this_hour|default:0 }}</h3>
+                    <small class="text-muted">This Hour</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-body text-center">
+                    {% if ai_available %}
+                        <h3 class="text-success mb-0">Online</h3>
+                        <small class="text-muted">AI: {{ ai_model }}</small>
+                    {% else %}
+                        <h3 class="text-warning mb-0">Offline</h3>
+                        <small class="text-muted">AI Unavailable</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header">
+                    <h4 class="mb-0">How WrestleBot Works</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="text-primary">Data Sources</h5>
+                            <ul>
+                                <li><strong>Wikipedia API</strong> - Official REST API for article data</li>
+                                <li>Focuses on wrestling categories (wrestlers, promotions, events)</li>
+                                <li>Respects rate limits (1 request/second max)</li>
+                                <li>Caches responses to minimize requests</li>
+                            </ul>
+
+                            <h5 class="text-primary mt-4">AI Processing</h5>
+                            <ul>
+                                <li><strong>Self-hosted Ollama</strong> - Runs locally, no external AI calls</li>
+                                <li>Verifies data accuracy and consistency</li>
+                                <li>Detects duplicates using fuzzy matching</li>
+                                <li>Enriches data (e.g., infers nationality from birthplace)</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-primary">Copyright Compliance</h5>
+                            <div class="alert alert-info">
+                                <strong>We only extract factual, non-copyrightable data:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>Names (ring names, real names, aliases)</li>
+                                    <li>Dates (birth, debut, retirement, events)</li>
+                                    <li>Numbers (attendance, reign counts)</li>
+                                    <li>Locations (birthplace, venue, billed from)</li>
+                                </ul>
+                            </div>
+                            <p class="text-muted small">
+                                Under US copyright law (Feist v. Rural), factual data like names and dates
+                                cannot be copyrighted. However, we always attribute Wikipedia as the source
+                                and link back to original articles.
+                            </p>
+
+                            <h5 class="text-primary mt-4">Trademark Respect</h5>
+                            <p class="text-muted small">
+                                We use official promotion names (WWE, AEW, etc.) as factual references only.
+                                All trademarks remain property of their respective owners. OWDB is an
+                                independent fan project with no affiliation to any wrestling promotion.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rate Limits -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">Rate Limits</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>This Hour</span>
+                            <span>{{ stats.added_this_hour }} / {{ config.max_items_per_hour }}</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            {% widthratio stats.added_this_hour config.max_items_per_hour 100 as hour_pct %}
+                            <div class="progress-bar bg-info" style="width: {{ hour_pct|default:0 }}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Today</span>
+                            <span>{{ stats.added_today }} / {{ config.max_items_per_day }}</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            {% widthratio stats.added_today config.max_items_per_day 100 as day_pct %}
+                            <div class="progress-bar bg-success" style="width: {{ day_pct|default:0 }}%"></div>
+                        </div>
+                    </div>
+                    <p class="text-muted small mt-3 mb-0">
+                        WrestleBot limits itself to {{ config.max_items_per_hour }} items/hour and
+                        {{ config.max_items_per_day }} items/day to ensure responsible data collection.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">Current Focus</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        {% if config.focus_wrestlers %}
+                            <span class="badge bg-primary">Wrestlers</span>
+                        {% endif %}
+                        {% if config.focus_promotions %}
+                            <span class="badge bg-success">Promotions</span>
+                        {% endif %}
+                        {% if config.focus_events %}
+                            <span class="badge bg-info">Events</span>
+                        {% endif %}
+                        {% if config.focus_titles %}
+                            <span class="badge bg-warning text-dark">Championships</span>
+                        {% endif %}
+                        {% if config.focus_matches %}
+                            <span class="badge bg-danger">Matches</span>
+                        {% endif %}
+                    </div>
+                    <p class="text-muted small mt-3 mb-0">
+                        {% if stats.last_run %}
+                            Last run: {{ stats.last_run|timesince }} ago
+                        {% else %}
+                            Waiting for first run...
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Log -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Activity Log</h4>
+                    <div class="btn-group btn-group-sm">
+                        <a href="{% url 'wrestlebot' %}" class="btn btn-outline-secondary {% if not current_filter and not current_action %}active{% endif %}">All</a>
+                        {% for type, data in entity_counts.items %}
+                            <a href="{% url 'wrestlebot' %}?entity={{ type }}" class="btn btn-outline-secondary {% if current_filter == type %}active{% endif %}">
+                                {{ data.label }} ({{ data.count }})
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if logs %}
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 140px;">Time</th>
+                                        <th style="width: 100px;">Action</th>
+                                        <th style="width: 100px;">Type</th>
+                                        <th>Entity</th>
+                                        <th style="width: 100px;">Confidence</th>
+                                        <th style="width: 80px;">Source</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in logs %}
+                                    <tr class="{% if not log.success %}table-danger{% endif %}">
+                                        <td class="text-muted small">{{ log.created_at|date:"M d, H:i" }}</td>
+                                        <td>
+                                            {% if log.action_type == 'create' %}
+                                                <span class="badge bg-success">Created</span>
+                                            {% elif log.action_type == 'update' %}
+                                                <span class="badge bg-info">Updated</span>
+                                            {% elif log.action_type == 'skip' %}
+                                                <span class="badge bg-secondary">Skipped</span>
+                                            {% elif log.action_type == 'error' %}
+                                                <span class="badge bg-danger">Error</span>
+                                            {% elif log.action_type == 'discover' %}
+                                                <span class="badge bg-primary">Discovered</span>
+                                            {% elif log.action_type == 'link' %}
+                                                <span class="badge bg-warning text-dark">Linked</span>
+                                            {% elif log.action_type == 'verify' %}
+                                                <span class="badge bg-info">Verified</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ log.get_action_type_display }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="text-capitalize">{{ log.entity_type }}</span>
+                                        </td>
+                                        <td>
+                                            <strong>{{ log.entity_name }}</strong>
+                                            {% if log.ai_reasoning %}
+                                                <br><small class="text-muted">{{ log.ai_reasoning|truncatechars:60 }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if log.ai_confidence %}
+                                                <div class="progress" style="height: 6px;">
+                                                    {% widthratio log.ai_confidence 1 100 as conf_pct %}
+                                                    <div class="progress-bar {% if log.ai_confidence >= 0.8 %}bg-success{% elif log.ai_confidence >= 0.6 %}bg-warning{% else %}bg-danger{% endif %}"
+                                                         style="width: {{ conf_pct }}%"></div>
+                                                </div>
+                                                <small class="text-muted">{{ log.ai_confidence|floatformat:0 }}%</small>
+                                            {% else %}
+                                                <small class="text-muted">-</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if log.source_url %}
+                                                <a href="{{ log.source_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary" title="View on Wikipedia">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if logs.has_other_pages %}
+                        <div class="card-footer">
+                            <nav aria-label="Activity log pagination">
+                                <ul class="pagination pagination-sm justify-content-center mb-0">
+                                    {% if logs.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ logs.previous_page_number }}{% if current_filter %}&entity={{ current_filter }}{% endif %}">Previous</a>
+                                        </li>
+                                    {% endif %}
+
+                                    <li class="page-item disabled">
+                                        <span class="page-link">Page {{ logs.number }} of {{ logs.paginator.num_pages }}</span>
+                                    </li>
+
+                                    {% if logs.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ logs.next_page_number }}{% if current_filter %}&entity={{ current_filter }}{% endif %}">Next</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted mb-3">
+                                <rect width="18" height="10" x="3" y="11" rx="2"/>
+                                <circle cx="12" cy="5" r="2"/>
+                                <path d="M12 7v4"/>
+                                <line x1="8" x2="8" y1="16" y2="16"/>
+                                <line x1="16" x2="16" y1="16" y2="16"/>
+                            </svg>
+                            <h5 class="text-muted">No activity yet</h5>
+                            <p class="text-muted small">WrestleBot will start discovering data on its next scheduled run.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Technical Details -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header">
+                    <h5 class="mb-0">Technical Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6 class="text-primary">Schedule</h6>
+                            <ul class="list-unstyled text-muted small">
+                                <li>Discovery cycle: Every 30 minutes</li>
+                                <li>Max items per cycle: 10</li>
+                                <li>Cooldown between batches: {{ config.cooldown_minutes }} min</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-primary">AI Settings</h6>
+                            <ul class="list-unstyled text-muted small">
+                                <li>Model: {{ config.ai_model_name }}</li>
+                                <li>Temperature: {{ config.ai_temperature }}</li>
+                                <li>Min confidence: {{ config.min_confidence_threshold|floatformat:0 }}%</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-primary">Data Quality</h6>
+                            <ul class="list-unstyled text-muted small">
+                                <li>Min required fields: {{ config.min_data_fields }}</li>
+                                <li>AI verification: {% if config.require_verification %}Enabled{% else %}Disabled{% endif %}</li>
+                                <li>Deduplication: 85% similarity threshold</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

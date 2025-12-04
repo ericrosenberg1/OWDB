@@ -492,3 +492,96 @@ def cleanup_inactive_api_keys():
 
     logger.info(f"Cleaned up {deleted} inactive API keys")
     return deleted
+
+
+# =============================================================================
+# WrestleBot AI Tasks
+# =============================================================================
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=600)
+def wrestlebot_discovery_cycle(self, max_items: int = 10):
+    """
+    Run a WrestleBot discovery cycle.
+
+    This task discovers new wrestling entities from Wikipedia,
+    verifies them with AI, and imports them to the database.
+
+    Runs every 30 minutes via Celery Beat.
+    """
+    try:
+        from .wrestlebot import WrestleBot
+
+        bot = WrestleBot()
+
+        if not bot.can_run():
+            logger.info("WrestleBot skipped: disabled or rate limited")
+            return {"status": "skipped", "reason": "disabled or rate limited"}
+
+        results = bot.run_discovery_cycle(max_items=max_items)
+        logger.info(f"WrestleBot cycle complete: {results}")
+        return results
+
+    except Exception as e:
+        logger.error(f"WrestleBot discovery cycle failed: {e}")
+        raise self.retry(exc=e)
+
+
+@shared_task
+def wrestlebot_cleanup_old_logs():
+    """
+    Clean up old WrestleBot logs. Keep last 30 days.
+
+    Runs weekly via Celery Beat.
+    """
+    from .models import WrestleBotLog
+    from django.utils import timezone
+    from datetime import timedelta
+
+    cutoff = timezone.now() - timedelta(days=30)
+    deleted, _ = WrestleBotLog.objects.filter(created_at__lt=cutoff).delete()
+
+    logger.info(f"Cleaned up {deleted} old WrestleBot logs")
+    return deleted
+
+
+@shared_task
+def wrestlebot_reset_daily_limits():
+    """
+    Reset WrestleBot daily limits.
+
+    Runs daily via Celery Beat.
+    """
+    from .models import WrestleBotConfig
+
+    try:
+        config = WrestleBotConfig.get_config()
+        config.reset_daily_count()
+        logger.info("Reset WrestleBot daily limits")
+        return {"status": "reset"}
+    except Exception as e:
+        logger.error(f"Failed to reset WrestleBot limits: {e}")
+        return {"status": "error", "error": str(e)}
+
+
+@shared_task
+def wrestlebot_get_stats():
+    """
+    Get and cache WrestleBot statistics.
+
+    Runs hourly via Celery Beat.
+    """
+    try:
+        from .wrestlebot import WrestleBot
+
+        bot = WrestleBot()
+        stats = bot.get_statistics()
+
+        # Cache the stats
+        cache.set("wrestlebot_stats", stats, timeout=3600)
+
+        logger.info(f"WrestleBot stats: {stats}")
+        return stats
+
+    except Exception as e:
+        logger.error(f"Failed to get WrestleBot stats: {e}")
+        return {"status": "error", "error": str(e)}

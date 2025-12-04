@@ -237,6 +237,24 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': 43200.0,  # Every 12 hours
         'args': (30,),
     },
+    # WrestleBot AI tasks
+    'wrestlebot-discovery-cycle': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_discovery_cycle',
+        'schedule': 1800.0,  # Every 30 minutes
+        'args': (10,),  # Max 10 items per cycle
+    },
+    'wrestlebot-cleanup-logs': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_cleanup_old_logs',
+        'schedule': 604800.0,  # Every 7 days
+    },
+    'wrestlebot-reset-limits': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_reset_daily_limits',
+        'schedule': 86400.0,  # Every 24 hours
+    },
+    'wrestlebot-get-stats': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_get_stats',
+        'schedule': 3600.0,  # Every hour
+    },
 }
 
 # =============================================================================
@@ -282,6 +300,17 @@ GOOGLE_BOOKS_API_KEY = os.getenv('GOOGLE_BOOKS_API_KEY')
 PODCAST_INDEX_API_KEY = os.getenv('PODCAST_INDEX_API_KEY')
 PODCAST_INDEX_API_SECRET = os.getenv('PODCAST_INDEX_API_SECRET')
 LISTEN_NOTES_API_KEY = os.getenv('LISTEN_NOTES_API_KEY')
+
+# =============================================================================
+# WrestleBot AI Configuration
+# =============================================================================
+
+# Ollama settings (self-hosted AI)
+OLLAMA_URL = os.getenv('OLLAMA_URL', 'http://localhost:11434')
+WRESTLEBOT_AI_MODEL = os.getenv('WRESTLEBOT_AI_MODEL', 'llama3.2')
+
+# WrestleBot is enabled by default but can be disabled via env var
+WRESTLEBOT_ENABLED = os.getenv('WRESTLEBOT_ENABLED', 'true').lower() == 'true'
 
 # =============================================================================
 # Password Validation

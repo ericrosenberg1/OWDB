@@ -27,6 +27,8 @@ from .models import (
     APIKey,
     UserProfile,
     EmailVerificationToken,
+    WrestleBotLog,
+    WrestleBotConfig,
 )
 
 
@@ -708,3 +710,83 @@ def health_check(request):
         return JsonResponse({'status': 'healthy', 'database': 'connected'})
     except Exception as e:
         return JsonResponse({'status': 'unhealthy', 'error': str(e)}, status=503)
+
+
+# =============================================================================
+# WrestleBot Views
+# =============================================================================
+
+class WrestleBotView(TemplateView):
+    """WrestleBot information and activity log page."""
+    template_name = 'wrestlebot.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = 'WrestleBot'
+
+        # Get configuration
+        config = WrestleBotConfig.get_config()
+        context['config'] = config
+
+        # Get statistics
+        context['stats'] = {
+            'total_added': config.total_items_added,
+            'added_today': config.items_added_today,
+            'added_this_hour': config.items_added_this_hour,
+            'total_errors': config.total_errors,
+            'last_run': config.last_run,
+            'enabled': config.enabled,
+        }
+
+        # Check AI availability
+        try:
+            from .wrestlebot import WrestleBot
+            bot = WrestleBot()
+            context['ai_available'] = bot.ai.is_available()
+            context['ai_model'] = bot.ai.model
+        except Exception:
+            context['ai_available'] = False
+            context['ai_model'] = None
+
+        # Get recent activity logs (paginated)
+        logs = WrestleBotLog.objects.select_related().order_by('-created_at')
+
+        # Filter by entity type if specified
+        entity_filter = self.request.GET.get('entity')
+        if entity_filter and entity_filter in dict(WrestleBotLog.ENTITY_TYPES):
+            logs = logs.filter(entity_type=entity_filter)
+            context['current_filter'] = entity_filter
+
+        # Filter by action type if specified
+        action_filter = self.request.GET.get('action')
+        if action_filter and action_filter in dict(WrestleBotLog.ACTION_TYPES):
+            logs = logs.filter(action_type=action_filter)
+            context['current_action'] = action_filter
+
+        # Paginate
+        from django.core.paginator import Paginator
+        paginator = Paginator(logs, 50)
+        page = self.request.GET.get('page', 1)
+        context['logs'] = paginator.get_page(page)
+
+        # Get counts by entity type for filter tabs
+        context['entity_counts'] = {}
+        for entity_type, label in WrestleBotLog.ENTITY_TYPES:
+            count = WrestleBotLog.objects.filter(entity_type=entity_type).count()
+            if count > 0:
+                context['entity_counts'][entity_type] = {
+                    'label': label,
+                    'count': count,
+                }
+
+        # Get counts by action type
+        context['action_counts'] = {}
+        for action_type, label in WrestleBotLog.ACTION_TYPES:
+            count = WrestleBotLog.objects.filter(action_type=action_type).count()
+            if count > 0:
+                context['action_counts'][action_type] = {
+                    'label': label,
+                    'count': count,
+                }
+
+        return context

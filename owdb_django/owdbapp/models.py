@@ -413,3 +413,179 @@ class APIKey(TimeStampedModel):
         """Check if the key has exceeded its rate limit."""
         self.reset_daily_count()
         return self.requests_today >= self.rate_limit
+
+
+class WrestleBotLog(TimeStampedModel):
+    """
+    Tracks WrestleBot AI activity and data imports.
+
+    This model logs every action taken by WrestleBot, providing
+    transparency and allowing users to see exactly what was added
+    and from which Wikipedia sources.
+    """
+    ACTION_TYPES = [
+        ('discover', 'Discovered New Entity'),
+        ('create', 'Created Record'),
+        ('update', 'Updated Record'),
+        ('link', 'Linked Records'),
+        ('enrich', 'Enriched Data'),
+        ('verify', 'Verified Data'),
+        ('skip', 'Skipped (Duplicate/Invalid)'),
+        ('error', 'Error'),
+    ]
+
+    ENTITY_TYPES = [
+        ('wrestler', 'Wrestler'),
+        ('promotion', 'Promotion'),
+        ('event', 'Event'),
+        ('match', 'Match'),
+        ('title', 'Title'),
+        ('venue', 'Venue'),
+        ('videogame', 'Video Game'),
+        ('podcast', 'Podcast'),
+        ('book', 'Book'),
+        ('special', 'Special'),
+    ]
+
+    action_type = models.CharField(max_length=20, choices=ACTION_TYPES, db_index=True)
+    entity_type = models.CharField(max_length=20, choices=ENTITY_TYPES, db_index=True)
+    entity_name = models.CharField(max_length=255)
+    entity_id = models.IntegerField(blank=True, null=True, help_text="ID of the affected record")
+
+    # Source tracking for copyright compliance
+    source_url = models.URLField(max_length=500, blank=True, null=True, help_text="Wikipedia article URL")
+    source_title = models.CharField(max_length=255, blank=True, null=True, help_text="Wikipedia article title")
+
+    # What was extracted (only factual, non-copyrightable data)
+    data_extracted = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Factual data extracted (names, dates, numbers - no prose)"
+    )
+
+    # AI processing details
+    ai_model = models.CharField(max_length=100, blank=True, null=True, help_text="AI model used (e.g., llama3.2)")
+    ai_confidence = models.FloatField(blank=True, null=True, help_text="AI confidence score 0.0-1.0")
+    ai_reasoning = models.TextField(blank=True, null=True, help_text="AI's reasoning for the action")
+
+    # Task tracking
+    task_id = models.CharField(max_length=100, blank=True, null=True, db_index=True)
+    batch_id = models.CharField(max_length=100, blank=True, null=True, db_index=True, help_text="Groups related operations")
+
+    # Success/failure
+    success = models.BooleanField(default=True)
+    error_message = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'WrestleBot Log'
+        verbose_name_plural = 'WrestleBot Logs'
+        indexes = [
+            models.Index(fields=['action_type', 'entity_type']),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['batch_id']),
+            models.Index(fields=['success']),
+        ]
+
+    def __str__(self):
+        return f"[{self.get_action_type_display()}] {self.entity_name} ({self.created_at.strftime('%Y-%m-%d %H:%M')})"
+
+
+class WrestleBotConfig(TimeStampedModel):
+    """
+    Configuration for WrestleBot AI operations.
+
+    Singleton model to store runtime configuration that can be
+    adjusted without redeploying the application.
+    """
+    # Enable/disable the bot
+    enabled = models.BooleanField(default=True, help_text="Master switch for WrestleBot")
+
+    # Rate limiting
+    max_items_per_hour = models.IntegerField(default=50, help_text="Maximum new items to add per hour")
+    max_items_per_day = models.IntegerField(default=500, help_text="Maximum new items to add per day")
+    cooldown_minutes = models.IntegerField(default=5, help_text="Minutes to wait between batches")
+
+    # AI model settings
+    ai_model_name = models.CharField(max_length=100, default="llama3.2", help_text="Ollama model to use")
+    ai_temperature = models.FloatField(default=0.3, help_text="AI temperature (lower = more deterministic)")
+    min_confidence_threshold = models.FloatField(default=0.7, help_text="Minimum AI confidence to accept data")
+
+    # Content quality settings
+    min_data_fields = models.IntegerField(default=3, help_text="Minimum fields required to create a record")
+    require_verification = models.BooleanField(default=True, help_text="Require AI verification before import")
+
+    # Focus areas (which categories to prioritize)
+    focus_wrestlers = models.BooleanField(default=True)
+    focus_promotions = models.BooleanField(default=True)
+    focus_events = models.BooleanField(default=True)
+    focus_titles = models.BooleanField(default=True)
+    focus_matches = models.BooleanField(default=False, help_text="Matches require more complex parsing")
+
+    # Statistics
+    items_added_today = models.IntegerField(default=0)
+    items_added_this_hour = models.IntegerField(default=0)
+    last_run = models.DateTimeField(blank=True, null=True)
+    last_reset_date = models.DateField(blank=True, null=True)
+    last_reset_hour = models.IntegerField(default=0)
+    total_items_added = models.IntegerField(default=0)
+    total_errors = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'WrestleBot Configuration'
+        verbose_name_plural = 'WrestleBot Configuration'
+
+    def __str__(self):
+        status = "Enabled" if self.enabled else "Disabled"
+        return f"WrestleBot Config ({status})"
+
+    def save(self, *args, **kwargs):
+        # Ensure only one config exists
+        if not self.pk and WrestleBotConfig.objects.exists():
+            raise ValueError("Only one WrestleBotConfig can exist")
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_config(cls):
+        """Get or create the singleton config."""
+        config, created = cls.objects.get_or_create(pk=1)
+        return config
+
+    def reset_hourly_count(self):
+        """Reset the hourly item count if needed."""
+        from django.utils import timezone
+        now = timezone.now()
+        if self.last_reset_hour != now.hour:
+            self.items_added_this_hour = 0
+            self.last_reset_hour = now.hour
+            self.save(update_fields=['items_added_this_hour', 'last_reset_hour'])
+
+    def reset_daily_count(self):
+        """Reset the daily item count if needed."""
+        from django.utils import timezone
+        today = timezone.now().date()
+        if self.last_reset_date != today:
+            self.items_added_today = 0
+            self.last_reset_date = today
+            self.save(update_fields=['items_added_today', 'last_reset_date'])
+
+    def can_add_items(self, count: int = 1) -> bool:
+        """Check if we can add more items within rate limits."""
+        self.reset_hourly_count()
+        self.reset_daily_count()
+        return (
+            self.enabled and
+            self.items_added_this_hour + count <= self.max_items_per_hour and
+            self.items_added_today + count <= self.max_items_per_day
+        )
+
+    def record_items_added(self, count: int = 1):
+        """Record that items were added."""
+        self.items_added_this_hour += count
+        self.items_added_today += count
+        self.total_items_added += count
+        self.last_run = timezone.now()
+        self.save(update_fields=[
+            'items_added_this_hour', 'items_added_today',
+            'total_items_added', 'last_run'
+        ])

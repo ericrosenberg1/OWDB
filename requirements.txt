@@ -7,7 +7,6 @@ psycopg2-binary>=2.9
 
 # Redis and caching
 redis>=5.2
-django-redis>=5.4
 
 # Celery for background tasks
 celery>=5.5

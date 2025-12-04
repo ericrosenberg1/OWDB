@@ -66,10 +66,36 @@ class IndexView(TemplateView):
             'events': Event.objects.count(),
             'matches': Match.objects.count(),
             'titles': Title.objects.count(),
+            'venues': Venue.objects.count(),
         }
         # Get recent additions
-        context['recent_wrestlers'] = Wrestler.objects.order_by('-created_at')[:5]
-        context['recent_events'] = Event.objects.select_related('promotion').order_by('-created_at')[:5]
+        context['recent_wrestlers'] = Wrestler.objects.order_by('-created_at')[:10]
+        context['recent_events'] = Event.objects.select_related('promotion').order_by('-created_at')[:10]
+        return context
+
+
+# =============================================================================
+# About Page
+# =============================================================================
+
+class AboutView(TemplateView):
+    template_name = 'about.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = 'About OWDB'
+        context['stats'] = {
+            'wrestlers': Wrestler.objects.count(),
+            'promotions': Promotion.objects.count(),
+            'events': Event.objects.count(),
+            'matches': Match.objects.count(),
+            'titles': Title.objects.count(),
+            'venues': Venue.objects.count(),
+            'games': VideoGame.objects.count(),
+            'books': Book.objects.count(),
+            'podcasts': Podcast.objects.count(),
+            'specials': Special.objects.count(),
+        }
         return context
 
 

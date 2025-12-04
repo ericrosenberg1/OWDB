@@ -9,6 +9,9 @@ urlpatterns = [
     # Homepage
     path('', views.IndexView.as_view(), name='index'),
 
+    # About
+    path('about/', views.AboutView.as_view(), name='about'),
+
     # Wrestlers
     path('wrestlers/', views.WrestlerListView.as_view(), name='wrestlers'),
     path('wrestlers/<int:pk>/', views.WrestlerDetailView.as_view(), name='wrestler_detail'),

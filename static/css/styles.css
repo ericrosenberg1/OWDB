@@ -1177,6 +1177,298 @@ a:hover {
 }
 
 /* --------------------------------------------------------------------------
+   About Page - TMDB Style
+   -------------------------------------------------------------------------- */
+.about-page {
+    padding-bottom: 2rem;
+}
+
+.about-hero {
+    background: linear-gradient(135deg, var(--wwf-red-dark) 0%, var(--wwf-dark) 50%, var(--wwf-black) 100%);
+    padding: 3rem 0;
+    position: relative;
+}
+
+.about-hero .container {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.about-hero-content {
+    flex: 1;
+}
+
+.about-hero h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--wwf-gold);
+    margin-bottom: 1rem;
+}
+
+.about-hero .lead {
+    font-size: 1.25rem;
+    color: var(--wwf-white);
+    line-height: 1.8;
+}
+
+.about-hero-image {
+    flex: 0 0 150px;
+}
+
+.hero-badge {
+    background: linear-gradient(135deg, var(--wwf-red) 0%, var(--wwf-red-dark) 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.hero-badge-icon {
+    display: block;
+    font-size: 4rem;
+    font-weight: 900;
+    color: white;
+    line-height: 1;
+}
+
+.hero-badge-text {
+    display: block;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--wwf-gold);
+    margin-top: 0.5rem;
+    letter-spacing: 2px;
+}
+
+.about-section {
+    padding: 3rem 0;
+    border-bottom: 1px solid var(--wwf-gray);
+}
+
+.about-section:last-child {
+    border-bottom: none;
+}
+
+.about-section h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--wwf-gold);
+    margin-bottom: 1rem;
+}
+
+.about-section p {
+    color: var(--wwf-silver);
+    font-size: 1.1rem;
+    line-height: 1.8;
+}
+
+.section-subtitle {
+    color: var(--wwf-red) !important;
+    font-style: italic;
+    margin-bottom: 2rem;
+}
+
+/* Advantages Grid */
+.advantages-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.advantage-item {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+.advantage-number {
+    flex: 0 0 50px;
+    width: 50px;
+    height: 50px;
+    background: var(--wwf-red);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.advantage-content h3 {
+    color: var(--wwf-white);
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.advantage-content p {
+    margin: 0;
+    color: var(--wwf-silver);
+}
+
+/* About Stats */
+.about-stats-section {
+    background: var(--wwf-dark);
+}
+
+.about-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+}
+
+.about-stat-card {
+    background: var(--wwf-darker);
+    border: 1px solid var(--wwf-gray);
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all var(--transition-base);
+}
+
+.about-stat-card:hover {
+    border-color: var(--wwf-gold);
+    transform: translateY(-2px);
+}
+
+.about-stat-value {
+    display: block;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--wwf-red);
+    line-height: 1;
+}
+
+.about-stat-label {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--wwf-silver);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 0.5rem;
+}
+
+/* Involved Grid */
+.involved-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.involved-card {
+    background: var(--wwf-dark);
+    border: 1px solid var(--wwf-gray);
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+}
+
+.involved-card h3 {
+    color: var(--wwf-gold);
+    margin-bottom: 1rem;
+}
+
+.involved-card p {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Contact Section */
+.about-contact {
+    text-align: center;
+}
+
+.contact-options {
+    margin: 2rem 0;
+}
+
+.contact-note {
+    font-style: italic;
+    color: var(--wwf-gold) !important;
+    margin-top: 2rem;
+}
+
+/* Closing Section */
+.about-closing {
+    background: linear-gradient(135deg, var(--wwf-dark) 0%, var(--wwf-darker) 100%);
+    text-align: center;
+}
+
+.closing-content {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.closing-tagline {
+    font-size: 1.5rem;
+    color: var(--wwf-gold) !important;
+    margin-top: 2rem;
+}
+
+/* Footer improvements */
+.footer-logo-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.footer-logo {
+    background: linear-gradient(135deg, var(--wwf-red) 0%, var(--wwf-red-dark) 100%);
+    color: white;
+    width: 80px;
+    height: 80px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 2.5rem;
+}
+
+.footer-join-btn {
+    white-space: nowrap;
+}
+
+/* Responsive About Page */
+@media (max-width: 991px) {
+    .about-hero .container {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .about-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .involved-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .about-hero h1 {
+        font-size: 1.75rem;
+    }
+
+    .about-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .advantage-item {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .advantage-number {
+        margin: 0 auto;
+    }
+}
+
+/* --------------------------------------------------------------------------
    Print Styles
    -------------------------------------------------------------------------- */
 @media print {

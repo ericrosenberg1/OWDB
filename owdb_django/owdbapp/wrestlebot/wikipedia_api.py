@@ -121,11 +121,13 @@ class WikipediaAPIFetcher:
         params['format'] = 'json'
         params['formatversion'] = '2'
 
-        cache_key = f"wikiapi:{hash(frozenset(params.items()))}"
+        # Create a stable cache key from sorted params
+        sorted_params = sorted(params.items())
+        cache_key = f"wikiapi:{str(sorted_params)}"
 
         if use_cache:
             cached = cache.get(cache_key)
-            if cached:
+            if cached and isinstance(cached, dict):
                 return cached
 
         self._rate_limit()
@@ -150,7 +152,7 @@ class WikipediaAPIFetcher:
 
         if use_cache:
             cached = cache.get(cache_key)
-            if cached:
+            if cached and isinstance(cached, dict):
                 return cached
 
         self._rate_limit()
@@ -192,12 +194,19 @@ class WikipediaAPIFetcher:
 
         while len(members) < limit:
             data = self._api_request(params)
-            if not data or 'query' not in data:
+            if not data or not isinstance(data, dict) or 'query' not in data:
                 break
 
-            for member in data['query'].get('categorymembers', []):
+            category_members = data['query'].get('categorymembers', [])
+            if not isinstance(category_members, list):
+                break
+
+            for member in category_members:
                 if len(members) >= limit:
                     break
+                # Skip if member is not a dict
+                if not isinstance(member, dict):
+                    continue
                 # Skip category pages and lists
                 title = member.get('title', '')
                 if not title.startswith('Category:') and 'List of' not in title:

@@ -17,6 +17,7 @@ under US law (Feist v. Rural). However, we still:
 - Never copy prose, descriptions, or original expression
 """
 
+import hashlib
 import json
 import logging
 import re
@@ -121,9 +122,10 @@ class WikipediaAPIFetcher:
         params['format'] = 'json'
         params['formatversion'] = '2'
 
-        # Create a stable cache key from sorted params
+        # Create a stable cache key using MD5 hash (safe for all cache backends)
         sorted_params = sorted(params.items())
-        cache_key = f"wikiapi:{str(sorted_params)}"
+        params_str = json.dumps(sorted_params, sort_keys=True)
+        cache_key = f"wikiapi:{hashlib.md5(params_str.encode()).hexdigest()}"
 
         if use_cache:
             cached = cache.get(cache_key)
@@ -148,7 +150,7 @@ class WikipediaAPIFetcher:
 
     def _rest_request(self, endpoint: str, use_cache: bool = True) -> Optional[Dict]:
         """Make a request to the Wikipedia REST API."""
-        cache_key = f"wikirest:{endpoint}"
+        cache_key = f"wikirest:{hashlib.md5(endpoint.encode()).hexdigest()}"
 
         if use_cache:
             cached = cache.get(cache_key)
@@ -274,8 +276,14 @@ class WikipediaAPIFetcher:
         }
 
         data = self._api_request(params)
-        if data and 'parse' in data:
-            return data['parse']['text'].get('*')
+        if data and isinstance(data, dict) and 'parse' in data:
+            text_data = data['parse'].get('text')
+            # formatversion=2 returns text directly as string
+            # older format returns {'*': 'html content'}
+            if isinstance(text_data, str):
+                return text_data
+            elif isinstance(text_data, dict):
+                return text_data.get('*')
         return None
 
     def extract_infobox_data(self, html: str) -> Dict[str, str]:

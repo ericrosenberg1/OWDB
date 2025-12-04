@@ -1,104 +1,229 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="detail-header">
-    <h1 class="detail-title">{{ wrestler.name }}</h1>
-    <div class="detail-meta">
-        {% if wrestler.real_name %}
-        <div class="detail-meta-item">
-            <span class="detail-meta-label">Real Name:</span> {{ wrestler.real_name }}
-        </div>
-        {% endif %}
-        {% if wrestler.debut_year %}
-        <div class="detail-meta-item">
-            <span class="detail-meta-label">Debut:</span> {{ wrestler.debut_year }}
-        </div>
-        {% endif %}
-        {% if wrestler.hometown %}
-        <div class="detail-meta-item">
-            <span class="detail-meta-label">Hometown:</span> {{ wrestler.hometown }}
-        </div>
-        {% endif %}
-        {% if wrestler.nationality %}
-        <div class="detail-meta-item">
-            <span class="detail-meta-label">Nationality:</span> {{ wrestler.nationality }}
-        </div>
-        {% endif %}
-        <div class="detail-meta-item">
-            <span class="detail-meta-label">Status:</span>
-            {% if wrestler.is_active %}
-            <span class="badge badge-gold">Active</span>
-            {% else %}
-            <span class="badge badge-silver">Retired ({{ wrestler.retirement_year }})</span>
-            {% endif %}
-        </div>
-    </div>
-</div>
+<div class="person-page">
+    <div class="container">
+        <div class="person-content">
+            <!-- Left Column - Profile Image & Personal Info (TMDB Style) -->
+            <div class="person-left-column">
+                <div class="profile-image">
+                    {% if wrestler.image_url %}
+                    <img src="{{ wrestler.image_url }}" alt="{{ wrestler.name }}">
+                    {% else %}
+                    <div class="profile-placeholder">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                    {% endif %}
+                </div>
 
-<div class="row">
-    <div class="col-lg-8">
-        {% if wrestler.about %}
-        <div class="card mb-4">
-            <div class="card-header">Biography</div>
-            <div class="card-body">
-                <p>{{ wrestler.about|linebreaks }}</p>
-            </div>
-        </div>
-        {% endif %}
+                <div class="personal-info">
+                    <h3>Personal Info</h3>
 
-        {% if matches %}
-        <div class="card mb-4">
-            <div class="card-header">Recent Matches</div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-striped mb-0">
-                        <thead>
-                            <tr>
-                                <th>Match</th>
-                                <th>Event</th>
-                                <th>Result</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for match in matches %}
-                            <tr>
-                                <td><a href="{% url 'match_detail' match.pk %}">{{ match.match_text }}</a></td>
-                                <td><a href="{% url 'event_detail' match.event.pk %}">{{ match.event.name }}</a></td>
-                                <td>{{ match.result|default:"—" }}</td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+                    <div class="info-block">
+                        <h4>Known For</h4>
+                        <p>Wrestling</p>
+                    </div>
+
+                    {% if wrestler.real_name %}
+                    <div class="info-block">
+                        <h4>Real Name</h4>
+                        <p>{{ wrestler.real_name }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if wrestler.birth_date %}
+                    <div class="info-block">
+                        <h4>Birthday</h4>
+                        <p>{{ wrestler.birth_date|date:"F j, Y" }}{% if wrestler.age %} ({{ wrestler.age }} years old){% endif %}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if wrestler.hometown %}
+                    <div class="info-block">
+                        <h4>Place of Birth</h4>
+                        <p>{{ wrestler.hometown }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if wrestler.nationality %}
+                    <div class="info-block">
+                        <h4>Nationality</h4>
+                        <p>{{ wrestler.nationality }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if wrestler.debut_year %}
+                    <div class="info-block">
+                        <h4>Debut Year</h4>
+                        <p>{{ wrestler.debut_year }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="info-block">
+                        <h4>Status</h4>
+                        <p>
+                            {% if wrestler.is_active %}
+                            <span class="status-badge active">Active</span>
+                            {% else %}
+                            <span class="status-badge retired">Retired{% if wrestler.retirement_year %} ({{ wrestler.retirement_year }}){% endif %}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    {% if wrestler.aliases %}
+                    <div class="info-block">
+                        <h4>Also Known As</h4>
+                        <ul class="alias-list">
+                            {% for alias in wrestler.get_aliases_list %}
+                            <li>{{ alias }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    {% if matches %}
+                    <div class="info-block">
+                        <h4>Known Matches</h4>
+                        <p>{{ matches|length }}</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
-        </div>
-        {% endif %}
-    </div>
 
-    <div class="col-lg-4">
-        {% if wrestler.finishers %}
-        <div class="card mb-4">
-            <div class="card-header">Finishing Moves</div>
-            <ul class="list-group list-group-flush">
-                {% for move in wrestler.get_finishers_list %}
-                <li class="list-group-item bg-transparent">{{ move }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
+            <!-- Right Column - Main Content (TMDB Style) -->
+            <div class="person-right-column">
+                <div class="person-header">
+                    <h1>{{ wrestler.name }}</h1>
+                </div>
 
-        {% if wrestler.aliases %}
-        <div class="card mb-4">
-            <div class="card-header">Also Known As</div>
-            <ul class="list-group list-group-flush">
-                {% for alias in wrestler.get_aliases_list %}
-                <li class="list-group-item bg-transparent">{{ alias }}</li>
-                {% endfor %}
-            </ul>
+                <!-- Biography Section -->
+                <div class="biography-section">
+                    <h3>Biography</h3>
+                    {% if wrestler.about %}
+                    <div class="biography-content" id="biographyContent">
+                        <p>{{ wrestler.about|linebreaks }}</p>
+                    </div>
+                    <button class="read-more-btn" id="readMoreBtn" onclick="toggleBiography()" style="display: none;">Read More</button>
+                    {% else %}
+                    <p class="no-biography">We don't have a biography for {{ wrestler.name }} yet.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Known For Section (TMDB Style horizontal scroller) -->
+                {% if wrestler.finishers %}
+                <div class="known-for-section">
+                    <h3>Signature Moves</h3>
+                    <div class="scroller-wrap">
+                        <div class="scroller moves-scroller">
+                            {% for move in wrestler.get_finishers_list %}
+                            <div class="move-card">
+                                <div class="move-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                    </svg>
+                                </div>
+                                <p>{{ move }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Match History Section (TMDB Credits Style) -->
+                {% if matches %}
+                <div class="credits-section">
+                    <div class="credits-header">
+                        <h3>Match History</h3>
+                        <div class="credits-filters">
+                            <select class="filter-select" id="matchFilter" onchange="filterMatches()">
+                                <option value="all">All Matches</option>
+                                <option value="wins">Wins</option>
+                                <option value="losses">Losses</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="credits-list">
+                        {% for match in matches %}
+                        <div class="credit-item" data-result="{{ match.result|lower }}">
+                            <div class="credit-year">
+                                {% if match.event.date %}{{ match.event.date|date:"Y" }}{% else %}&mdash;{% endif %}
+                            </div>
+                            <div class="credit-separator">
+                                <span class="dot"></span>
+                            </div>
+                            <div class="credit-info">
+                                <a href="{% url 'match_detail' match.pk %}" class="credit-title">{{ match.match_text }}</a>
+                                <span class="credit-meta">
+                                    <a href="{% url 'event_detail' match.event.pk %}">{{ match.event.name }}</a>
+                                    {% if match.result %}<span class="result-badge {{ match.result|lower }}">{{ match.result }}</span>{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
         </div>
-        {% endif %}
     </div>
 </div>
 
-<a href="{% url 'wrestlers' %}" class="btn btn-secondary">&larr; Back to Wrestlers</a>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Biography read more toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const content = document.getElementById('biographyContent');
+    const btn = document.getElementById('readMoreBtn');
+
+    if (content && btn) {
+        if (content.scrollHeight > 200) {
+            content.style.maxHeight = '200px';
+            content.style.overflow = 'hidden';
+            content.classList.add('collapsed');
+            btn.style.display = 'inline-block';
+        }
+    }
+});
+
+function toggleBiography() {
+    const content = document.getElementById('biographyContent');
+    const btn = document.getElementById('readMoreBtn');
+
+    if (content.classList.contains('collapsed')) {
+        content.style.maxHeight = 'none';
+        content.classList.remove('collapsed');
+        btn.textContent = 'Read Less';
+    } else {
+        content.style.maxHeight = '200px';
+        content.classList.add('collapsed');
+        btn.textContent = 'Read More';
+    }
+}
+
+// Match filter
+function filterMatches() {
+    const filter = document.getElementById('matchFilter').value;
+    const items = document.querySelectorAll('.credit-item');
+
+    items.forEach(item => {
+        const result = item.dataset.result;
+        if (filter === 'all') {
+            item.style.display = 'flex';
+        } else if (filter === 'wins' && result === 'win') {
+            item.style.display = 'flex';
+        } else if (filter === 'losses' && result === 'loss') {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+</script>
 {% endblock %}

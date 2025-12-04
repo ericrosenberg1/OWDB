@@ -1,141 +1,164 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Hero Section -->
-<section class="hero">
-    <h1>WrestlingDB</h1>
-    <p>The most complete open and free metadata source for professional wrestling from inception to date.</p>
-    <div class="d-flex justify-content-center gap-3 flex-wrap">
-        <a href="{% url 'wrestlers' %}" class="btn btn-primary btn-lg">Browse Wrestlers</a>
-        <a href="{% url 'events' %}" class="btn btn-gold btn-lg">Explore Events</a>
-    </div>
-</section>
-
-<!-- Stats Section -->
-<section class="mb-5">
-    <h2 class="text-center mb-4">Database Statistics</h2>
-    <div class="row g-4">
-        <div class="col-6 col-md-4 col-lg">
-            <div class="stat-box">
-                <span class="stat-number">{{ stats.wrestlers|default:0 }}</span>
-                <span class="stat-label">Wrestlers</span>
-            </div>
-        </div>
-        <div class="col-6 col-md-4 col-lg">
-            <div class="stat-box">
-                <span class="stat-number">{{ stats.promotions|default:0 }}</span>
-                <span class="stat-label">Promotions</span>
-            </div>
-        </div>
-        <div class="col-6 col-md-4 col-lg">
-            <div class="stat-box">
-                <span class="stat-number">{{ stats.events|default:0 }}</span>
-                <span class="stat-label">Events</span>
-            </div>
-        </div>
-        <div class="col-6 col-md-4 col-lg">
-            <div class="stat-box">
-                <span class="stat-number">{{ stats.matches|default:0 }}</span>
-                <span class="stat-label">Matches</span>
-            </div>
-        </div>
-        <div class="col-6 col-md-4 col-lg">
-            <div class="stat-box">
-                <span class="stat-number">{{ stats.titles|default:0 }}</span>
-                <span class="stat-label">Titles</span>
+<!-- Hero/Welcome Section - TMDB Style -->
+<section class="welcome-section">
+    <div class="welcome-content">
+        <div class="container">
+            <h1>Welcome.</h1>
+            <h2>Millions of wrestlers, events, matches, and promotions to discover. Explore now.</h2>
+            <div class="search-wrapper">
+                <form action="{% url 'wrestlers' %}" method="get" class="hero-search-form">
+                    <input type="text" name="q" class="hero-search-input" placeholder="Search for a wrestler, event, promotion...">
+                    <button type="submit" class="hero-search-btn">Search</button>
+                </form>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Quick Links Section -->
-<section class="mb-5">
-    <h2 class="text-center mb-4">Explore the Database</h2>
-    <div class="row g-4">
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-header">Wrestlers</div>
-                <div class="card-body">
-                    <p class="card-text">Browse profiles of legendary wrestlers from all eras and promotions.</p>
-                    <a href="{% url 'wrestlers' %}" class="btn btn-primary">View Wrestlers</a>
+<!-- Trending Section - TMDB Style -->
+<section class="content-section">
+    <div class="container">
+        <div class="section-header">
+            <h3>Trending</h3>
+            <div class="section-tabs">
+                <button class="tab-btn active" data-tab="today">Today</button>
+                <button class="tab-btn" data-tab="week">This Week</button>
+            </div>
+        </div>
+        <div class="scroller-wrap">
+            <div class="scroller">
+                {% for wrestler in recent_wrestlers %}
+                <div class="card-item">
+                    <a href="{% url 'wrestler_detail' wrestler.pk %}">
+                        <div class="card-poster">
+                            {% if wrestler.image_url %}
+                            <img src="{{ wrestler.image_url }}" alt="{{ wrestler.name }}">
+                            {% else %}
+                            <div class="poster-placeholder">
+                                <span>{{ wrestler.name|slice:":1" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-content">
+                            <h4>{{ wrestler.name }}</h4>
+                            <p>{% if wrestler.debut_year %}Debut: {{ wrestler.debut_year }}{% endif %}</p>
+                        </div>
+                    </a>
+                </div>
+                {% empty %}
+                <div class="empty-scroller">
+                    <p>No trending wrestlers yet. Be the first to add one!</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Latest Events Section -->
+<section class="content-section">
+    <div class="container">
+        <div class="section-header">
+            <h3>Latest Events</h3>
+            <div class="section-tabs">
+                <button class="tab-btn active">All</button>
+                <button class="tab-btn">WWE</button>
+                <button class="tab-btn">AEW</button>
+            </div>
+        </div>
+        <div class="scroller-wrap">
+            <div class="scroller">
+                {% for event in recent_events %}
+                <div class="card-item">
+                    <a href="{% url 'event_detail' event.pk %}">
+                        <div class="card-poster event-poster">
+                            <div class="poster-placeholder event-placeholder">
+                                <span>{{ event.name|slice:":2" }}</span>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <h4>{{ event.name }}</h4>
+                            <p>{{ event.promotion.name }}</p>
+                        </div>
+                    </a>
+                </div>
+                {% empty %}
+                <div class="empty-scroller">
+                    <p>No events yet.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Join Section - TMDB Style -->
+<section class="join-section">
+    <div class="container">
+        <div class="join-content">
+            <h2>Join Today</h2>
+            <p>Get access to maintain your own custom wrestling lists, track your favorite wrestlers, and contribute to the world's most comprehensive wrestling database. Sign up and join our community.</p>
+            <a href="{% url 'signup' %}" class="btn btn-gold btn-lg">Sign Up</a>
+        </div>
+    </div>
+</section>
+
+<!-- Stats/Leaderboard Section -->
+<section class="content-section stats-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="section-header">
+                    <h3>Database Stats</h3>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-value">{{ stats.wrestlers|default:0 }}</span>
+                        <span class="stat-name">Wrestlers</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">{{ stats.promotions|default:0 }}</span>
+                        <span class="stat-name">Promotions</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">{{ stats.events|default:0 }}</span>
+                        <span class="stat-name">Events</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">{{ stats.matches|default:0 }}</span>
+                        <span class="stat-name">Matches</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">{{ stats.titles|default:0 }}</span>
+                        <span class="stat-name">Championships</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">{{ stats.venues|default:0 }}</span>
+                        <span class="stat-name">Venues</span>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-header">Promotions</div>
-                <div class="card-body">
-                    <p class="card-text">Explore wrestling promotions from WWE to indie feds worldwide.</p>
-                    <a href="{% url 'promotions' %}" class="btn btn-primary">View Promotions</a>
+            <div class="col-lg-6">
+                <div class="section-header">
+                    <h3>API Access</h3>
+                </div>
+                <div class="api-promo">
+                    <p>Access our comprehensive wrestling data through our REST API. Build apps, create integrations, or analyze wrestling history.</p>
+                    <ul class="api-features">
+                        <li>Free tier: 100 requests/hour</li>
+                        <li>Full wrestler, event, and match data</li>
+                        <li>Real-time updates</li>
+                        <li>JSON responses</li>
+                    </ul>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'account' %}" class="btn btn-primary">Manage API Keys</a>
+                    {% else %}
+                    <a href="{% url 'signup' %}" class="btn btn-primary">Get API Access</a>
+                    {% endif %}
                 </div>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-header">Events</div>
-                <div class="card-body">
-                    <p class="card-text">Dive into historic events from WrestleMania to local shows.</p>
-                    <a href="{% url 'events' %}" class="btn btn-primary">View Events</a>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Recent Additions -->
-{% if recent_wrestlers or recent_events %}
-<section class="mb-5">
-    <h2 class="text-center mb-4">Recent Additions</h2>
-    <div class="row g-4">
-        {% if recent_wrestlers %}
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">Latest Wrestlers</div>
-                <ul class="list-group list-group-flush">
-                    {% for wrestler in recent_wrestlers %}
-                    <li class="list-group-item bg-transparent">
-                        <a href="{% url 'wrestler_detail' wrestler.pk %}">{{ wrestler.name }}</a>
-                        {% if wrestler.debut_year %}<small class="text-muted">({{ wrestler.debut_year }})</small>{% endif %}
-                    </li>
-                    {% empty %}
-                    <li class="list-group-item bg-transparent text-muted">No wrestlers added yet</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-        {% endif %}
-        {% if recent_events %}
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">Latest Events</div>
-                <ul class="list-group list-group-flush">
-                    {% for event in recent_events %}
-                    <li class="list-group-item bg-transparent">
-                        <a href="{% url 'event_detail' event.pk %}">{{ event.name }}</a>
-                        <small class="text-muted">- {{ event.promotion.name }}</small>
-                    </li>
-                    {% empty %}
-                    <li class="list-group-item bg-transparent text-muted">No events added yet</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-        {% endif %}
-    </div>
-</section>
-{% endif %}
-
-<!-- API Section -->
-<section class="mb-5">
-    <div class="card card-featured">
-        <div class="card-body text-center py-5">
-            <h3>Developer API</h3>
-            <p class="mb-4">Access our comprehensive wrestling data through our REST API. Free tier available for all developers.</p>
-            {% if user.is_authenticated %}
-            <a href="{% url 'account' %}" class="btn btn-gold">Manage API Keys</a>
-            {% else %}
-            <a href="{% url 'signup' %}" class="btn btn-gold">Sign Up for API Access</a>
-            {% endif %}
         </div>
     </div>
 </section>

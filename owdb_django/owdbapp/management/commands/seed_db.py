@@ -511,7 +511,7 @@ class Command(BaseCommand):
                 'author': 'Dwayne Johnson',
                 'publication_year': 2000,
                 'publisher': 'ReganBooks',
-                'isbn': '978-0060392994',
+                'isbn': '978-0060392307',
                 'about': 'The Rock\'s autobiography covering his early life, football career, and rise in WWE.',
             },
             {

@@ -864,3 +864,64 @@ class WrestleBotView(TemplateView):
                 }
 
         return context
+
+
+def wrestlebot_api(request):
+    """JSON API endpoint for WrestleBot live stats and recent activity."""
+    from django.http import JsonResponse
+    from django.utils import timezone
+    from django.utils.timesince import timesince
+
+    try:
+        config = WrestleBotConfig.get_config()
+
+        # Get recent logs (last 20)
+        logs = WrestleBotLog.objects.select_related().order_by('-created_at')[:20]
+        logs_data = []
+        for log in logs:
+            logs_data.append({
+                'id': log.id,
+                'created_at': log.created_at.strftime('%b %d, %H:%M'),
+                'action_type': log.action_type,
+                'entity_type': log.entity_type,
+                'entity_name': log.entity_name,
+                'ai_reasoning': log.ai_reasoning[:60] + '...' if log.ai_reasoning and len(log.ai_reasoning) > 60 else log.ai_reasoning,
+                'ai_confidence': log.ai_confidence,
+                'source_url': log.source_url,
+                'success': log.success,
+            })
+
+        # Check AI status
+        ai_available = False
+        ai_model = None
+        try:
+            from .wrestlebot import WrestleBot
+            bot = WrestleBot()
+            ai_available = bot.ai.is_available()
+            ai_model = bot.ai.model
+        except Exception:
+            pass
+
+        return JsonResponse({
+            'stats': {
+                'total_added': config.total_items_added,
+                'added_today': config.items_added_today,
+                'added_this_hour': config.items_added_this_hour,
+                'total_errors': config.total_errors,
+                'last_run': timesince(config.last_run) + ' ago' if config.last_run else None,
+                'enabled': config.enabled,
+            },
+            'config': {
+                'max_items_per_hour': config.max_items_per_hour,
+                'max_items_per_day': config.max_items_per_day,
+            },
+            'ai': {
+                'available': ai_available,
+                'model': ai_model,
+            },
+            'logs': logs_data,
+            'timestamp': timezone.now().isoformat(),
+        })
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

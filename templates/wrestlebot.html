@@ -57,7 +57,7 @@
         <div class="col-md-3 col-6 mb-3">
             <div class="card bg-dark border-secondary h-100">
                 <div class="card-body text-center">
-                    <h3 class="text-primary mb-0">{{ stats.total_added|default:0 }}</h3>
+                    <h3 class="text-primary mb-0" id="stat-total">{{ stats.total_added|default:0 }}</h3>
                     <small class="text-muted">Total Items Added</small>
                 </div>
             </div>
@@ -65,7 +65,7 @@
         <div class="col-md-3 col-6 mb-3">
             <div class="card bg-dark border-secondary h-100">
                 <div class="card-body text-center">
-                    <h3 class="text-success mb-0">{{ stats.added_today|default:0 }}</h3>
+                    <h3 class="text-success mb-0" id="stat-today">{{ stats.added_today|default:0 }}</h3>
                     <small class="text-muted">Added Today</small>
                 </div>
             </div>
@@ -73,14 +73,14 @@
         <div class="col-md-3 col-6 mb-3">
             <div class="card bg-dark border-secondary h-100">
                 <div class="card-body text-center">
-                    <h3 class="text-info mb-0">{{ stats.added_this_hour|default:0 }}</h3>
+                    <h3 class="text-info mb-0" id="stat-hour">{{ stats.added_this_hour|default:0 }}</h3>
                     <small class="text-muted">This Hour</small>
                 </div>
             </div>
         </div>
         <div class="col-md-3 col-6 mb-3">
             <div class="card bg-dark border-secondary h-100">
-                <div class="card-body text-center">
+                <div class="card-body text-center" id="ai-status">
                     {% if ai_available %}
                         <h3 class="text-success mb-0">Online</h3>
                         <small class="text-muted">AI: {{ ai_model }}</small>
@@ -234,7 +234,7 @@
                         {% endfor %}
                     </div>
                 </div>
-                <div class="card-body p-0">
+                <div class="card-body p-0" id="activity-log-container">
                     {% if logs %}
                         <div class="table-responsive">
                             <table class="table table-dark table-hover mb-0">
@@ -248,9 +248,9 @@
                                         <th style="width: 80px;">Source</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="activity-log-body">
                                     {% for log in logs %}
-                                    <tr class="{% if not log.success %}table-danger{% endif %}">
+                                    <tr class="{% if not log.success %}table-danger{% endif %}" data-log-id="{{ log.id }}">
                                         <td class="text-muted small">{{ log.created_at|date:"M d, H:i" }}</td>
                                         <td>
                                             {% if log.action_type == 'create' %}
@@ -395,7 +395,8 @@
 // Auto-refresh functionality for WrestleBot page
 let autoRefreshEnabled = true;
 let refreshInterval = null;
-const REFRESH_INTERVAL_MS = 30000; // 30 seconds
+let lastLogId = null;
+const REFRESH_INTERVAL_MS = 10000; // 10 seconds for more responsive updates
 
 function updateLastUpdated() {
     const now = new Date();
@@ -403,11 +404,125 @@ function updateLastUpdated() {
     document.getElementById('lastUpdated').textContent = ' • Last updated: ' + timeStr;
 }
 
-function refreshStats() {
-    // Reload the page to get fresh data
-    // In a more sophisticated setup, this would be an AJAX call
-    if (autoRefreshEnabled) {
-        location.reload();
+function getActionBadge(actionType) {
+    const badges = {
+        'create': '<span class="badge bg-success">Created</span>',
+        'update': '<span class="badge bg-info">Updated</span>',
+        'skip': '<span class="badge bg-secondary">Skipped</span>',
+        'error': '<span class="badge bg-danger">Error</span>',
+        'discover': '<span class="badge bg-primary">Discovered</span>',
+        'link': '<span class="badge bg-warning text-dark">Linked</span>',
+        'verify': '<span class="badge bg-info">Verified</span>'
+    };
+    return badges[actionType] || `<span class="badge bg-secondary">${actionType}</span>`;
+}
+
+function getConfidenceHtml(confidence) {
+    if (!confidence) return '<small class="text-muted">-</small>';
+    const pct = Math.round(confidence * 100);
+    let colorClass = 'bg-danger';
+    if (confidence >= 0.8) colorClass = 'bg-success';
+    else if (confidence >= 0.6) colorClass = 'bg-warning';
+    return `<div class="progress" style="height: 6px;"><div class="progress-bar ${colorClass}" style="width: ${pct}%"></div></div><small class="text-muted">${pct}%</small>`;
+}
+
+function getSourceHtml(sourceUrl) {
+    if (!sourceUrl) return '<span class="text-muted">-</span>';
+    return `<a href="${sourceUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary" title="View on Wikipedia">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+    </a>`;
+}
+
+function createLogRow(log) {
+    const rowClass = log.success === false ? 'table-danger' : '';
+    const reasoning = log.ai_reasoning ? `<br><small class="text-muted">${log.ai_reasoning}</small>` : '';
+    return `
+        <tr class="${rowClass}" data-log-id="${log.id}">
+            <td class="text-muted small">${log.created_at}</td>
+            <td>${getActionBadge(log.action_type)}</td>
+            <td><span class="text-capitalize">${log.entity_type}</span></td>
+            <td><strong>${log.entity_name}</strong>${reasoning}</td>
+            <td>${getConfidenceHtml(log.ai_confidence)}</td>
+            <td>${getSourceHtml(log.source_url)}</td>
+        </tr>
+    `;
+}
+
+async function refreshStats() {
+    if (!autoRefreshEnabled) return;
+
+    try {
+        const response = await fetch('/api/wrestlebot/');
+        if (!response.ok) throw new Error('API request failed');
+
+        const data = await response.json();
+
+        // Update stat cards with animation
+        updateStatWithAnimation('stat-total', data.stats.total_added);
+        updateStatWithAnimation('stat-today', data.stats.added_today);
+        updateStatWithAnimation('stat-hour', data.stats.added_this_hour);
+
+        // Update AI status
+        const aiStatusEl = document.getElementById('ai-status');
+        if (aiStatusEl) {
+            if (data.ai.available) {
+                aiStatusEl.innerHTML = `<h3 class="text-success mb-0">Online</h3><small class="text-muted">AI: ${data.ai.model}</small>`;
+            } else {
+                aiStatusEl.innerHTML = `<h3 class="text-warning mb-0">Offline</h3><small class="text-muted">AI Unavailable</small>`;
+            }
+        }
+
+        // Update activity log with new entries
+        const tbody = document.getElementById('activity-log-body');
+        if (tbody && data.logs && data.logs.length > 0) {
+            // Check if there are new logs
+            const firstNewLogId = data.logs[0].id;
+            if (lastLogId !== firstNewLogId) {
+                // Find which logs are new
+                let newLogs = [];
+                for (const log of data.logs) {
+                    if (log.id === lastLogId) break;
+                    newLogs.push(log);
+                }
+
+                // Prepend new logs with highlight animation
+                if (newLogs.length > 0) {
+                    for (let i = newLogs.length - 1; i >= 0; i--) {
+                        const row = createLogRow(newLogs[i]);
+                        tbody.insertAdjacentHTML('afterbegin', row);
+                        // Add highlight animation to new row
+                        const newRow = tbody.querySelector(`[data-log-id="${newLogs[i].id}"]`);
+                        if (newRow) {
+                            newRow.classList.add('new-log-row');
+                            setTimeout(() => newRow.classList.remove('new-log-row'), 3000);
+                        }
+                    }
+                    // Remove excess rows to keep table manageable
+                    while (tbody.children.length > 50) {
+                        tbody.removeChild(tbody.lastChild);
+                    }
+                }
+                lastLogId = firstNewLogId;
+            }
+        }
+
+        updateLastUpdated();
+
+    } catch (error) {
+        console.error('Failed to refresh WrestleBot stats:', error);
+        // Don't disable auto-refresh on error, just try again next interval
+    }
+}
+
+function updateStatWithAnimation(elementId, newValue) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    const currentValue = parseInt(el.textContent) || 0;
+    if (currentValue !== newValue) {
+        el.textContent = newValue;
+        el.classList.add('stat-updated');
+        setTimeout(() => el.classList.remove('stat-updated'), 1000);
     }
 }
 
@@ -418,11 +533,11 @@ function toggleAutoRefresh() {
 
     if (autoRefreshEnabled) {
         toggleBtn.textContent = 'Pause';
-        statusEl.textContent = 'Auto-refreshing every 30 seconds';
+        statusEl.textContent = 'Live updating every 10 seconds';
         startAutoRefresh();
     } else {
         toggleBtn.textContent = 'Resume';
-        statusEl.textContent = 'Auto-refresh paused';
+        statusEl.textContent = 'Live updates paused';
         stopAutoRefresh();
     }
 }
@@ -441,8 +556,34 @@ function stopAutoRefresh() {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
+    // Get initial last log ID
+    const firstRow = document.querySelector('#activity-log-body tr[data-log-id]');
+    if (firstRow) {
+        lastLogId = parseInt(firstRow.dataset.logId);
+    }
     updateLastUpdated();
     startAutoRefresh();
+    // Update status text to reflect new interval
+    document.getElementById('refreshStatus').textContent = 'Live updating every 10 seconds';
 });
 </script>
+<style>
+/* Animation for updated stats */
+.stat-updated {
+    animation: pulse-highlight 1s ease-out;
+}
+@keyframes pulse-highlight {
+    0% { color: #ffc107; transform: scale(1.1); }
+    100% { color: inherit; transform: scale(1); }
+}
+/* Animation for new log rows */
+.new-log-row {
+    animation: slide-in 0.5s ease-out;
+    background-color: rgba(25, 135, 84, 0.3) !important;
+}
+@keyframes slide-in {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+</style>
 {% endblock %}

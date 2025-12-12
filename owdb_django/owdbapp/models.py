@@ -592,12 +592,16 @@ class APIKey(TimeStampedModel):
             self.save(update_fields=['requests_today', 'last_reset'])
 
     def increment_usage(self):
-        """Increment usage counters."""
+        """Increment usage counters atomically to prevent race conditions."""
+        from django.db.models import F
         self.reset_daily_count()
-        self.requests_today += 1
-        self.requests_total += 1
-        self.last_used = timezone.now()
-        self.save(update_fields=['requests_today', 'requests_total', 'last_used'])
+        # Use F() expressions for atomic increment
+        APIKey.objects.filter(pk=self.pk).update(
+            requests_today=F('requests_today') + 1,
+            requests_total=F('requests_total') + 1,
+            last_used=timezone.now(),
+        )
+        self.refresh_from_db()
 
     @property
     def rate_limit(self):
@@ -776,12 +780,12 @@ class WrestleBotConfig(TimeStampedModel):
         )
 
     def record_items_added(self, count: int = 1):
-        """Record that items were added."""
-        self.items_added_this_hour += count
-        self.items_added_today += count
-        self.total_items_added += count
-        self.last_run = timezone.now()
-        self.save(update_fields=[
-            'items_added_this_hour', 'items_added_today',
-            'total_items_added', 'last_run'
-        ])
+        """Record that items were added atomically to prevent race conditions."""
+        from django.db.models import F
+        WrestleBotConfig.objects.filter(pk=self.pk).update(
+            items_added_this_hour=F('items_added_this_hour') + count,
+            items_added_today=F('items_added_today') + count,
+            total_items_added=F('total_items_added') + count,
+            last_run=timezone.now(),
+        )
+        self.refresh_from_db()

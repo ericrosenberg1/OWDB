@@ -485,8 +485,8 @@ def reset_daily_api_limits():
 
 @shared_task
 def warm_stats_cache():
-    """Pre-compute and cache database statistics. Run hourly."""
-    from .models import Wrestler, Promotion, Event, Match, Title
+    """Pre-compute and cache database statistics. Run every 5 minutes for real-time accuracy."""
+    from .models import Wrestler, Promotion, Event, Match, Title, Venue, VideoGame, Podcast, Book, Special
 
     stats = {
         'wrestlers': Wrestler.objects.count(),
@@ -494,9 +494,15 @@ def warm_stats_cache():
         'events': Event.objects.count(),
         'matches': Match.objects.count(),
         'titles': Title.objects.count(),
+        'venues': Venue.objects.count(),
+        'video_games': VideoGame.objects.count(),
+        'podcasts': Podcast.objects.count(),
+        'books': Book.objects.count(),
+        'specials': Special.objects.count(),
     }
 
-    cache.set('homepage_stats', stats, timeout=3600)  # 1 hour
+    # Cache for 10 minutes (task runs every 5 min, so always fresh)
+    cache.set('homepage_stats', stats, timeout=600)
     logger.info(f"Warmed stats cache: {stats}")
     return stats
 

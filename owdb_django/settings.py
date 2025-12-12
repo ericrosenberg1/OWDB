@@ -157,7 +157,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'warm-stats-cache': {
         'task': 'owdb_django.owdbapp.tasks.warm_stats_cache',
-        'schedule': 3600.0,  # Every hour
+        'schedule': 300.0,  # Every 5 minutes for real-time stats
     },
     'cleanup-inactive-api-keys': {
         'task': 'owdb_django.owdbapp.tasks.cleanup_inactive_api_keys',

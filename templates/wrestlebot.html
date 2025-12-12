@@ -80,14 +80,9 @@
         </div>
         <div class="col-md-3 col-6 mb-3">
             <div class="card bg-dark border-secondary h-100">
-                <div class="card-body text-center" id="ai-status">
-                    {% if ai_available %}
-                        <h3 class="text-success mb-0">Online</h3>
-                        <small class="text-muted">AI: {{ ai_model }}</small>
-                    {% else %}
-                        <h3 class="text-warning mb-0">Offline</h3>
-                        <small class="text-muted">AI Unavailable</small>
-                    {% endif %}
+                <div class="card-body text-center">
+                    <h3 class="text-info mb-0" id="stat-errors">{{ stats.total_errors|default:0 }}</h3>
+                    <small class="text-muted">Errors</small>
                 </div>
             </div>
         </div>
@@ -361,8 +356,8 @@
                         <div class="col-md-4">
                             <h6 class="text-primary">Schedule</h6>
                             <ul class="list-unstyled text-muted small">
-                                <li>Discovery cycle: Every 30 minutes</li>
-                                <li>Max items per cycle: 10</li>
+                                <li>Discovery cycle: Every 5 minutes</li>
+                                <li>Max items per cycle: 15</li>
                                 <li>Cooldown between batches: {{ config.cooldown_minutes }} min</li>
                             </ul>
                         </div>
@@ -461,16 +456,7 @@ async function refreshStats() {
         updateStatWithAnimation('stat-total', data.stats.total_added);
         updateStatWithAnimation('stat-today', data.stats.added_today);
         updateStatWithAnimation('stat-hour', data.stats.added_this_hour);
-
-        // Update AI status
-        const aiStatusEl = document.getElementById('ai-status');
-        if (aiStatusEl) {
-            if (data.ai.available) {
-                aiStatusEl.innerHTML = `<h3 class="text-success mb-0">Online</h3><small class="text-muted">AI: ${data.ai.model}</small>`;
-            } else {
-                aiStatusEl.innerHTML = `<h3 class="text-warning mb-0">Offline</h3><small class="text-muted">AI Unavailable</small>`;
-            }
-        }
+        updateStatWithAnimation('stat-errors', data.stats.total_errors);
 
         // Update activity log with new entries
         const tbody = document.getElementById('activity-log-body');

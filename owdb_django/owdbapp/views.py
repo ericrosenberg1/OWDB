@@ -712,6 +712,8 @@ And that's the bottom line, 'cause OWDB said so!
 
 
 def login_view(request):
+    from django.utils.http import url_has_allowed_host_and_scheme
+
     if request.user.is_authenticated:
         return redirect('index')
     if request.method == 'POST':
@@ -719,7 +721,12 @@ def login_view(request):
         if form.is_valid():
             login(request, form.get_user())
             messages.success(request, f'Welcome back, {form.get_user().username}!')
-            next_url = request.GET.get('next', 'index')
+            # Prevent open redirect attacks by validating next URL
+            next_url = request.GET.get('next', '')
+            if not next_url or not url_has_allowed_host_and_scheme(
+                next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+            ):
+                next_url = 'index'
             return redirect(next_url)
     else:
         form = AuthenticationForm()
@@ -854,25 +861,32 @@ class WrestleBotView(TemplateView):
         page = self.request.GET.get('page', 1)
         context['logs'] = paginator.get_page(page)
 
-        # Get counts by entity type for filter tabs
-        context['entity_counts'] = {}
-        for entity_type, label in WrestleBotLog.ENTITY_TYPES:
-            count = WrestleBotLog.objects.filter(entity_type=entity_type).count()
-            if count > 0:
-                context['entity_counts'][entity_type] = {
-                    'label': label,
-                    'count': count,
-                }
+        # Get counts by entity type for filter tabs (single aggregation query)
+        from django.db.models import Count
+        entity_counts_raw = WrestleBotLog.objects.values('entity_type').annotate(
+            count=Count('id')
+        )
+        entity_labels = dict(WrestleBotLog.ENTITY_TYPES)
+        context['entity_counts'] = {
+            item['entity_type']: {
+                'label': entity_labels.get(item['entity_type'], item['entity_type']),
+                'count': item['count'],
+            }
+            for item in entity_counts_raw if item['count'] > 0
+        }
 
-        # Get counts by action type
-        context['action_counts'] = {}
-        for action_type, label in WrestleBotLog.ACTION_TYPES:
-            count = WrestleBotLog.objects.filter(action_type=action_type).count()
-            if count > 0:
-                context['action_counts'][action_type] = {
-                    'label': label,
-                    'count': count,
-                }
+        # Get counts by action type (single aggregation query)
+        action_counts_raw = WrestleBotLog.objects.values('action_type').annotate(
+            count=Count('id')
+        )
+        action_labels = dict(WrestleBotLog.ACTION_TYPES)
+        context['action_counts'] = {
+            item['action_type']: {
+                'label': action_labels.get(item['action_type'], item['action_type']),
+                'count': item['count'],
+            }
+            for item in action_counts_raw if item['count'] > 0
+        }
 
         return context
 

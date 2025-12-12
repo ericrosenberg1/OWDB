@@ -1,5 +1,5 @@
-# Django and core
-Django>=5.2,<6.0
+# Django and core - using LTS for stability
+Django>=5.2,<5.3
 gunicorn>=23.0
 
 # Database
@@ -20,5 +20,5 @@ python-dotenv>=1.0
 
 # Web scraping
 requests>=2.32
-beautifulsoup4>=4.12
+beautifulsoup4>=4.13
 lxml>=5.3

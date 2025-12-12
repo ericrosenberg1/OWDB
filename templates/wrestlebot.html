@@ -1,6 +1,18 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<!-- Auto-refresh indicator -->
+<div class="auto-refresh-bar" id="autoRefreshBar">
+    <div class="container d-flex align-items-center justify-content-between py-2">
+        <small class="text-muted">
+            <span id="refreshStatus">Auto-refreshing every 30 seconds</span>
+            <span id="lastUpdated"></span>
+        </small>
+        <button class="btn btn-sm btn-outline-secondary" onclick="toggleAutoRefresh()">
+            <span id="refreshToggle">Pause</span>
+        </button>
+    </div>
+</div>
 <div class="container py-4">
     <!-- Hero Section -->
     <div class="row mb-4">
@@ -376,4 +388,61 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-refresh functionality for WrestleBot page
+let autoRefreshEnabled = true;
+let refreshInterval = null;
+const REFRESH_INTERVAL_MS = 30000; // 30 seconds
+
+function updateLastUpdated() {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString();
+    document.getElementById('lastUpdated').textContent = ' • Last updated: ' + timeStr;
+}
+
+function refreshStats() {
+    // Reload the page to get fresh data
+    // In a more sophisticated setup, this would be an AJAX call
+    if (autoRefreshEnabled) {
+        location.reload();
+    }
+}
+
+function toggleAutoRefresh() {
+    autoRefreshEnabled = !autoRefreshEnabled;
+    const toggleBtn = document.getElementById('refreshToggle');
+    const statusEl = document.getElementById('refreshStatus');
+
+    if (autoRefreshEnabled) {
+        toggleBtn.textContent = 'Pause';
+        statusEl.textContent = 'Auto-refreshing every 30 seconds';
+        startAutoRefresh();
+    } else {
+        toggleBtn.textContent = 'Resume';
+        statusEl.textContent = 'Auto-refresh paused';
+        stopAutoRefresh();
+    }
+}
+
+function startAutoRefresh() {
+    if (refreshInterval) clearInterval(refreshInterval);
+    refreshInterval = setInterval(refreshStats, REFRESH_INTERVAL_MS);
+}
+
+function stopAutoRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    updateLastUpdated();
+    startAutoRefresh();
+});
+</script>
 {% endblock %}

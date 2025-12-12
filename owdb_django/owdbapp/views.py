@@ -10,6 +10,7 @@ from django.db.models import Q, Count
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
+from django.core.cache import cache
 from django import forms
 from datetime import timedelta
 
@@ -117,14 +118,26 @@ class IndexView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = 'Home'
-        context['stats'] = {
-            'wrestlers': Wrestler.objects.count(),
-            'promotions': Promotion.objects.count(),
-            'events': Event.objects.count(),
-            'matches': Match.objects.count(),
-            'titles': Title.objects.count(),
-            'venues': Venue.objects.count(),
-        }
+
+        # Get stats from cache or compute fresh (cached for 15 minutes)
+        stats = cache.get('homepage_stats')
+        if stats is None:
+            stats = {
+                'wrestlers': Wrestler.objects.count(),
+                'promotions': Promotion.objects.count(),
+                'events': Event.objects.count(),
+                'matches': Match.objects.count(),
+                'titles': Title.objects.count(),
+                'venues': Venue.objects.count(),
+                'video_games': VideoGame.objects.count(),
+                'podcasts': Podcast.objects.count(),
+                'books': Book.objects.count(),
+                'specials': Special.objects.count(),
+            }
+            cache.set('homepage_stats', stats, 900)  # Cache for 15 minutes
+
+        context['stats'] = stats
+
         # Get recent additions
         context['recent_wrestlers'] = Wrestler.objects.order_by('-created_at')[:10]
         context['recent_events'] = Event.objects.select_related('promotion').order_by('-created_at')[:10]
@@ -153,6 +166,19 @@ class AboutView(TemplateView):
             'podcasts': Podcast.objects.count(),
             'specials': Special.objects.count(),
         }
+        return context
+
+
+# =============================================================================
+# Privacy Policy
+# =============================================================================
+
+class PrivacyView(TemplateView):
+    template_name = 'privacy.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = 'Privacy Policy'
         return context
 
 

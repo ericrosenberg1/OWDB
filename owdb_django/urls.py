@@ -9,8 +9,9 @@ urlpatterns = [
     # Homepage
     path('', views.IndexView.as_view(), name='index'),
 
-    # About
+    # About & Legal
     path('about/', views.AboutView.as_view(), name='about'),
+    path('privacy/', views.PrivacyView.as_view(), name='privacy'),
 
     # Wrestlers
     path('wrestlers/', views.WrestlerListView.as_view(), name='wrestlers'),

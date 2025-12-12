@@ -1715,6 +1715,17 @@ a:hover {
 }
 
 /* --------------------------------------------------------------------------
+   Auto-Refresh Bar (WrestleBot page)
+   -------------------------------------------------------------------------- */
+.auto-refresh-bar {
+    background: var(--wwf-gray);
+    border-bottom: 1px solid var(--wwf-light-gray);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+/* --------------------------------------------------------------------------
    Print Styles
    -------------------------------------------------------------------------- */
 @media print {
@@ -1722,7 +1733,8 @@ a:hover {
     .site-footer,
     .btn,
     .pagination,
-    .search-bar-container {
+    .search-bar-container,
+    .auto-refresh-bar {
         display: none !important;
     }
 

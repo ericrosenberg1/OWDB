@@ -138,9 +138,20 @@ class IndexView(TemplateView):
 
         context['stats'] = stats
 
-        # Get recent additions
-        context['recent_wrestlers'] = Wrestler.objects.order_by('-created_at')[:10]
-        context['recent_events'] = Event.objects.select_related('promotion').order_by('-created_at')[:10]
+        # Get latest additions (wrestlers, promotions, titles)
+        context['latest_wrestlers'] = Wrestler.objects.order_by('-created_at')[:10]
+        context['latest_promotions'] = Promotion.objects.order_by('-created_at')[:10]
+        context['latest_titles'] = Title.objects.select_related('promotion').order_by('-created_at')[:10]
+
+        # Get recent events by date (newest first), with promotion filter options
+        context['recent_events'] = Event.objects.select_related('promotion').order_by('-date')[:10]
+        context['wwe_events'] = Event.objects.select_related('promotion').filter(
+            promotion__name__icontains='WWE'
+        ).order_by('-date')[:10]
+        context['aew_events'] = Event.objects.select_related('promotion').filter(
+            promotion__name__icontains='AEW'
+        ).order_by('-date')[:10]
+
         return context
 
 

@@ -82,6 +82,8 @@ services:
       sh -c "
         echo '⏳ Running migrations…';
         python manage.py migrate --noinput;
+        echo '📅 Setting up Celery Beat schedules…';
+        python manage.py setup_celery_schedule;
         echo '📦 Collecting static files…';
         python manage.py collectstatic --noinput;
         echo '🚀 Starting Gunicorn…';

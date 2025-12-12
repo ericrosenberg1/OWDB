@@ -201,6 +201,11 @@ class RobotsChecker:
             return None
 
 
+class ScraperUnavailableError(Exception):
+    """Raised when a scraper source is completely unavailable (e.g., SSL errors, site down)."""
+    pass
+
+
 class BaseScraper(ABC):
     """
     Abstract base class for all scrapers.
@@ -222,6 +227,9 @@ class BaseScraper(ABC):
     MAX_RETRIES: int = 3
     RETRY_BACKOFF: float = 2.0
 
+    # Circuit breaker settings - stop if too many consecutive failures
+    MAX_CONSECUTIVE_FAILURES: int = 5
+
     def __init__(self):
         self.rate_limiter = RateLimiter(
             name=self.SOURCE_NAME,
@@ -232,6 +240,8 @@ class BaseScraper(ABC):
         self.robots_checker = RobotsChecker(user_agent=self.USER_AGENT)
         self.session = self._create_session()
         self._last_request_time = 0
+        self._consecutive_failures = 0
+        self._is_unavailable = False
 
     def _create_session(self) -> requests.Session:
         """Create a requests session with proper headers."""
@@ -260,11 +270,54 @@ class BaseScraper(ABC):
         if elapsed < min_delay:
             time.sleep(min_delay - elapsed + random.uniform(0, 0.5))
 
+    def _check_circuit_breaker(self):
+        """Check if the scraper should stop due to too many failures."""
+        if self._is_unavailable:
+            raise ScraperUnavailableError(
+                f"{self.SOURCE_NAME} is unavailable after {self.MAX_CONSECUTIVE_FAILURES} consecutive failures"
+            )
+
+    def _record_success(self):
+        """Record a successful request and reset failure counter."""
+        self._consecutive_failures = 0
+
+    def _record_failure(self, is_fatal: bool = False):
+        """
+        Record a failed request.
+
+        Args:
+            is_fatal: If True (e.g., SSL errors), immediately mark as unavailable
+        """
+        self._consecutive_failures += 1
+        if is_fatal or self._consecutive_failures >= self.MAX_CONSECUTIVE_FAILURES:
+            self._is_unavailable = True
+            logger.error(
+                f"{self.SOURCE_NAME} marked as unavailable after "
+                f"{self._consecutive_failures} consecutive failures"
+            )
+
+    def _is_fatal_error(self, error: Exception) -> bool:
+        """Check if an error indicates the source is completely unavailable."""
+        error_str = str(error).lower()
+        fatal_indicators = [
+            'ssl',
+            'certificate',
+            'handshake',
+            'connection refused',
+            'name or service not known',
+            'no route to host',
+        ]
+        return any(indicator in error_str for indicator in fatal_indicators)
+
     def fetch(self, url: str, allow_redirects: bool = True) -> Optional[requests.Response]:
         """
         Fetch a URL with rate limiting and robots.txt compliance.
         Returns None if the request fails or is not allowed.
+        Raises ScraperUnavailableError if the source is completely unavailable.
         """
+        # Check circuit breaker first
+        self._check_circuit_breaker()
+
         # Check robots.txt
         if not self.robots_checker.can_fetch(url):
             logger.info(f"Robots.txt disallows fetching: {url}")
@@ -279,6 +332,7 @@ class BaseScraper(ABC):
         self._respect_crawl_delay(url)
 
         # Make request with retries
+        last_error = None
         for attempt in range(self.MAX_RETRIES):
             try:
                 self._last_request_time = time.time()
@@ -288,16 +342,30 @@ class BaseScraper(ABC):
                     allow_redirects=allow_redirects,
                 )
                 response.raise_for_status()
+                self._record_success()
                 return response
 
             except requests.RequestException as e:
+                last_error = e
                 wait_time = self.RETRY_BACKOFF ** attempt
                 logger.warning(
                     f"Request failed for {url} (attempt {attempt + 1}/{self.MAX_RETRIES}): {e}"
                 )
+
+                # Check for fatal errors (SSL, DNS, etc.) - don't retry these
+                if self._is_fatal_error(e):
+                    logger.error(f"Fatal error for {self.SOURCE_NAME}: {e}")
+                    self._record_failure(is_fatal=True)
+                    raise ScraperUnavailableError(
+                        f"{self.SOURCE_NAME} unavailable: {e}"
+                    )
+
                 if attempt < self.MAX_RETRIES - 1:
                     time.sleep(wait_time)
 
+        # All retries failed
+        self._record_failure()
+        self._check_circuit_breaker()
         return None
 
     def get_cached_or_fetch(

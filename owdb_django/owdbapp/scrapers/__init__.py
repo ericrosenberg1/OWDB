@@ -28,7 +28,7 @@
 from .api_client import APIClient, RateLimiter, ErrorReporter, CircuitBreaker
 
 # Web scrapers
-from .base import BaseScraper
+from .base import BaseScraper, ScraperUnavailableError
 from .wikipedia import WikipediaScraper
 from .cagematch import CagematchScraper
 from .profightdb import ProFightDBScraper
@@ -49,6 +49,7 @@ __all__ = [
     'ErrorReporter',
     'CircuitBreaker',
     'BaseScraper',
+    'ScraperUnavailableError',
     # Web scrapers
     'WikipediaScraper',
     'CagematchScraper',

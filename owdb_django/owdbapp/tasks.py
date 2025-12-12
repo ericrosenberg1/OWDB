@@ -19,7 +19,7 @@ def scrape_wikipedia_wrestlers(self, limit: int = 50):
     Runs periodically to discover new wrestlers and update existing ones.
     """
     try:
-        from .scrapers import WikipediaScraper, ScraperCoordinator
+        from .scrapers import WikipediaScraper, ScraperCoordinator, ScraperUnavailableError
 
         scraper = WikipediaScraper()
         coordinator = ScraperCoordinator()
@@ -35,6 +35,10 @@ def scrape_wikipedia_wrestlers(self, limit: int = 50):
         logger.info(f"Wikipedia wrestlers: scraped {len(wrestlers)}, imported {imported}")
         return {"scraped": len(wrestlers), "imported": imported}
 
+    except ScraperUnavailableError as e:
+        logger.error(f"Wikipedia unavailable, skipping: {e}")
+        return {"scraped": 0, "imported": 0, "error": str(e), "status": "source_unavailable"}
+
     except Exception as e:
         logger.error(f"Wikipedia wrestler scrape failed: {e}")
         raise self.retry(exc=e)
@@ -44,7 +48,7 @@ def scrape_wikipedia_wrestlers(self, limit: int = 50):
 def scrape_wikipedia_promotions(self, limit: int = 25):
     """Scrape promotion data from Wikipedia."""
     try:
-        from .scrapers import WikipediaScraper, ScraperCoordinator
+        from .scrapers import WikipediaScraper, ScraperCoordinator, ScraperUnavailableError
 
         scraper = WikipediaScraper()
         coordinator = ScraperCoordinator()
@@ -60,6 +64,10 @@ def scrape_wikipedia_promotions(self, limit: int = 25):
         logger.info(f"Wikipedia promotions: scraped {len(promotions)}, imported {imported}")
         return {"scraped": len(promotions), "imported": imported}
 
+    except ScraperUnavailableError as e:
+        logger.error(f"Wikipedia unavailable, skipping: {e}")
+        return {"scraped": 0, "imported": 0, "error": str(e), "status": "source_unavailable"}
+
     except Exception as e:
         logger.error(f"Wikipedia promotion scrape failed: {e}")
         raise self.retry(exc=e)
@@ -69,7 +77,7 @@ def scrape_wikipedia_promotions(self, limit: int = 25):
 def scrape_wikipedia_events(self, limit: int = 50):
     """Scrape event data from Wikipedia."""
     try:
-        from .scrapers import WikipediaScraper, ScraperCoordinator
+        from .scrapers import WikipediaScraper, ScraperCoordinator, ScraperUnavailableError
 
         scraper = WikipediaScraper()
         coordinator = ScraperCoordinator()
@@ -85,6 +93,10 @@ def scrape_wikipedia_events(self, limit: int = 50):
         logger.info(f"Wikipedia events: scraped {len(events)}, imported {imported}")
         return {"scraped": len(events), "imported": imported}
 
+    except ScraperUnavailableError as e:
+        logger.error(f"Wikipedia unavailable, skipping: {e}")
+        return {"scraped": 0, "imported": 0, "error": str(e), "status": "source_unavailable"}
+
     except Exception as e:
         logger.error(f"Wikipedia event scrape failed: {e}")
         raise self.retry(exc=e)
@@ -97,7 +109,7 @@ def scrape_cagematch_wrestlers(self, limit: int = 25):
     Lower limits due to more restrictive rate limiting.
     """
     try:
-        from .scrapers import CagematchScraper, ScraperCoordinator
+        from .scrapers import CagematchScraper, ScraperCoordinator, ScraperUnavailableError
 
         scraper = CagematchScraper()
         coordinator = ScraperCoordinator()
@@ -113,6 +125,10 @@ def scrape_cagematch_wrestlers(self, limit: int = 25):
         logger.info(f"Cagematch wrestlers: scraped {len(wrestlers)}, imported {imported}")
         return {"scraped": len(wrestlers), "imported": imported}
 
+    except ScraperUnavailableError as e:
+        logger.error(f"Cagematch unavailable, skipping: {e}")
+        return {"scraped": 0, "imported": 0, "error": str(e), "status": "source_unavailable"}
+
     except Exception as e:
         logger.error(f"Cagematch wrestler scrape failed: {e}")
         raise self.retry(exc=e)
@@ -122,7 +138,7 @@ def scrape_cagematch_wrestlers(self, limit: int = 25):
 def scrape_cagematch_events(self, limit: int = 25):
     """Scrape recent events from Cagematch."""
     try:
-        from .scrapers import CagematchScraper, ScraperCoordinator
+        from .scrapers import CagematchScraper, ScraperCoordinator, ScraperUnavailableError
 
         scraper = CagematchScraper()
         coordinator = ScraperCoordinator()
@@ -138,6 +154,10 @@ def scrape_cagematch_events(self, limit: int = 25):
         logger.info(f"Cagematch events: scraped {len(events)}, imported {imported}")
         return {"scraped": len(events), "imported": imported}
 
+    except ScraperUnavailableError as e:
+        logger.error(f"Cagematch unavailable, skipping: {e}")
+        return {"scraped": 0, "imported": 0, "error": str(e), "status": "source_unavailable"}
+
     except Exception as e:
         logger.error(f"Cagematch event scrape failed: {e}")
         raise self.retry(exc=e)
@@ -147,7 +167,7 @@ def scrape_cagematch_events(self, limit: int = 25):
 def scrape_profightdb_wrestlers(self, limit: int = 25):
     """Scrape wrestler data from ProFightDB."""
     try:
-        from .scrapers import ProFightDBScraper, ScraperCoordinator
+        from .scrapers import ProFightDBScraper, ScraperCoordinator, ScraperUnavailableError
 
         scraper = ProFightDBScraper()
         coordinator = ScraperCoordinator()
@@ -163,6 +183,11 @@ def scrape_profightdb_wrestlers(self, limit: int = 25):
         logger.info(f"ProFightDB wrestlers: scraped {len(wrestlers)}, imported {imported}")
         return {"scraped": len(wrestlers), "imported": imported}
 
+    except ScraperUnavailableError as e:
+        # Don't retry if the source is completely unavailable (SSL errors, etc.)
+        logger.error(f"ProFightDB unavailable, skipping: {e}")
+        return {"scraped": 0, "imported": 0, "error": str(e), "status": "source_unavailable"}
+
     except Exception as e:
         logger.error(f"ProFightDB wrestler scrape failed: {e}")
         raise self.retry(exc=e)
@@ -172,7 +197,7 @@ def scrape_profightdb_wrestlers(self, limit: int = 25):
 def scrape_profightdb_events(self, limit: int = 25):
     """Scrape events from ProFightDB."""
     try:
-        from .scrapers import ProFightDBScraper, ScraperCoordinator
+        from .scrapers import ProFightDBScraper, ScraperCoordinator, ScraperUnavailableError
 
         scraper = ProFightDBScraper()
         coordinator = ScraperCoordinator()
@@ -187,6 +212,11 @@ def scrape_profightdb_events(self, limit: int = 25):
 
         logger.info(f"ProFightDB events: scraped {len(events)}, imported {imported}")
         return {"scraped": len(events), "imported": imported}
+
+    except ScraperUnavailableError as e:
+        # Don't retry if the source is completely unavailable (SSL errors, etc.)
+        logger.error(f"ProFightDB unavailable, skipping: {e}")
+        return {"scraped": 0, "imported": 0, "error": str(e), "status": "source_unavailable"}
 
     except Exception as e:
         logger.error(f"ProFightDB event scrape failed: {e}")

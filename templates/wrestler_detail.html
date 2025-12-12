@@ -111,7 +111,7 @@
                         <h4>Promotions</h4>
                         <ul class="link-list">
                             {% for promotion in promotions %}
-                            <li><a href="{% url 'promotion_detail' promotion.slug %}">{{ promotion.abbreviation|default:promotion.name }}</a></li>
+                            <li><a href="{% url 'promotion_detail_slug' promotion.slug %}">{{ promotion.abbreviation|default:promotion.name }}</a></li>
                             {% endfor %}
                         </ul>
                     </div>
@@ -166,7 +166,7 @@
                     <div class="scroller-wrap">
                         <div class="scroller">
                             {% for title in titles_won %}
-                            <a href="{% url 'title_detail' title.slug %}" class="card-link">
+                            <a href="{% url 'title_detail_slug' title.slug %}" class="card-link">
                                 <div class="media-card">
                                     {% if title.image_url %}
                                     <div class="media-poster" style="background-image: url('{{ title.image_url }}')"></div>
@@ -195,7 +195,7 @@
                     <div class="scroller-wrap">
                         <div class="scroller">
                             {% for rival in rivals %}
-                            <a href="{% url 'wrestler_detail' rival.slug %}" class="card-link">
+                            <a href="{% url 'wrestler_detail_slug' rival.slug %}" class="card-link">
                                 <div class="media-card">
                                     {% if rival.image_url %}
                                     <div class="media-poster" style="background-image: url('{{ rival.image_url }}')"></div>
@@ -243,7 +243,7 @@
                             <div class="credit-info">
                                 <a href="{% url 'match_detail' match.pk %}" class="credit-title">{{ match.match_text }}</a>
                                 <span class="credit-meta">
-                                    <a href="{% url 'event_detail' match.event.pk %}">{{ match.event.name }}</a>
+                                    <a href="{% url 'event_detail_slug' match.event.slug %}">{{ match.event.name }}</a>
                                     {% if match.result %}<span class="result-badge {{ match.result|lower }}">{{ match.result }}</span>{% endif %}
                                 </span>
                             </div>

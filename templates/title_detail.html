@@ -19,7 +19,7 @@
     <div class="detail-meta">
         <div class="detail-meta-item">
             <span class="detail-meta-label">Promotion:</span>
-            <a href="{% url 'promotion_detail' title.promotion.slug %}">{{ title.promotion.name }}</a>
+            <a href="{% url 'promotion_detail_slug' title.promotion.slug %}">{{ title.promotion.name }}</a>
         </div>
         {% if title.debut_year %}
         <div class="detail-meta-item">
@@ -53,7 +53,7 @@
     <div class="card-body">
         <div class="chip-list">
             {% for champion in all_champions %}
-            <a href="{% url 'wrestler_detail' champion.slug %}" class="chip chip-gold">
+            <a href="{% url 'wrestler_detail_slug' champion.slug %}" class="chip chip-gold">
                 {% if champion.image_url %}
                 <img src="{{ champion.image_url }}" alt="{{ champion.name }}" class="chip-avatar">
                 {% endif %}
@@ -83,7 +83,7 @@
                 {% for defender in most_defenses %}
                     <tr>
                         <td>{{ forloop.counter }}</td>
-                        <td><a href="{% url 'wrestler_detail' defender.slug %}">{{ defender.name }}</a></td>
+                        <td><a href="{% url 'wrestler_detail_slug' defender.slug %}">{{ defender.name }}</a></td>
                         <td>{{ defender.defense_count }}</td>
                     </tr>
                 {% endfor %}
@@ -115,10 +115,10 @@
                         <td>{{ match.event.date|date:"M j, Y" }}</td>
                         <td>
                             {% if match.winner %}
-                            <a href="{% url 'wrestler_detail' match.winner.slug %}">{{ match.winner.name }}</a>
+                            <a href="{% url 'wrestler_detail_slug' match.winner.slug %}">{{ match.winner.name }}</a>
                             {% else %}—{% endif %}
                         </td>
-                        <td><a href="{% url 'event_detail' match.event.slug %}">{{ match.event.name }}</a></td>
+                        <td><a href="{% url 'event_detail_slug' match.event.slug %}">{{ match.event.name }}</a></td>
                         <td><a href="{% url 'match_detail' match.pk %}">{{ match.match_text|truncatewords:8 }}</a></td>
                     </tr>
                 {% endfor %}
@@ -147,10 +147,10 @@
                 {% for match in title_matches %}
                     <tr>
                         <td><a href="{% url 'match_detail' match.pk %}">{{ match.match_text }}</a></td>
-                        <td><a href="{% url 'event_detail' match.event.slug %}">{{ match.event.name }}</a></td>
+                        <td><a href="{% url 'event_detail_slug' match.event.slug %}">{{ match.event.name }}</a></td>
                         <td>
                             {% if match.winner %}
-                            <a href="{% url 'wrestler_detail' match.winner.slug %}">{{ match.winner.name }}</a>
+                            <a href="{% url 'wrestler_detail_slug' match.winner.slug %}">{{ match.winner.name }}</a>
                             {% else %}—{% endif %}
                         </td>
                     </tr>

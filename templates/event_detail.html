@@ -19,7 +19,7 @@
     <div class="detail-meta">
         <div class="detail-meta-item">
             <span class="detail-meta-label">Promotion:</span>
-            <a href="{% url 'promotion_detail' event.promotion.slug %}">{{ event.promotion.name }}</a>
+            <a href="{% url 'promotion_detail_slug' event.promotion.slug %}">{{ event.promotion.name }}</a>
         </div>
         <div class="detail-meta-item">
             <span class="detail-meta-label">Date:</span> {{ event.date|date:"F j, Y" }}
@@ -27,7 +27,7 @@
         {% if event.venue %}
         <div class="detail-meta-item">
             <span class="detail-meta-label">Venue:</span>
-            <a href="{% url 'venue_detail' event.venue.slug %}">{{ event.venue.name }}</a>{% if event.venue.location %}, {{ event.venue.location }}{% endif %}
+            <a href="{% url 'venue_detail_slug' event.venue.slug %}">{{ event.venue.name }}</a>{% if event.venue.location %}, {{ event.venue.location }}{% endif %}
         </div>
         {% endif %}
         {% if event.attendance %}
@@ -54,7 +54,7 @@
     <div class="card-body">
         <div class="chip-list">
             {% for wrestler in all_wrestlers %}
-            <a href="{% url 'wrestler_detail' wrestler.slug %}" class="chip">
+            <a href="{% url 'wrestler_detail_slug' wrestler.slug %}" class="chip">
                 {% if wrestler.image_url %}
                 <img src="{{ wrestler.image_url }}" alt="{{ wrestler.name }}" class="chip-avatar">
                 {% endif %}
@@ -73,7 +73,7 @@
     <div class="card-body">
         <div class="chip-list">
             {% for title in titles_defended %}
-            <a href="{% url 'title_detail' title.slug %}" class="chip chip-gold">
+            <a href="{% url 'title_detail_slug' title.slug %}" class="chip chip-gold">
                 {{ title.name }}
             </a>
             {% endfor %}

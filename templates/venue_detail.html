@@ -59,7 +59,7 @@
     <div class="card-body">
         <div class="chip-list">
             {% for promotion in promotions %}
-            <a href="{% url 'promotion_detail' promotion.slug %}" class="chip">
+            <a href="{% url 'promotion_detail_slug' promotion.slug %}" class="chip">
                 {% if promotion.image_url %}
                 <img src="{{ promotion.image_url }}" alt="{{ promotion.name }}" class="chip-avatar">
                 {% endif %}
@@ -79,7 +79,7 @@
     <div class="card-body">
         <div class="chip-list">
             {% for wrestler in top_wrestlers %}
-            <a href="{% url 'wrestler_detail' wrestler.slug %}" class="chip">
+            <a href="{% url 'wrestler_detail_slug' wrestler.slug %}" class="chip">
                 {% if wrestler.image_url %}
                 <img src="{{ wrestler.image_url }}" alt="{{ wrestler.name }}" class="chip-avatar">
                 {% endif %}
@@ -109,8 +109,8 @@
                 <tbody>
                 {% for event in events %}
                     <tr>
-                        <td><a href="{% url 'event_detail' event.slug %}">{{ event.name }}</a></td>
-                        <td><a href="{% url 'promotion_detail' event.promotion.slug %}">{{ event.promotion.abbreviation|default:event.promotion.name }}</a></td>
+                        <td><a href="{% url 'event_detail_slug' event.slug %}">{{ event.name }}</a></td>
+                        <td><a href="{% url 'promotion_detail_slug' event.promotion.slug %}">{{ event.promotion.abbreviation|default:event.promotion.name }}</a></td>
                         <td>{{ event.date|date:"M j, Y" }}</td>
                     </tr>
                 {% endfor %}

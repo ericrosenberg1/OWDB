@@ -6,11 +6,11 @@
     <div class="detail-meta">
         <div class="detail-meta-item">
             <span class="detail-meta-label">Event:</span>
-            <a href="{% url 'event_detail' match.event.slug %}">{{ match.event.name }}</a>
+            <a href="{% url 'event_detail_slug' match.event.slug %}">{{ match.event.name }}</a>
         </div>
         <div class="detail-meta-item">
             <span class="detail-meta-label">Promotion:</span>
-            <a href="{% url 'promotion_detail' match.event.promotion.slug %}">{{ match.event.promotion.name }}</a>
+            <a href="{% url 'promotion_detail_slug' match.event.promotion.slug %}">{{ match.event.promotion.name }}</a>
         </div>
         <div class="detail-meta-item">
             <span class="detail-meta-label">Date:</span> {{ match.event.date|date:"F j, Y" }}
@@ -18,7 +18,7 @@
         {% if match.event.venue %}
         <div class="detail-meta-item">
             <span class="detail-meta-label">Venue:</span>
-            <a href="{% url 'venue_detail' match.event.venue.slug %}">{{ match.event.venue.name }}</a>
+            <a href="{% url 'venue_detail_slug' match.event.venue.slug %}">{{ match.event.venue.name }}</a>
         </div>
         {% endif %}
         {% if match.match_type %}
@@ -37,7 +37,7 @@
                 <strong>Championship Match</strong>
             </div>
             <div class="card-body">
-                <a href="{% url 'title_detail' match.title.slug %}" class="d-flex align-items-center text-decoration-none">
+                <a href="{% url 'title_detail_slug' match.title.slug %}" class="d-flex align-items-center text-decoration-none">
                     {% if match.title.image_url %}
                     <img src="{{ match.title.image_url }}" alt="{{ match.title.name }}" class="me-3" style="max-height: 60px; max-width: 100px;">
                     {% endif %}
@@ -55,7 +55,7 @@
                 {% if match.winner %}
                 <p class="mt-2 mb-0">
                     <strong>Winner:</strong>
-                    <a href="{% url 'wrestler_detail' match.winner.slug %}">{{ match.winner.name }}</a>
+                    <a href="{% url 'wrestler_detail_slug' match.winner.slug %}">{{ match.winner.name }}</a>
                 </p>
                 {% endif %}
             </div>
@@ -89,7 +89,7 @@
                         {% for related in related_matches %}
                             <tr>
                                 <td><a href="{% url 'match_detail' related.pk %}">{{ related.match_text|truncatewords:8 }}</a></td>
-                                <td><a href="{% url 'event_detail' related.event.slug %}">{{ related.event.name }}</a></td>
+                                <td><a href="{% url 'event_detail_slug' related.event.slug %}">{{ related.event.name }}</a></td>
                                 <td>{{ related.event.date|date:"M j, Y" }}</td>
                             </tr>
                         {% endfor %}
@@ -109,7 +109,7 @@
             <div class="card-body">
                 <div class="participant-grid">
                     {% for wrestler in participants %}
-                    <a href="{% url 'wrestler_detail' wrestler.slug %}" class="participant-card {% if wrestler == match.winner %}winner{% endif %}">
+                    <a href="{% url 'wrestler_detail_slug' wrestler.slug %}" class="participant-card {% if wrestler == match.winner %}winner{% endif %}">
                         {% if wrestler.image_url %}
                         <img src="{{ wrestler.image_url }}" alt="{{ wrestler.name }}" class="participant-image">
                         {% else %}
@@ -133,6 +133,6 @@
     </div>
 </div>
 
-<a href="{% url 'event_detail' match.event.slug %}" class="btn btn-secondary">&larr; Back to Event</a>
+<a href="{% url 'event_detail_slug' match.event.slug %}" class="btn btn-secondary">&larr; Back to Event</a>
 <a href="{% url 'matches' %}" class="btn btn-outline-light ms-2">All Matches</a>
 {% endblock %}

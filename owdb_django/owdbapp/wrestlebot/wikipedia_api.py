@@ -591,150 +591,194 @@ class WikipediaAPIFetcher:
 
     def discover_new_wrestlers(self, limit: int = 20) -> List[Dict[str, Any]]:
         """
-        Discover new wrestlers from random Wikipedia categories.
+        Discover new wrestlers from Wikipedia categories.
 
-        Checks against existing database to avoid duplicates.
+        Uses rotating category index to ensure variety across cycles.
         """
-        import random
-        from ..models import Wrestler
+        from ..models import Wrestler, WrestleBotLog
 
-        # Pick random categories to explore
-        categories = random.sample(
-            self.WRESTLER_CATEGORIES,
-            min(3, len(self.WRESTLER_CATEGORIES))
+        # Get recently skipped names to avoid retrying
+        recently_skipped = set(
+            WrestleBotLog.objects.filter(
+                entity_type='wrestler',
+                action_type='skip',
+            ).values_list('entity_name', flat=True)[:200]
         )
+
+        # Rotate through categories based on current time
+        import time
+        category_index = int(time.time() // 300) % len(self.WRESTLER_CATEGORIES)
+        # Use 2 consecutive categories for variety
+        categories = [
+            self.WRESTLER_CATEGORIES[category_index % len(self.WRESTLER_CATEGORIES)],
+            self.WRESTLER_CATEGORIES[(category_index + 1) % len(self.WRESTLER_CATEGORIES)],
+        ]
 
         wrestlers = []
         existing_names = set(
             Wrestler.objects.values_list('name', flat=True)
         )
+        skip_names = existing_names | recently_skipped
 
         for category in categories:
             if len(wrestlers) >= limit:
                 break
 
-            members = self.get_category_members(category, limit=limit * 2)
+            members = self.get_category_members(category, limit=limit * 3)
 
             for member in members:
                 if len(wrestlers) >= limit:
                     break
 
                 title = member['title']
-                if title in existing_names:
+                if title in skip_names:
                     continue
 
                 data = self.get_wrestler_data(title)
                 if data and self._is_valid_wrestler_data(data):
                     wrestlers.append(data)
-                    existing_names.add(title)
+                    skip_names.add(title)
 
         return wrestlers
 
     def discover_new_promotions(self, limit: int = 10) -> List[Dict[str, Any]]:
         """Discover new promotions from Wikipedia categories."""
-        import random
-        from ..models import Promotion
+        from ..models import Promotion, WrestleBotLog
 
-        categories = random.sample(
-            self.PROMOTION_CATEGORIES,
-            min(2, len(self.PROMOTION_CATEGORIES))
+        # Get recently skipped names to avoid retrying
+        recently_skipped = set(
+            WrestleBotLog.objects.filter(
+                entity_type='promotion',
+                action_type='skip',
+            ).values_list('entity_name', flat=True)[:100]
         )
+
+        # Rotate through categories
+        import time
+        category_index = int(time.time() // 300) % len(self.PROMOTION_CATEGORIES)
+        categories = [
+            self.PROMOTION_CATEGORIES[category_index % len(self.PROMOTION_CATEGORIES)],
+            self.PROMOTION_CATEGORIES[(category_index + 1) % len(self.PROMOTION_CATEGORIES)],
+        ]
 
         promotions = []
         existing_names = set(
             Promotion.objects.values_list('name', flat=True)
         )
+        skip_names = existing_names | recently_skipped
 
         for category in categories:
             if len(promotions) >= limit:
                 break
 
-            members = self.get_category_members(category, limit=limit * 2)
+            members = self.get_category_members(category, limit=limit * 3)
 
             for member in members:
                 if len(promotions) >= limit:
                     break
 
                 title = member['title']
-                if title in existing_names:
+                if title in skip_names:
                     continue
 
                 data = self.get_promotion_data(title)
                 if data:
                     promotions.append(data)
-                    existing_names.add(title)
+                    skip_names.add(title)
 
         return promotions
 
     def discover_new_events(self, limit: int = 10) -> List[Dict[str, Any]]:
         """Discover new events from Wikipedia categories."""
-        import random
-        from ..models import Event
+        from ..models import Event, WrestleBotLog
 
-        categories = random.sample(
-            self.EVENT_CATEGORIES,
-            min(2, len(self.EVENT_CATEGORIES))
+        # Get recently skipped names to avoid retrying
+        recently_skipped = set(
+            WrestleBotLog.objects.filter(
+                entity_type='event',
+                action_type='skip',
+            ).values_list('entity_name', flat=True)[:100]
         )
+
+        # Rotate through categories
+        import time
+        category_index = int(time.time() // 300) % len(self.EVENT_CATEGORIES)
+        categories = [
+            self.EVENT_CATEGORIES[category_index % len(self.EVENT_CATEGORIES)],
+            self.EVENT_CATEGORIES[(category_index + 1) % len(self.EVENT_CATEGORIES)],
+        ]
 
         events = []
         existing_names = set(
             Event.objects.values_list('name', flat=True)
         )
+        skip_names = existing_names | recently_skipped
 
         for category in categories:
             if len(events) >= limit:
                 break
 
-            members = self.get_category_members(category, limit=limit * 2)
+            members = self.get_category_members(category, limit=limit * 3)
 
             for member in members:
                 if len(events) >= limit:
                     break
 
                 title = member['title']
-                if title in existing_names:
+                if title in skip_names:
                     continue
 
                 data = self.get_event_data(title)
                 if data and 'date' in data:  # Events need dates
                     events.append(data)
-                    existing_names.add(title)
+                    skip_names.add(title)
 
         return events
 
     def discover_new_titles(self, limit: int = 10) -> List[Dict[str, Any]]:
         """Discover new championship titles from Wikipedia categories."""
-        import random
-        from ..models import Title
+        from ..models import Title, WrestleBotLog
 
-        categories = random.sample(
-            self.TITLE_CATEGORIES,
-            min(2, len(self.TITLE_CATEGORIES))
+        # Get recently skipped names to avoid retrying
+        recently_skipped = set(
+            WrestleBotLog.objects.filter(
+                entity_type='title',
+                action_type='skip',
+            ).values_list('entity_name', flat=True)[:100]
         )
+
+        # Rotate through categories
+        import time
+        category_index = int(time.time() // 300) % len(self.TITLE_CATEGORIES)
+        categories = [
+            self.TITLE_CATEGORIES[category_index % len(self.TITLE_CATEGORIES)],
+            self.TITLE_CATEGORIES[(category_index + 1) % len(self.TITLE_CATEGORIES)],
+        ]
 
         titles = []
         existing_names = set(
             Title.objects.values_list('name', flat=True)
         )
+        skip_names = existing_names | recently_skipped
 
         for category in categories:
             if len(titles) >= limit:
                 break
 
-            members = self.get_category_members(category, limit=limit * 2)
+            members = self.get_category_members(category, limit=limit * 3)
 
             for member in members:
                 if len(titles) >= limit:
                     break
 
                 title = member['title']
-                if title in existing_names:
+                if title in skip_names:
                     continue
 
                 data = self.get_title_data(title)
                 if data:
                     titles.append(data)
-                    existing_names.add(title)
+                    skip_names.add(title)
 
         return titles
 

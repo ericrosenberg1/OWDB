@@ -103,6 +103,53 @@ class WrestleBot:
         self.refresh_config()
         return self.config.can_add_items()
 
+    def _infer_promotion(self, name: str):
+        """Infer promotion from an event or title name."""
+        from ..models import Promotion
+
+        # Common promotion patterns (name -> (db_name, slug, abbreviation))
+        PROMOTION_PATTERNS = [
+            (['WWE', 'WWF', 'World Wrestling Entertainment'], 'WWE', 'wwe', 'WWE'),
+            (['AEW', 'All Elite'], 'All Elite Wrestling', 'all-elite-wrestling', 'AEW'),
+            (['NWA', 'National Wrestling Alliance'], 'National Wrestling Alliance', 'nwa', 'NWA'),
+            (['WCW', 'World Championship Wrestling'], 'World Championship Wrestling', 'wcw', 'WCW'),
+            (['ECW', 'Extreme Championship'], 'Extreme Championship Wrestling', 'ecw', 'ECW'),
+            (['TNA', 'Impact', 'Total Nonstop'], 'Impact Wrestling', 'impact-wrestling', 'IMPACT'),
+            (['ROH', 'Ring of Honor'], 'Ring of Honor', 'ring-of-honor', 'ROH'),
+            (['NJPW', 'New Japan'], 'New Japan Pro-Wrestling', 'njpw', 'NJPW'),
+            (['CMLL', 'Consejo Mundial'], 'CMLL', 'cmll', 'CMLL'),
+            (['AAA', 'Lucha Libre AAA'], 'Lucha Libre AAA', 'aaa', 'AAA'),
+            (['STARDOM'], 'Stardom', 'stardom', 'STARDOM'),
+            (['DDT'], 'DDT Pro-Wrestling', 'ddt', 'DDT'),
+            (['AJPW', 'All Japan'], 'All Japan Pro Wrestling', 'ajpw', 'AJPW'),
+            (['NOAH', 'Pro Wrestling NOAH'], 'Pro Wrestling Noah', 'noah', 'NOAH'),
+            (['MLW', 'Major League Wrestling'], 'Major League Wrestling', 'mlw', 'MLW'),
+            (['GCW', 'Game Changer'], 'Game Changer Wrestling', 'gcw', 'GCW'),
+            (['PWG', 'Pro Wrestling Guerrilla'], 'Pro Wrestling Guerrilla', 'pwg', 'PWG'),
+            (['PROGRESS'], 'PROGRESS Wrestling', 'progress', 'PROGRESS'),
+            (['RevPro', 'Revolution Pro'], 'Revolution Pro Wrestling', 'revpro', 'RevPro'),
+            (['ICW'], 'Insane Championship Wrestling', 'icw', 'ICW'),
+            (['OVW', 'Ohio Valley'], 'Ohio Valley Wrestling', 'ovw', 'OVW'),
+            (['NXT'], 'WWE NXT', 'nxt', 'NXT'),
+            (['EVOLVE'], 'EVOLVE Wrestling', 'evolve', 'EVOLVE'),
+            (['CZW', 'Combat Zone'], 'Combat Zone Wrestling', 'czw', 'CZW'),
+            (['Wrestle Kingdom', 'G1'], 'New Japan Pro-Wrestling', 'njpw', 'NJPW'),
+            (['WrestleMania', 'Royal Rumble', 'SummerSlam', 'Survivor Series'], 'WWE', 'wwe', 'WWE'),
+            (['Double or Nothing', 'All Out', 'Full Gear', 'Revolution'], 'All Elite Wrestling', 'all-elite-wrestling', 'AEW'),
+        ]
+
+        name_upper = name.upper()
+        for patterns, promo_name, slug, abbrev in PROMOTION_PATTERNS:
+            for pattern in patterns:
+                if pattern.upper() in name_upper:
+                    promotion, _ = Promotion.objects.get_or_create(
+                        name=promo_name,
+                        defaults={'slug': slug, 'abbreviation': abbrev}
+                    )
+                    return promotion
+
+        return None
+
     def run_discovery_cycle(self, max_items: int = 10) -> Dict[str, int]:
         """
         Run a single discovery cycle.
@@ -524,16 +571,7 @@ class WrestleBot:
             )
         else:
             # Try to infer promotion from event name
-            if 'WWE' in name or 'WWF' in name:
-                promotion, _ = Promotion.objects.get_or_create(
-                    name='WWE',
-                    defaults={'slug': 'wwe', 'abbreviation': 'WWE'}
-                )
-            elif 'AEW' in name:
-                promotion, _ = Promotion.objects.get_or_create(
-                    name='All Elite Wrestling',
-                    defaults={'slug': 'all-elite-wrestling', 'abbreviation': 'AEW'}
-                )
+            promotion = self._infer_promotion(name)
 
         if not promotion:
             self.log_action(
@@ -600,21 +638,7 @@ class WrestleBot:
             )
         else:
             # Try to infer from title name
-            if 'WWE' in name or 'WWF' in name:
-                promotion, _ = Promotion.objects.get_or_create(
-                    name='WWE',
-                    defaults={'slug': 'wwe', 'abbreviation': 'WWE'}
-                )
-            elif 'AEW' in name:
-                promotion, _ = Promotion.objects.get_or_create(
-                    name='All Elite Wrestling',
-                    defaults={'slug': 'all-elite-wrestling', 'abbreviation': 'AEW'}
-                )
-            elif 'NWA' in name:
-                promotion, _ = Promotion.objects.get_or_create(
-                    name='National Wrestling Alliance',
-                    defaults={'slug': 'nwa', 'abbreviation': 'NWA'}
-                )
+            promotion = self._infer_promotion(name)
 
         if not promotion:
             self.log_action(

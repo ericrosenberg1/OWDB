@@ -239,12 +239,12 @@ CELERY_BEAT_SCHEDULE = {
         'args': (30,),
     },
     # ==========================================================================
-    # WrestleBot AI tasks - 2X FREQUENCY
+    # WrestleBot AI tasks - 4X FREQUENCY for faster database building
     # ==========================================================================
     'wrestlebot-discovery-cycle': {
         'task': 'owdb_django.owdbapp.tasks.wrestlebot_discovery_cycle',
-        'schedule': 900.0,  # Every 15 minutes (was 30)
-        'args': (10,),  # Max 10 items per cycle
+        'schedule': 300.0,  # Every 5 minutes (was 15)
+        'args': (15,),  # Max 15 items per cycle
     },
     'wrestlebot-cleanup-logs': {
         'task': 'owdb_django.owdbapp.tasks.wrestlebot_cleanup_old_logs',

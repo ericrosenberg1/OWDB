@@ -2,6 +2,19 @@
 
 {% block content %}
 <div class="detail-header">
+    {% if venue.image_url %}
+    <div class="detail-image detail-image-wide">
+        <img src="{{ venue.image_url }}" alt="{{ venue.name }}">
+        {% if venue.image_credit or venue.image_license %}
+        <div class="image-credit">
+            {% if venue.image_source_url %}<a href="{{ venue.image_source_url }}" target="_blank" rel="noopener">{% endif %}
+            {{ venue.image_credit|default:"Image" }}
+            {% if venue.image_license %}({{ venue.image_license|upper }}){% endif %}
+            {% if venue.image_source_url %}</a>{% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
     <h1 class="detail-title">{{ venue.name }}</h1>
     <div class="detail-meta">
         {% if venue.location %}
@@ -17,9 +30,72 @@
     </div>
 </div>
 
+<!-- Stats Cards -->
+{% if stats %}
+<div class="stats-row mb-4">
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.total_events|default:0 }}</div>
+        <div class="stat-label">Total Events</div>
+    </div>
+    {% if stats.total_attendance %}
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.total_attendance|floatformat:0 }}</div>
+        <div class="stat-label">Total Attendance</div>
+    </div>
+    {% endif %}
+    {% if stats.avg_attendance %}
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.avg_attendance|floatformat:0 }}</div>
+        <div class="stat-label">Avg Attendance</div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Promotions that have run events here -->
+{% if promotions %}
+<div class="card mb-4">
+    <div class="card-header">Promotions</div>
+    <div class="card-body">
+        <div class="chip-list">
+            {% for promotion in promotions %}
+            <a href="{% url 'promotion_detail' promotion.slug %}" class="chip">
+                {% if promotion.image_url %}
+                <img src="{{ promotion.image_url }}" alt="{{ promotion.name }}" class="chip-avatar">
+                {% endif %}
+                {{ promotion.abbreviation|default:promotion.name }}
+                <span class="chip-badge">{{ promotion.event_count }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Top Wrestlers -->
+{% if top_wrestlers %}
+<div class="card mb-4">
+    <div class="card-header">Top Performers at This Venue</div>
+    <div class="card-body">
+        <div class="chip-list">
+            {% for wrestler in top_wrestlers %}
+            <a href="{% url 'wrestler_detail' wrestler.slug %}" class="chip">
+                {% if wrestler.image_url %}
+                <img src="{{ wrestler.image_url }}" alt="{{ wrestler.name }}" class="chip-avatar">
+                {% endif %}
+                {{ wrestler.name }}
+                <span class="chip-badge">{{ wrestler.appearance_count }} appearances</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Events at this venue (paginated) -->
 {% if events %}
 <div class="card mb-4">
-    <div class="card-header">Events at This Venue</div>
+    <div class="card-header">Events at This Venue ({{ events.paginator.count }})</div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-striped mb-0">
@@ -33,8 +109,8 @@
                 <tbody>
                 {% for event in events %}
                     <tr>
-                        <td><a href="{% url 'event_detail' event.pk %}">{{ event.name }}</a></td>
-                        <td><a href="{% url 'promotion_detail' event.promotion.pk %}">{{ event.promotion.name }}</a></td>
+                        <td><a href="{% url 'event_detail' event.slug %}">{{ event.name }}</a></td>
+                        <td><a href="{% url 'promotion_detail' event.promotion.slug %}">{{ event.promotion.abbreviation|default:event.promotion.name }}</a></td>
                         <td>{{ event.date|date:"M j, Y" }}</td>
                     </tr>
                 {% endfor %}
@@ -42,6 +118,21 @@
             </table>
         </div>
     </div>
+    {% if events.has_other_pages %}
+    <div class="card-footer">
+        <nav aria-label="Event pagination">
+            <ul class="pagination mb-0 justify-content-center">
+                {% if events.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ events.previous_page_number }}">&laquo; Previous</a></li>
+                {% endif %}
+                <li class="page-item disabled"><span class="page-link">Page {{ events.number }} of {{ events.paginator.num_pages }}</span></li>
+                {% if events.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ events.next_page_number }}">Next &raquo;</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
 </div>
 {% endif %}
 

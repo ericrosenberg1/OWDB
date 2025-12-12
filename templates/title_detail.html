@@ -2,11 +2,24 @@
 
 {% block content %}
 <div class="detail-header">
+    {% if title.image_url %}
+    <div class="detail-image">
+        <img src="{{ title.image_url }}" alt="{{ title.name }}">
+        {% if title.image_credit or title.image_license %}
+        <div class="image-credit">
+            {% if title.image_source_url %}<a href="{{ title.image_source_url }}" target="_blank" rel="noopener">{% endif %}
+            {{ title.image_credit|default:"Image" }}
+            {% if title.image_license %}({{ title.image_license|upper }}){% endif %}
+            {% if title.image_source_url %}</a>{% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
     <h1 class="detail-title">{{ title.name }}</h1>
     <div class="detail-meta">
         <div class="detail-meta-item">
             <span class="detail-meta-label">Promotion:</span>
-            <a href="{% url 'promotion_detail' title.promotion.pk %}">{{ title.promotion.name }}</a>
+            <a href="{% url 'promotion_detail' title.promotion.slug %}">{{ title.promotion.name }}</a>
         </div>
         {% if title.debut_year %}
         <div class="detail-meta-item">
@@ -33,6 +46,90 @@
 </div>
 {% endif %}
 
+<!-- All Champions -->
+{% if all_champions %}
+<div class="card mb-4">
+    <div class="card-header">All Champions ({{ all_champions|length }})</div>
+    <div class="card-body">
+        <div class="chip-list">
+            {% for champion in all_champions %}
+            <a href="{% url 'wrestler_detail' champion.slug %}" class="chip chip-gold">
+                {% if champion.image_url %}
+                <img src="{{ champion.image_url }}" alt="{{ champion.name }}" class="chip-avatar">
+                {% endif %}
+                {{ champion.name }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Top Defenders -->
+{% if most_defenses %}
+<div class="card mb-4">
+    <div class="card-header">Most Title Defenses</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Champion</th>
+                        <th>Defenses</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for defender in most_defenses %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td><a href="{% url 'wrestler_detail' defender.slug %}">{{ defender.name }}</a></td>
+                        <td>{{ defender.defense_count }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Championship History -->
+{% if championship_history %}
+<div class="card mb-4">
+    <div class="card-header">Championship History</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Champion</th>
+                        <th>Event</th>
+                        <th>Match</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for match in championship_history %}
+                    <tr>
+                        <td>{{ match.event.date|date:"M j, Y" }}</td>
+                        <td>
+                            {% if match.winner %}
+                            <a href="{% url 'wrestler_detail' match.winner.slug %}">{{ match.winner.name }}</a>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td><a href="{% url 'event_detail' match.event.slug %}">{{ match.event.name }}</a></td>
+                        <td><a href="{% url 'match_detail' match.pk %}">{{ match.match_text|truncatewords:8 }}</a></td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Title Matches -->
 {% if title_matches %}
 <div class="card mb-4">
     <div class="card-header">Title Matches</div>
@@ -43,15 +140,19 @@
                     <tr>
                         <th>Match</th>
                         <th>Event</th>
-                        <th>Result</th>
+                        <th>Winner</th>
                     </tr>
                 </thead>
                 <tbody>
                 {% for match in title_matches %}
                     <tr>
                         <td><a href="{% url 'match_detail' match.pk %}">{{ match.match_text }}</a></td>
-                        <td><a href="{% url 'event_detail' match.event.pk %}">{{ match.event.name }}</a></td>
-                        <td>{{ match.result|default:"—" }}</td>
+                        <td><a href="{% url 'event_detail' match.event.slug %}">{{ match.event.name }}</a></td>
+                        <td>
+                            {% if match.winner %}
+                            <a href="{% url 'wrestler_detail' match.winner.slug %}">{{ match.winner.name }}</a>
+                            {% else %}—{% endif %}
+                        </td>
                     </tr>
                 {% endfor %}
                 </tbody>

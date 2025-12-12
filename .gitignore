@@ -124,3 +124,4 @@ celerybeat.pid
 *.tmp
 *.temp
 instance/
+owdb_django/owdbapp/wrestlingdb.code-workspace

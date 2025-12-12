@@ -149,7 +149,7 @@ CELERY_TIMEZONE = 'UTC'
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
 
-# Celery Beat schedule
+# Celery Beat schedule - 2X FREQUENCY for faster database building
 CELERY_BEAT_SCHEDULE = {
     'reset-daily-api-limits': {
         'task': 'owdb_django.owdbapp.tasks.reset_daily_api_limits',
@@ -163,50 +163,54 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'owdb_django.owdbapp.tasks.cleanup_inactive_api_keys',
         'schedule': 604800.0,  # Every 7 days
     },
-    # Scraping tasks - staggered throughout the day
+    # ==========================================================================
+    # Web Scraping tasks - 2X FREQUENCY (doubled for faster database building)
+    # ==========================================================================
     'scrape-wikipedia-wrestlers': {
         'task': 'owdb_django.owdbapp.tasks.scrape_wikipedia_wrestlers',
-        'schedule': 14400.0,  # Every 4 hours
+        'schedule': 7200.0,  # Every 2 hours (was 4)
         'args': (50,),
     },
     'scrape-wikipedia-promotions': {
         'task': 'owdb_django.owdbapp.tasks.scrape_wikipedia_promotions',
-        'schedule': 43200.0,  # Every 12 hours
+        'schedule': 21600.0,  # Every 6 hours (was 12)
         'args': (25,),
     },
     'scrape-wikipedia-events': {
         'task': 'owdb_django.owdbapp.tasks.scrape_wikipedia_events',
-        'schedule': 14400.0,  # Every 4 hours
+        'schedule': 7200.0,  # Every 2 hours (was 4)
         'args': (50,),
     },
     'scrape-cagematch-wrestlers': {
         'task': 'owdb_django.owdbapp.tasks.scrape_cagematch_wrestlers',
-        'schedule': 21600.0,  # Every 6 hours
+        'schedule': 10800.0,  # Every 3 hours (was 6)
         'args': (25,),
     },
     'scrape-cagematch-events': {
         'task': 'owdb_django.owdbapp.tasks.scrape_cagematch_events',
-        'schedule': 21600.0,  # Every 6 hours
+        'schedule': 10800.0,  # Every 3 hours (was 6)
         'args': (25,),
     },
     'scrape-profightdb-wrestlers': {
         'task': 'owdb_django.owdbapp.tasks.scrape_profightdb_wrestlers',
-        'schedule': 28800.0,  # Every 8 hours
+        'schedule': 14400.0,  # Every 4 hours (was 8)
         'args': (25,),
     },
     'scrape-profightdb-events': {
         'task': 'owdb_django.owdbapp.tasks.scrape_profightdb_events',
-        'schedule': 28800.0,  # Every 8 hours
+        'schedule': 14400.0,  # Every 4 hours (was 8)
         'args': (25,),
     },
     'get-scraper-stats': {
         'task': 'owdb_django.owdbapp.tasks.get_scraper_stats',
         'schedule': 3600.0,  # Every hour
     },
+    # ==========================================================================
     # API tasks - movies, games, books, podcasts
+    # ==========================================================================
     'fetch-tmdb-specials': {
         'task': 'owdb_django.owdbapp.tasks.fetch_tmdb_specials',
-        'schedule': 43200.0,  # Every 12 hours
+        'schedule': 21600.0,  # Every 6 hours (was 12)
         'args': (30,),
     },
     'fetch-rawg-videogames': {
@@ -216,7 +220,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'fetch-openlibrary-books': {
         'task': 'owdb_django.owdbapp.tasks.fetch_openlibrary_books',
-        'schedule': 43200.0,  # Every 12 hours
+        'schedule': 21600.0,  # Every 6 hours (was 12)
         'args': (30,),
     },
     'fetch-googlebooks-books': {
@@ -226,18 +230,20 @@ CELERY_BEAT_SCHEDULE = {
     },
     'fetch-itunes-podcasts': {
         'task': 'owdb_django.owdbapp.tasks.fetch_itunes_podcasts',
-        'schedule': 43200.0,  # Every 12 hours
+        'schedule': 21600.0,  # Every 6 hours (was 12)
         'args': (30,),
     },
     'fetch-podcastindex-podcasts': {
         'task': 'owdb_django.owdbapp.tasks.fetch_podcastindex_podcasts',
-        'schedule': 43200.0,  # Every 12 hours
+        'schedule': 21600.0,  # Every 6 hours (was 12)
         'args': (30,),
     },
-    # WrestleBot AI tasks
+    # ==========================================================================
+    # WrestleBot AI tasks - 2X FREQUENCY
+    # ==========================================================================
     'wrestlebot-discovery-cycle': {
         'task': 'owdb_django.owdbapp.tasks.wrestlebot_discovery_cycle',
-        'schedule': 1800.0,  # Every 30 minutes
+        'schedule': 900.0,  # Every 15 minutes (was 30)
         'args': (10,),  # Max 10 items per cycle
     },
     'wrestlebot-cleanup-logs': {
@@ -251,6 +257,34 @@ CELERY_BEAT_SCHEDULE = {
     'wrestlebot-get-stats': {
         'task': 'owdb_django.owdbapp.tasks.wrestlebot_get_stats',
         'schedule': 3600.0,  # Every hour
+    },
+    # ==========================================================================
+    # Image Fetch Tasks (Wikimedia Commons CC Images)
+    # ==========================================================================
+    'fetch-wrestler-images': {
+        'task': 'owdb_django.owdbapp.tasks.fetch_wrestler_images',
+        'schedule': 21600.0,  # Every 6 hours
+        'args': (20,),  # 20 wrestlers per batch
+    },
+    'fetch-promotion-images': {
+        'task': 'owdb_django.owdbapp.tasks.fetch_promotion_images',
+        'schedule': 43200.0,  # Every 12 hours
+        'args': (10,),
+    },
+    'fetch-venue-images': {
+        'task': 'owdb_django.owdbapp.tasks.fetch_venue_images',
+        'schedule': 43200.0,  # Every 12 hours
+        'args': (10,),
+    },
+    'fetch-title-images': {
+        'task': 'owdb_django.owdbapp.tasks.fetch_title_images',
+        'schedule': 43200.0,  # Every 12 hours
+        'args': (10,),
+    },
+    'fetch-event-images': {
+        'task': 'owdb_django.owdbapp.tasks.fetch_event_images',
+        'schedule': 43200.0,  # Every 12 hours
+        'args': (15,),
     },
 }
 

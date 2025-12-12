@@ -38,6 +38,7 @@ from .tmdb import TMDBClient
 from .rawg import RAWGClient, IGDBClient
 from .openlibrary import OpenLibraryClient, GoogleBooksClient
 from .podcasts import PodcastIndexClient, ITunesPodcastClient, ListenNotesClient
+from .wikimedia_commons import WikimediaCommonsClient
 
 # Coordinator
 from .coordinator import ScraperCoordinator, DataValidator, DataDeduplicator
@@ -63,6 +64,7 @@ __all__ = [
     'PodcastIndexClient',
     'ITunesPodcastClient',
     'ListenNotesClient',
+    'WikimediaCommonsClient',
     # Coordinator
     'ScraperCoordinator',
     'DataValidator',

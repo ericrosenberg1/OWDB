@@ -2,6 +2,19 @@
 
 {% block content %}
 <div class="detail-header">
+    {% if promotion.image_url %}
+    <div class="detail-image">
+        <img src="{{ promotion.image_url }}" alt="{{ promotion.name }}">
+        {% if promotion.image_credit or promotion.image_license %}
+        <div class="image-credit">
+            {% if promotion.image_source_url %}<a href="{{ promotion.image_source_url }}" target="_blank" rel="noopener">{% endif %}
+            {{ promotion.image_credit|default:"Image" }}
+            {% if promotion.image_license %}({{ promotion.image_license|upper }}){% endif %}
+            {% if promotion.image_source_url %}</a>{% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
     <h1 class="detail-title">{{ promotion.name }}</h1>
     <div class="detail-meta">
         {% if promotion.abbreviation %}
@@ -30,6 +43,30 @@
     </div>
 </div>
 
+<!-- Stats Cards -->
+{% if stats %}
+<div class="stats-row mb-4">
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.total_events|default:0 }}</div>
+        <div class="stat-label">Events</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.total_wrestlers|default:0 }}</div>
+        <div class="stat-label">Wrestlers</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.total_titles|default:0 }}</div>
+        <div class="stat-label">Championships</div>
+    </div>
+    {% if stats.active_titles %}
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.active_titles }}</div>
+        <div class="stat-label">Active Titles</div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
 <div class="row">
     <div class="col-lg-8">
         {% if promotion.about %}
@@ -37,6 +74,45 @@
             <div class="card-header">About</div>
             <div class="card-body">
                 <p>{{ promotion.about|linebreaks }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Wrestler Roster -->
+        {% if all_wrestlers %}
+        <div class="card mb-4">
+            <div class="card-header">Roster ({{ all_wrestlers|length }}{% if all_wrestlers|length >= 30 %}+{% endif %} wrestlers)</div>
+            <div class="card-body">
+                <div class="chip-list">
+                    {% for wrestler in all_wrestlers %}
+                    <a href="{% url 'wrestler_detail' wrestler.slug %}" class="chip">
+                        {% if wrestler.image_url %}
+                        <img src="{{ wrestler.image_url }}" alt="{{ wrestler.name }}" class="chip-avatar">
+                        {% endif %}
+                        {{ wrestler.name }}
+                        <span class="chip-badge">{{ wrestler.match_count }} matches</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Event Timeline -->
+        {% if timeline %}
+        <div class="card mb-4">
+            <div class="card-header">Events by Year</div>
+            <div class="card-body">
+                <div class="timeline-chart">
+                    {% for year_data in timeline %}
+                    {% if year_data.year %}
+                    <div class="timeline-bar" title="{{ year_data.year }}: {{ year_data.count }} events">
+                        <div class="timeline-year">{{ year_data.year }}</div>
+                        <div class="timeline-count">{{ year_data.count }}</div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
             </div>
         </div>
         {% endif %}
@@ -57,11 +133,11 @@
                         <tbody>
                         {% for event in events %}
                             <tr>
-                                <td><a href="{% url 'event_detail' event.pk %}">{{ event.name }}</a></td>
+                                <td><a href="{% url 'event_detail' event.slug %}">{{ event.name }}</a></td>
                                 <td>{{ event.date|date:"M j, Y" }}</td>
                                 <td>
                                     {% if event.venue %}
-                                    <a href="{% url 'venue_detail' event.venue.pk %}">{{ event.venue.name }}</a>
+                                    <a href="{% url 'venue_detail' event.venue.slug %}">{{ event.venue.name }}</a>
                                     {% else %}—{% endif %}
                                 </td>
                             </tr>
@@ -81,10 +157,25 @@
             <ul class="list-group list-group-flush">
                 {% for title in titles %}
                 <li class="list-group-item bg-transparent">
-                    <a href="{% url 'title_detail' title.pk %}">{{ title.name }}</a>
+                    <a href="{% url 'title_detail' title.slug %}">{{ title.name }}</a>
                     {% if title.is_active %}
                     <span class="badge badge-gold ms-2">Active</span>
                     {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Venues used by this promotion -->
+        {% if venues %}
+        <div class="card mb-4">
+            <div class="card-header">Venues</div>
+            <ul class="list-group list-group-flush">
+                {% for venue in venues %}
+                <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
+                    <a href="{% url 'venue_detail' venue.slug %}">{{ venue.name }}</a>
+                    <span class="badge bg-secondary">{{ venue.event_count }} events</span>
                 </li>
                 {% endfor %}
             </ul>

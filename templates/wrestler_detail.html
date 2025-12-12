@@ -9,6 +9,14 @@
                 <div class="profile-image">
                     {% if wrestler.image_url %}
                     <img src="{{ wrestler.image_url }}" alt="{{ wrestler.name }}">
+                    {% if wrestler.image_credit or wrestler.image_license %}
+                    <div class="image-credit">
+                        {% if wrestler.image_source_url %}<a href="{{ wrestler.image_source_url }}" target="_blank" rel="noopener">{% endif %}
+                        {{ wrestler.image_credit|default:"Image" }}
+                        {% if wrestler.image_license %}({{ wrestler.image_license|upper }}){% endif %}
+                        {% if wrestler.image_source_url %}</a>{% endif %}
+                    </div>
+                    {% endif %}
                     {% else %}
                     <div class="profile-placeholder">
                         <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
@@ -90,6 +98,24 @@
                         <p>{{ matches|length }}</p>
                     </div>
                     {% endif %}
+
+                    {% if record.total > 0 %}
+                    <div class="info-block">
+                        <h4>Record</h4>
+                        <p>{{ record.wins }}W - {{ record.losses }}L ({{ record.win_percentage }}%)</p>
+                    </div>
+                    {% endif %}
+
+                    {% if promotions %}
+                    <div class="info-block">
+                        <h4>Promotions</h4>
+                        <ul class="link-list">
+                            {% for promotion in promotions %}
+                            <li><a href="{% url 'promotion_detail' promotion.slug %}">{{ promotion.abbreviation|default:promotion.name }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -127,6 +153,64 @@
                                 </div>
                                 <p>{{ move }}</p>
                             </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Championships Section -->
+                {% if titles_won %}
+                <div class="known-for-section">
+                    <h3>Championships Won</h3>
+                    <div class="scroller-wrap">
+                        <div class="scroller">
+                            {% for title in titles_won %}
+                            <a href="{% url 'title_detail' title.slug %}" class="card-link">
+                                <div class="media-card">
+                                    {% if title.image_url %}
+                                    <div class="media-poster" style="background-image: url('{{ title.image_url }}')"></div>
+                                    {% else %}
+                                    <div class="media-poster placeholder">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                            <circle cx="12" cy="8" r="6"></circle>
+                                            <path d="M15.5 18H8.5L6 22h12l-2.5-4z"></path>
+                                        </svg>
+                                    </div>
+                                    {% endif %}
+                                    <p class="media-title">{{ title.name }}</p>
+                                    <p class="media-meta">{{ title.promotion.abbreviation|default:title.promotion.name }}</p>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Notable Rivals Section -->
+                {% if rivals %}
+                <div class="known-for-section">
+                    <h3>Notable Rivals</h3>
+                    <div class="scroller-wrap">
+                        <div class="scroller">
+                            {% for rival in rivals %}
+                            <a href="{% url 'wrestler_detail' rival.slug %}" class="card-link">
+                                <div class="media-card">
+                                    {% if rival.image_url %}
+                                    <div class="media-poster" style="background-image: url('{{ rival.image_url }}')"></div>
+                                    {% else %}
+                                    <div class="media-poster placeholder">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="12" cy="7" r="4"></circle>
+                                        </svg>
+                                    </div>
+                                    {% endif %}
+                                    <p class="media-title">{{ rival.name }}</p>
+                                    <p class="media-meta">{{ rival.encounter_count }} matches</p>
+                                </div>
+                            </a>
                             {% endfor %}
                         </div>
                     </div>

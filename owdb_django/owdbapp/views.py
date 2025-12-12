@@ -180,8 +180,16 @@ class WrestlerDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = self.object.name
-        context['matches'] = self.object.matches.select_related('event', 'event__promotion')[:20]
+        wrestler = self.object
+        context['page_title'] = wrestler.name
+        context['matches'] = wrestler.matches.select_related('event', 'event__promotion')[:20]
+
+        # Interlinking: promotions, titles, rivals, record
+        context['promotions'] = wrestler.get_promotions()[:10]
+        context['titles_won'] = wrestler.get_titles_won()
+        context['rivals'] = wrestler.get_rivals(limit=10)
+        context['record'] = wrestler.get_win_loss_record()
+
         return context
 
 
@@ -209,9 +217,17 @@ class PromotionDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = self.object.name
-        context['events'] = self.object.events.order_by('-date')[:20]
-        context['titles'] = self.object.titles.all()
+        promotion = self.object
+        context['page_title'] = promotion.name
+        context['events'] = promotion.events.select_related('venue').order_by('-date')[:20]
+        context['titles'] = promotion.titles.all()
+
+        # Interlinking: wrestlers roster, venues, event timeline, stats
+        context['all_wrestlers'] = promotion.get_all_wrestlers(limit=30)
+        context['venues'] = promotion.get_venues(limit=10)
+        context['timeline'] = promotion.get_event_timeline()
+        context['stats'] = promotion.get_stats()
+
         return context
 
 
@@ -245,8 +261,14 @@ class EventDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = self.object.name
-        context['matches'] = self.object.matches.prefetch_related('wrestlers').order_by('match_order')
+        event = self.object
+        context['page_title'] = event.name
+        context['matches'] = event.matches.prefetch_related('wrestlers').select_related('winner', 'title').order_by('match_order')
+
+        # Interlinking: all wrestlers on card, titles defended
+        context['all_wrestlers'] = event.get_all_wrestlers()
+        context['titles_defended'] = event.get_titles_defended()
+
         return context
 
 
@@ -276,11 +298,17 @@ class MatchDetailView(DetailView):
     context_object_name = 'match'
 
     def get_queryset(self):
-        return super().get_queryset().select_related('event', 'event__promotion', 'title', 'winner').prefetch_related('wrestlers')
+        return super().get_queryset().select_related('event', 'event__promotion', 'event__venue', 'title', 'winner').prefetch_related('wrestlers')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = self.object.match_text
+        match = self.object
+        context['page_title'] = match.match_text
+
+        # Interlinking: participants (wrestler objects), related matches
+        context['participants'] = match.get_participants()
+        context['related_matches'] = match.get_related_matches(limit=5)
+
         return context
 
 
@@ -314,8 +342,15 @@ class TitleDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = self.object.name
-        context['title_matches'] = self.object.title_matches.select_related('event')[:20]
+        title = self.object
+        context['page_title'] = title.name
+        context['title_matches'] = title.title_matches.select_related('event', 'winner')[:20]
+
+        # Interlinking: championship history, all champions, top defenders
+        context['championship_history'] = title.get_championship_history()[:20]
+        context['all_champions'] = title.get_all_champions()
+        context['most_defenses'] = title.get_most_defenses(limit=10)
+
         return context
 
 
@@ -343,8 +378,21 @@ class VenueDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = self.object.name
-        context['events'] = self.object.events.select_related('promotion').order_by('-date')[:20]
+        venue = self.object
+        context['page_title'] = venue.name
+
+        # Paginated events list
+        from django.core.paginator import Paginator
+        events = venue.events.select_related('promotion').order_by('-date')
+        paginator = Paginator(events, 25)
+        page = self.request.GET.get('page', 1)
+        context['events'] = paginator.get_page(page)
+
+        # Interlinking: promotions, top wrestlers, stats
+        context['promotions'] = venue.get_promotions()[:10]
+        context['top_wrestlers'] = venue.get_wrestlers(limit=10)
+        context['stats'] = venue.get_stats()
+
         return context
 
 

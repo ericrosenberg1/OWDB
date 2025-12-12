@@ -14,7 +14,44 @@ class TimeStampedModel(models.Model):
         abstract = True
 
 
-class Venue(TimeStampedModel):
+class ImageMixin(models.Model):
+    """
+    Mixin for CC-licensed image storage with proper attribution.
+
+    Only stores images from Creative Commons sources:
+    - CC0 (Public Domain Dedication)
+    - CC BY (Attribution)
+    - CC BY-SA (Attribution-ShareAlike)
+    - Public Domain
+    """
+    LICENSE_CHOICES = [
+        ('cc0', 'CC0 - Public Domain'),
+        ('cc-by', 'CC BY'),
+        ('cc-by-sa', 'CC BY-SA'),
+        ('pd', 'Public Domain'),
+    ]
+
+    image_url = models.URLField(max_length=500, blank=True, null=True,
+                                 help_text="URL to the image file")
+    image_source_url = models.URLField(max_length=500, blank=True, null=True,
+                                        help_text="URL to the original source page (e.g., Wikimedia Commons)")
+    image_license = models.CharField(max_length=20, choices=LICENSE_CHOICES,
+                                      blank=True, default='',
+                                      help_text="Creative Commons license type")
+    image_credit = models.CharField(max_length=500, blank=True, default='',
+                                     help_text="Attribution text for license compliance")
+    image_fetched_at = models.DateTimeField(blank=True, null=True,
+                                             help_text="When the image was fetched")
+
+    class Meta:
+        abstract = True
+
+    def has_image(self):
+        """Check if this entity has an image."""
+        return bool(self.image_url)
+
+
+class Venue(ImageMixin, TimeStampedModel):
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     location = models.CharField(max_length=255, blank=True, null=True)
@@ -35,8 +72,40 @@ class Venue(TimeStampedModel):
     def __str__(self):
         return self.name
 
+    def get_event_count(self):
+        """Get total number of events at this venue."""
+        return self.events.count()
 
-class Promotion(TimeStampedModel):
+    def get_promotions(self):
+        """Get all promotions that have held events here, ordered by event count."""
+        from django.db.models import Count, Q
+        return Promotion.objects.filter(
+            events__venue=self
+        ).distinct().annotate(
+            event_count=Count('events', filter=Q(events__venue=self))
+        ).order_by('-event_count')
+
+    def get_wrestlers(self, limit=20):
+        """Get wrestlers who have performed at this venue, ordered by appearance count."""
+        from django.db.models import Count, Q
+        return Wrestler.objects.filter(
+            matches__event__venue=self
+        ).distinct().annotate(
+            appearance_count=Count('matches', filter=Q(matches__event__venue=self))
+        ).order_by('-appearance_count')[:limit]
+
+    def get_stats(self):
+        """Get venue statistics."""
+        from django.db.models import Sum, Avg, Count
+        stats = self.events.aggregate(
+            total_events=Count('id'),
+            total_attendance=Sum('attendance'),
+            avg_attendance=Avg('attendance')
+        )
+        return stats
+
+
+class Promotion(ImageMixin, TimeStampedModel):
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     abbreviation = models.CharField(max_length=50, blank=True, null=True)
@@ -67,8 +136,47 @@ class Promotion(TimeStampedModel):
     def is_active(self):
         return self.closed_year is None
 
+    def get_all_wrestlers(self, limit=50):
+        """Get all wrestlers who have appeared for this promotion, ordered by match count."""
+        from django.db.models import Count, Q
+        return Wrestler.objects.filter(
+            matches__event__promotion=self
+        ).distinct().annotate(
+            match_count=Count('matches', filter=Q(matches__event__promotion=self))
+        ).order_by('-match_count')[:limit]
 
-class Wrestler(TimeStampedModel):
+    def get_venues(self, limit=20):
+        """Get venues where this promotion has held events, ordered by event count."""
+        from django.db.models import Count, Q
+        return Venue.objects.filter(
+            events__promotion=self
+        ).distinct().annotate(
+            event_count=Count('events', filter=Q(events__promotion=self))
+        ).order_by('-event_count')[:limit]
+
+    def get_event_timeline(self):
+        """Get events grouped by year for timeline display."""
+        from django.db.models.functions import ExtractYear
+        from django.db.models import Count
+        return self.events.annotate(
+            year=ExtractYear('date')
+        ).values('year').annotate(
+            count=Count('id')
+        ).order_by('-year')
+
+    def get_stats(self):
+        """Get promotion statistics."""
+        return {
+            'total_events': self.events.count(),
+            'total_titles': self.titles.count(),
+            'active_titles': self.titles.filter(retirement_year__isnull=True).count(),
+            'total_wrestlers': Wrestler.objects.filter(
+                matches__event__promotion=self
+            ).distinct().count(),
+        }
+
+
+class Wrestler(ImageMixin, TimeStampedModel):
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     real_name = models.CharField(max_length=255, blank=True, null=True)
@@ -111,8 +219,50 @@ class Wrestler(TimeStampedModel):
             return [f.strip() for f in self.finishers.split(',')]
         return []
 
+    def get_promotions(self):
+        """Get all promotions this wrestler has appeared for, ordered by match count."""
+        from django.db.models import Count, Q
+        return Promotion.objects.filter(
+            events__matches__wrestlers=self
+        ).distinct().annotate(
+            match_count=Count('events__matches', filter=Q(events__matches__wrestlers=self))
+        ).order_by('-match_count')
 
-class Event(TimeStampedModel):
+    def get_titles_won(self):
+        """Get all titles this wrestler has won (matches where they were the winner)."""
+        return Title.objects.filter(
+            title_matches__winner=self
+        ).distinct()
+
+    def get_rivals(self, limit=10):
+        """Get wrestlers this person has faced most often."""
+        from django.db.models import Count
+        # Get all matches this wrestler was in
+        my_matches = self.matches.all()
+        # Find other wrestlers in those matches, counted by frequency
+        return Wrestler.objects.filter(
+            matches__in=my_matches
+        ).exclude(
+            id=self.id
+        ).annotate(
+            encounter_count=Count('id')
+        ).order_by('-encounter_count')[:limit]
+
+    def get_win_loss_record(self):
+        """Get win/loss/draw record for this wrestler."""
+        total_matches = self.matches.count()
+        wins = self.matches_won.count()
+        # Losses = matches participated in minus wins (simplified)
+        losses = total_matches - wins
+        return {
+            'wins': wins,
+            'losses': losses,
+            'total': total_matches,
+            'win_percentage': round((wins / total_matches * 100), 1) if total_matches > 0 else 0
+        }
+
+
+class Event(ImageMixin, TimeStampedModel):
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     promotion = models.ForeignKey(
@@ -142,8 +292,20 @@ class Event(TimeStampedModel):
     def __str__(self):
         return f"{self.name} ({self.date.year if self.date else 'TBD'})"
 
+    def get_all_wrestlers(self):
+        """Get all wrestlers who competed at this event."""
+        return Wrestler.objects.filter(
+            matches__event=self
+        ).distinct().order_by('name')
 
-class Title(TimeStampedModel):
+    def get_titles_defended(self):
+        """Get all titles that were defended/contested at this event."""
+        return Title.objects.filter(
+            title_matches__event=self
+        ).distinct()
+
+
+class Title(ImageMixin, TimeStampedModel):
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     promotion = models.ForeignKey(
@@ -171,6 +333,27 @@ class Title(TimeStampedModel):
     @property
     def is_active(self):
         return self.retirement_year is None
+
+    def get_championship_history(self):
+        """Get chronological history of title changes (matches where title changed hands)."""
+        return self.title_matches.filter(
+            winner__isnull=False
+        ).select_related('winner', 'event').order_by('event__date')
+
+    def get_all_champions(self):
+        """Get all wrestlers who have held this title."""
+        return Wrestler.objects.filter(
+            matches_won__title=self
+        ).distinct()
+
+    def get_most_defenses(self, limit=10):
+        """Get wrestlers with the most title defenses."""
+        from django.db.models import Count
+        return Wrestler.objects.filter(
+            matches_won__title=self
+        ).annotate(
+            defense_count=Count('matches_won')
+        ).order_by('-defense_count')[:limit]
 
 
 class Match(TimeStampedModel):
@@ -202,6 +385,19 @@ class Match(TimeStampedModel):
 
     def __str__(self):
         return f"{self.match_text} @ {self.event.name}"
+
+    def get_participants(self):
+        """Get all wrestler objects who participated in this match."""
+        return self.wrestlers.all().order_by('name')
+
+    def get_related_matches(self, limit=5):
+        """Get matches featuring the same wrestlers (excluding this match)."""
+        participant_ids = self.wrestlers.values_list('id', flat=True)
+        return Match.objects.filter(
+            wrestlers__in=participant_ids
+        ).exclude(
+            id=self.id
+        ).distinct().select_related('event')[:limit]
 
 
 class VideoGame(TimeStampedModel):

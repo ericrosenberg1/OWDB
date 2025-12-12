@@ -385,35 +385,29 @@ def fetch_podcastindex_podcasts(self, limit: int = 30):
 def run_all_scrapers():
     """
     Master task that coordinates all web scrapers.
-    Runs with staggered delays to avoid overwhelming any single source.
-    """
-    from celery import chain, group
 
-    # Web scrapers run sequentially to respect rate limits
-    wikipedia_tasks = group(
+    PARALLELIZED: Sources are independent (Wikipedia, Cagematch, ProFightDB)
+    so they can run in parallel. Each source has its own rate limiter.
+    """
+    from celery import group
+
+    # All sources run in parallel since they're independent
+    # Each source has its own rate limiter, so no conflicts
+    all_scraper_tasks = group(
+        # Wikipedia tasks
         scrape_wikipedia_wrestlers.s(50),
         scrape_wikipedia_promotions.s(25),
         scrape_wikipedia_events.s(50),
-    )
-
-    cagematch_tasks = group(
+        # Cagematch tasks
         scrape_cagematch_wrestlers.s(25),
         scrape_cagematch_events.s(25),
-    )
-
-    profightdb_tasks = group(
+        # ProFightDB tasks
         scrape_profightdb_wrestlers.s(25),
         scrape_profightdb_events.s(25),
     )
 
-    workflow = chain(
-        wikipedia_tasks,
-        cagematch_tasks,
-        profightdb_tasks,
-    )
-
-    workflow.apply_async()
-    logger.info("Started web scrapers workflow")
+    all_scraper_tasks.apply_async()
+    logger.info("Started parallelized web scrapers workflow")
     return {"status": "started"}
 
 
@@ -591,6 +585,305 @@ def wrestlebot_reset_daily_limits():
     except Exception as e:
         logger.error(f"Failed to reset WrestleBot limits: {e}")
         return {"status": "error", "error": str(e)}
+
+
+# =============================================================================
+# Image Fetch Tasks (Wikimedia Commons CC Images)
+# =============================================================================
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=300)
+def fetch_wrestler_images(self, batch_size: int = 20):
+    """
+    Fetch CC-licensed images for wrestlers without images.
+
+    Prioritizes wrestlers by match count (most active first).
+    Only uses images with permissive CC licenses.
+
+    Runs every 6 hours via Celery Beat.
+    """
+    try:
+        from .models import Wrestler
+        from .scrapers import WikimediaCommonsClient
+        from django.utils import timezone
+
+        client = WikimediaCommonsClient()
+
+        # Get wrestlers without images, ordered by match count
+        wrestlers = Wrestler.objects.filter(
+            image_url__isnull=True
+        ).annotate(
+            match_count=Count('matches')
+        ).order_by('-match_count')[:batch_size]
+
+        fetched = 0
+        for wrestler in wrestlers:
+            try:
+                result = client.find_wrestler_image(
+                    name=wrestler.name,
+                    real_name=wrestler.real_name
+                )
+
+                if result and result.get('url'):
+                    wrestler.image_url = result.get('thumb_url') or result.get('url')
+                    wrestler.image_source_url = result.get('description_url')
+                    wrestler.image_license = result.get('license', '')
+                    wrestler.image_credit = result.get('artist', '')
+                    wrestler.image_fetched_at = timezone.now()
+                    wrestler.save(update_fields=[
+                        'image_url', 'image_source_url', 'image_license',
+                        'image_credit', 'image_fetched_at'
+                    ])
+                    fetched += 1
+                    logger.info(f"Fetched image for wrestler: {wrestler.name}")
+
+            except Exception as e:
+                logger.warning(f"Failed to fetch image for {wrestler.name}: {e}")
+                continue
+
+        logger.info(f"Wrestler images: fetched {fetched}/{len(wrestlers)}")
+        return {"fetched": fetched, "attempted": len(wrestlers)}
+
+    except Exception as e:
+        logger.error(f"Wrestler image fetch failed: {e}")
+        raise self.retry(exc=e)
+
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=300)
+def fetch_promotion_images(self, batch_size: int = 10):
+    """
+    Fetch CC-licensed images/logos for promotions without images.
+
+    Runs every 12 hours via Celery Beat.
+    """
+    try:
+        from .models import Promotion
+        from .scrapers import WikimediaCommonsClient
+        from django.utils import timezone
+
+        client = WikimediaCommonsClient()
+
+        # Get promotions without images, ordered by event count
+        promotions = Promotion.objects.filter(
+            image_url__isnull=True
+        ).annotate(
+            event_count=Count('events')
+        ).order_by('-event_count')[:batch_size]
+
+        fetched = 0
+        for promotion in promotions:
+            try:
+                result = client.find_promotion_image(
+                    name=promotion.name,
+                    abbreviation=promotion.abbreviation
+                )
+
+                if result and result.get('url'):
+                    promotion.image_url = result.get('thumb_url') or result.get('url')
+                    promotion.image_source_url = result.get('description_url')
+                    promotion.image_license = result.get('license', '')
+                    promotion.image_credit = result.get('artist', '')
+                    promotion.image_fetched_at = timezone.now()
+                    promotion.save(update_fields=[
+                        'image_url', 'image_source_url', 'image_license',
+                        'image_credit', 'image_fetched_at'
+                    ])
+                    fetched += 1
+                    logger.info(f"Fetched image for promotion: {promotion.name}")
+
+            except Exception as e:
+                logger.warning(f"Failed to fetch image for {promotion.name}: {e}")
+                continue
+
+        logger.info(f"Promotion images: fetched {fetched}/{len(promotions)}")
+        return {"fetched": fetched, "attempted": len(promotions)}
+
+    except Exception as e:
+        logger.error(f"Promotion image fetch failed: {e}")
+        raise self.retry(exc=e)
+
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=300)
+def fetch_venue_images(self, batch_size: int = 10):
+    """
+    Fetch CC-licensed images for venues without images.
+
+    Runs every 12 hours via Celery Beat.
+    """
+    try:
+        from .models import Venue
+        from .scrapers import WikimediaCommonsClient
+        from django.utils import timezone
+
+        client = WikimediaCommonsClient()
+
+        # Get venues without images, ordered by event count
+        venues = Venue.objects.filter(
+            image_url__isnull=True
+        ).annotate(
+            event_count=Count('events')
+        ).order_by('-event_count')[:batch_size]
+
+        fetched = 0
+        for venue in venues:
+            try:
+                result = client.find_venue_image(
+                    name=venue.name,
+                    location=venue.location
+                )
+
+                if result and result.get('url'):
+                    venue.image_url = result.get('thumb_url') or result.get('url')
+                    venue.image_source_url = result.get('description_url')
+                    venue.image_license = result.get('license', '')
+                    venue.image_credit = result.get('artist', '')
+                    venue.image_fetched_at = timezone.now()
+                    venue.save(update_fields=[
+                        'image_url', 'image_source_url', 'image_license',
+                        'image_credit', 'image_fetched_at'
+                    ])
+                    fetched += 1
+                    logger.info(f"Fetched image for venue: {venue.name}")
+
+            except Exception as e:
+                logger.warning(f"Failed to fetch image for {venue.name}: {e}")
+                continue
+
+        logger.info(f"Venue images: fetched {fetched}/{len(venues)}")
+        return {"fetched": fetched, "attempted": len(venues)}
+
+    except Exception as e:
+        logger.error(f"Venue image fetch failed: {e}")
+        raise self.retry(exc=e)
+
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=300)
+def fetch_title_images(self, batch_size: int = 10):
+    """
+    Fetch CC-licensed images for championship titles without images.
+
+    Runs every 12 hours via Celery Beat.
+    """
+    try:
+        from .models import Title
+        from .scrapers import WikimediaCommonsClient
+        from django.utils import timezone
+
+        client = WikimediaCommonsClient()
+
+        # Get titles without images, ordered by title match count
+        titles = Title.objects.filter(
+            image_url__isnull=True
+        ).annotate(
+            match_count=Count('title_matches')
+        ).order_by('-match_count')[:batch_size]
+
+        fetched = 0
+        for title in titles:
+            try:
+                result = client.find_title_image(
+                    name=title.name,
+                    promotion=title.promotion.abbreviation or title.promotion.name
+                )
+
+                if result and result.get('url'):
+                    title.image_url = result.get('thumb_url') or result.get('url')
+                    title.image_source_url = result.get('description_url')
+                    title.image_license = result.get('license', '')
+                    title.image_credit = result.get('artist', '')
+                    title.image_fetched_at = timezone.now()
+                    title.save(update_fields=[
+                        'image_url', 'image_source_url', 'image_license',
+                        'image_credit', 'image_fetched_at'
+                    ])
+                    fetched += 1
+                    logger.info(f"Fetched image for title: {title.name}")
+
+            except Exception as e:
+                logger.warning(f"Failed to fetch image for {title.name}: {e}")
+                continue
+
+        logger.info(f"Title images: fetched {fetched}/{len(titles)}")
+        return {"fetched": fetched, "attempted": len(titles)}
+
+    except Exception as e:
+        logger.error(f"Title image fetch failed: {e}")
+        raise self.retry(exc=e)
+
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=300)
+def fetch_event_images(self, batch_size: int = 15):
+    """
+    Fetch CC-licensed images for events without images.
+
+    Runs every 12 hours via Celery Beat.
+    """
+    try:
+        from .models import Event
+        from .scrapers import WikimediaCommonsClient
+        from django.utils import timezone
+
+        client = WikimediaCommonsClient()
+
+        # Get events without images, ordered by most recent
+        events = Event.objects.filter(
+            image_url__isnull=True
+        ).order_by('-date')[:batch_size]
+
+        fetched = 0
+        for event in events:
+            try:
+                result = client.find_event_image(
+                    name=event.name,
+                    promotion=event.promotion.abbreviation or event.promotion.name,
+                    year=event.date.year if event.date else None
+                )
+
+                if result and result.get('url'):
+                    event.image_url = result.get('thumb_url') or result.get('url')
+                    event.image_source_url = result.get('description_url')
+                    event.image_license = result.get('license', '')
+                    event.image_credit = result.get('artist', '')
+                    event.image_fetched_at = timezone.now()
+                    event.save(update_fields=[
+                        'image_url', 'image_source_url', 'image_license',
+                        'image_credit', 'image_fetched_at'
+                    ])
+                    fetched += 1
+                    logger.info(f"Fetched image for event: {event.name}")
+
+            except Exception as e:
+                logger.warning(f"Failed to fetch image for {event.name}: {e}")
+                continue
+
+        logger.info(f"Event images: fetched {fetched}/{len(events)}")
+        return {"fetched": fetched, "attempted": len(events)}
+
+    except Exception as e:
+        logger.error(f"Event image fetch failed: {e}")
+        raise self.retry(exc=e)
+
+
+@shared_task
+def run_all_image_fetches():
+    """
+    Master task that fetches images for all entity types.
+
+    Runs as a coordinated workflow to avoid overwhelming Wikimedia Commons.
+    """
+    from celery import chain
+
+    # Run image fetches sequentially to respect rate limits
+    workflow = chain(
+        fetch_wrestler_images.s(20),
+        fetch_promotion_images.s(10),
+        fetch_venue_images.s(10),
+        fetch_title_images.s(10),
+        fetch_event_images.s(15),
+    )
+
+    workflow.apply_async()
+    logger.info("Started image fetch workflow")
+    return {"status": "started"}
 
 
 @shared_task

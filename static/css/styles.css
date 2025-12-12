@@ -1469,6 +1469,252 @@ a:hover {
 }
 
 /* --------------------------------------------------------------------------
+   Interlinking Components - Chips, Stats, Participants
+   -------------------------------------------------------------------------- */
+
+/* Chip List */
+.chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    background: var(--wwf-gray);
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    color: var(--wwf-white);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+}
+
+.chip:hover {
+    background: var(--wwf-red);
+    color: var(--wwf-white);
+    transform: translateY(-1px);
+}
+
+.chip-gold {
+    background: linear-gradient(135deg, var(--wwf-gold-dark), var(--wwf-gold));
+    color: var(--wwf-black);
+}
+
+.chip-gold:hover {
+    background: linear-gradient(135deg, var(--wwf-gold), var(--wwf-gold-light));
+    color: var(--wwf-black);
+}
+
+.chip-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.chip-badge {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+}
+
+/* Stats Row */
+.stats-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.stat-card {
+    flex: 1;
+    min-width: 120px;
+    background: var(--wwf-gray);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--wwf-gold);
+    line-height: 1.2;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--wwf-silver);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Timeline Chart */
+.timeline-chart {
+    display: flex;
+    gap: 0.25rem;
+    align-items: flex-end;
+    height: 120px;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+}
+
+.timeline-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 40px;
+    cursor: pointer;
+}
+
+.timeline-bar::before {
+    content: '';
+    width: 24px;
+    background: var(--wwf-gold);
+    border-radius: 4px 4px 0 0;
+    transition: background var(--transition-fast);
+}
+
+.timeline-bar:hover::before {
+    background: var(--wwf-red);
+}
+
+.timeline-year {
+    font-size: 0.75rem;
+    color: var(--wwf-silver);
+    margin-top: 0.25rem;
+}
+
+.timeline-count {
+    font-size: 0.625rem;
+    color: var(--wwf-gold);
+}
+
+/* Participant Grid (Match Detail) */
+.participant-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 1rem;
+}
+
+.participant-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    background: var(--wwf-gray);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+}
+
+.participant-card:hover {
+    background: var(--wwf-light-gray);
+    transform: translateY(-2px);
+}
+
+.participant-card.winner {
+    background: linear-gradient(135deg, var(--wwf-gold-dark), var(--wwf-gold));
+}
+
+.participant-card.winner:hover {
+    background: linear-gradient(135deg, var(--wwf-gold), var(--wwf-gold-light));
+}
+
+.participant-image {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 0.5rem;
+}
+
+.participant-image.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--wwf-dark);
+    color: var(--wwf-silver);
+}
+
+.participant-name {
+    font-size: 0.875rem;
+    color: var(--wwf-white);
+    line-height: 1.2;
+}
+
+.participant-card.winner .participant-name {
+    color: var(--wwf-black);
+}
+
+.winner-badge {
+    font-size: 0.625rem;
+    background: var(--wwf-black);
+    color: var(--wwf-gold);
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    margin-top: 0.25rem;
+}
+
+/* Image Credit */
+.image-credit {
+    font-size: 0.75rem;
+    color: var(--wwf-silver);
+    margin-top: 0.25rem;
+    text-align: center;
+}
+
+.image-credit a {
+    color: var(--wwf-silver);
+}
+
+.image-credit a:hover {
+    color: var(--wwf-gold);
+}
+
+/* Detail Image */
+.detail-image {
+    margin-bottom: 1rem;
+}
+
+.detail-image img {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 0.5rem;
+    object-fit: cover;
+}
+
+.detail-image-wide img {
+    max-width: 100%;
+    max-height: 300px;
+    width: auto;
+}
+
+/* Link List */
+.link-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.link-list li {
+    margin-bottom: 0.25rem;
+}
+
+/* Border Gold */
+.border-gold {
+    border-color: var(--wwf-gold) !important;
+}
+
+.bg-gold {
+    background: linear-gradient(135deg, var(--wwf-gold-dark), var(--wwf-gold)) !important;
+}
+
+/* --------------------------------------------------------------------------
    Print Styles
    -------------------------------------------------------------------------- */
 @media print {

@@ -39,6 +39,9 @@ RUN useradd --create-home --shell /bin/bash appuser
 # Copy application code
 COPY --chown=appuser:appuser . .
 
+# Create static files directory with correct permissions
+RUN mkdir -p /app/static_collected && chown -R appuser:appuser /app/static_collected
+
 # Switch to non-root user
 USER appuser
 

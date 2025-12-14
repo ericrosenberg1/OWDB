@@ -81,4 +81,5 @@ urlpatterns = [
     # WrestleBot
     path('wrestlebot/', views.WrestleBotView.as_view(), name='wrestlebot'),
     path('api/wrestlebot/', views.wrestlebot_api, name='wrestlebot_api'),
+    path('api/wrestlebot/trigger/', views.wrestlebot_trigger, name='wrestlebot_trigger'),
 ]

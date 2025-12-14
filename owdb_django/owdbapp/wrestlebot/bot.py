@@ -181,9 +181,18 @@ class WrestleBot:
             'errors': 0,
         }
 
-        # Determine what to focus on based on config
-        items_per_type = max(1, max_items // 4)
+        # Balance between discovery (new items) and enrichment (completing existing)
+        # 60% discovery, 40% enrichment for better data quality
+        discovery_items = max(1, int(max_items * 0.6))
+        enrichment_items = max(1, int(max_items * 0.4))
+        items_per_type = max(1, discovery_items // 4)
 
+        # === ENRICHMENT PHASE (run first to improve existing data) ===
+        if enrichment_items > 0:
+            enriched = self._run_enrichment_cycle(enrichment_items)
+            results['enriched'] = enriched
+
+        # === DISCOVERY PHASE ===
         if self.config.focus_wrestlers:
             w_disc, w_add = self._discover_wrestlers(items_per_type)
             results['wrestlers_discovered'] = w_disc
@@ -203,6 +212,10 @@ class WrestleBot:
             t_disc, t_add = self._discover_titles(items_per_type)
             results['titles_discovered'] = t_disc
             results['titles_added'] = t_add
+
+        # === INTERLINKING PHASE ===
+        linked = self._run_interlinking_cycle(max(1, max_items // 4))
+        results['linked'] = linked
 
         # Update config with last run time
         self.config.last_run = timezone.now()
@@ -384,11 +397,14 @@ class WrestleBot:
         if self.config.require_verification:
             if self.ai.is_available():
                 valid, confidence, reasoning = self.ai.verify_wrestler_data(data)
+                threshold = self.config.min_confidence_threshold
             else:
                 # Use fallback validation when AI unavailable
+                # Lower threshold for fallback since it's simpler validation
                 valid, confidence, reasoning = self.ai.fallback_verify(data)
+                threshold = min(self.config.min_confidence_threshold, 0.5)
 
-            if not valid or confidence < self.config.min_confidence_threshold:
+            if not valid or confidence < threshold:
                 self.log_action(
                     action_type='skip',
                     entity_type='wrestler',
@@ -460,10 +476,12 @@ class WrestleBot:
         if self.config.require_verification:
             if self.ai.is_available():
                 valid, confidence, reasoning = self.ai.verify_promotion_data(data)
+                threshold = self.config.min_confidence_threshold
             else:
                 valid, confidence, reasoning = self.ai.fallback_verify(data)
+                threshold = min(self.config.min_confidence_threshold, 0.5)
 
-            if not valid or confidence < self.config.min_confidence_threshold:
+            if not valid or confidence < threshold:
                 self.log_action(
                     action_type='skip',
                     entity_type='promotion',
@@ -536,10 +554,12 @@ class WrestleBot:
         if self.config.require_verification:
             if self.ai.is_available():
                 valid, confidence, reasoning = self.ai.verify_event_data(data)
+                threshold = self.config.min_confidence_threshold
             else:
                 valid, confidence, reasoning = self.ai.fallback_verify(data)
+                threshold = min(self.config.min_confidence_threshold, 0.5)
 
-            if not valid or confidence < self.config.min_confidence_threshold:
+            if not valid or confidence < threshold:
                 self.log_action(
                     action_type='skip',
                     entity_type='event',
@@ -674,6 +694,350 @@ class WrestleBot:
 
         logger.info(f"WrestleBot created title: {name}")
         return title.id
+
+    # =========================================================================
+    # ENRICHMENT METHODS - Completing existing profiles
+    # =========================================================================
+
+    def _run_enrichment_cycle(self, max_items: int) -> int:
+        """
+        Enrich existing incomplete profiles with more data.
+        Returns count of items enriched.
+        """
+        enriched = 0
+
+        # Get wrestlers needing enrichment
+        from ..models import Wrestler, Promotion
+        incomplete_wrestlers = Wrestler.get_incomplete_profiles(limit=max_items)
+
+        for wrestler in incomplete_wrestlers:
+            try:
+                if self._enrich_wrestler(wrestler):
+                    enriched += 1
+            except Exception as e:
+                logger.error(f"Error enriching wrestler {wrestler.name}: {e}")
+
+        # Get promotions needing enrichment (fewer, as there are less)
+        incomplete_promotions = Promotion.objects.filter(
+            wikipedia_url__isnull=True
+        ).order_by('-created_at')[:max(1, max_items // 3)]
+
+        for promotion in incomplete_promotions:
+            try:
+                if self._enrich_promotion(promotion):
+                    enriched += 1
+            except Exception as e:
+                logger.error(f"Error enriching promotion {promotion.name}: {e}")
+
+        return enriched
+
+    @transaction.atomic
+    def _enrich_wrestler(self, wrestler) -> bool:
+        """
+        Enrich a wrestler's profile with Wikipedia data.
+        Returns True if any data was updated.
+        """
+        from ..models import Wrestler
+
+        # Try to find Wikipedia article if we don't have the URL
+        wiki_title = None
+        if wrestler.wikipedia_url:
+            # Extract title from URL
+            wiki_title = wrestler.wikipedia_url.split('/wiki/')[-1].replace('_', ' ')
+        else:
+            # Search for the wrestler
+            wiki_title = self.wikipedia.search_wrestler_wikipedia(wrestler.name)
+            if not wiki_title:
+                return False
+
+        # Get full data
+        data = self.wikipedia.get_full_wrestler_data(wiki_title)
+        if not data:
+            return False
+
+        # Track what we update
+        updated_fields = []
+
+        # Update missing fields (don't overwrite existing data)
+        if not wrestler.wikipedia_url and data.get('source_url'):
+            wrestler.wikipedia_url = data['source_url']
+            updated_fields.append('wikipedia_url')
+
+        if not wrestler.real_name and data.get('real_name'):
+            wrestler.real_name = data['real_name'][:255]
+            updated_fields.append('real_name')
+
+        if not wrestler.aliases and data.get('aliases'):
+            wrestler.aliases = data['aliases'][:1000]
+            updated_fields.append('aliases')
+
+        if not wrestler.hometown and data.get('hometown'):
+            wrestler.hometown = data['hometown'][:255]
+            updated_fields.append('hometown')
+
+        if not wrestler.nationality and data.get('birth_place'):
+            # Try to infer nationality from birthplace
+            nationality = self._infer_nationality(data['birth_place'])
+            if nationality:
+                wrestler.nationality = nationality
+                updated_fields.append('nationality')
+
+        if not wrestler.debut_year and data.get('debut_year'):
+            wrestler.debut_year = data['debut_year']
+            updated_fields.append('debut_year')
+
+        if not wrestler.retirement_year and data.get('retirement_year'):
+            wrestler.retirement_year = data['retirement_year']
+            updated_fields.append('retirement_year')
+
+        if not wrestler.finishers and data.get('finishers'):
+            wrestler.finishers = data['finishers'][:1000]
+            updated_fields.append('finishers')
+
+        if not wrestler.height and data.get('height'):
+            wrestler.height = data['height'][:50]
+            updated_fields.append('height')
+
+        if not wrestler.weight and data.get('weight'):
+            wrestler.weight = data['weight'][:50]
+            updated_fields.append('weight')
+
+        if not wrestler.trained_by and data.get('trained_by'):
+            wrestler.trained_by = data['trained_by'][:500]
+            updated_fields.append('trained_by')
+
+        if not wrestler.signature_moves and data.get('signature_moves'):
+            wrestler.signature_moves = data['signature_moves'][:1000]
+            updated_fields.append('signature_moves')
+
+        if not wrestler.birth_date and data.get('birth_date'):
+            try:
+                from datetime import datetime
+                bd = datetime.strptime(data['birth_date'], '%Y-%m-%d').date()
+                wrestler.birth_date = bd
+                updated_fields.append('birth_date')
+            except (ValueError, TypeError):
+                pass
+
+        if updated_fields:
+            wrestler.last_enriched = timezone.now()
+            updated_fields.append('last_enriched')
+            wrestler.save(update_fields=updated_fields)
+
+            self.log_action(
+                action_type='enrich',
+                entity_type='wrestler',
+                entity_name=wrestler.name,
+                entity_id=wrestler.id,
+                source_url=data.get('source_url'),
+                ai_confidence=0.8,
+                ai_reasoning=f"Enriched fields: {', '.join(updated_fields)}",
+            )
+            logger.info(f"Enriched wrestler {wrestler.name}: {updated_fields}")
+            return True
+
+        return False
+
+    @transaction.atomic
+    def _enrich_promotion(self, promotion) -> bool:
+        """Enrich a promotion's profile with Wikipedia data."""
+        from ..models import Promotion
+
+        # Search for the promotion on Wikipedia
+        wiki_title = self.wikipedia.search_promotion_wikipedia(promotion.name)
+        if not wiki_title:
+            return False
+
+        data = self.wikipedia.get_full_promotion_data(wiki_title)
+        if not data:
+            return False
+
+        updated_fields = []
+
+        if not promotion.wikipedia_url and data.get('source_url'):
+            promotion.wikipedia_url = data['source_url']
+            updated_fields.append('wikipedia_url')
+
+        if not promotion.abbreviation and data.get('abbreviation'):
+            promotion.abbreviation = data['abbreviation'][:50]
+            updated_fields.append('abbreviation')
+
+        if not promotion.founded_year and data.get('founded_year'):
+            promotion.founded_year = data['founded_year']
+            updated_fields.append('founded_year')
+
+        if not promotion.closed_year and data.get('closed_year'):
+            promotion.closed_year = data['closed_year']
+            updated_fields.append('closed_year')
+
+        if not promotion.website and data.get('website'):
+            promotion.website = data['website']
+            updated_fields.append('website')
+
+        if not promotion.headquarters and data.get('headquarters'):
+            promotion.headquarters = data['headquarters'][:255]
+            updated_fields.append('headquarters')
+
+        if not promotion.founder and data.get('founder'):
+            promotion.founder = data['founder'][:255]
+            updated_fields.append('founder')
+
+        if updated_fields:
+            promotion.last_enriched = timezone.now()
+            updated_fields.append('last_enriched')
+            promotion.save(update_fields=updated_fields)
+
+            self.log_action(
+                action_type='enrich',
+                entity_type='promotion',
+                entity_name=promotion.name,
+                entity_id=promotion.id,
+                source_url=data.get('source_url'),
+                ai_confidence=0.8,
+                ai_reasoning=f"Enriched fields: {', '.join(updated_fields)}",
+            )
+            logger.info(f"Enriched promotion {promotion.name}: {updated_fields}")
+            return True
+
+        return False
+
+    def _infer_nationality(self, birthplace: str) -> Optional[str]:
+        """Infer nationality from birthplace string."""
+        if not birthplace:
+            return None
+
+        birthplace_lower = birthplace.lower()
+
+        # Common country mappings
+        country_mappings = {
+            'united states': 'American',
+            'u.s.': 'American',
+            'usa': 'American',
+            'america': 'American',
+            'japan': 'Japanese',
+            'mexico': 'Mexican',
+            'canada': 'Canadian',
+            'england': 'English',
+            'united kingdom': 'British',
+            'uk': 'British',
+            'scotland': 'Scottish',
+            'wales': 'Welsh',
+            'ireland': 'Irish',
+            'australia': 'Australian',
+            'germany': 'German',
+            'france': 'French',
+            'italy': 'Italian',
+            'spain': 'Spanish',
+            'brazil': 'Brazilian',
+            'puerto rico': 'Puerto Rican',
+            'india': 'Indian',
+            'china': 'Chinese',
+            'korea': 'Korean',
+            'south korea': 'South Korean',
+            'new zealand': 'New Zealander',
+        }
+
+        for country, nationality in country_mappings.items():
+            if country in birthplace_lower:
+                return nationality
+
+        # Try to use AI if available
+        if self.ai.is_available():
+            nationality = self.ai.extract_nationality(birthplace)
+            if nationality:
+                return nationality
+
+        return None
+
+    # =========================================================================
+    # INTERLINKING METHODS - Connecting entities
+    # =========================================================================
+
+    def _run_interlinking_cycle(self, max_items: int) -> int:
+        """
+        Link entities together (wrestlers to promotions, events, etc.)
+        Returns count of links created.
+        """
+        from ..models import Wrestler, Promotion, Match, Event
+
+        linked = 0
+
+        # Find wrestlers without any match records who might have promotion info
+        wrestlers_to_link = Wrestler.objects.filter(
+            wikipedia_url__isnull=False,
+            matches__isnull=True  # No matches yet
+        ).order_by('-created_at')[:max_items]
+
+        for wrestler in wrestlers_to_link:
+            try:
+                links = self._link_wrestler_to_promotions(wrestler)
+                linked += links
+            except Exception as e:
+                logger.error(f"Error linking wrestler {wrestler.name}: {e}")
+
+        return linked
+
+    def _link_wrestler_to_promotions(self, wrestler) -> int:
+        """
+        Try to link a wrestler to promotions based on Wikipedia data.
+        Returns count of links created.
+        """
+        from ..models import Promotion
+
+        if not wrestler.wikipedia_url:
+            return 0
+
+        # Extract promotions from Wikipedia
+        wiki_title = wrestler.wikipedia_url.split('/wiki/')[-1].replace('_', ' ')
+        promo_names = self.wikipedia.get_wrestler_promotions_from_article(wiki_title)
+
+        if not promo_names:
+            return 0
+
+        links_created = 0
+
+        for promo_name in promo_names:
+            # Try to find matching promotion
+            promotion = self._find_matching_promotion(promo_name)
+            if promotion:
+                # Log the discovered link (actual match creation would require more data)
+                self.log_action(
+                    action_type='link',
+                    entity_type='wrestler',
+                    entity_name=f"{wrestler.name} -> {promotion.name}",
+                    entity_id=wrestler.id,
+                    ai_confidence=0.7,
+                    ai_reasoning=f"Wrestler linked to promotion based on Wikipedia data",
+                )
+                links_created += 1
+
+        return links_created
+
+    def _find_matching_promotion(self, promo_name: str):
+        """Find a promotion matching the given name."""
+        from ..models import Promotion
+        from django.db.models import Q
+
+        promo_name = promo_name.strip()
+        if not promo_name:
+            return None
+
+        # Try exact match first
+        promotion = Promotion.objects.filter(name__iexact=promo_name).first()
+        if promotion:
+            return promotion
+
+        # Try abbreviation match
+        promotion = Promotion.objects.filter(abbreviation__iexact=promo_name).first()
+        if promotion:
+            return promotion
+
+        # Try partial match
+        promotion = Promotion.objects.filter(
+            Q(name__icontains=promo_name) | Q(abbreviation__icontains=promo_name)
+        ).first()
+
+        return promotion
 
     def get_statistics(self) -> Dict[str, Any]:
         """Get WrestleBot statistics."""

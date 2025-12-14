@@ -115,6 +115,15 @@ class Promotion(ImageMixin, TimeStampedModel):
     website = models.URLField(blank=True, null=True)
     about = models.TextField(blank=True, null=True)
 
+    # Data source tracking
+    wikipedia_url = models.URLField(max_length=500, blank=True, null=True,
+                                     help_text="Wikipedia article URL")
+    last_enriched = models.DateTimeField(blank=True, null=True)
+
+    # Additional fields
+    headquarters = models.CharField(max_length=255, blank=True, null=True)
+    founder = models.CharField(max_length=255, blank=True, null=True)
+
     class Meta:
         ordering = ['name']
         indexes = [
@@ -188,6 +197,19 @@ class Wrestler(ImageMixin, TimeStampedModel):
     finishers = models.TextField(blank=True, null=True, help_text="Comma-separated list of finishing moves")
     about = models.TextField(blank=True, null=True)
 
+    # Data source tracking for enrichment
+    wikipedia_url = models.URLField(max_length=500, blank=True, null=True,
+                                     help_text="Wikipedia article URL for this wrestler")
+    last_enriched = models.DateTimeField(blank=True, null=True,
+                                          help_text="When data was last enriched from external sources")
+
+    # Additional profile fields for completeness
+    birth_date = models.DateField(blank=True, null=True)
+    height = models.CharField(max_length=50, blank=True, null=True, help_text="e.g., 6'2\" or 188 cm")
+    weight = models.CharField(max_length=50, blank=True, null=True, help_text="e.g., 250 lbs or 113 kg")
+    trained_by = models.TextField(blank=True, null=True, help_text="Comma-separated list of trainers")
+    signature_moves = models.TextField(blank=True, null=True, help_text="Signature moves (not finishers)")
+
     class Meta:
         ordering = ['name']
         verbose_name_plural = 'wrestlers'
@@ -260,6 +282,84 @@ class Wrestler(ImageMixin, TimeStampedModel):
             'total': total_matches,
             'win_percentage': round((wins / total_matches * 100), 1) if total_matches > 0 else 0
         }
+
+    def get_completeness_score(self):
+        """
+        Calculate how complete this wrestler's profile is (0-100).
+        Used to prioritize enrichment.
+        """
+        fields = {
+            # Core fields (higher weight)
+            'name': 10,
+            'real_name': 8,
+            'debut_year': 8,
+            'hometown': 7,
+            'nationality': 6,
+            'finishers': 6,
+            # Image (important for display)
+            'image_url': 10,
+            # Extended fields
+            'aliases': 5,
+            'birth_date': 5,
+            'height': 4,
+            'weight': 4,
+            'trained_by': 5,
+            'signature_moves': 4,
+            'about': 8,
+            # Source tracking
+            'wikipedia_url': 5,
+            # Relationships (matches, titles)
+            'has_matches': 5,
+        }
+
+        score = 0
+        for field, weight in fields.items():
+            if field == 'has_matches':
+                if self.matches.exists():
+                    score += weight
+            elif getattr(self, field, None):
+                score += weight
+
+        return score
+
+    @classmethod
+    def get_incomplete_profiles(cls, limit=50, max_score=60):
+        """
+        Get wrestlers with incomplete profiles, prioritized by:
+        1. Those with Wikipedia URLs (easier to enrich)
+        2. Those with some data but missing key fields
+        3. Recently created (fresher data sources)
+        """
+        from django.db.models import Case, When, Value, IntegerField, Q
+        from django.db.models.functions import Coalesce
+
+        # Prioritize records that have Wikipedia URLs but missing data
+        return cls.objects.annotate(
+            priority=Case(
+                # Has Wikipedia URL but missing key data
+                When(
+                    Q(wikipedia_url__isnull=False) &
+                    (Q(real_name__isnull=True) | Q(hometown__isnull=True) | Q(nationality__isnull=True)),
+                    then=Value(1)
+                ),
+                # Has some data but no image
+                When(
+                    Q(debut_year__isnull=False) & Q(image_url__isnull=True),
+                    then=Value(2)
+                ),
+                # Missing basic info
+                When(
+                    Q(debut_year__isnull=True) | Q(hometown__isnull=True),
+                    then=Value(3)
+                ),
+                default=Value(4),
+                output_field=IntegerField()
+            )
+        ).filter(
+            # Skip recently enriched
+            Q(last_enriched__isnull=True) |
+            Q(last_enriched__lt=timezone.now() - timezone.timedelta(days=7))
+        ).order_by('priority', '-created_at')[:limit]
 
 
 class Event(ImageMixin, TimeStampedModel):

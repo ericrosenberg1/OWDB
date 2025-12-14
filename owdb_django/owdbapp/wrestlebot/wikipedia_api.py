@@ -796,3 +796,269 @@ class WikipediaAPIFetcher:
         has_extra = any(data.get(f) for f in optional_fields)
 
         return has_extra
+
+    # =========================================================================
+    # ENRICHMENT METHODS - For completing existing profiles
+    # =========================================================================
+
+    def get_full_wrestler_data(self, title: str) -> Optional[Dict[str, Any]]:
+        """
+        Get comprehensive wrestler data for enrichment.
+        Extracts more fields than the basic discovery method.
+        """
+        html = self.get_article_html(title)
+        if not html:
+            return None
+
+        infobox = self.extract_infobox_data(html)
+        if not infobox:
+            return None
+
+        data = {
+            'source': 'wikipedia',
+            'source_url': f"https://en.wikipedia.org/wiki/{quote(title.replace(' ', '_'))}",
+            'source_title': title,
+            'name': title,
+        }
+
+        # All name fields
+        if 'birth_name' in infobox:
+            data['real_name'] = infobox['birth_name']
+        elif 'born' in infobox:
+            born = infobox['born']
+            if not any(c.isdigit() for c in born[:20]):
+                data['real_name'] = born.split('(')[0].strip()
+
+        ring_names = infobox.get('ring_names') or infobox.get('ring_name', '')
+        if ring_names:
+            data['aliases'] = ring_names
+
+        # Location info
+        if 'billed_from' in infobox:
+            data['hometown'] = infobox['billed_from']
+        elif 'residence' in infobox:
+            data['hometown'] = infobox['residence']
+
+        if 'birth_place' in infobox:
+            data['birth_place'] = infobox['birth_place']
+
+        # Career dates
+        if 'debut' in infobox:
+            year = self._extract_year(infobox['debut'])
+            if year:
+                data['debut_year'] = year
+
+        if 'retired' in infobox:
+            year = self._extract_year(infobox['retired'])
+            if year:
+                data['retirement_year'] = year
+
+        # Physical stats
+        if 'height' in infobox:
+            data['height'] = self._clean_measurement(infobox['height'])
+        if 'weight' in infobox:
+            data['weight'] = self._clean_measurement(infobox['weight'])
+
+        # Training and moves
+        if 'trained' in infobox or 'trainer' in infobox:
+            trained = infobox.get('trained') or infobox.get('trainer', '')
+            data['trained_by'] = trained
+
+        if 'finishing_moves' in infobox or 'finishing_move' in infobox:
+            moves = infobox.get('finishing_moves') or infobox.get('finishing_move', '')
+            data['finishers'] = moves
+
+        if 'signature_moves' in infobox or 'signature_move' in infobox:
+            sig = infobox.get('signature_moves') or infobox.get('signature_move', '')
+            data['signature_moves'] = sig
+
+        # Birth date
+        if 'born' in infobox:
+            birth_date = self._extract_date(infobox['born'])
+            if birth_date:
+                data['birth_date'] = birth_date
+
+        # Try to get promotions worked for
+        if 'current_promotion' in infobox or 'promotion' in infobox:
+            promo = infobox.get('current_promotion') or infobox.get('promotion', '')
+            data['current_promotion'] = promo
+
+        if 'former_promotions' in infobox or 'other_promotions' in infobox:
+            former = infobox.get('former_promotions') or infobox.get('other_promotions', '')
+            data['former_promotions'] = former
+
+        return data
+
+    def get_full_promotion_data(self, title: str) -> Optional[Dict[str, Any]]:
+        """Get comprehensive promotion data for enrichment."""
+        html = self.get_article_html(title)
+        if not html:
+            return None
+
+        infobox = self.extract_infobox_data(html)
+        if not infobox:
+            return None
+
+        data = {
+            'source': 'wikipedia',
+            'source_url': f"https://en.wikipedia.org/wiki/{quote(title.replace(' ', '_'))}",
+            'source_title': title,
+            'name': title,
+        }
+
+        # Basic fields
+        if 'acronym' in infobox:
+            data['abbreviation'] = infobox['acronym']
+        elif 'short_name' in infobox:
+            data['abbreviation'] = infobox['short_name']
+
+        if 'founded' in infobox:
+            year = self._extract_year(infobox['founded'])
+            if year:
+                data['founded_year'] = year
+
+        defunct_field = infobox.get('defunct') or infobox.get('closed')
+        if defunct_field:
+            year = self._extract_year(defunct_field)
+            if year:
+                data['closed_year'] = year
+
+        if 'website' in infobox:
+            url = self._extract_url(infobox['website'])
+            if url:
+                data['website'] = url
+
+        # Additional fields
+        if 'headquarters' in infobox or 'location' in infobox:
+            data['headquarters'] = infobox.get('headquarters') or infobox.get('location', '')
+
+        if 'founder' in infobox:
+            data['founder'] = infobox['founder']
+
+        if 'owner' in infobox:
+            data['owner'] = infobox['owner']
+
+        return data
+
+    def search_wrestler_wikipedia(self, wrestler_name: str) -> Optional[str]:
+        """
+        Search Wikipedia for a wrestler by name.
+        Returns the best matching article title.
+        """
+        # Try exact match first
+        results = self.search_articles(f'"{wrestler_name}" professional wrestler', limit=5)
+        if not results:
+            # Try without quotes
+            results = self.search_articles(f'{wrestler_name} wrestler', limit=5)
+
+        if not results:
+            return None
+
+        # Look for best match
+        name_lower = wrestler_name.lower()
+        for result in results:
+            title = result.get('title', '')
+            if name_lower in title.lower():
+                return title
+
+        # Return first result if no exact match
+        return results[0].get('title') if results else None
+
+    def search_promotion_wikipedia(self, promotion_name: str) -> Optional[str]:
+        """Search Wikipedia for a promotion by name."""
+        # Try exact match
+        results = self.search_articles(f'"{promotion_name}" professional wrestling', limit=5)
+        if not results:
+            results = self.search_articles(f'{promotion_name} wrestling promotion', limit=5)
+
+        if not results:
+            return None
+
+        name_lower = promotion_name.lower()
+        for result in results:
+            title = result.get('title', '')
+            if name_lower in title.lower():
+                return title
+
+        return results[0].get('title') if results else None
+
+    def _clean_measurement(self, text: str) -> str:
+        """Clean up height/weight measurement text."""
+        # Remove extra whitespace and references
+        text = self._clean_text(text)
+        # Take first line if multiple
+        text = text.split('\n')[0]
+        # Limit length
+        return text[:50] if text else ''
+
+    def get_wrestler_promotions_from_article(self, title: str) -> List[str]:
+        """
+        Extract promotion names from a wrestler's Wikipedia article.
+        Used for interlinking.
+        """
+        html = self.get_article_html(title)
+        if not html:
+            return []
+
+        infobox = self.extract_infobox_data(html)
+        promotions = set()
+
+        # Check infobox fields
+        for field in ['current_promotion', 'promotion', 'former_promotions',
+                      'other_promotions', 'promotions']:
+            if field in infobox:
+                # Split on common separators
+                promo_text = infobox[field]
+                for sep in [',', '\n', ';', '/']:
+                    if sep in promo_text:
+                        for p in promo_text.split(sep):
+                            p = p.strip()
+                            if p and len(p) > 2:
+                                promotions.add(p)
+                        break
+                else:
+                    if promo_text and len(promo_text) > 2:
+                        promotions.add(promo_text)
+
+        return list(promotions)
+
+    def get_event_card_from_article(self, title: str) -> List[Dict[str, Any]]:
+        """
+        Extract match card from an event's Wikipedia article.
+        Returns list of matches with participants.
+        """
+        html = self.get_article_html(title)
+        if not html:
+            return []
+
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html, 'lxml')
+
+        matches = []
+
+        # Look for match card tables (usually have "Results" heading)
+        for table in soup.find_all('table', class_='wikitable'):
+            # Check if this looks like a match table
+            headers = [th.get_text().strip().lower() for th in table.find_all('th')]
+            if any(h in headers for h in ['match', 'stipulation', 'results', 'winner']):
+                for row in table.find_all('tr')[1:]:  # Skip header
+                    cells = row.find_all(['td', 'th'])
+                    if len(cells) >= 2:
+                        match_data = {
+                            'participants': [],
+                            'stipulation': '',
+                            'winner': '',
+                        }
+
+                        # Try to extract wrestler names from links
+                        for link in row.find_all('a'):
+                            href = link.get('href', '')
+                            if '/wiki/' in href and 'wrestler' not in href.lower():
+                                name = link.get_text().strip()
+                                if name and len(name) > 2:
+                                    match_data['participants'].append(name)
+
+                        if match_data['participants']:
+                            matches.append(match_data)
+
+        return matches[:20]  # Limit to reasonable number

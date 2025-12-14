@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.contrib.auth.models import User
@@ -840,6 +841,85 @@ class WrestleBotView(TemplateView):
             context['ai_available'] = False
             context['ai_model'] = None
 
+        # Check system health
+        from django.core.cache import cache
+        health = {
+            'redis': False,
+            'celery': False,
+            'ollama': context.get('ai_available', False),
+        }
+
+        # Check Redis
+        try:
+            cache.set('health_check', 'ok', 5)
+            health['redis'] = cache.get('health_check') == 'ok'
+        except Exception:
+            pass
+
+        # Check Celery (via inspect)
+        try:
+            from owdb_django.celery import app
+            inspect = app.control.inspect(timeout=2)
+            active = inspect.active()
+            health['celery'] = active is not None
+        except Exception:
+            pass
+
+        context['health'] = health
+
+        # Calculate operational status
+        if not config.enabled:
+            context['status'] = 'paused'
+            context['status_message'] = 'WrestleBot is paused'
+            context['status_class'] = 'secondary'
+        elif not health['redis']:
+            context['status'] = 'error'
+            context['status_message'] = 'Redis connection failed'
+            context['status_class'] = 'danger'
+        elif not health['celery']:
+            context['status'] = 'warning'
+            context['status_message'] = 'Celery worker not responding'
+            context['status_class'] = 'warning'
+        elif not health['ollama']:
+            context['status'] = 'degraded'
+            context['status_message'] = 'Running without AI verification'
+            context['status_class'] = 'warning'
+        elif config.items_added_this_hour >= config.max_items_per_hour:
+            context['status'] = 'rate_limited'
+            context['status_message'] = 'Hourly rate limit reached'
+            context['status_class'] = 'info'
+        elif config.items_added_today >= config.max_items_per_day:
+            context['status'] = 'rate_limited'
+            context['status_message'] = 'Daily rate limit reached'
+            context['status_class'] = 'info'
+        else:
+            context['status'] = 'active'
+            context['status_message'] = 'Running normally'
+            context['status_class'] = 'success'
+
+        # Get recent 24h activity stats from logs
+        from django.utils import timezone
+        from datetime import timedelta
+        now = timezone.now()
+        last_24h = now - timedelta(hours=24)
+
+        context['recent_creates_24h'] = WrestleBotLog.objects.filter(
+            created_at__gte=last_24h,
+            action_type='create',
+            success=True
+        ).count()
+
+        context['recent_errors_24h'] = WrestleBotLog.objects.filter(
+            created_at__gte=last_24h,
+            action_type='error'
+        ).count()
+
+        # Check if user is staff (for showing admin controls)
+        context['is_staff'] = (
+            self.request.user.is_authenticated and
+            self.request.user.is_staff
+        )
+
         # Get recent activity logs (paginated)
         logs = WrestleBotLog.objects.select_related().order_by('-created_at')
 
@@ -896,6 +976,8 @@ def wrestlebot_api(request):
     from django.http import JsonResponse
     from django.utils import timezone
     from django.utils.timesince import timesince
+    from django.core.cache import cache
+    import redis
 
     try:
         config = WrestleBotConfig.get_config()
@@ -919,15 +1001,87 @@ def wrestlebot_api(request):
         # Check AI status
         ai_available = False
         ai_model = None
+        ai_error = None
         try:
             from .wrestlebot import WrestleBot
             bot = WrestleBot()
             ai_available = bot.ai.is_available()
             ai_model = bot.ai.model
+        except Exception as e:
+            ai_error = str(e)
+
+        # Check system health
+        health = {
+            'redis': False,
+            'celery': False,
+            'ollama': ai_available,
+        }
+
+        # Check Redis
+        try:
+            cache.set('health_check', 'ok', 5)
+            health['redis'] = cache.get('health_check') == 'ok'
         except Exception:
             pass
 
+        # Check Celery (via inspect)
+        try:
+            from owdb_django.celery import app
+            inspect = app.control.inspect(timeout=2)
+            active = inspect.active()
+            health['celery'] = active is not None
+        except Exception:
+            pass
+
+        # Get recent activity stats
+        from datetime import timedelta
+        now = timezone.now()
+        last_24h = now - timedelta(hours=24)
+        last_hour = now - timedelta(hours=1)
+
+        recent_creates = WrestleBotLog.objects.filter(
+            created_at__gte=last_24h,
+            action_type='create',
+            success=True
+        ).count()
+
+        recent_errors = WrestleBotLog.objects.filter(
+            created_at__gte=last_24h,
+            action_type='error'
+        ).count()
+
+        hourly_creates = WrestleBotLog.objects.filter(
+            created_at__gte=last_hour,
+            action_type='create',
+            success=True
+        ).count()
+
+        # Calculate operational status
+        if not config.enabled:
+            status = 'paused'
+            status_message = 'WrestleBot is paused'
+        elif not health['redis']:
+            status = 'error'
+            status_message = 'Redis connection failed'
+        elif not health['celery']:
+            status = 'warning'
+            status_message = 'Celery worker not responding'
+        elif not health['ollama']:
+            status = 'degraded'
+            status_message = 'Running without AI verification'
+        elif config.items_added_this_hour >= config.max_items_per_hour:
+            status = 'rate_limited'
+            status_message = 'Hourly rate limit reached'
+        elif config.items_added_today >= config.max_items_per_day:
+            status = 'rate_limited'
+            status_message = 'Daily rate limit reached'
+        else:
+            status = 'active'
+            status_message = 'Running normally'
+
         return JsonResponse({
+            'status': status,
+            'status_message': status_message,
             'stats': {
                 'total_added': config.total_items_added,
                 'added_today': config.items_added_today,
@@ -935,14 +1089,19 @@ def wrestlebot_api(request):
                 'total_errors': config.total_errors,
                 'last_run': timesince(config.last_run) + ' ago' if config.last_run else None,
                 'enabled': config.enabled,
+                'recent_creates_24h': recent_creates,
+                'recent_errors_24h': recent_errors,
+                'hourly_creates': hourly_creates,
             },
             'config': {
                 'max_items_per_hour': config.max_items_per_hour,
                 'max_items_per_day': config.max_items_per_day,
             },
+            'health': health,
             'ai': {
                 'available': ai_available,
                 'model': ai_model,
+                'error': ai_error,
             },
             'logs': logs_data,
             'timestamp': timezone.now().isoformat(),
@@ -950,3 +1109,56 @@ def wrestlebot_api(request):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@require_POST
+def wrestlebot_trigger(request):
+    """
+    Manually trigger a WrestleBot discovery cycle.
+    Requires staff authentication.
+    """
+    from django.http import JsonResponse
+    from django.views.decorators.csrf import csrf_exempt
+
+    # Check if user is authenticated and is staff
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return JsonResponse({
+            'success': False,
+            'error': 'Staff authentication required'
+        }, status=403)
+
+    try:
+        from .tasks import wrestlebot_discovery_cycle
+
+        # Get config to check if we can run
+        config = WrestleBotConfig.get_config()
+
+        if not config.enabled:
+            return JsonResponse({
+                'success': False,
+                'error': 'WrestleBot is currently disabled'
+            })
+
+        if not config.can_add_items():
+            return JsonResponse({
+                'success': False,
+                'error': 'Rate limit reached. Try again later.'
+            })
+
+        # Trigger the task asynchronously
+        max_items = int(request.POST.get('max_items', 10))
+        max_items = min(max_items, 50)  # Cap at 50 items
+
+        task = wrestlebot_discovery_cycle.delay(max_items=max_items)
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Discovery cycle triggered with max {max_items} items',
+            'task_id': str(task.id)
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

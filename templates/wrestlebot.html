@@ -5,7 +5,7 @@
 <div class="auto-refresh-bar" id="autoRefreshBar">
     <div class="container d-flex align-items-center justify-content-between py-2">
         <small class="text-muted">
-            <span id="refreshStatus">Auto-refreshing every 30 seconds</span>
+            <span id="refreshStatus">Live updating every 10 seconds</span>
             <span id="lastUpdated"></span>
         </small>
         <button class="btn btn-sm btn-outline-secondary" onclick="toggleAutoRefresh()">
@@ -33,12 +33,17 @@
                             <h1 class="mb-0">WrestleBot</h1>
                             <p class="text-muted mb-0">AI-Powered Wrestling Data Discovery</p>
                         </div>
-                        <div class="ms-auto">
-                            {% if stats.enabled %}
-                                <span class="badge bg-success fs-6">Active</span>
-                            {% else %}
-                                <span class="badge bg-secondary fs-6">Paused</span>
-                            {% endif %}
+                        <div class="ms-auto text-end">
+                            <span class="badge bg-{{ status_class }} fs-6" id="statusBadge">
+                                {% if status == 'active' %}Active
+                                {% elif status == 'paused' %}Paused
+                                {% elif status == 'degraded' %}Degraded
+                                {% elif status == 'rate_limited' %}Rate Limited
+                                {% elif status == 'warning' %}Warning
+                                {% else %}Error{% endif %}
+                            </span>
+                            <br>
+                            <small class="text-muted" id="statusMessage">{{ status_message }}</small>
                         </div>
                     </div>
 
@@ -47,6 +52,31 @@
                         wrestling data from Wikipedia. It runs 24/7, slowly and respectfully gathering
                         factual information about wrestlers, promotions, events, and championships.
                     </p>
+
+                    <!-- System Health Indicators -->
+                    <div class="d-flex gap-3 mt-3 flex-wrap align-items-center" id="healthIndicators">
+                        <span class="badge {% if health.redis %}bg-success{% else %}bg-danger{% endif %}" title="Redis Cache">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><circle cx="12" cy="12" r="10"/></svg>
+                            Redis
+                        </span>
+                        <span class="badge {% if health.celery %}bg-success{% else %}bg-danger{% endif %}" title="Celery Worker">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><circle cx="12" cy="12" r="10"/></svg>
+                            Celery
+                        </span>
+                        <span class="badge {% if health.ollama %}bg-success{% else %}bg-warning text-dark{% endif %}" title="Ollama AI">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><circle cx="12" cy="12" r="10"/></svg>
+                            AI {% if health.ollama %}({{ config.ai_model_name }}){% else %}(Fallback){% endif %}
+                        </span>
+
+                        {% if is_staff %}
+                        <div class="ms-auto">
+                            <button class="btn btn-sm btn-outline-primary" onclick="triggerDiscovery()" id="triggerBtn" {% if not health.celery %}disabled{% endif %}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                Run Discovery Now
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -65,8 +95,8 @@
         <div class="col-md-3 col-6 mb-3">
             <div class="card bg-dark border-secondary h-100">
                 <div class="card-body text-center">
-                    <h3 class="text-success mb-0" id="stat-today">{{ stats.added_today|default:0 }}</h3>
-                    <small class="text-muted">Added Today</small>
+                    <h3 class="text-success mb-0" id="stat-24h">{{ recent_creates_24h|default:0 }}</h3>
+                    <small class="text-muted">Last 24 Hours</small>
                 </div>
             </div>
         </div>
@@ -81,8 +111,8 @@
         <div class="col-md-3 col-6 mb-3">
             <div class="card bg-dark border-secondary h-100">
                 <div class="card-body text-center">
-                    <h3 class="text-info mb-0" id="stat-errors">{{ stats.total_errors|default:0 }}</h3>
-                    <small class="text-muted">Errors</small>
+                    <h3 class="{% if recent_errors_24h > 10 %}text-danger{% else %}text-warning{% endif %} mb-0" id="stat-errors">{{ recent_errors_24h|default:0 }}</h3>
+                    <small class="text-muted">Errors (24h)</small>
                 </div>
             </div>
         </div>
@@ -282,7 +312,7 @@
                                                     <div class="progress-bar {% if log.ai_confidence >= 0.8 %}bg-success{% elif log.ai_confidence >= 0.6 %}bg-warning{% else %}bg-danger{% endif %}"
                                                          style="width: {{ conf_pct }}%"></div>
                                                 </div>
-                                                <small class="text-muted">{{ log.ai_confidence|floatformat:0 }}%</small>
+                                                <small class="text-muted">{% widthratio log.ai_confidence 1 100 %}%</small>
                                             {% else %}
                                                 <small class="text-muted">-</small>
                                             {% endif %}
@@ -366,7 +396,7 @@
                             <ul class="list-unstyled text-muted small">
                                 <li>Model: {{ config.ai_model_name }}</li>
                                 <li>Temperature: {{ config.ai_temperature }}</li>
-                                <li>Min confidence: {{ config.min_confidence_threshold|floatformat:0 }}%</li>
+                                <li>Min confidence: {% widthratio config.min_confidence_threshold 1 100 %}%</li>
                             </ul>
                         </div>
                         <div class="col-md-4">
@@ -392,6 +422,15 @@ let autoRefreshEnabled = true;
 let refreshInterval = null;
 let lastLogId = null;
 const REFRESH_INTERVAL_MS = 10000; // 10 seconds for more responsive updates
+
+const STATUS_CONFIG = {
+    'active': { class: 'success', label: 'Active' },
+    'paused': { class: 'secondary', label: 'Paused' },
+    'degraded': { class: 'warning', label: 'Degraded' },
+    'rate_limited': { class: 'info', label: 'Rate Limited' },
+    'warning': { class: 'warning', label: 'Warning' },
+    'error': { class: 'danger', label: 'Error' }
+};
 
 function updateLastUpdated() {
     const now = new Date();
@@ -443,6 +482,36 @@ function createLogRow(log) {
     `;
 }
 
+function updateHealthIndicator(name, isHealthy, extra) {
+    const container = document.getElementById('healthIndicators');
+    if (!container) return;
+
+    const badges = container.querySelectorAll('.badge');
+    badges.forEach(badge => {
+        if (badge.textContent.toLowerCase().includes(name.toLowerCase())) {
+            badge.className = `badge ${isHealthy ? 'bg-success' : (name === 'AI' ? 'bg-warning text-dark' : 'bg-danger')}`;
+            if (name === 'AI' && extra) {
+                badge.innerHTML = badge.innerHTML.replace(/\(.*\)/, `(${extra})`);
+            }
+        }
+    });
+}
+
+function updateStatus(status, message) {
+    const statusBadge = document.getElementById('statusBadge');
+    const statusMessage = document.getElementById('statusMessage');
+
+    if (statusBadge && STATUS_CONFIG[status]) {
+        const config = STATUS_CONFIG[status];
+        statusBadge.className = `badge bg-${config.class} fs-6`;
+        statusBadge.textContent = config.label;
+    }
+
+    if (statusMessage && message) {
+        statusMessage.textContent = message;
+    }
+}
+
 async function refreshStats() {
     if (!autoRefreshEnabled) return;
 
@@ -452,11 +521,22 @@ async function refreshStats() {
 
         const data = await response.json();
 
+        // Update status and health indicators
+        if (data.status) {
+            updateStatus(data.status, data.status_message);
+        }
+
+        if (data.health) {
+            updateHealthIndicator('Redis', data.health.redis);
+            updateHealthIndicator('Celery', data.health.celery);
+            updateHealthIndicator('AI', data.health.ollama, data.health.ollama ? data.ai?.model : 'Fallback');
+        }
+
         // Update stat cards with animation
         updateStatWithAnimation('stat-total', data.stats.total_added);
-        updateStatWithAnimation('stat-today', data.stats.added_today);
+        updateStatWithAnimation('stat-24h', data.stats.recent_creates_24h || 0);
         updateStatWithAnimation('stat-hour', data.stats.added_this_hour);
-        updateStatWithAnimation('stat-errors', data.stats.total_errors);
+        updateStatWithAnimation('stat-errors', data.stats.recent_errors_24h || 0);
 
         // Update activity log with new entries
         const tbody = document.getElementById('activity-log-body');
@@ -540,6 +620,58 @@ function stopAutoRefresh() {
     }
 }
 
+// Manual trigger function (staff only)
+async function triggerDiscovery() {
+    const btn = document.getElementById('triggerBtn');
+    if (!btn) return;
+
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Running...';
+
+    try {
+        const response = await fetch('/api/wrestlebot/trigger/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: 'max_items=15'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><polyline points="20 6 9 17 4 12"/></svg> Triggered!';
+            btn.classList.remove('btn-outline-primary');
+            btn.classList.add('btn-success');
+
+            // Refresh stats after a delay to show new activity
+            setTimeout(() => {
+                refreshStats();
+                btn.innerHTML = originalHtml;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-primary');
+                btn.disabled = false;
+            }, 3000);
+        } else {
+            alert('Failed to trigger: ' + (data.error || 'Unknown error'));
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        }
+    } catch (error) {
+        console.error('Trigger failed:', error);
+        alert('Failed to trigger discovery cycle');
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+    }
+}
+
+function getCsrfToken() {
+    const cookie = document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='));
+    return cookie ? cookie.split('=')[1] : '';
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     // Get initial last log ID
@@ -549,8 +681,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     updateLastUpdated();
     startAutoRefresh();
-    // Update status text to reflect new interval
-    document.getElementById('refreshStatus').textContent = 'Live updating every 10 seconds';
 });
 </script>
 <style>

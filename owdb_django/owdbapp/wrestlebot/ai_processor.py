@@ -112,12 +112,22 @@ class OllamaProcessor:
         Uses cached result unless force_check=True or cache is stale (>60s).
         Also respects circuit breaker state.
         """
+        cache_key = f"ollama_available:{self.base_url}"
+
         # Check circuit breaker first
         if self._is_circuit_open():
             logger.debug("Circuit breaker is open, skipping Ollama check")
             return False
 
         now = time.time()
+
+        # Use shared cache to avoid re-checking from multiple workers
+        if not force_check:
+            cached_available = cache.get(cache_key)
+            if cached_available is not None:
+                self._available = cached_available
+                self._last_check = now
+                return cached_available
 
         # Use cached result if recent (within 60 seconds)
         if not force_check and self._available is not None:
@@ -138,6 +148,7 @@ class OllamaProcessor:
                     # Ollama running but no models - still mark as unavailable
                     self._available = False
                 self._last_check = now
+                cache.set(cache_key, self._available, timeout=120)
                 if self._available:
                     self._record_success()
                 return self._available
@@ -147,6 +158,7 @@ class OllamaProcessor:
 
         self._available = False
         self._last_check = now
+        cache.set(cache_key, self._available, timeout=60)
         return False
 
     def fallback_verify(self, data: dict) -> tuple:

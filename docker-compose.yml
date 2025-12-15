@@ -53,6 +53,25 @@ services:
       retries: 5
 
   # ---------------------------------------------------------------------------
+  # Ollama - Local LLM for WrestleBot AI verification
+  # ---------------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
   # Django Web Application
   # ---------------------------------------------------------------------------
   web:
@@ -69,10 +88,13 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
     depends_on:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      ollama:
         condition: service_healthy
     ports:
       - "8000:8000"
@@ -113,10 +135,13 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
     depends_on:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      ollama:
         condition: service_healthy
     command: celery -A owdb_django worker --loglevel=info --concurrency=2
     healthcheck:
@@ -143,6 +168,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
     depends_on:
       db:
         condition: service_healthy
@@ -150,6 +176,8 @@ services:
         condition: service_healthy
       celery_worker:
         condition: service_started
+      ollama:
+        condition: service_healthy
     command: celery -A owdb_django beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     volumes:
       - celery_beat_schedule:/app/celerybeat-schedule
@@ -165,4 +193,6 @@ volumes:
   static_files:
     driver: local
   celery_beat_schedule:
+    driver: local
+  ollama_data:
     driver: local

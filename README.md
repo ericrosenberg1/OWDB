@@ -135,6 +135,11 @@ WrestleBot is our AI-powered data discovery system that automatically finds and 
 - Optional Ollama AI verification
 - Runs on a schedule via Celery Beat
 
+### Ollama setup (for Docker users)
+- Start the bundled Ollama service: `docker compose up -d ollama`
+- Download the model once: `docker compose exec ollama ollama pull llama3.2`
+- Ensure `OLLAMA_URL=http://ollama:11434` inside your containers (set automatically in `docker-compose.yml`)
+
 Learn more: [https://wrestlingdb.org/wrestlebot/](https://wrestlingdb.org/wrestlebot/)
 
 ---

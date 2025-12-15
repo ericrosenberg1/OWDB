@@ -641,6 +641,20 @@ def wrestlebot_discovery_cycle(self, max_items: int = 10):
     - Auto-retry with exponential backoff on failure
     - Circuit breaker on AI service to prevent freezing
     """
+    from django.utils import timezone
+
+    # Prevent overlapping runs which can cause thrashing/timeouts
+    lock_key = "wrestlebot_cycle_lock"
+    lock_time_key = f"{lock_key}_time"
+    # Slightly longer than hard limit to give the previous run time to finish
+    lock_timeout = WRESTLEBOT_HARD_LIMIT + 120
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("WrestleBot cycle skipped: another cycle already running")
+        return {"status": "skipped", "reason": "already_running"}
+
+    cache.set(lock_time_key, timezone.now(), timeout=lock_timeout)
+
     try:
         from .wrestlebot import WrestleBot
 
@@ -667,6 +681,9 @@ def wrestlebot_discovery_cycle(self, max_items: int = 10):
         # autoretry_for handles the retry automatically
         raise
 
+    finally:
+        cache.delete(lock_key)
+        cache.delete(lock_time_key)
 
 @shared_task
 def wrestlebot_cleanup_old_logs():
@@ -1146,7 +1163,10 @@ def restart_stale_bot_tasks():
     """
     from django.utils import timezone
     from datetime import timedelta
-    from django_celery_results.models import TaskResult
+    try:
+        from django_celery_results.models import TaskResult
+    except ImportError:
+        TaskResult = None
 
     actions = []
 
@@ -1165,21 +1185,24 @@ def restart_stale_bot_tasks():
                 actions.append(f"Warning: No success in {time_since_success/60:.1f} min")
 
         # Check for stuck tasks (STARTED but not finished)
-        stuck_cutoff = now - timedelta(minutes=15)
-        stuck_tasks = TaskResult.objects.filter(
-            task_name__contains='wrestlebot',
-            status='STARTED',
-            date_created__lt=stuck_cutoff
-        )
+        if TaskResult:
+            stuck_cutoff = now - timedelta(minutes=15)
+            stuck_tasks = TaskResult.objects.filter(
+                task_name__contains='wrestlebot',
+                status='STARTED',
+                date_created__lt=stuck_cutoff
+            )
 
-        if stuck_tasks.exists():
-            stuck_count = stuck_tasks.count()
-            logger.warning(f"Found {stuck_count} potentially stuck WrestleBot tasks")
-            actions.append(f"Found {stuck_count} stuck tasks")
+            if stuck_tasks.exists():
+                stuck_count = stuck_tasks.count()
+                logger.warning(f"Found {stuck_count} potentially stuck WrestleBot tasks")
+                actions.append(f"Found {stuck_count} stuck tasks")
 
-            # Mark them as failed so they don't block new runs
-            stuck_tasks.update(status='FAILURE')
-            actions.append(f"Marked {stuck_count} stuck tasks as failed")
+                # Mark them as failed so they don't block new runs
+                stuck_tasks.update(status='FAILURE')
+                actions.append(f"Marked {stuck_count} stuck tasks as failed")
+        else:
+            actions.append("Task result backend not installed; skipped stuck task scan")
 
         # Clear stale locks if any
         lock_key = "wrestlebot_cycle_lock"

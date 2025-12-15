@@ -258,6 +258,14 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'owdb_django.owdbapp.tasks.wrestlebot_get_stats',
         'schedule': 3600.0,  # Every hour
     },
+    'wrestlebot-health-check': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_health_check',
+        'schedule': 300.0,  # Every 5 minutes
+    },
+    'wrestlebot-restart-stale': {
+        'task': 'owdb_django.owdbapp.tasks.restart_stale_bot_tasks',
+        'schedule': 900.0,  # Every 15 minutes
+    },
     # ==========================================================================
     # Image Fetch Tasks (Wikimedia Commons CC Images)
     # ==========================================================================

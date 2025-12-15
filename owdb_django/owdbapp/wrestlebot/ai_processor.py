@@ -14,6 +14,7 @@ All data originates from Wikipedia's factual records.
 import json
 import logging
 import re
+import time
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
@@ -21,6 +22,15 @@ from django.conf import settings
 from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
+
+# Circuit breaker state - shared across all instances
+_circuit_breaker = {
+    'failures': 0,
+    'last_failure': 0,
+    'open_until': 0,
+}
+CIRCUIT_BREAKER_THRESHOLD = 3  # Open circuit after 3 failures
+CIRCUIT_BREAKER_RESET_TIME = 300  # 5 minutes before trying again
 
 
 class OllamaProcessor:
@@ -37,6 +47,11 @@ class OllamaProcessor:
     DEFAULT_MODEL = "llama3.2"
     DEFAULT_URL = "http://localhost:11434"
 
+    # Timeouts - shorter to prevent freezing
+    CONNECT_TIMEOUT = 5  # seconds to establish connection
+    GENERATE_TIMEOUT = 60  # seconds for AI to generate response (was 120)
+    HEALTH_CHECK_TIMEOUT = 3  # seconds for health check
+
     def __init__(
         self,
         model: Optional[str] = None,
@@ -51,17 +66,68 @@ class OllamaProcessor:
         )
         self.temperature = temperature
         self.session = requests.Session()
+        # Configure session with timeouts
+        self.session.timeout = (self.CONNECT_TIMEOUT, self.GENERATE_TIMEOUT)
         self._available = None
+        self._last_check = 0
 
-    def is_available(self) -> bool:
-        """Check if Ollama is running and the model is available."""
-        if self._available is not None:
-            return self._available
+    def _is_circuit_open(self) -> bool:
+        """Check if circuit breaker is open (blocking requests)."""
+        global _circuit_breaker
+        now = time.time()
+
+        if now < _circuit_breaker['open_until']:
+            return True
+
+        # Reset failures if enough time has passed since last failure
+        if now - _circuit_breaker['last_failure'] > CIRCUIT_BREAKER_RESET_TIME:
+            _circuit_breaker['failures'] = 0
+
+        return False
+
+    def _record_failure(self):
+        """Record a failure for circuit breaker."""
+        global _circuit_breaker
+        now = time.time()
+        _circuit_breaker['failures'] += 1
+        _circuit_breaker['last_failure'] = now
+
+        if _circuit_breaker['failures'] >= CIRCUIT_BREAKER_THRESHOLD:
+            _circuit_breaker['open_until'] = now + CIRCUIT_BREAKER_RESET_TIME
+            logger.warning(
+                f"Circuit breaker OPEN - Ollama unavailable. "
+                f"Will retry in {CIRCUIT_BREAKER_RESET_TIME}s"
+            )
+
+    def _record_success(self):
+        """Record a success - reset circuit breaker."""
+        global _circuit_breaker
+        _circuit_breaker['failures'] = 0
+        _circuit_breaker['open_until'] = 0
+
+    def is_available(self, force_check: bool = False) -> bool:
+        """
+        Check if Ollama is running and the model is available.
+
+        Uses cached result unless force_check=True or cache is stale (>60s).
+        Also respects circuit breaker state.
+        """
+        # Check circuit breaker first
+        if self._is_circuit_open():
+            logger.debug("Circuit breaker is open, skipping Ollama check")
+            return False
+
+        now = time.time()
+
+        # Use cached result if recent (within 60 seconds)
+        if not force_check and self._available is not None:
+            if now - self._last_check < 60:
+                return self._available
 
         try:
             response = self.session.get(
                 f"{self.base_url}/api/tags",
-                timeout=5
+                timeout=self.HEALTH_CHECK_TIMEOUT
             )
             if response.status_code == 200:
                 models = response.json().get('models', [])
@@ -71,11 +137,16 @@ class OllamaProcessor:
                 else:
                     # Ollama running but no models - still mark as unavailable
                     self._available = False
+                self._last_check = now
+                if self._available:
+                    self._record_success()
                 return self._available
-        except requests.RequestException:
-            pass
+        except requests.RequestException as e:
+            logger.warning(f"Ollama health check failed: {e}")
+            self._record_failure()
 
         self._available = False
+        self._last_check = now
         return False
 
     def fallback_verify(self, data: dict) -> tuple:
@@ -117,9 +188,23 @@ class OllamaProcessor:
         self,
         prompt: str,
         system: Optional[str] = None,
-        json_mode: bool = False
+        json_mode: bool = False,
+        timeout: Optional[int] = None
     ) -> Optional[str]:
-        """Generate a response from Ollama."""
+        """
+        Generate a response from Ollama.
+
+        Args:
+            prompt: The prompt to send
+            system: Optional system message
+            json_mode: Whether to request JSON output
+            timeout: Optional custom timeout (uses GENERATE_TIMEOUT by default)
+        """
+        # Check circuit breaker first
+        if self._is_circuit_open():
+            logger.debug("Circuit breaker open, using fallback")
+            return None
+
         if not self.is_available():
             logger.warning("Ollama not available, skipping AI processing")
             return None
@@ -139,17 +224,26 @@ class OllamaProcessor:
         if json_mode:
             payload['format'] = 'json'
 
+        request_timeout = timeout or self.GENERATE_TIMEOUT
+
         try:
             response = self.session.post(
                 f"{self.base_url}/api/generate",
                 json=payload,
-                timeout=120
+                timeout=(self.CONNECT_TIMEOUT, request_timeout)
             )
             response.raise_for_status()
+            self._record_success()
             return response.json().get('response', '')
+
+        except requests.Timeout as e:
+            logger.error(f"Ollama request timed out after {request_timeout}s: {e}")
+            self._record_failure()
+            return None
 
         except requests.RequestException as e:
             logger.error(f"Ollama request failed: {e}")
+            self._record_failure()
             return None
 
     def verify_wrestler_data(

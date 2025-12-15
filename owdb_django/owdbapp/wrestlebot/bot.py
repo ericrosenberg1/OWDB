@@ -221,6 +221,10 @@ class WrestleBot:
         self.config.last_run = timezone.now()
         self.config.save(update_fields=['last_run'])
 
+        # Record success for health monitoring
+        from django.core.cache import cache
+        cache.set("wrestlebot_last_success", timezone.now(), timeout=7200)
+
         logger.info(f"WrestleBot cycle complete: {results}")
         return results
 

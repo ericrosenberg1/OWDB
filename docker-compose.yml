@@ -181,6 +181,12 @@ services:
     command: celery -A owdb_django beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     volumes:
       - celery_beat_schedule:/app/celerybeat-schedule
+    healthcheck:
+      test: ["CMD", "celery", "-A", "owdb_django", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 # =============================================================================
 # Volumes

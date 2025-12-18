@@ -140,7 +140,7 @@ class WikipediaWrestlerScraper:
             'name': name,
             'slug': slug,
             'wikipedia_url': page_info['url'],
-            'bio': extract[:500] if extract else '',  # First 500 chars
+            'about': extract[:500] if extract else '',  # First 500 chars
         }
 
         # Try to extract debut year from text

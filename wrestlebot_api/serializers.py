@@ -19,8 +19,10 @@ class WrestlerSerializer(serializers.ModelSerializer):
         model = Wrestler
         fields = [
             'id', 'name', 'slug', 'real_name', 'aliases',
-            'hometown', 'nationality', 'birth_date', 'death_date',
-            'debut_year', 'retirement_year', 'finishers',
+            'hometown', 'nationality', 'birth_date',
+            'debut_year', 'retirement_year', 'finishers', 'about',
+            'height', 'weight', 'trained_by', 'signature_moves',
+            'wikipedia_url',
             'image_url', 'image_source_url', 'image_license', 'image_credit',
             'created_at', 'updated_at'
         ]

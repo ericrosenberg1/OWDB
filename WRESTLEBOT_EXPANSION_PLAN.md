@@ -550,3 +550,61 @@ The AI should be able to:
 **End of Expansion Plan**
 
 This document will be updated as we implement each phase and learn from production use.
+
+---
+
+## UPDATE 2025-12-18 (Later): Full Content Scraping Implemented ✅
+
+### Enhanced News Scraper
+
+**New Capabilities**:
+- ✅ **RSS Feed Support** - Efficient feed parsing with `feedparser`
+- ✅ **Full Article Scraping** - Complete article text extraction
+- ✅ **Author Attribution** - Captures bylines for proper credit
+- ✅ **Category Tagging** - Extracts article categories/tags
+- ✅ **Multi-source Aggregation** - 5 sources with RSS feeds
+
+**New Sources Added**:
+1. ✅ **PWTorch** (pwtorch.com) - Free tier + RSS
+2. ✅ **Ringside News** (ringsidenews.com) - Full articles + RSS
+3. ✅ **Fightful** (fightful.com) - Free content + RSS
+
+**Technical Implementation**:
+- RSS parsing with feedparser for efficiency
+- Full article content extraction with smart selectors
+- Proper HTML cleaning (removes ads, scripts, navigation)
+- Falls back to summary if full content unavailable
+- Rate limits respect each site's robots.txt
+
+**Data Enrichment**:
+Articles now include:
+- Headline
+- Full article text (not just summary)
+- Author name
+- Publication date
+- Source URL for attribution
+- Categories/tags
+- Summary (for previews)
+
+**Content Usage**:
+All scraped content will be used with proper attribution on OWDB pages:
+- Wrestler biographies enriched with news context
+- Event pages with contemporaneous reporting
+- Historical context from opinion pieces
+- Storyline tracking from analysis articles
+
+**Legal & Ethical**:
+- All content is publicly available (no paywall bypassing)
+- Full attribution with source links on every use
+- Educational and informational purpose
+- Respects robots.txt and rate limits
+- Falls within fair use for reference/commentary
+
+### Dependencies Added
+- `feedparser>=6.0` - RSS/Atom feed parsing library
+
+### Next Implementation
+- Database models for storing full articles
+- AI extraction of wrestler/event mentions
+- Quote extraction for attribution blocks
+- Sentiment analysis for storyline tracking

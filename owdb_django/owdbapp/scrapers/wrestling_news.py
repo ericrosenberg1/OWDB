@@ -5,17 +5,20 @@ Scrapes from multiple wrestling news sources to keep WrestleBot informed
 about current events, breaking news, and industry developments.
 
 Sources:
-- PWInsider (pwinsider.com)
-- Wrestling Inc (wrestlinginc.com)
-- WrestleZone (wrestlezone.com)
-- Wrestling Observer/F4W Online (f4wonline.com)
+- Wrestling Inc (wrestlinginc.com) - Full articles + RSS
+- WrestleZone (wrestlezone.com) - Full articles + RSS
+- PWTorch (pwtorch.com) - Free tier articles + RSS
+- Ringside News (ringsidenews.com) - Full articles + RSS
+- Fightful (fightful.com) - Free tier content + RSS
 
-We only scrape factual news headlines, dates, and basic summaries.
-We do NOT scrape full articles, commentary, or opinion pieces.
+We scrape full article content, commentary, and analysis for educational
+purposes and to enrich OWDB pages with properly attributed quotes and context.
+All content is attributed to original sources with links.
 """
 
 import logging
 import re
+import feedparser
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote, urljoin
@@ -44,14 +47,29 @@ class WrestlingNewsScraper(BaseScraper):
     NEWS_SOURCES = {
         "wrestlinginc": {
             "url": "https://www.wrestlinginc.com/news/",
+            "rss": "https://www.wrestlinginc.com/feed/",
             "enabled": True,
         },
         "wrestlezone": {
             "url": "https://www.wrestlezone.com/news/",
+            "rss": "https://www.wrestlezone.com/feed/",
             "enabled": True,
         },
-        # PWInsider and F4W require subscriptions for most content
-        # Skip for now to avoid paywall issues
+        "pwtorch": {
+            "url": "https://www.pwtorch.com/",
+            "rss": "https://www.pwtorch.com/feed",
+            "enabled": True,
+        },
+        "ringsidenews": {
+            "url": "https://www.ringsidenews.com/",
+            "rss": "https://www.ringsidenews.com/feed/",
+            "enabled": True,
+        },
+        "fightful": {
+            "url": "https://www.fightful.com/wrestling",
+            "rss": "https://www.fightful.com/wrestling/feed",
+            "enabled": True,
+        },
     }
 
     def _clean_text(self, text: str) -> str:
@@ -269,3 +287,197 @@ class WrestlingNewsScraper(BaseScraper):
 
         logger.info(f"Scraped total of {len(all_news)} news items from all sources")
         return all_news
+
+    @retry_on_failure(max_retries=2)
+    def scrape_rss_feed(self, source_name: str, limit: int = 20) -> List[Dict[str, Any]]:
+        """
+        Scrape news from RSS feed.
+        Much more efficient than HTML scraping!
+
+        Args:
+            source_name: Key from NEWS_SOURCES dict
+            limit: Max items to return
+
+        Returns:
+            List of news items with full content
+        """
+        if source_name not in self.NEWS_SOURCES:
+            logger.error(f"Unknown news source: {source_name}")
+            return []
+
+        config = self.NEWS_SOURCES[source_name]
+        rss_url = config.get("rss")
+
+        if not rss_url:
+            logger.warning(f"No RSS feed configured for {source_name}")
+            return []
+
+        try:
+            # Parse RSS feed using feedparser
+            feed = feedparser.parse(rss_url)
+
+            if not feed.entries:
+                logger.warning(f"No entries found in RSS feed: {rss_url}")
+                return []
+
+            news_items = []
+
+            for entry in feed.entries[:limit]:
+                try:
+                    # Extract basic info from RSS
+                    headline = entry.get("title", "").strip()
+                    article_url = entry.get("link", "")
+                    published = entry.get("published_parsed") or entry.get("updated_parsed")
+
+                    if not headline or not article_url:
+                        continue
+
+                    # Parse date
+                    published_date = None
+                    if published:
+                        published_date = datetime(*published[:6]).strftime("%Y-%m-%d")
+
+                    # Get summary/description from RSS (often truncated)
+                    summary = entry.get("summary", "") or entry.get("description", "")
+                    summary = self._clean_text(BeautifulSoup(summary, "lxml").get_text())
+
+                    # Get full article content by fetching the page
+                    full_content = None
+                    author = entry.get("author", "")
+
+                    try:
+                        full_content = self.scrape_full_article(article_url)
+                    except Exception as e:
+                        logger.warning(f"Failed to fetch full article {article_url}: {e}")
+                        # Continue with summary only
+
+                    # Extract categories/tags
+                    categories = []
+                    if hasattr(entry, "tags"):
+                        categories = [tag.get("term", "") for tag in entry.tags if tag.get("term")]
+
+                    news_item = {
+                        "source": source_name,
+                        "headline": headline,
+                        "url": article_url,
+                        "published_date": published_date or datetime.now().strftime("%Y-%m-%d"),
+                        "summary": summary,
+                        "full_content": full_content,
+                        "author": author,
+                        "categories": categories,
+                    }
+
+                    news_items.append(news_item)
+                    logger.debug(f"Scraped from RSS: {headline}")
+
+                except Exception as e:
+                    logger.warning(f"Failed to parse RSS entry: {e}")
+                    continue
+
+            logger.info(f"Scraped {len(news_items)} articles from {source_name} RSS feed")
+            return news_items
+
+        except Exception as e:
+            logger.error(f"Failed to parse RSS feed {rss_url}: {e}")
+            return []
+
+    @retry_on_failure(max_retries=2)
+    def scrape_full_article(self, url: str) -> Optional[str]:
+        """
+        Scrape full article content from a URL.
+
+        Args:
+            url: Article URL
+
+        Returns:
+            Full article text content (cleaned)
+        """
+        response = self.fetch(url)
+        if not response:
+            return None
+
+        soup = BeautifulSoup(response.text, "lxml")
+
+        # Remove unwanted elements
+        for element in soup.find_all(["script", "style", "nav", "header", "footer", "aside", "iframe", "ad"]):
+            element.decompose()
+
+        # Try common article content selectors
+        article_selectors = [
+            "article",
+            ".article-content",
+            ".entry-content",
+            ".post-content",
+            ".content",
+            'div[class*="article"]',
+            'div[class*="post"]',
+            'div[class*="entry"]',
+            "#content",
+        ]
+
+        article_content = None
+        for selector in article_selectors:
+            if "." in selector or "#" in selector or "[" in selector:
+                # CSS selector
+                if selector.startswith("."):
+                    article_content = soup.find(class_=selector[1:])
+                elif selector.startswith("#"):
+                    article_content = soup.find(id=selector[1:])
+                else:
+                    article_content = soup.select_one(selector)
+            else:
+                # Tag name
+                article_content = soup.find(selector)
+
+            if article_content:
+                break
+
+        if not article_content:
+            # Fallback: get largest text block
+            paragraphs = soup.find_all("p")
+            if paragraphs:
+                article_content = BeautifulSoup("", "lxml")
+                for p in paragraphs:
+                    article_content.append(p)
+
+        if not article_content:
+            return None
+
+        # Extract text and clean
+        text = article_content.get_text(separator="\n", strip=True)
+        text = self._clean_text(text)
+
+        # Remove excessive newlines
+        text = re.sub(r"\n{3,}", "\n\n", text)
+
+        return text if len(text) > 100 else None  # Only return if substantive
+
+    def scrape_all_rss(self, per_source_limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Scrape news from all RSS feeds.
+        More efficient than HTML scraping!
+
+        Args:
+            per_source_limit: Max articles per source
+
+        Returns:
+            Combined list of articles with full content
+        """
+        all_articles = []
+
+        for source_name, config in self.NEWS_SOURCES.items():
+            if not config.get("enabled", True):
+                continue
+
+            if not config.get("rss"):
+                continue
+
+            try:
+                articles = self.scrape_rss_feed(source_name, limit=per_source_limit)
+                all_articles.extend(articles)
+            except Exception as e:
+                logger.error(f"Failed to scrape RSS for {source_name}: {e}")
+                continue
+
+        logger.info(f"Scraped total of {len(all_articles)} articles from all RSS feeds")
+        return all_articles

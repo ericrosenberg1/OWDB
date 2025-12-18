@@ -22,3 +22,4 @@ python-dotenv>=1.0
 requests>=2.32
 beautifulsoup4>=4.13
 lxml>=5.3
+feedparser>=6.0  # RSS feed parsing for news sources

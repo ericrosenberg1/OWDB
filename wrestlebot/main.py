@@ -13,11 +13,11 @@ import time
 from pathlib import Path
 from datetime import datetime
 
-# Add parent directory to path to import modules
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add current directory to path to import modules
+sys.path.insert(0, str(Path(__file__).parent))
 
-from wrestlebot.api_client.django_api import DjangoAPIClient
-from wrestlebot.utils.circuit_breaker import circuit_breaker_manager
+from api_client.django_api import DjangoAPIClient
+from utils.circuit_breaker import circuit_breaker_manager
 
 # Configure logging
 logging.basicConfig(

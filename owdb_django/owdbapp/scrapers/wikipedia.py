@@ -133,7 +133,10 @@ class WikipediaScraper(BaseScraper):
 
         data = self._api_request(params)
         if data and "parse" in data:
-            return data["parse"]["text"]["*"]
+            text = data["parse"]["text"]
+            # With formatversion=2, text is returned directly as a string
+            # With formatversion=1, it's wrapped in {"*": "..."}
+            return text if isinstance(text, str) else text.get("*")
         return None
 
     def get_infobox_data(self, title: str) -> Optional[Dict[str, str]]:

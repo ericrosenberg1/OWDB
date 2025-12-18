@@ -41,6 +41,13 @@ def scrape_wikipedia_wrestlers(self, limit: int = 50):
     Scrape wrestler data from Wikipedia.
     Runs periodically to discover new wrestlers and update existing ones.
     """
+    lock_key = "scrape_wikipedia_wrestlers_lock"
+    lock_timeout = SCRAPER_HARD_LIMIT + 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("Wikipedia wrestler scrape skipped: previous run still active")
+        return {"scraped": 0, "imported": 0, "status": "skipped_lock"}
+
     try:
         from .scrapers import WikipediaScraper, ScraperCoordinator, ScraperUnavailableError
 
@@ -69,6 +76,8 @@ def scrape_wikipedia_wrestlers(self, limit: int = 50):
     except Exception as e:
         logger.error(f"Wikipedia wrestler scrape failed: {e}")
         raise self.retry(exc=e)
+    finally:
+        cache.delete(lock_key)
 
 
 @shared_task(
@@ -80,6 +89,13 @@ def scrape_wikipedia_wrestlers(self, limit: int = 50):
 )
 def scrape_wikipedia_promotions(self, limit: int = 25):
     """Scrape promotion data from Wikipedia."""
+    lock_key = "scrape_wikipedia_promotions_lock"
+    lock_timeout = SCRAPER_HARD_LIMIT + 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("Wikipedia promotion scrape skipped: previous run still active")
+        return {"scraped": 0, "imported": 0, "status": "skipped_lock"}
+
     try:
         from .scrapers import WikipediaScraper, ScraperCoordinator, ScraperUnavailableError
 
@@ -108,6 +124,8 @@ def scrape_wikipedia_promotions(self, limit: int = 25):
     except Exception as e:
         logger.error(f"Wikipedia promotion scrape failed: {e}")
         raise self.retry(exc=e)
+    finally:
+        cache.delete(lock_key)
 
 
 @shared_task(
@@ -119,6 +137,13 @@ def scrape_wikipedia_promotions(self, limit: int = 25):
 )
 def scrape_wikipedia_events(self, limit: int = 50):
     """Scrape event data from Wikipedia."""
+    lock_key = "scrape_wikipedia_events_lock"
+    lock_timeout = SCRAPER_HARD_LIMIT + 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("Wikipedia event scrape skipped: previous run still active")
+        return {"scraped": 0, "imported": 0, "status": "skipped_lock"}
+
     try:
         from .scrapers import WikipediaScraper, ScraperCoordinator, ScraperUnavailableError
 
@@ -147,6 +172,8 @@ def scrape_wikipedia_events(self, limit: int = 50):
     except Exception as e:
         logger.error(f"Wikipedia event scrape failed: {e}")
         raise self.retry(exc=e)
+    finally:
+        cache.delete(lock_key)
 
 
 @shared_task(
@@ -161,6 +188,13 @@ def scrape_cagematch_wrestlers(self, limit: int = 25):
     Scrape wrestler data from Cagematch.
     Lower limits due to more restrictive rate limiting.
     """
+    lock_key = "scrape_cagematch_wrestlers_lock"
+    lock_timeout = SCRAPER_HARD_LIMIT + 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("Cagematch wrestler scrape skipped: previous run still active")
+        return {"scraped": 0, "imported": 0, "status": "skipped_lock"}
+
     try:
         from .scrapers import CagematchScraper, ScraperCoordinator, ScraperUnavailableError
 
@@ -189,6 +223,8 @@ def scrape_cagematch_wrestlers(self, limit: int = 25):
     except Exception as e:
         logger.error(f"Cagematch wrestler scrape failed: {e}")
         raise self.retry(exc=e)
+    finally:
+        cache.delete(lock_key)
 
 
 @shared_task(
@@ -200,6 +236,13 @@ def scrape_cagematch_wrestlers(self, limit: int = 25):
 )
 def scrape_cagematch_events(self, limit: int = 25):
     """Scrape recent events from Cagematch."""
+    lock_key = "scrape_cagematch_events_lock"
+    lock_timeout = SCRAPER_HARD_LIMIT + 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("Cagematch event scrape skipped: previous run still active")
+        return {"scraped": 0, "imported": 0, "status": "skipped_lock"}
+
     try:
         from .scrapers import CagematchScraper, ScraperCoordinator, ScraperUnavailableError
 
@@ -228,6 +271,8 @@ def scrape_cagematch_events(self, limit: int = 25):
     except Exception as e:
         logger.error(f"Cagematch event scrape failed: {e}")
         raise self.retry(exc=e)
+    finally:
+        cache.delete(lock_key)
 
 
 @shared_task(
@@ -239,6 +284,13 @@ def scrape_cagematch_events(self, limit: int = 25):
 )
 def scrape_profightdb_wrestlers(self, limit: int = 25):
     """Scrape wrestler data from ProFightDB."""
+    lock_key = "scrape_profightdb_wrestlers_lock"
+    lock_timeout = SCRAPER_HARD_LIMIT + 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("ProFightDB wrestler scrape skipped: previous run still active")
+        return {"scraped": 0, "imported": 0, "status": "skipped_lock"}
+
     try:
         from .scrapers import ProFightDBScraper, ScraperCoordinator, ScraperUnavailableError
 
@@ -268,6 +320,8 @@ def scrape_profightdb_wrestlers(self, limit: int = 25):
     except Exception as e:
         logger.error(f"ProFightDB wrestler scrape failed: {e}")
         raise self.retry(exc=e)
+    finally:
+        cache.delete(lock_key)
 
 
 @shared_task(
@@ -279,6 +333,13 @@ def scrape_profightdb_wrestlers(self, limit: int = 25):
 )
 def scrape_profightdb_events(self, limit: int = 25):
     """Scrape events from ProFightDB."""
+    lock_key = "scrape_profightdb_events_lock"
+    lock_timeout = SCRAPER_HARD_LIMIT + 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("ProFightDB event scrape skipped: previous run still active")
+        return {"scraped": 0, "imported": 0, "status": "skipped_lock"}
+
     try:
         from .scrapers import ProFightDBScraper, ScraperCoordinator, ScraperUnavailableError
 
@@ -308,6 +369,8 @@ def scrape_profightdb_events(self, limit: int = 25):
     except Exception as e:
         logger.error(f"ProFightDB event scrape failed: {e}")
         raise self.retry(exc=e)
+    finally:
+        cache.delete(lock_key)
 
 
 # =============================================================================
@@ -633,7 +696,7 @@ def wrestlebot_discovery_cycle(self, max_items: int = 10):
     This task discovers new wrestling entities from Wikipedia,
     verifies them with AI, and imports them to the database.
 
-    Runs every 5 minutes via Celery Beat.
+    Runs every minute via Celery Beat.
 
     Features:
     - Soft time limit of 8 minutes (graceful shutdown)
@@ -661,8 +724,8 @@ def wrestlebot_discovery_cycle(self, max_items: int = 10):
         bot = WrestleBot()
 
         if not bot.can_run():
-            logger.info("WrestleBot skipped: disabled or rate limited")
-            return {"status": "skipped", "reason": "disabled or rate limited"}
+            logger.info("WrestleBot skipped: disabled")
+            return {"status": "skipped", "reason": "disabled"}
 
         results = bot.run_discovery_cycle(max_items=max_items)
         logger.info(f"WrestleBot cycle complete: {results}")
@@ -1056,7 +1119,7 @@ def wrestlebot_get_stats():
     """
     Get and cache WrestleBot statistics.
 
-    Runs hourly via Celery Beat.
+    Runs every 10 minutes via Celery Beat.
     """
     try:
         from .wrestlebot import WrestleBot
@@ -1091,7 +1154,7 @@ def wrestlebot_health_check():
     - Clears stale cache entries
     - Logs warnings for monitoring
 
-    Runs every 5 minutes via Celery Beat.
+    Runs every 2 minutes via Celery Beat.
     """
     from django.utils import timezone
     from datetime import timedelta
@@ -1159,7 +1222,7 @@ def restart_stale_bot_tasks():
     This task monitors for tasks that may have frozen and
     ensures the discovery cycle keeps running.
 
-    Runs every 15 minutes via Celery Beat.
+    Runs every 5 minutes via Celery Beat.
     """
     from django.utils import timezone
     from datetime import timedelta
@@ -1175,10 +1238,10 @@ def restart_stale_bot_tasks():
         last_success = cache.get("wrestlebot_last_success")
         now = timezone.now()
 
-        # If no success in 30 minutes and bot is enabled, something may be wrong
+        # If no success in 10 minutes and bot is enabled, something may be wrong
         if last_success:
             time_since_success = (now - last_success).total_seconds()
-            if time_since_success > 1800:  # 30 minutes
+            if time_since_success > 600:  # 10 minutes
                 logger.warning(
                     f"WrestleBot: No successful cycle in {time_since_success/60:.1f} minutes"
                 )
@@ -1186,7 +1249,7 @@ def restart_stale_bot_tasks():
 
         # Check for stuck tasks (STARTED but not finished)
         if TaskResult:
-            stuck_cutoff = now - timedelta(minutes=15)
+            stuck_cutoff = now - timedelta(minutes=10)
             stuck_tasks = TaskResult.objects.filter(
                 task_name__contains='wrestlebot',
                 status='STARTED',
@@ -1207,9 +1270,9 @@ def restart_stale_bot_tasks():
         # Clear stale locks if any
         lock_key = "wrestlebot_cycle_lock"
         if cache.get(lock_key):
-            # Check if lock is stale (older than 15 minutes)
+            # Check if lock is stale (older than 10 minutes)
             lock_time = cache.get(f"{lock_key}_time")
-            if lock_time and (now - lock_time).total_seconds() > 900:
+            if lock_time and (now - lock_time).total_seconds() > 600:
                 cache.delete(lock_key)
                 cache.delete(f"{lock_key}_time")
                 actions.append("Cleared stale bot lock")

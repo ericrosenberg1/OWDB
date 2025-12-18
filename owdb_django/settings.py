@@ -168,38 +168,38 @@ CELERY_BEAT_SCHEDULE = {
     # ==========================================================================
     'scrape-wikipedia-wrestlers': {
         'task': 'owdb_django.owdbapp.tasks.scrape_wikipedia_wrestlers',
-        'schedule': 7200.0,  # Every 2 hours (was 4)
-        'args': (50,),
+        'schedule': 60.0,  # Every minute for continuous training
+        'args': (20,),  # Smaller batches to keep runs short
     },
     'scrape-wikipedia-promotions': {
         'task': 'owdb_django.owdbapp.tasks.scrape_wikipedia_promotions',
-        'schedule': 21600.0,  # Every 6 hours (was 12)
-        'args': (25,),
+        'schedule': 300.0,  # Every 5 minutes
+        'args': (15,),
     },
     'scrape-wikipedia-events': {
         'task': 'owdb_django.owdbapp.tasks.scrape_wikipedia_events',
-        'schedule': 7200.0,  # Every 2 hours (was 4)
-        'args': (50,),
+        'schedule': 60.0,  # Every minute alongside wrestlers
+        'args': (20,),
     },
     'scrape-cagematch-wrestlers': {
         'task': 'owdb_django.owdbapp.tasks.scrape_cagematch_wrestlers',
-        'schedule': 10800.0,  # Every 3 hours (was 6)
-        'args': (25,),
+        'schedule': 1200.0,  # Every 20 minutes (respect site limits)
+        'args': (12,),
     },
     'scrape-cagematch-events': {
         'task': 'owdb_django.owdbapp.tasks.scrape_cagematch_events',
-        'schedule': 10800.0,  # Every 3 hours (was 6)
-        'args': (25,),
+        'schedule': 1200.0,  # Every 20 minutes
+        'args': (12,),
     },
     'scrape-profightdb-wrestlers': {
         'task': 'owdb_django.owdbapp.tasks.scrape_profightdb_wrestlers',
-        'schedule': 14400.0,  # Every 4 hours (was 8)
-        'args': (25,),
+        'schedule': 1200.0,  # Every 20 minutes
+        'args': (15,),
     },
     'scrape-profightdb-events': {
         'task': 'owdb_django.owdbapp.tasks.scrape_profightdb_events',
-        'schedule': 14400.0,  # Every 4 hours (was 8)
-        'args': (25,),
+        'schedule': 1200.0,  # Every 20 minutes
+        'args': (15,),
     },
     'get-scraper-stats': {
         'task': 'owdb_django.owdbapp.tasks.get_scraper_stats',
@@ -243,8 +243,8 @@ CELERY_BEAT_SCHEDULE = {
     # ==========================================================================
     'wrestlebot-discovery-cycle': {
         'task': 'owdb_django.owdbapp.tasks.wrestlebot_discovery_cycle',
-        'schedule': 300.0,  # Every 5 minutes (was 15)
-        'args': (15,),  # Max 15 items per cycle
+        'schedule': 60.0,  # Every minute for continuous improvement
+        'args': (10,),  # Tighter batches to finish quickly
     },
     'wrestlebot-cleanup-logs': {
         'task': 'owdb_django.owdbapp.tasks.wrestlebot_cleanup_old_logs',
@@ -256,15 +256,15 @@ CELERY_BEAT_SCHEDULE = {
     },
     'wrestlebot-get-stats': {
         'task': 'owdb_django.owdbapp.tasks.wrestlebot_get_stats',
-        'schedule': 3600.0,  # Every hour
+        'schedule': 600.0,  # Every 10 minutes for fresher dashboards
     },
     'wrestlebot-health-check': {
         'task': 'owdb_django.owdbapp.tasks.wrestlebot_health_check',
-        'schedule': 300.0,  # Every 5 minutes
+        'schedule': 120.0,  # Every 2 minutes to catch freezes fast
     },
     'wrestlebot-restart-stale': {
         'task': 'owdb_django.owdbapp.tasks.restart_stale_bot_tasks',
-        'schedule': 900.0,  # Every 15 minutes
+        'schedule': 300.0,  # Every 5 minutes
     },
     # ==========================================================================
     # Image Fetch Tasks (Wikimedia Commons CC Images)

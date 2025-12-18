@@ -802,9 +802,9 @@ class WrestleBotConfig(TimeStampedModel):
     enabled = models.BooleanField(default=True, help_text="Master switch for WrestleBot")
 
     # Rate limiting
-    max_items_per_hour = models.IntegerField(default=50, help_text="Maximum new items to add per hour")
-    max_items_per_day = models.IntegerField(default=500, help_text="Maximum new items to add per day")
-    cooldown_minutes = models.IntegerField(default=5, help_text="Minutes to wait between batches")
+    max_items_per_hour = models.IntegerField(default=180, help_text="Maximum new items to add per hour")
+    max_items_per_day = models.IntegerField(default=3600, help_text="Maximum new items to add per day")
+    cooldown_minutes = models.IntegerField(default=1, help_text="Minutes to wait between batches")
 
     # AI model settings
     ai_model_name = models.CharField(max_length=100, default="llama3.2", help_text="Ollama model to use")
@@ -848,7 +848,30 @@ class WrestleBotConfig(TimeStampedModel):
     @classmethod
     def get_config(cls):
         """Get or create the singleton config."""
-        config, created = cls.objects.get_or_create(pk=1)
+        config, created = cls.objects.get_or_create(
+            pk=1,
+            defaults={
+                "max_items_per_hour": 180,
+                "max_items_per_day": 3600,
+                "cooldown_minutes": 1,
+            },
+        )
+
+        # Auto-boost limits to keep the bot running continuously
+        updated_fields = []
+        if config.max_items_per_hour < 180:
+            config.max_items_per_hour = 180
+            updated_fields.append("max_items_per_hour")
+        if config.max_items_per_day < 3600:
+            config.max_items_per_day = 3600
+            updated_fields.append("max_items_per_day")
+        if config.cooldown_minutes > 1:
+            config.cooldown_minutes = 1
+            updated_fields.append("cooldown_minutes")
+
+        if updated_fields:
+            config.save(update_fields=updated_fields)
+
         return config
 
     def reset_hourly_count(self):

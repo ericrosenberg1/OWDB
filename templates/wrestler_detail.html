@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load linking_tags %}
 
 {% block content %}
 <div class="person-page">
@@ -128,14 +129,16 @@
                 <!-- Biography Section -->
                 <div class="biography-section">
                     <h3>Biography</h3>
-                    {% if wrestler.about %}
-                    <div class="biography-content" id="biographyContent">
-                        <p>{{ wrestler.about|linebreaks }}</p>
-                    </div>
-                    <button class="read-more-btn" id="readMoreBtn" onclick="toggleBiography()" style="display: none;">Read More</button>
-                    {% else %}
-                    <p class="no-biography">We don't have a biography for {{ wrestler.name }} yet.</p>
-                    {% endif %}
+                    {% with about_text=wrestler|about_with_links %}
+                        {% if about_text %}
+                        <div class="biography-content" id="biographyContent">
+                            <p>{{ about_text|linebreaks }}</p>
+                        </div>
+                        <button class="read-more-btn" id="readMoreBtn" onclick="toggleBiography()" style="display: none;">Read More</button>
+                        {% else %}
+                        <p class="no-biography">We don't have a biography for {{ wrestler.name }} yet.</p>
+                        {% endif %}
+                    {% endwith %}
                 </div>
 
                 <!-- Known For Section (TMDB Style horizontal scroller) -->

@@ -99,9 +99,14 @@ class WrestleBot:
             logger.error(f"Failed to log action: {e}")
 
     def can_run(self) -> bool:
-        """Check if the bot can run (rate limits, enabled, etc.)."""
+        """Check if the bot is enabled."""
         self.refresh_config()
-        return self.config.can_add_items()
+        return self.config.enabled
+
+    def is_rate_limited(self) -> bool:
+        """Check if we're currently at the add-item limits."""
+        self.refresh_config()
+        return not self.config.can_add_items()
 
     def _infer_promotion(self, name: str):
         """Infer promotion from an event or title name."""
@@ -164,9 +169,9 @@ class WrestleBot:
             logger.info("WrestleBot is disabled")
             return {'status': 'disabled'}
 
-        if not self.config.can_add_items():
-            logger.info("WrestleBot rate limited")
-            return {'status': 'rate_limited'}
+        rate_limited = self.is_rate_limited()
+        if rate_limited:
+            logger.info("WrestleBot rate limited - running enrichment and linking only")
 
         self.start_batch()
         results = {
@@ -179,6 +184,8 @@ class WrestleBot:
             'titles_discovered': 0,
             'titles_added': 0,
             'errors': 0,
+            'mode': 'maintenance' if rate_limited else 'discovery',
+            'status': 'rate_limited' if rate_limited else 'ok',
         }
 
         # Balance between discovery (new items) and enrichment (completing existing)
@@ -193,28 +200,30 @@ class WrestleBot:
             results['enriched'] = enriched
 
         # === DISCOVERY PHASE ===
-        if self.config.focus_wrestlers:
-            w_disc, w_add = self._discover_wrestlers(items_per_type)
-            results['wrestlers_discovered'] = w_disc
-            results['wrestlers_added'] = w_add
+        if not rate_limited:
+            if self.config.focus_wrestlers:
+                w_disc, w_add = self._discover_wrestlers(items_per_type)
+                results['wrestlers_discovered'] = w_disc
+                results['wrestlers_added'] = w_add
 
-        if self.config.focus_promotions:
-            p_disc, p_add = self._discover_promotions(items_per_type)
-            results['promotions_discovered'] = p_disc
-            results['promotions_added'] = p_add
+            if self.config.focus_promotions:
+                p_disc, p_add = self._discover_promotions(items_per_type)
+                results['promotions_discovered'] = p_disc
+                results['promotions_added'] = p_add
 
-        if self.config.focus_events and self.config.can_add_items():
-            e_disc, e_add = self._discover_events(items_per_type)
-            results['events_discovered'] = e_disc
-            results['events_added'] = e_add
+            if self.config.focus_events and self.config.can_add_items():
+                e_disc, e_add = self._discover_events(items_per_type)
+                results['events_discovered'] = e_disc
+                results['events_added'] = e_add
 
-        if self.config.focus_titles and self.config.can_add_items():
-            t_disc, t_add = self._discover_titles(items_per_type)
-            results['titles_discovered'] = t_disc
-            results['titles_added'] = t_add
+            if self.config.focus_titles and self.config.can_add_items():
+                t_disc, t_add = self._discover_titles(items_per_type)
+                results['titles_discovered'] = t_disc
+                results['titles_added'] = t_add
 
         # === INTERLINKING PHASE ===
-        linked = self._run_interlinking_cycle(max(1, max_items // 4))
+        linked_budget = max(2, max_items // 2)
+        linked = self._run_interlinking_cycle(linked_budget)
         results['linked'] = linked
 
         # Update config with last run time

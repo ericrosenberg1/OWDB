@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load linking_tags %}
 
 {% block content %}
 <div class="detail-header">
@@ -38,14 +39,16 @@
     </div>
 </div>
 
-{% if event.about %}
-<div class="card mb-4">
-    <div class="card-header">About</div>
-    <div class="card-body">
-        <p>{{ event.about|linebreaks }}</p>
+{% with about_text=event|about_with_links %}
+    {% if about_text %}
+    <div class="card mb-4">
+        <div class="card-header">About</div>
+        <div class="card-body">
+            <p>{{ about_text|linebreaks }}</p>
+        </div>
     </div>
-</div>
-{% endif %}
+    {% endif %}
+{% endwith %}
 
 <!-- Wrestlers on Card -->
 {% if all_wrestlers %}

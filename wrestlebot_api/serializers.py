@@ -8,7 +8,7 @@ between JSON and Django models for the WrestleBot service.
 from rest_framework import serializers
 from owdb_django.owdbapp.models import (
     Wrestler, Promotion, Event, Match, Venue,
-    Article, VideoGame, Book, Podcast, Special
+    VideoGame, Book, Podcast, Special
 )
 
 
@@ -132,50 +132,6 @@ class EventSerializer(serializers.ModelSerializer):
         return event
 
 
-class ArticleSerializer(serializers.ModelSerializer):
-    """Serializer for creating/updating articles via API."""
-
-    tags = serializers.ListField(
-        child=serializers.CharField(max_length=50),
-        required=False,
-        allow_empty=True
-    )
-
-    class Meta:
-        model = Article
-        fields = [
-            'id', 'title', 'slug', 'content', 'summary',
-            'category', 'tags', 'author', 'source_url',
-            'published_date', 'created_at', 'updated_at', 'is_published'
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
-
-    def create(self, validated_data):
-        """Create article with tags."""
-        tags = validated_data.pop('tags', [])
-        article = Article.objects.create(**validated_data)
-
-        # Add tags if provided
-        if tags:
-            article.tags = ','.join(tags)
-            article.save()
-
-        return article
-
-    def update(self, instance, validated_data):
-        """Update article with tags."""
-        tags = validated_data.pop('tags', None)
-
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-
-        if tags is not None:
-            instance.tags = ','.join(tags)
-
-        instance.save()
-        return instance
-
-
 class VideoGameSerializer(serializers.ModelSerializer):
     """Serializer for video games."""
 
@@ -233,7 +189,6 @@ class BulkImportSerializer(serializers.Serializer):
     wrestlers = WrestlerSerializer(many=True, required=False)
     promotions = PromotionSerializer(many=True, required=False)
     events = EventSerializer(many=True, required=False)
-    articles = ArticleSerializer(many=True, required=False)
     videogames = VideoGameSerializer(many=True, required=False)
     books = BookSerializer(many=True, required=False)
     podcasts = PodcastSerializer(many=True, required=False)
@@ -245,7 +200,6 @@ class BulkImportSerializer(serializers.Serializer):
             'wrestlers': {'created': 0, 'updated': 0, 'errors': []},
             'promotions': {'created': 0, 'updated': 0, 'errors': []},
             'events': {'created': 0, 'updated': 0, 'errors': []},
-            'articles': {'created': 0, 'updated': 0, 'errors': []},
             'videogames': {'created': 0, 'updated': 0, 'errors': []},
             'books': {'created': 0, 'updated': 0, 'errors': []},
             'podcasts': {'created': 0, 'updated': 0, 'errors': []},
@@ -295,4 +249,3 @@ class StatusSerializer(serializers.Serializer):
     total_wrestlers = serializers.IntegerField()
     total_promotions = serializers.IntegerField()
     total_events = serializers.IntegerField()
-    total_articles = serializers.IntegerField()

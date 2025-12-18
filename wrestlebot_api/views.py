@@ -13,13 +13,13 @@ from django.utils import timezone
 from django.db import connection
 
 from owdb_django.owdbapp.models import (
-    Wrestler, Promotion, Event, Venue, Article,
+    Wrestler, Promotion, Event, Venue,
     VideoGame, Book, Podcast, Special
 )
 
 from .serializers import (
     WrestlerSerializer, PromotionSerializer, EventSerializer,
-    VenueSerializer, ArticleSerializer, VideoGameSerializer,
+    VenueSerializer, VideoGameSerializer,
     BookSerializer, PodcastSerializer, SpecialSerializer,
     BulkImportSerializer, StatusSerializer
 )
@@ -102,55 +102,6 @@ class VenueViewSet(viewsets.ModelViewSet):
     serializer_class = VenueSerializer
     permission_classes = [IsWrestleBot]
     lookup_field = 'slug'
-
-
-class ArticleViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint for managing articles.
-
-    WrestleBot can create news articles, wrestler profiles, etc.
-    """
-
-    queryset = Article.objects.all()
-    serializer_class = ArticleSerializer
-    permission_classes = [IsWrestleBot]
-    lookup_field = 'slug'
-
-    @action(detail=False, methods=['post'])
-    def publish_bulk(self, request):
-        """Publish multiple articles at once."""
-        articles_data = request.data.get('articles', [])
-
-        if not isinstance(articles_data, list):
-            return Response(
-                {'error': 'articles must be a list'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        results = {'created': 0, 'updated': 0, 'errors': []}
-
-        for article_data in articles_data:
-            try:
-                slug = article_data.get('slug')
-                if slug:
-                    article, created = Article.objects.update_or_create(
-                        slug=slug,
-                        defaults=article_data
-                    )
-                    if created:
-                        results['created'] += 1
-                    else:
-                        results['updated'] += 1
-                else:
-                    serializer = self.get_serializer(data=article_data)
-                    serializer.is_valid(raise_exception=True)
-                    serializer.save()
-                    results['created'] += 1
-
-            except Exception as e:
-                results['errors'].append(str(e))
-
-        return Response(results, status=status.HTTP_200_OK)
 
 
 class VideoGameViewSet(viewsets.ModelViewSet):
@@ -255,7 +206,6 @@ def service_status(request):
         'total_wrestlers': Wrestler.objects.count(),
         'total_promotions': Promotion.objects.count(),
         'total_events': Event.objects.count(),
-        'total_articles': Article.objects.count(),
     }
 
     serializer = StatusSerializer(data)

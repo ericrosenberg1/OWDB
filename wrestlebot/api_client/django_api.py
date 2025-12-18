@@ -31,12 +31,10 @@ class DjangoAPIClient:
             "debut_year": 1989
         })
 
-        # Create an article
-        article = client.create_article({
-            "title": "Breaking News",
-            "slug": "breaking-news",
-            "content": "Article content here...",
-            "category": "news"
+        # Bulk import
+        client.bulk_import({
+            "wrestlers": [...],
+            "promotions": [...]
         })
     """
 
@@ -169,27 +167,6 @@ class DjangoAPIClient:
             logger.error(f"Failed to create event: {e}")
             return None
 
-    # Article endpoints
-    def create_article(self, data: Dict) -> Optional[Dict]:
-        """Create or update an article."""
-        try:
-            return self._make_request('POST', 'articles/', data=data)
-        except Exception as e:
-            logger.error(f"Failed to create article: {e}")
-            return None
-
-    def publish_articles_bulk(self, articles: List[Dict]) -> Optional[Dict]:
-        """Publish multiple articles at once."""
-        try:
-            return self._make_request(
-                'POST',
-                'articles/publish_bulk/',
-                data={'articles': articles}
-            )
-        except Exception as e:
-            logger.error(f"Failed to publish articles in bulk: {e}")
-            return None
-
     # Bulk import endpoint
     def bulk_import(self, data: Dict) -> Optional[Dict]:
         """
@@ -201,7 +178,10 @@ class DjangoAPIClient:
                     "wrestlers": [...],
                     "promotions": [...],
                     "events": [...],
-                    "articles": [...]
+                    "videogames": [...],
+                    "books": [...],
+                    "podcasts": [...],
+                    "specials": [...]
                 }
 
         Returns:

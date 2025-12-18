@@ -125,13 +125,26 @@ class RobotsChecker:
     """
     Checks robots.txt compliance for URLs.
     Caches robots.txt files to avoid repeated fetches.
+
+    Note: We whitelist legitimate API endpoints (like Wikipedia's API) which are
+    intended for programmatic access and should not be blocked by robots.txt.
     """
 
     CACHE_TTL = 86400  # 24 hours
 
+    # API endpoints that are intended for programmatic access
+    # These are whitelisted even if robots.txt blocks them
+    API_WHITELIST_PATTERNS = [
+        # Wikipedia API - the official way to access Wikipedia data
+        r'https?://[^/]*\.wikipedia\.org/w/api\.php',
+        r'https?://[^/]*\.wikipedia\.org/api/',
+    ]
+
     def __init__(self, user_agent: str = "OWDBBot/1.0"):
         self.user_agent = user_agent
         self._parsers: Dict[str, RobotFileParser] = {}
+        # Compile whitelist patterns for efficiency
+        self._whitelist_regex = [re.compile(pattern) for pattern in self.API_WHITELIST_PATTERNS]
 
     def _get_robots_url(self, url: str) -> str:
         """Get the robots.txt URL for a given URL."""
@@ -183,7 +196,17 @@ class RobotsChecker:
         return None
 
     def can_fetch(self, url: str) -> bool:
-        """Check if the URL can be fetched according to robots.txt."""
+        """
+        Check if the URL can be fetched according to robots.txt.
+
+        Whitelisted API endpoints (like Wikipedia's API) are always allowed,
+        as they are the official way to access data programmatically.
+        """
+        # Check whitelist first - API endpoints are always allowed
+        for pattern in self._whitelist_regex:
+            if pattern.match(url):
+                return True
+
         parser = self._get_parser(url)
         if parser is None:
             return True  # No robots.txt or error, assume allowed

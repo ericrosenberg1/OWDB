@@ -1,0 +1,56 @@
+# WrestleBot Service Configuration
+# Version: 2.0.0
+
+service:
+  name: "WrestleBot"
+  version: "2.0.0"
+  environment: "production"  # development, staging, production
+
+# Django API Connection
+django:
+  api_url: "http://localhost:8000/api/wrestlebot"
+  api_token: "${WRESTLEBOT_API_TOKEN}"  # Set via environment variable
+  timeout: 30
+  retry_attempts: 3
+  retry_delay: 5
+
+# Ollama AI Configuration
+ollama:
+  url: "http://localhost:11434"
+  model: "llama3.2"
+  enabled: true
+  fallback_on_failure: true
+  connect_timeout: 5
+  generate_timeout: 60
+
+# Worker Configuration
+workers:
+  scrapers: 5      # Number of scraping threads
+  processors: 2    # Number of AI processing threads
+  publishers: 2    # Number of publishing threads
+
+# Logging Configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  file: "/var/log/wrestlebot/wrestlebot.log"
+  max_size: "100MB"
+  backup_count: 5
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# Monitoring Configuration
+monitoring:
+  enabled: true
+  metrics_port: 9090
+  health_port: 8080
+
+# Queue Configuration
+queue:
+  database: "/var/lib/wrestlebot/queue.db"
+  retry_delays: [60, 300, 900, 3600]  # 1min, 5min, 15min, 1hr
+  max_retries: 4
+
+# Circuit Breaker Configuration
+circuit_breaker:
+  failure_threshold: 5
+  timeout: 300  # 5 minutes
+  half_open_requests: 2

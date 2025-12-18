@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from owdb_django.owdbapp import views
 
 urlpatterns = [
@@ -78,8 +78,9 @@ urlpatterns = [
     # Health check for Docker/load balancers
     path('health/', views.health_check, name='health'),
 
-    # WrestleBot
+    # WrestleBot UI
     path('wrestlebot/', views.WrestleBotView.as_view(), name='wrestlebot'),
-    path('api/wrestlebot/', views.wrestlebot_api, name='wrestlebot_api'),
-    path('api/wrestlebot/trigger/', views.wrestlebot_trigger, name='wrestlebot_trigger'),
+
+    # WrestleBot REST API (for standalone service)
+    path('api/wrestlebot/', include('wrestlebot_api.urls')),
 ]

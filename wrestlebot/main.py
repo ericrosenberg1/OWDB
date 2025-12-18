@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from api_client.django_api import DjangoAPIClient
 from utils.circuit_breaker import circuit_breaker_manager
+from scrapers import WikipediaWrestlerScraper
 
 # Configure logging
 logging.basicConfig(
@@ -38,7 +39,9 @@ class WrestleBotService:
     def __init__(self):
         self.running = False
         self.api_client = None
+        self.scraper = None
         self.start_time = None
+        self.wrestlers_added = 0
 
         # Set up signal handlers for graceful shutdown
         signal.signal(signal.SIGTERM, self._signal_handler)
@@ -71,6 +74,14 @@ class WrestleBotService:
             logger.info(f"Django API: {self.api_client.api_url}")
         except Exception as e:
             logger.error(f"Failed to initialize API client: {e}")
+            sys.exit(1)
+
+        # Initialize scraper
+        try:
+            self.scraper = WikipediaWrestlerScraper()
+            logger.info("Wikipedia scraper initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize scraper: {e}")
             sys.exit(1)
 
         # Test API connection
@@ -120,22 +131,34 @@ class WrestleBotService:
                 else:
                     logger.info("API health check: OK")
 
-                # TODO: Add actual scraping logic here
-                # For now, just demonstrate the service is running
+                # Run scraping cycle every 10 cycles (every ~1 minute with 5s sleep)
+                if cycle % 10 == 1:
+                    try:
+                        logger.info("Starting scraping cycle...")
 
-                # Example: Create a test article (commented out)
-                # article_data = {
-                #     "title": f"Test Article {cycle}",
-                #     "slug": f"test-article-{cycle}",
-                #     "content": "This is a test article from WrestleBot standalone service",
-                #     "category": "news",
-                #     "author": "WrestleBot"
-                # }
-                # result = self.api_client.create_article(article_data)
-                # if result:
-                #     logger.info(f"Created article: {result.get('id')}")
+                        # Discover wrestlers from Wikipedia
+                        wrestlers = self.scraper.discover_wrestlers(max_wrestlers=5)
 
-                # Sleep between cycles (5 seconds for testing, will be configurable)
+                        if wrestlers:
+                            logger.info(f"Discovered {len(wrestlers)} wrestlers, adding to database...")
+
+                            for wrestler_data in wrestlers:
+                                try:
+                                    result = self.api_client.create_wrestler(wrestler_data)
+                                    if result:
+                                        self.wrestlers_added += 1
+                                        logger.info(f"✓ Added wrestler: {wrestler_data['name']}")
+                                    else:
+                                        logger.warning(f"Failed to add wrestler: {wrestler_data['name']}")
+                                except Exception as e:
+                                    logger.error(f"Error adding wrestler {wrestler_data['name']}: {e}")
+                        else:
+                            logger.info("No new wrestlers discovered this cycle")
+
+                    except Exception as e:
+                        logger.error(f"Scraping cycle failed: {e}", exc_info=True)
+
+                # Sleep between cycles
                 logger.info("Sleeping for 5 seconds...")
                 time.sleep(5)
 
@@ -156,6 +179,7 @@ class WrestleBotService:
         if self.start_time:
             uptime = (datetime.now() - self.start_time).total_seconds()
             logger.info(f"Total uptime: {uptime:.0f} seconds")
+            logger.info(f"Total wrestlers added: {self.wrestlers_added}")
 
         logger.info("Shutdown complete")
 

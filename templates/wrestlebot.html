@@ -130,28 +130,20 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <h5 class="text-primary">Architecture (v2.0)</h5>
+                            <h5 class="text-primary">Data Sources</h5>
                             <ul>
-                                <li><strong>Standalone Service</strong> - Runs in separate Docker container</li>
-                                <li><strong>REST API Communication</strong> - Token-authenticated API calls to Django</li>
-                                <li><strong>Fault Isolation</strong> - Circuit breaker pattern prevents cascading failures</li>
-                                <li><strong>Independent Scaling</strong> - Can run multiple instances if needed</li>
+                                <li><strong>Wikipedia</strong> - Wrestler biographies, promotions, and event data</li>
+                                <li><strong>Wrestling News Sites</strong> - Latest news and updates via RSS feeds</li>
+                                <li><strong>Historical Archives</strong> - Classic wrestling coverage and records</li>
+                                <li>All sources accessed respectfully with proper rate limiting</li>
                             </ul>
 
-                            <h5 class="text-primary mt-4">Data Sources</h5>
+                            <h5 class="text-primary mt-4">AI Assistant</h5>
                             <ul>
-                                <li><strong>Wikipedia API</strong> - Official REST API for wrestler/promotion data</li>
-                                <li><strong>RSS Feeds</strong> - Wrestling news sites and blogs</li>
-                                <li><strong>News Archives</strong> - Historical wrestling coverage</li>
-                                <li>Respects rate limits and robots.txt for all sources</li>
-                            </ul>
-
-                            <h5 class="text-primary mt-4">AI Processing</h5>
-                            <ul>
-                                <li><strong>Self-hosted Ollama</strong> - Runs locally, no external AI calls</li>
-                                <li>Verifies data accuracy and consistency</li>
-                                <li>Detects duplicates using fuzzy matching</li>
-                                <li>Enriches data (e.g., infers nationality from birthplace)</li>
+                                <li>Self-hosted AI runs locally - no external services or data sharing</li>
+                                <li>Verifies data accuracy and detects duplicates</li>
+                                <li>Enriches information (infers details like nationality)</li>
+                                <li>Always attributes sources properly</li>
                             </ul>
                         </div>
                         <div class="col-md-6">
@@ -384,45 +376,6 @@
         </div>
     </div>
 
-    <!-- Technical Details -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card bg-dark border-secondary">
-                <div class="card-header">
-                    <h5 class="mb-0">Technical Details</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <h6 class="text-primary">Service Info</h6>
-                            <ul class="list-unstyled text-muted small">
-                                <li>Status: Running in Docker container</li>
-                                <li>Health checks: Every 5 seconds</li>
-                                <li>API: Token-authenticated REST</li>
-                                <li>Uptime: Continuous (24/7)</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-4">
-                            <h6 class="text-primary">AI Settings</h6>
-                            <ul class="list-unstyled text-muted small">
-                                <li>Model: {{ config.ai_model_name }}</li>
-                                <li>Temperature: {{ config.ai_temperature }}</li>
-                                <li>Min confidence: {% widthratio config.min_confidence_threshold 1 100 %}%</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-4">
-                            <h6 class="text-primary">Data Quality</h6>
-                            <ul class="list-unstyled text-muted small">
-                                <li>Min required fields: {{ config.min_data_fields }}</li>
-                                <li>AI verification: {% if config.require_verification %}Enabled{% else %}Disabled{% endif %}</li>
-                                <li>Deduplication: 85% similarity threshold</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 {% endblock %}
 

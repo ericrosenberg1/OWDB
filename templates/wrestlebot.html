@@ -48,9 +48,11 @@
                     </div>
 
                     <p class="lead">
-                        WrestleBot is our self-hosted AI assistant that automatically discovers and adds
-                        wrestling data from Wikipedia. It runs 24/7, slowly and respectfully gathering
-                        factual information about wrestlers, promotions, events, and championships.
+                        WrestleBot 2.0 is our self-hosted AI assistant that runs as a standalone service,
+                        completely separated from the Django web application. It automatically discovers and
+                        adds wrestling data from multiple sources including Wikipedia, RSS feeds, and news
+                        archives. Running 24/7 in its own Docker container, WrestleBot communicates with the
+                        database via a secure REST API, ensuring the website never freezes or slows down.
                     </p>
 
                     <!-- System Health Indicators -->
@@ -128,12 +130,20 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <h5 class="text-primary">Data Sources</h5>
+                            <h5 class="text-primary">Architecture (v2.0)</h5>
                             <ul>
-                                <li><strong>Wikipedia API</strong> - Official REST API for article data</li>
-                                <li>Focuses on wrestling categories (wrestlers, promotions, events)</li>
-                                <li>Respects rate limits (1 request/second max)</li>
-                                <li>Caches responses to minimize requests</li>
+                                <li><strong>Standalone Service</strong> - Runs in separate Docker container</li>
+                                <li><strong>REST API Communication</strong> - Token-authenticated API calls to Django</li>
+                                <li><strong>Fault Isolation</strong> - Circuit breaker pattern prevents cascading failures</li>
+                                <li><strong>Independent Scaling</strong> - Can run multiple instances if needed</li>
+                            </ul>
+
+                            <h5 class="text-primary mt-4">Data Sources</h5>
+                            <ul>
+                                <li><strong>Wikipedia API</strong> - Official REST API for wrestler/promotion data</li>
+                                <li><strong>RSS Feeds</strong> - Wrestling news sites and blogs</li>
+                                <li><strong>News Archives</strong> - Historical wrestling coverage</li>
+                                <li>Respects rate limits and robots.txt for all sources</li>
                             </ul>
 
                             <h5 class="text-primary mt-4">AI Processing</h5>
@@ -384,11 +394,12 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4">
-                            <h6 class="text-primary">Schedule</h6>
+                            <h6 class="text-primary">Service Info</h6>
                             <ul class="list-unstyled text-muted small">
-                                <li>Discovery cycle: Every 5 minutes</li>
-                                <li>Max items per cycle: 15</li>
-                                <li>Cooldown between batches: {{ config.cooldown_minutes }} min</li>
+                                <li>Status: Running in Docker container</li>
+                                <li>Health checks: Every 5 seconds</li>
+                                <li>API: Token-authenticated REST</li>
+                                <li>Uptime: Continuous (24/7)</li>
                             </ul>
                         </div>
                         <div class="col-md-4">

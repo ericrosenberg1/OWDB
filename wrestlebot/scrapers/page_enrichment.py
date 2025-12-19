@@ -131,10 +131,14 @@ class PageEnrichmentDiscovery:
         random wrestling pages and finding wrestlers/promotions/titles/events
         mentioned in those pages that aren't yet in the database.
         """
+        logger.info("=== get_random_incomplete_page called ===")
         try:
             # Use Wikipedia's random page feature to find wrestling content
             # This gives AI autonomy to explore and discover new entities organically
-            return self._get_random_wrestling_page_from_wikipedia()
+            logger.info("About to call _get_random_wrestling_page_from_wikipedia")
+            result = self._get_random_wrestling_page_from_wikipedia()
+            logger.info(f"_get_random_wrestling_page_from_wikipedia returned: {result is not None}")
+            return result
 
         except Exception as e:
             logger.error(f"Error getting page for enrichment: {e}", exc_info=True)

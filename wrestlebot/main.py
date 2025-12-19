@@ -27,6 +27,7 @@ from scrapers.bulk_media_discovery import (
     BulkBookDiscovery,
     BulkDocumentaryDiscovery
 )
+from scrapers.page_enrichment import PageEnrichmentDiscovery
 
 # Configure logging
 logging.basicConfig(
@@ -54,6 +55,7 @@ class WrestleBotService:
         self.bulk_videogame_scraper = None
         self.bulk_book_scraper = None
         self.bulk_documentary_scraper = None
+        self.page_enrichment = None
         self.start_time = None
         self.wrestlers_added = 0
         self.promotions_added = 0
@@ -61,6 +63,7 @@ class WrestleBotService:
         self.videogames_added = 0
         self.books_added = 0
         self.documentaries_added = 0
+        self.entities_enriched = 0
         self.bulk_modes_complete = {
             'wrestlers': False,
             'promotions': False,
@@ -112,7 +115,8 @@ class WrestleBotService:
             self.bulk_videogame_scraper = BulkVideoGameDiscovery()
             self.bulk_book_scraper = BulkBookDiscovery()
             self.bulk_documentary_scraper = BulkDocumentaryDiscovery()
-            logger.info("All bulk discovery scrapers initialized")
+            self.page_enrichment = PageEnrichmentDiscovery(self.api_client)
+            logger.info("All discovery scrapers initialized (bulk + page enrichment)")
         except Exception as e:
             logger.error(f"Failed to initialize scrapers: {e}")
             sys.exit(1)
@@ -314,34 +318,61 @@ class WrestleBotService:
                         logger.error(f"Documentary bulk discovery failed: {e}", exc_info=True)
                         self.bulk_modes_complete['documentaries'] = True
 
-                # Run incremental scraping after all bulk modes complete
-                elif all(self.bulk_modes_complete.values()) and cycle % 10 == 1:
+                # Run incremental page enrichment after all bulk modes complete
+                # Every cycle (15 seconds) - enrich one page
+                elif all(self.bulk_modes_complete.values()):
                     try:
-                        logger.info("Starting incremental scraping cycle...")
+                        logger.info("=== PAGE ENRICHMENT CYCLE ===")
 
-                        # Discover new wrestlers from Wikipedia
-                        wrestlers = self.scraper.discover_wrestlers(max_wrestlers=5)
+                        # Get a random wrestling-related Wikipedia page
+                        page = self.page_enrichment.get_random_incomplete_page()
 
-                        if wrestlers:
-                            logger.info(f"Discovered {len(wrestlers)} wrestlers, adding to database...")
+                        if page and 'content' in page:
+                            # Analyze page for missing entities
+                            logger.info(f"Analyzing: {page.get('title', 'Unknown')}")
+                            mentioned = self.page_enrichment.analyze_page_for_missing_entities(
+                                page.get('type', 'wrestler'),
+                                {'about': page['content']}
+                            )
 
-                            for wrestler_data in wrestlers:
-                                try:
-                                    result = self.api_client.create_wrestler(wrestler_data)
-                                    if result:
-                                        self.wrestlers_added += 1
-                                        logger.info(f"✓ Added wrestler: {wrestler_data['name']}")
-                                except Exception as e:
-                                    pass
+                            # Find the first mentioned wrestler not in database
+                            for wrestler_name in list(mentioned.get('wrestlers', []))[:1]:
+                                logger.info(f"Found mentioned wrestler: {wrestler_name}")
+
+                                # Try to create/enrich this wrestler
+                                result = self.page_enrichment.create_or_update_entity('wrestler', wrestler_name)
+                                if result:
+                                    self.entities_enriched += 1
+                                    self.wrestlers_added += 1
+                                    logger.info(f"✓ Enriched wrestler: {wrestler_name}")
+                                    break
+
+                            # Log other discovered entities for future processing
+                            if mentioned.get('promotions'):
+                                logger.info(f"Also mentioned promotions: {list(mentioned['promotions'])[:3]}")
+                            if mentioned.get('titles'):
+                                logger.info(f"Also mentioned titles: {list(mentioned['titles'])[:3]}")
+
                         else:
-                            logger.info("No new wrestlers discovered this cycle")
+                            logger.info("No suitable page found for enrichment, trying direct discovery...")
+                            # Fallback to direct wrestler discovery
+                            wrestlers = self.scraper.discover_wrestlers(max_wrestlers=1)
+                            if wrestlers:
+                                for wrestler_data in wrestlers:
+                                    try:
+                                        result = self.api_client.create_wrestler(wrestler_data)
+                                        if result:
+                                            self.wrestlers_added += 1
+                                            logger.info(f"✓ Added wrestler: {wrestler_data['name']}")
+                                    except Exception as e:
+                                        pass
 
                     except Exception as e:
-                        logger.error(f"Scraping cycle failed: {e}", exc_info=True)
+                        logger.error(f"Enrichment cycle failed: {e}", exc_info=True)
 
-                # Sleep between cycles
-                logger.info("Sleeping for 5 seconds...")
-                time.sleep(5)
+                # Sleep 15 seconds between enrichment cycles
+                logger.info(f"Total enriched: {self.entities_enriched} | Sleeping 15 seconds...")
+                time.sleep(15)
 
             except KeyboardInterrupt:
                 logger.info("Keyboard interrupt received")
@@ -367,6 +398,7 @@ class WrestleBotService:
             logger.info(f"  Video Games: {self.videogames_added}")
             logger.info(f"  Books: {self.books_added}")
             logger.info(f"  Documentaries: {self.documentaries_added}")
+            logger.info(f"  Pages Enriched: {self.entities_enriched}")
 
         logger.info("Shutdown complete")
 

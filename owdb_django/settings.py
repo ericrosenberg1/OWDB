@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'django_celery_beat',
+    'storages',  # Cloud storage (Cloudflare R2)
     # Local
     'owdb_django.owdbapp',
     'wrestlebot_api',
@@ -390,6 +391,48 @@ STATIC_ROOT = BASE_DIR / 'static_collected'
 
 # Use WhiteNoise for serving static files efficiently
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# =============================================================================
+# Media Files & Cloudflare R2 Storage
+# =============================================================================
+# R2 is used for storing cached images (from Wikimedia Commons) and user uploads.
+# Images are served via the custom domain images.wrestlingdb.org with Cloudflare CDN.
+
+# Check if R2 is configured
+R2_ACCESS_KEY_ID = os.getenv('R2_ACCESS_KEY_ID')
+R2_SECRET_ACCESS_KEY = os.getenv('R2_SECRET_ACCESS_KEY')
+R2_BUCKET_NAME = os.getenv('R2_BUCKET_NAME', 'owdb-images')
+R2_ACCOUNT_ID = os.getenv('R2_ACCOUNT_ID', 'ab3678edc12d723ab959fb449b095bc6')
+R2_CUSTOM_DOMAIN = os.getenv('R2_CUSTOM_DOMAIN', 'images.wrestlingdb.org')
+
+if R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY:
+    # Use R2 for media storage
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "access_key": R2_ACCESS_KEY_ID,
+                "secret_key": R2_SECRET_ACCESS_KEY,
+                "bucket_name": R2_BUCKET_NAME,
+                "endpoint_url": f"https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com",
+                "custom_domain": R2_CUSTOM_DOMAIN,
+                "default_acl": None,  # R2 doesn't use ACLs
+                "querystring_auth": False,  # Public bucket via custom domain
+                "file_overwrite": True,
+                "object_parameters": {
+                    "CacheControl": "max-age=31536000",  # 1 year cache
+                },
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+    MEDIA_URL = f"https://{R2_CUSTOM_DOMAIN}/"
+else:
+    # Fallback to local storage if R2 not configured
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
 
 # =============================================================================
 # Default Field Type

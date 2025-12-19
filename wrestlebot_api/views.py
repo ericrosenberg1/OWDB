@@ -13,13 +13,13 @@ from django.utils import timezone
 from django.db import connection
 
 from owdb_django.owdbapp.models import (
-    Wrestler, Promotion, Event, Venue,
+    Wrestler, Promotion, Event, Venue, Stable,
     VideoGame, Book, Podcast, Special
 )
 
 from .serializers import (
     WrestlerSerializer, PromotionSerializer, EventSerializer,
-    VenueSerializer, VideoGameSerializer,
+    VenueSerializer, StableSerializer, VideoGameSerializer,
     BookSerializer, PodcastSerializer, SpecialSerializer,
     BulkImportSerializer, StatusSerializer
 )
@@ -102,6 +102,45 @@ class VenueViewSet(viewsets.ModelViewSet):
     serializer_class = VenueSerializer
     permission_classes = [IsWrestleBot]
     lookup_field = 'slug'
+
+
+class StableViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing wrestling stables/factions.
+
+    Supports creating stables like D-Generation X, The Shield, NWO, etc.
+    """
+
+    queryset = Stable.objects.all()
+    serializer_class = StableSerializer
+    permission_classes = [IsWrestleBot]
+    lookup_field = 'slug'
+
+    def create(self, request, *args, **kwargs):
+        """Create or update stable if already exists."""
+        slug = request.data.get('slug')
+        name = request.data.get('name')
+
+        # Generate slug if not provided
+        if not slug and name:
+            from django.utils.text import slugify
+            slug = slugify(name)
+            request.data['slug'] = slug
+
+        # Check if stable already exists
+        if slug:
+            try:
+                stable = Stable.objects.get(slug=slug)
+                # Update existing
+                serializer = self.get_serializer(stable, data=request.data, partial=True)
+                serializer.is_valid(raise_exception=True)
+                self.perform_update(serializer)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except Stable.DoesNotExist:
+                pass
+
+        # Create new
+        return super().create(request, *args, **kwargs)
 
 
 class VideoGameViewSet(viewsets.ModelViewSet):

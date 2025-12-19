@@ -7,7 +7,7 @@ between JSON and Django models for the WrestleBot service.
 
 from rest_framework import serializers
 from owdb_django.owdbapp.models import (
-    Wrestler, Promotion, Event, Match, Venue,
+    Wrestler, Promotion, Event, Match, Venue, Stable,
     VideoGame, Book, Podcast, Special
 )
 
@@ -47,6 +47,75 @@ class PromotionSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class StableSerializer(serializers.ModelSerializer):
+    """Serializer for creating/updating stables via API."""
+
+    member_names = serializers.ListField(
+        child=serializers.CharField(),
+        write_only=True,
+        required=False,
+        help_text="List of wrestler names (will be looked up/created)"
+    )
+    leader_names = serializers.ListField(
+        child=serializers.CharField(),
+        write_only=True,
+        required=False,
+        help_text="List of leader names (will be looked up/created)"
+    )
+    promotion_name = serializers.CharField(
+        write_only=True,
+        required=False,
+        help_text="Promotion name (will be looked up/created)"
+    )
+
+    class Meta:
+        model = Stable
+        fields = [
+            'id', 'name', 'slug', 'promotion', 'promotion_name',
+            'members', 'member_names', 'leaders', 'leader_names',
+            'formed_year', 'disbanded_year', 'about', 'manager',
+            'wikipedia_url', 'cagematch_url', 'profightdb_url',
+            'image_url', 'image_source_url', 'image_license', 'image_credit',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'members', 'leaders', 'promotion', 'created_at', 'updated_at']
+
+    def create(self, validated_data):
+        """Create stable with member and leader lookup/creation."""
+        member_names = validated_data.pop('member_names', [])
+        leader_names = validated_data.pop('leader_names', [])
+        promotion_name = validated_data.pop('promotion_name', None)
+
+        # Handle promotion
+        if promotion_name:
+            promotion, _ = Promotion.objects.get_or_create(
+                name=promotion_name,
+                defaults={'slug': promotion_name.lower().replace(' ', '-')}
+            )
+            validated_data['promotion'] = promotion
+
+        # Create the stable
+        stable = Stable.objects.create(**validated_data)
+
+        # Add members
+        for name in member_names:
+            wrestler, _ = Wrestler.objects.get_or_create(
+                name=name,
+                defaults={'slug': name.lower().replace(' ', '-')}
+            )
+            stable.members.add(wrestler)
+
+        # Add leaders
+        for name in leader_names:
+            wrestler, _ = Wrestler.objects.get_or_create(
+                name=name,
+                defaults={'slug': name.lower().replace(' ', '-')}
+            )
+            stable.leaders.add(wrestler)
+
+        return stable
 
 
 class VenueSerializer(serializers.ModelSerializer):

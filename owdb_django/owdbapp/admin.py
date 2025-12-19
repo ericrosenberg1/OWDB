@@ -8,6 +8,7 @@ from .models import (
     Title,
     Venue,
     Wrestler,
+    Stable,
     Event,
     Match,
     APIKey,
@@ -88,6 +89,21 @@ class VenueAdmin(admin.ModelAdmin):
     search_fields = ['name', 'location']
     prepopulated_fields = {'slug': ('name',)}
     ordering = ['name']
+
+
+@admin.register(Stable)
+class StableAdmin(admin.ModelAdmin):
+    list_display = ['name', 'promotion', 'formed_year', 'disbanded_year', 'get_member_count', 'created_at']
+    list_filter = ['promotion', 'formed_year', 'disbanded_year', 'created_at']
+    search_fields = ['name', 'manager', 'about']
+    prepopulated_fields = {'slug': ('name',)}
+    autocomplete_fields = ['promotion']
+    filter_horizontal = ['members', 'leaders']
+    ordering = ['name']
+
+    def get_member_count(self, obj):
+        return obj.members.count()
+    get_member_count.short_description = 'Members'
 
 
 @admin.register(VideoGame)

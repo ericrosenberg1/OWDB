@@ -115,9 +115,13 @@ class Promotion(ImageMixin, TimeStampedModel):
     website = models.URLField(blank=True, null=True)
     about = models.TextField(blank=True, null=True)
 
-    # Data source tracking
+    # Multi-source data tracking
     wikipedia_url = models.URLField(max_length=500, blank=True, null=True,
                                      help_text="Wikipedia article URL")
+    cagematch_url = models.URLField(max_length=500, blank=True, null=True,
+                                    help_text="Cagematch.net database URL")
+    profightdb_url = models.URLField(max_length=500, blank=True, null=True,
+                                     help_text="ProFightDB promotion URL")
     last_enriched = models.DateTimeField(blank=True, null=True)
 
     # Additional fields
@@ -185,6 +189,80 @@ class Promotion(ImageMixin, TimeStampedModel):
         }
 
 
+class Stable(ImageMixin, TimeStampedModel):
+    """
+    Wrestling stable/faction/team (e.g., D-Generation X, The Shield, NWO).
+
+    A stable is a group of wrestlers who regularly appear together, often
+    sharing a common gimmick, manager, or storyline purpose.
+    """
+    name = models.CharField(max_length=255, db_index=True)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
+    promotion = models.ForeignKey(
+        Promotion, on_delete=models.SET_NULL, blank=True, null=True,
+        related_name='stables',
+        help_text="Primary promotion (may appear in multiple)"
+    )
+
+    # Members
+    members = models.ManyToManyField(
+        'Wrestler', related_name='stables', blank=True,
+        help_text="Current and former members"
+    )
+    leaders = models.ManyToManyField(
+        'Wrestler', related_name='stables_led', blank=True,
+        help_text="Leaders/founders of the stable"
+    )
+
+    # Timeline
+    formed_year = models.IntegerField(blank=True, null=True, db_index=True)
+    disbanded_year = models.IntegerField(blank=True, null=True)
+
+    # Details
+    about = models.TextField(blank=True, null=True)
+    manager = models.CharField(max_length=255, blank=True, null=True,
+                               help_text="Non-wrestler manager if applicable")
+
+    # Data source tracking
+    wikipedia_url = models.URLField(max_length=500, blank=True, null=True)
+    cagematch_url = models.URLField(max_length=500, blank=True, null=True)
+    profightdb_url = models.URLField(max_length=500, blank=True, null=True)
+    last_enriched = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['name']
+        indexes = [
+            models.Index(fields=['name']),
+            models.Index(fields=['formed_year']),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def is_active(self):
+        """Check if the stable is still active."""
+        return self.disbanded_year is None
+
+    def get_member_count(self):
+        """Get total number of members (current and former)."""
+        return self.members.count()
+
+    def get_titles_won(self):
+        """Get all titles won by stable members as a team."""
+        from django.db.models import Q
+        return Title.objects.filter(
+            Q(name__icontains='tag team') | Q(name__icontains='trios')
+        ).filter(
+            title_matches__wrestlers__in=self.members.all()
+        ).distinct()
+
+
 class Wrestler(ImageMixin, TimeStampedModel):
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
@@ -197,9 +275,13 @@ class Wrestler(ImageMixin, TimeStampedModel):
     finishers = models.TextField(blank=True, null=True, help_text="Comma-separated list of finishing moves")
     about = models.TextField(blank=True, null=True)
 
-    # Data source tracking for enrichment
+    # Multi-source data tracking for comprehensive enrichment
     wikipedia_url = models.URLField(max_length=500, blank=True, null=True,
-                                     help_text="Wikipedia article URL for this wrestler")
+                                     help_text="Wikipedia article URL")
+    cagematch_url = models.URLField(max_length=500, blank=True, null=True,
+                                    help_text="Cagematch.net profile URL")
+    profightdb_url = models.URLField(max_length=500, blank=True, null=True,
+                                     help_text="ProFightDB profile URL")
     last_enriched = models.DateTimeField(blank=True, null=True,
                                           help_text="When data was last enriched from external sources")
 
@@ -741,6 +823,7 @@ class WrestleBotLog(TimeStampedModel):
         ('match', 'Match'),
         ('title', 'Title'),
         ('venue', 'Venue'),
+        ('stable', 'Stable'),
         ('videogame', 'Video Game'),
         ('podcast', 'Podcast'),
         ('book', 'Book'),

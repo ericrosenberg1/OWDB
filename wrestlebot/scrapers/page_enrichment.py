@@ -126,14 +126,73 @@ class PageEnrichmentDiscovery:
     def get_random_incomplete_page(self) -> Optional[Dict]:
         """Get a random page that could use enrichment."""
         try:
-            # Try to get a wrestler with minimal content
+            import random
+
+            # Try to get wrestlers from database first
             status = self.api_client.get_status()
             if not status:
                 return None
 
-            # For now, we'll use Wikipedia to find a wrestler mentioned in another page
-            # In future, we can query the API for incomplete pages
-            return self._get_wrestler_needing_enrichment()
+            total_wrestlers = status.get('total_wrestlers', 0)
+            total_promotions = status.get('total_promotions', 0)
+            total_events = status.get('total_events', 0)
+
+            # Pick a random entity type to enrich
+            choices = []
+            if total_wrestlers > 0:
+                choices.append('wrestler')
+            if total_promotions > 0:
+                choices.append('promotion')
+            if total_events > 0:
+                choices.append('event')
+
+            if not choices:
+                logger.info("No existing pages to enrich yet")
+                return None
+
+            entity_type = random.choice(choices)
+
+            # Get a random page from that type
+            if entity_type == 'wrestler':
+                offset = random.randint(0, max(0, total_wrestlers - 10))
+                wrestlers = self.api_client.list_wrestlers(limit=10, offset=offset)
+                if wrestlers:
+                    wrestler = random.choice(wrestlers)
+                    return {
+                        'type': 'wrestler',
+                        'title': wrestler.get('name', ''),
+                        'content': wrestler.get('about', ''),
+                        'url': wrestler.get('wikipedia_url', ''),
+                        'entity': wrestler
+                    }
+
+            elif entity_type == 'promotion':
+                offset = random.randint(0, max(0, total_promotions - 10))
+                promotions = self.api_client.list_promotions(limit=10, offset=offset)
+                if promotions:
+                    promotion = random.choice(promotions)
+                    return {
+                        'type': 'promotion',
+                        'title': promotion.get('name', ''),
+                        'content': promotion.get('about', ''),
+                        'url': promotion.get('wikipedia_url', ''),
+                        'entity': promotion
+                    }
+
+            elif entity_type == 'event':
+                offset = random.randint(0, max(0, total_events - 10))
+                events = self.api_client.list_events(limit=10, offset=offset)
+                if events:
+                    event = random.choice(events)
+                    return {
+                        'type': 'event',
+                        'title': event.get('name', ''),
+                        'content': event.get('about', ''),
+                        'url': event.get('wikipedia_url', ''),
+                        'entity': event
+                    }
+
+            return None
 
         except Exception as e:
             logger.error(f"Error getting incomplete page: {e}")

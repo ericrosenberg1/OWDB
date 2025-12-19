@@ -225,3 +225,33 @@ class DjangoAPIClient:
         except Exception as e:
             logger.error(f"Failed to create special: {e}")
             return None
+
+    def list_wrestlers(self, limit: int = 10, offset: int = 0) -> Optional[List[Dict]]:
+        """List wrestlers with pagination."""
+        try:
+            params = {'limit': limit, 'offset': offset}
+            response = self._make_request('GET', 'wrestlers/', params=params)
+            return response.get('results', []) if response else []
+        except Exception as e:
+            logger.error(f"Failed to list wrestlers: {e}")
+            return []
+
+    def list_promotions(self, limit: int = 10, offset: int = 0) -> Optional[List[Dict]]:
+        """List promotions with pagination."""
+        try:
+            params = {'limit': limit, 'offset': offset}
+            response = self._make_request('GET', 'promotions/', params=params)
+            return response.get('results', []) if response else []
+        except Exception as e:
+            logger.error(f"Failed to list promotions: {e}")
+            return []
+
+    def list_events(self, limit: int = 10, offset: int = 0) -> Optional[List[Dict]]:
+        """List events with pagination."""
+        try:
+            params = {'limit': limit, 'offset': offset}
+            response = self._make_request('GET', 'events/', params=params)
+            return response.get('results', []) if response else []
+        except Exception as e:
+            logger.error(f"Failed to list events: {e}")
+            return []

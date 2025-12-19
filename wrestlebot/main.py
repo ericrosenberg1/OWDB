@@ -20,6 +20,13 @@ from api_client.django_api import DjangoAPIClient
 from utils.circuit_breaker import circuit_breaker_manager
 from scrapers import WikipediaWrestlerScraper
 from scrapers.bulk_wrestler_discovery import BulkWrestlerDiscovery
+from scrapers.bulk_promotion_discovery import BulkPromotionDiscovery
+from scrapers.bulk_event_discovery import BulkEventDiscovery
+from scrapers.bulk_media_discovery import (
+    BulkVideoGameDiscovery,
+    BulkBookDiscovery,
+    BulkDocumentaryDiscovery
+)
 
 # Configure logging
 logging.basicConfig(
@@ -42,9 +49,26 @@ class WrestleBotService:
         self.api_client = None
         self.scraper = None
         self.bulk_scraper = None
+        self.bulk_promotion_scraper = None
+        self.bulk_event_scraper = None
+        self.bulk_videogame_scraper = None
+        self.bulk_book_scraper = None
+        self.bulk_documentary_scraper = None
         self.start_time = None
         self.wrestlers_added = 0
-        self.bulk_mode_complete = False
+        self.promotions_added = 0
+        self.events_added = 0
+        self.videogames_added = 0
+        self.books_added = 0
+        self.documentaries_added = 0
+        self.bulk_modes_complete = {
+            'wrestlers': False,
+            'promotions': False,
+            'events': False,
+            'videogames': False,
+            'books': False,
+            'documentaries': False,
+        }
 
         # Set up signal handlers for graceful shutdown
         signal.signal(signal.SIGTERM, self._signal_handler)
@@ -83,7 +107,12 @@ class WrestleBotService:
         try:
             self.scraper = WikipediaWrestlerScraper()
             self.bulk_scraper = BulkWrestlerDiscovery()
-            logger.info("Wikipedia scrapers initialized")
+            self.bulk_promotion_scraper = BulkPromotionDiscovery()
+            self.bulk_event_scraper = BulkEventDiscovery()
+            self.bulk_videogame_scraper = BulkVideoGameDiscovery()
+            self.bulk_book_scraper = BulkBookDiscovery()
+            self.bulk_documentary_scraper = BulkDocumentaryDiscovery()
+            logger.info("All bulk discovery scrapers initialized")
         except Exception as e:
             logger.error(f"Failed to initialize scrapers: {e}")
             sys.exit(1)
@@ -135,45 +164,158 @@ class WrestleBotService:
                 else:
                     logger.info("API health check: OK")
 
-                # Run bulk discovery on first cycle
-                if cycle == 1 and not self.bulk_mode_complete:
+                # Run bulk discovery for wrestlers
+                if cycle == 1 and not self.bulk_modes_complete['wrestlers']:
                     try:
                         logger.info("=== BULK MODE: Discovering ALL wrestlers from Wikipedia ===")
-
-                        # Get all wrestler names from categories
                         all_names = self.bulk_scraper.discover_all_wrestlers()
                         logger.info(f"Discovered {len(all_names)} unique wrestler names")
 
-                        # Process in batches
                         batch_size = 100
-                        for i in range(0, min(len(all_names), 1000), batch_size):  # Limit to 1000 for now
+                        for i in range(0, len(all_names), batch_size):
                             batch_names = all_names[i:i + batch_size]
-                            logger.info(f"Processing batch {i//batch_size + 1}: {len(batch_names)} wrestlers")
-
-                            # Get details for batch
                             wrestlers = self.bulk_scraper.get_wrestler_details_batch(batch_names)
 
-                            # Add to database
                             for wrestler_data in wrestlers:
                                 try:
                                     result = self.api_client.create_wrestler(wrestler_data)
                                     if result:
                                         self.wrestlers_added += 1
-                                        if self.wrestlers_added % 10 == 0:
+                                        if self.wrestlers_added % 50 == 0:
                                             logger.info(f"Progress: {self.wrestlers_added} wrestlers added")
                                 except Exception as e:
-                                    # Don't log every error, just continue
                                     pass
 
-                        self.bulk_mode_complete = True
-                        logger.info(f"=== BULK MODE COMPLETE: Added {self.wrestlers_added} wrestlers ===")
+                        self.bulk_modes_complete['wrestlers'] = True
+                        logger.info(f"=== WRESTLERS BULK COMPLETE: Added {self.wrestlers_added} ===")
 
                     except Exception as e:
-                        logger.error(f"Bulk discovery failed: {e}", exc_info=True)
-                        self.bulk_mode_complete = True  # Don't retry
+                        logger.error(f"Wrestler bulk discovery failed: {e}", exc_info=True)
+                        self.bulk_modes_complete['wrestlers'] = True
 
-                # Run incremental scraping after bulk mode
-                elif self.bulk_mode_complete and cycle % 10 == 1:
+                # Run bulk discovery for promotions
+                if cycle == 2 and not self.bulk_modes_complete['promotions']:
+                    try:
+                        logger.info("=== BULK MODE: Discovering ALL promotions from Wikipedia ===")
+                        all_names = self.bulk_promotion_scraper.discover_all_promotions()
+                        logger.info(f"Discovered {len(all_names)} unique promotions")
+
+                        batch_size = 100
+                        for i in range(0, len(all_names), batch_size):
+                            batch_names = all_names[i:i + batch_size]
+                            promotions = self.bulk_promotion_scraper.get_promotion_details_batch(batch_names)
+
+                            for promotion_data in promotions:
+                                try:
+                                    result = self.api_client.create_promotion(promotion_data)
+                                    if result:
+                                        self.promotions_added += 1
+                                        if self.promotions_added % 20 == 0:
+                                            logger.info(f"Progress: {self.promotions_added} promotions added")
+                                except Exception as e:
+                                    pass
+
+                        self.bulk_modes_complete['promotions'] = True
+                        logger.info(f"=== PROMOTIONS BULK COMPLETE: Added {self.promotions_added} ===")
+
+                    except Exception as e:
+                        logger.error(f"Promotion bulk discovery failed: {e}", exc_info=True)
+                        self.bulk_modes_complete['promotions'] = True
+
+                # Run bulk discovery for events
+                if cycle == 3 and not self.bulk_modes_complete['events']:
+                    try:
+                        logger.info("=== BULK MODE: Discovering ALL events from Wikipedia ===")
+                        all_names = self.bulk_event_scraper.discover_all_events()
+                        logger.info(f"Discovered {len(all_names)} unique events")
+
+                        batch_size = 100
+                        for i in range(0, len(all_names), batch_size):
+                            batch_names = all_names[i:i + batch_size]
+                            events = self.bulk_event_scraper.get_event_details_batch(batch_names)
+
+                            for event_data in events:
+                                try:
+                                    result = self.api_client.create_event(event_data)
+                                    if result:
+                                        self.events_added += 1
+                                        if self.events_added % 20 == 0:
+                                            logger.info(f"Progress: {self.events_added} events added")
+                                except Exception as e:
+                                    pass
+
+                        self.bulk_modes_complete['events'] = True
+                        logger.info(f"=== EVENTS BULK COMPLETE: Added {self.events_added} ===")
+
+                    except Exception as e:
+                        logger.error(f"Event bulk discovery failed: {e}", exc_info=True)
+                        self.bulk_modes_complete['events'] = True
+
+                # Run bulk discovery for video games
+                if cycle == 4 and not self.bulk_modes_complete['videogames']:
+                    try:
+                        logger.info("=== BULK MODE: Discovering video games ===")
+                        games = self.bulk_videogame_scraper.discover_all()
+
+                        for game_data in games:
+                            try:
+                                result = self.api_client.create_videogame(game_data)
+                                if result:
+                                    self.videogames_added += 1
+                            except Exception as e:
+                                pass
+
+                        self.bulk_modes_complete['videogames'] = True
+                        logger.info(f"=== VIDEO GAMES BULK COMPLETE: Added {self.videogames_added} ===")
+
+                    except Exception as e:
+                        logger.error(f"Video game bulk discovery failed: {e}", exc_info=True)
+                        self.bulk_modes_complete['videogames'] = True
+
+                # Run bulk discovery for books
+                if cycle == 5 and not self.bulk_modes_complete['books']:
+                    try:
+                        logger.info("=== BULK MODE: Discovering books ===")
+                        books = self.bulk_book_scraper.discover_all()
+
+                        for book_data in books:
+                            try:
+                                result = self.api_client.create_book(book_data)
+                                if result:
+                                    self.books_added += 1
+                            except Exception as e:
+                                pass
+
+                        self.bulk_modes_complete['books'] = True
+                        logger.info(f"=== BOOKS BULK COMPLETE: Added {self.books_added} ===")
+
+                    except Exception as e:
+                        logger.error(f"Book bulk discovery failed: {e}", exc_info=True)
+                        self.bulk_modes_complete['books'] = True
+
+                # Run bulk discovery for documentaries
+                if cycle == 6 and not self.bulk_modes_complete['documentaries']:
+                    try:
+                        logger.info("=== BULK MODE: Discovering documentaries ===")
+                        docs = self.bulk_documentary_scraper.discover_all()
+
+                        for doc_data in docs:
+                            try:
+                                result = self.api_client.create_special(doc_data)
+                                if result:
+                                    self.documentaries_added += 1
+                            except Exception as e:
+                                pass
+
+                        self.bulk_modes_complete['documentaries'] = True
+                        logger.info(f"=== DOCUMENTARIES BULK COMPLETE: Added {self.documentaries_added} ===")
+
+                    except Exception as e:
+                        logger.error(f"Documentary bulk discovery failed: {e}", exc_info=True)
+                        self.bulk_modes_complete['documentaries'] = True
+
+                # Run incremental scraping after all bulk modes complete
+                elif all(self.bulk_modes_complete.values()) and cycle % 10 == 1:
                     try:
                         logger.info("Starting incremental scraping cycle...")
 
@@ -218,7 +360,13 @@ class WrestleBotService:
         if self.start_time:
             uptime = (datetime.now() - self.start_time).total_seconds()
             logger.info(f"Total uptime: {uptime:.0f} seconds")
-            logger.info(f"Total wrestlers added: {self.wrestlers_added}")
+            logger.info(f"Total entities added:")
+            logger.info(f"  Wrestlers: {self.wrestlers_added}")
+            logger.info(f"  Promotions: {self.promotions_added}")
+            logger.info(f"  Events: {self.events_added}")
+            logger.info(f"  Video Games: {self.videogames_added}")
+            logger.info(f"  Books: {self.books_added}")
+            logger.info(f"  Documentaries: {self.documentaries_added}")
 
         logger.info("Shutdown complete")
 

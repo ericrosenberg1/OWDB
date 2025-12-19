@@ -15,7 +15,12 @@ logger = logging.getLogger(__name__)
 
 
 class PageEnrichmentDiscovery:
-    """Discover and enrich pages based on existing content."""
+    """
+    Discover and enrich pages using multiple data sources.
+
+    Now aggregates data from Wikipedia, Cagematch, ProFightDB to create
+    the most complete wrestling encyclopedia possible.
+    """
 
     def __init__(self, api_client):
         self.api_client = api_client
@@ -24,6 +29,17 @@ class PageEnrichmentDiscovery:
             'User-Agent': 'WrestleBot/2.0 (Wrestling Database; https://wrestlingdb.org)'
         })
         self.wikipedia_base = "https://en.wikipedia.org/w/api.php"
+
+        # Initialize multi-source enrichment
+        try:
+            from .multi_source_enrichment import MultiSourceEnrichment
+            self.multi_source = MultiSourceEnrichment(api_client)
+            self.use_multi_source = True
+            logger.info("Multi-source enrichment enabled (Wikipedia + Cagematch + ProFightDB)")
+        except Exception as e:
+            logger.warning(f"Multi-source enrichment not available, using Wikipedia only: {e}")
+            self.multi_source = None
+            self.use_multi_source = False
 
     def analyze_page_for_missing_entities(self, page_type: str, page_data: Dict) -> Dict:
         """
@@ -279,8 +295,20 @@ class PageEnrichmentDiscovery:
         return None
 
     def enrich_wrestler_from_wikipedia(self, wrestler_name: str) -> Optional[Dict]:
-        """Get detailed wrestler information from Wikipedia."""
+        """
+        Get detailed wrestler information from multiple sources.
+
+        Now aggregates data from Wikipedia, Cagematch, and ProFightDB to create
+        the most complete profile possible.
+        """
         try:
+            # If multi-source enrichment is available, use it
+            if self.use_multi_source and self.multi_source:
+                logger.info(f"Using multi-source enrichment for {wrestler_name}")
+                return self.multi_source.enrich_wrestler(wrestler_name)
+
+            # Fallback to Wikipedia-only enrichment
+            logger.info(f"Using Wikipedia-only enrichment for {wrestler_name}")
             # Search for wrestler page
             search_params = {
                 'action': 'query',

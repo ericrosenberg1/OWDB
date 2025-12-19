@@ -5,6 +5,7 @@ Discovers and scrapes wrestler data from Wikipedia.
 """
 
 import logging
+import re
 import requests
 import time
 from typing import List, Dict, Optional
@@ -134,6 +135,46 @@ class WikipediaWrestlerScraper:
         if '(disambiguation)' in name or name.startswith('List of'):
             return None
 
+        # Skip year pages (e.g., "2025 in professional wrestling")
+        if re.match(r'^\d{4}\s+in\s+', name):
+            return None
+
+        # Skip TV shows, cartoons, and media
+        media_keywords = [
+            "'s Rock 'n' Wrestling",  # TV shows
+            " (TV series)",
+            " (animated series)",
+            " (video game)",
+            " (film)",
+            " (book)",
+            " (documentary)",
+        ]
+        for keyword in media_keywords:
+            if keyword in name:
+                return None
+
+        # Check if the extract contains wrestling-related content
+        # This helps filter out non-wrestlers
+        if extract:
+            wrestling_indicators = [
+                'professional wrestler',
+                'wrestling',
+                'wrestler',
+                'ring name',
+                'debut',
+                'championship',
+                'WWE',
+                'AEW',
+                'WCW',
+                'ECW',
+                'TNA',
+                'NJPW',
+            ]
+            extract_lower = extract.lower()
+            if not any(indicator.lower() in extract_lower for indicator in wrestling_indicators):
+                # No wrestling-related content found
+                return None
+
         # Remove common suffixes
         for suffix in [' (wrestler)', ' (professional wrestler)']:
             if name.endswith(suffix):
@@ -197,8 +238,20 @@ class WikipediaWrestlerScraper:
                     if slug.endswith(suffix):
                         slug = slug[:-len(suffix)]
 
+                # Check in-memory cache first
                 if slug in self.discovered_slugs:
                     continue
+
+                # Check database to see if wrestler already exists
+                try:
+                    existing = self.api_client.get_wrestler(slug)
+                    if existing:
+                        # Already exists in database, skip
+                        self.discovered_slugs.add(slug)
+                        continue
+                except Exception:
+                    # API error, continue to try creating
+                    pass
 
                 page_info = self.get_page_info(title)
                 if not page_info:

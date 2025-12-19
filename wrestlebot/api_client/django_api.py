@@ -87,7 +87,11 @@ class DjangoAPIClient:
                 )
 
                 response.raise_for_status()
-                return response.json() if response.content else None
+                result = response.json() if response.content else None
+                # Add status code to result for logging purposes
+                if result and isinstance(result, dict):
+                    result['_http_status'] = response.status_code
+                return result
 
             except requests.exceptions.HTTPError as e:
                 if response.status_code == 400:

@@ -409,6 +409,132 @@ class PageEnrichmentDiscovery:
             finishers = re.sub(r'\s+and\s+', ', ', finishers)
             data['finishers'] = finishers[:200]  # Limit length
 
+    def enrich_promotion_from_wikipedia(self, promotion_name: str) -> Optional[Dict]:
+        """Enrich promotion data from Wikipedia."""
+        try:
+            logger.info(f"Enriching promotion from Wikipedia: {promotion_name}")
+
+            # Search for promotion page
+            search_params = {
+                'action': 'query',
+                'format': 'json',
+                'list': 'search',
+                'srsearch': f'{promotion_name} wrestling',
+                'srlimit': 1,
+            }
+
+            response = self.session.get(self.wikipedia_base, params=search_params, timeout=10)
+            data = response.json()
+
+            if 'query' in data and 'search' in data['query'] and data['query']['search']:
+                title = data['query']['search'][0]['title']
+
+                # Get full page content
+                page_info = self._get_wikipedia_page(title)
+                if not page_info:
+                    return None
+
+                extract = page_info['extract']
+
+                # Create slug
+                name = title
+                slug = name.lower().replace(' ', '-').replace("'", '')
+                slug = ''.join(c for c in slug if c.isalnum() or c in '-_')
+                slug = slug.strip('-_')
+
+                promotion_data = {
+                    'name': name,
+                    'slug': slug,
+                    'about': extract[:2000] if extract else '',
+                    'wikipedia_url': f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}"
+                }
+
+                # Extract founded year
+                founded_match = re.search(r'(?:founded|established)(?:\s+in)?\s+(\d{4})', extract, re.IGNORECASE)
+                if founded_match:
+                    promotion_data['founded_year'] = int(founded_match.group(1))
+
+                # Extract closed year
+                closed_match = re.search(r'(?:closed|defunct|ceased operations)(?:\s+in)?\s+(\d{4})', extract, re.IGNORECASE)
+                if closed_match:
+                    promotion_data['closed_year'] = int(closed_match.group(1))
+
+                # Extract abbreviation
+                abbr_match = re.search(r'\(([A-Z]{2,5})\)', title)
+                if abbr_match:
+                    promotion_data['abbreviation'] = abbr_match.group(1)
+
+                return promotion_data
+
+        except Exception as e:
+            logger.error(f"Error enriching promotion {promotion_name}: {e}")
+
+        return None
+
+    def enrich_event_from_wikipedia(self, event_name: str) -> Optional[Dict]:
+        """Enrich event data from Wikipedia."""
+        try:
+            logger.info(f"Enriching event from Wikipedia: {event_name}")
+
+            # Search for event page
+            search_params = {
+                'action': 'query',
+                'format': 'json',
+                'list': 'search',
+                'srsearch': f'{event_name} wrestling event',
+                'srlimit': 1,
+            }
+
+            response = self.session.get(self.wikipedia_base, params=search_params, timeout=10)
+            data = response.json()
+
+            if 'query' in data and 'search' in data['query'] and data['query']['search']:
+                title = data['query']['search'][0]['title']
+
+                # Get full page content
+                page_info = self._get_wikipedia_page(title)
+                if not page_info:
+                    return None
+
+                extract = page_info['extract']
+
+                # Create slug
+                name = title
+                slug = name.lower().replace(' ', '-').replace("'", '')
+                slug = ''.join(c for c in slug if c.isalnum() or c in '-_')
+                slug = slug.strip('-_')
+
+                event_data = {
+                    'name': name,
+                    'slug': slug,
+                    'about': extract[:2000] if extract else '',
+                    'wikipedia_url': f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}"
+                }
+
+                # Extract date
+                date_match = re.search(r'(\w+\s+\d{1,2},\s+\d{4})', extract)
+                if date_match:
+                    try:
+                        from dateutil import parser
+                        event_data['date'] = parser.parse(date_match.group(1)).strftime('%Y-%m-%d')
+                    except:
+                        pass
+
+                # Try to find promotion from text
+                promotion_patterns = ['WWE', 'AEW', 'WCW', 'ECW', 'TNA', 'Impact Wrestling', 'NJPW', 'ROH']
+                for promotion in promotion_patterns:
+                    if promotion in extract[:500]:  # Check first 500 chars
+                        # We'll need to look up the promotion by name
+                        # For now, just note it in the about field
+                        break
+
+                return event_data
+
+        except Exception as e:
+            logger.error(f"Error enriching event {event_name}: {e}")
+
+        return None
+
     def create_or_update_entity(self, entity_type: str, entity_name: str) -> Optional[Dict]:
         """Create or update an entity (wrestler, promotion, etc.)."""
         try:
@@ -418,16 +544,18 @@ class PageEnrichmentDiscovery:
                     return self.api_client.create_wrestler(wrestler_data)
 
             elif entity_type == 'promotion':
-                # TODO: Implement promotion enrichment
-                pass
+                promotion_data = self.enrich_promotion_from_wikipedia(entity_name)
+                if promotion_data:
+                    return self.api_client.create_promotion(promotion_data)
 
             elif entity_type == 'title':
                 # TODO: Implement title enrichment
                 pass
 
             elif entity_type == 'event':
-                # TODO: Implement event enrichment
-                pass
+                event_data = self.enrich_event_from_wikipedia(entity_name)
+                if event_data:
+                    return self.api_client.create_event(event_data)
 
         except Exception as e:
             logger.error(f"Error creating/updating {entity_type} {entity_name}: {e}")

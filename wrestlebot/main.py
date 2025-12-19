@@ -335,21 +335,58 @@ class WrestleBotService:
                                 {'about': page['content']}
                             )
 
-                            # Find the first mentioned wrestler not in database
-                            for wrestler_name in list(mentioned.get('wrestlers', []))[:1]:
+                            # Process discovered entities - try multiple types, not just first wrestler
+                            entity_created = False
+
+                            # Try wrestlers first (up to 3 attempts)
+                            for wrestler_name in list(mentioned.get('wrestlers', []))[:3]:
+                                if entity_created:
+                                    break
                                 logger.info(f"Found mentioned wrestler: {wrestler_name}")
 
                                 # Try to create/enrich this wrestler
                                 result = self.page_enrichment.create_or_update_entity('wrestler', wrestler_name)
                                 if result:
                                     self.entities_enriched += 1
-                                    self.wrestlers_added += 1
-                                    logger.info(f"✓ Enriched wrestler: {wrestler_name}")
-                                    break
+                                    # Check HTTP status to determine if new or updated
+                                    if result.get('_http_status') == 201:
+                                        self.wrestlers_added += 1
+                                        logger.info(f"✓ Created NEW wrestler: {wrestler_name}")
+                                    else:
+                                        logger.info(f"✓ Updated existing wrestler: {wrestler_name}")
+                                    entity_created = True
 
-                            # Log other discovered entities for future processing
-                            if mentioned.get('promotions'):
-                                logger.info(f"Also mentioned promotions: {list(mentioned['promotions'])[:3]}")
+                            # Try promotions if no wrestler was created (up to 2 attempts)
+                            if not entity_created:
+                                for promotion_name in list(mentioned.get('promotions', []))[:2]:
+                                    logger.info(f"Found mentioned promotion: {promotion_name}")
+                                    result = self.page_enrichment.create_or_update_entity('promotion', promotion_name)
+                                    if result:
+                                        self.entities_enriched += 1
+                                        if result.get('_http_status') == 201:
+                                            logger.info(f"✓ Created NEW promotion: {promotion_name}")
+                                        else:
+                                            logger.info(f"✓ Updated existing promotion: {promotion_name}")
+                                        entity_created = True
+                                        break
+
+                            # Try events if nothing else was created (up to 2 attempts)
+                            if not entity_created:
+                                for event_name in list(mentioned.get('events', []))[:2]:
+                                    logger.info(f"Found mentioned event: {event_name}")
+                                    result = self.page_enrichment.create_or_update_entity('event', event_name)
+                                    if result:
+                                        self.entities_enriched += 1
+                                        if result.get('_http_status') == 201:
+                                            logger.info(f"✓ Created NEW event: {event_name}")
+                                        else:
+                                            logger.info(f"✓ Updated existing event: {event_name}")
+                                        entity_created = True
+                                        break
+
+                            # Log other discovered entities for visibility
+                            if mentioned.get('stables'):
+                                logger.info(f"Also mentioned stables: {list(mentioned['stables'])[:3]}")
                             if mentioned.get('titles'):
                                 logger.info(f"Also mentioned titles: {list(mentioned['titles'])[:3]}")
 
@@ -362,8 +399,11 @@ class WrestleBotService:
                                     try:
                                         result = self.api_client.create_wrestler(wrestler_data)
                                         if result:
-                                            self.wrestlers_added += 1
-                                            logger.info(f"✓ Added wrestler: {wrestler_data['name']}")
+                                            if result.get('_http_status') == 201:
+                                                self.wrestlers_added += 1
+                                                logger.info(f"✓ Created NEW wrestler: {wrestler_data['name']}")
+                                            else:
+                                                logger.info(f"✓ Updated existing wrestler: {wrestler_data['name']}")
                                     except Exception as e:
                                         pass
 

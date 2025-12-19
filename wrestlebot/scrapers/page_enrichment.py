@@ -131,11 +131,14 @@ class PageEnrichmentDiscovery:
             # Try to get wrestlers from database first
             status = self.api_client.get_status()
             if not status:
+                logger.warning("No status available from API")
                 return None
 
             total_wrestlers = status.get('total_wrestlers', 0)
             total_promotions = status.get('total_promotions', 0)
             total_events = status.get('total_events', 0)
+
+            logger.info(f"Database has {total_wrestlers} wrestlers, {total_promotions} promotions, {total_events} events")
 
             # Pick a random entity type to enrich
             choices = []
@@ -151,13 +154,17 @@ class PageEnrichmentDiscovery:
                 return None
 
             entity_type = random.choice(choices)
+            logger.info(f"Randomly selected entity type: {entity_type}")
 
             # Get a random page from that type
             if entity_type == 'wrestler':
                 offset = random.randint(0, max(0, total_wrestlers - 10))
+                logger.info(f"Fetching wrestlers with offset={offset}, limit=10")
                 wrestlers = self.api_client.list_wrestlers(limit=10, offset=offset)
+                logger.info(f"Got {len(wrestlers) if wrestlers else 0} wrestlers from API")
                 if wrestlers:
                     wrestler = random.choice(wrestlers)
+                    logger.info(f"Selected wrestler: {wrestler.get('name', 'Unknown')}")
                     return {
                         'type': 'wrestler',
                         'title': wrestler.get('name', ''),
@@ -168,9 +175,12 @@ class PageEnrichmentDiscovery:
 
             elif entity_type == 'promotion':
                 offset = random.randint(0, max(0, total_promotions - 10))
+                logger.info(f"Fetching promotions with offset={offset}, limit=10")
                 promotions = self.api_client.list_promotions(limit=10, offset=offset)
+                logger.info(f"Got {len(promotions) if promotions else 0} promotions from API")
                 if promotions:
                     promotion = random.choice(promotions)
+                    logger.info(f"Selected promotion: {promotion.get('name', 'Unknown')}")
                     return {
                         'type': 'promotion',
                         'title': promotion.get('name', ''),
@@ -181,9 +191,12 @@ class PageEnrichmentDiscovery:
 
             elif entity_type == 'event':
                 offset = random.randint(0, max(0, total_events - 10))
+                logger.info(f"Fetching events with offset={offset}, limit=10")
                 events = self.api_client.list_events(limit=10, offset=offset)
+                logger.info(f"Got {len(events) if events else 0} events from API")
                 if events:
                     event = random.choice(events)
+                    logger.info(f"Selected event: {event.get('name', 'Unknown')}")
                     return {
                         'type': 'event',
                         'title': event.get('name', ''),
@@ -192,10 +205,11 @@ class PageEnrichmentDiscovery:
                         'entity': event
                     }
 
+            logger.warning(f"No pages found for entity type: {entity_type}")
             return None
 
         except Exception as e:
-            logger.error(f"Error getting incomplete page: {e}")
+            logger.error(f"Error getting incomplete page: {e}", exc_info=True)
             return None
 
     def _get_wrestler_needing_enrichment(self) -> Optional[Dict]:

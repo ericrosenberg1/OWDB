@@ -231,9 +231,22 @@ class DjangoAPIClient:
         try:
             params = {'limit': limit, 'offset': offset}
             response = self._make_request('GET', 'wrestlers/', params=params)
-            return response.get('results', []) if response else []
+            logger.debug(f"list_wrestlers response type: {type(response)}")
+            logger.debug(f"list_wrestlers response keys: {response.keys() if isinstance(response, dict) else 'not a dict'}")
+
+            # Handle both paginated and non-paginated responses
+            if isinstance(response, list):
+                return response[:limit] if response else []
+            elif isinstance(response, dict) and 'results' in response:
+                return response['results']
+            elif isinstance(response, dict):
+                # Might be returning the full dict - convert to list
+                return list(response.values())[:limit] if response else []
+            else:
+                logger.warning(f"Unexpected response format for list_wrestlers: {type(response)}")
+                return []
         except Exception as e:
-            logger.error(f"Failed to list wrestlers: {e}")
+            logger.error(f"Failed to list wrestlers: {e}", exc_info=True)
             return []
 
     def list_promotions(self, limit: int = 10, offset: int = 0) -> Optional[List[Dict]]:

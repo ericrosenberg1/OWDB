@@ -124,92 +124,78 @@ class PageEnrichmentDiscovery:
         return names
 
     def get_random_incomplete_page(self) -> Optional[Dict]:
-        """Get a random page that could use enrichment."""
+        """
+        Get a random wrestling-related Wikipedia page to analyze for enrichment.
+
+        This gives the AI autonomy to discover new entities by analyzing
+        random wrestling pages and finding wrestlers/promotions/titles/events
+        mentioned in those pages that aren't yet in the database.
+        """
         try:
+            # Use Wikipedia's random page feature to find wrestling content
+            # This gives AI autonomy to explore and discover new entities organically
+            return self._get_random_wrestling_page_from_wikipedia()
+
+        except Exception as e:
+            logger.error(f"Error getting page for enrichment: {e}", exc_info=True)
+            return None
+
+    def _get_random_wrestling_page_from_wikipedia(self) -> Optional[Dict]:
+        """Get a random wrestling-related page from Wikipedia to analyze."""
+        try:
+            # Get a random page from wrestling categories
+            wrestling_categories = [
+                'Professional_wrestlers',
+                'Professional_wrestling_promotions',
+                'Professional_wrestling_events',
+                'Professional_wrestling_champions',
+                'Professional_wrestling_in_the_United_States',
+                'Professional_wrestling_in_Japan',
+            ]
+
             import random
+            category = random.choice(wrestling_categories)
 
-            # Try to get wrestlers from database first
-            status = self.api_client.get_status()
-            if not status:
-                logger.warning("No status available from API")
-                return None
+            # Get random members from the category
+            params = {
+                'action': 'query',
+                'format': 'json',
+                'list': 'categorymembers',
+                'cmtitle': f'Category:{category}',
+                'cmlimit': '20',
+                'cmtype': 'page',
+            }
 
-            total_wrestlers = status.get('total_wrestlers', 0)
-            total_promotions = status.get('total_promotions', 0)
-            total_events = status.get('total_events', 0)
+            response = self.session.get(self.wikipedia_base, params=params, timeout=10)
+            data = response.json()
 
-            logger.info(f"Database has {total_wrestlers} wrestlers, {total_promotions} promotions, {total_events} events")
+            if 'query' in data and 'categorymembers' in data['query']:
+                members = [
+                    m['title'] for m in data['query']['categorymembers']
+                    if not m['title'].startswith(('Category:', 'List of', 'Template:'))
+                ]
 
-            # Pick a random entity type to enrich
-            choices = []
-            if total_wrestlers > 0:
-                choices.append('wrestler')
-            if total_promotions > 0:
-                choices.append('promotion')
-            if total_events > 0:
-                choices.append('event')
+                if members:
+                    # Pick a random page from this category
+                    title = random.choice(members)
+                    logger.info(f"Selected random page for enrichment: {title} (from {category})")
 
-            if not choices:
-                logger.info("No existing pages to enrich yet")
-                return None
+                    # Get full page content
+                    page_info = self._get_wikipedia_page(title)
+                    if page_info and page_info.get('extract'):
+                        logger.info(f"Got page content ({len(page_info['extract'])} chars) for analysis")
+                        return {
+                            'type': 'wrestler',  # Default type, will be refined based on content
+                            'title': title,
+                            'content': page_info.get('extract', ''),
+                            'url': f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}"
+                        }
 
-            entity_type = random.choice(choices)
-            logger.info(f"Randomly selected entity type: {entity_type}")
-
-            # Get a random page from that type
-            if entity_type == 'wrestler':
-                offset = random.randint(0, max(0, total_wrestlers - 10))
-                logger.info(f"Fetching wrestlers with offset={offset}, limit=10")
-                wrestlers = self.api_client.list_wrestlers(limit=10, offset=offset)
-                logger.info(f"Got {len(wrestlers) if wrestlers else 0} wrestlers from API")
-                if wrestlers:
-                    wrestler = random.choice(wrestlers)
-                    logger.info(f"Selected wrestler: {wrestler.get('name', 'Unknown')}")
-                    return {
-                        'type': 'wrestler',
-                        'title': wrestler.get('name', ''),
-                        'content': wrestler.get('about', ''),
-                        'url': wrestler.get('wikipedia_url', ''),
-                        'entity': wrestler
-                    }
-
-            elif entity_type == 'promotion':
-                offset = random.randint(0, max(0, total_promotions - 10))
-                logger.info(f"Fetching promotions with offset={offset}, limit=10")
-                promotions = self.api_client.list_promotions(limit=10, offset=offset)
-                logger.info(f"Got {len(promotions) if promotions else 0} promotions from API")
-                if promotions:
-                    promotion = random.choice(promotions)
-                    logger.info(f"Selected promotion: {promotion.get('name', 'Unknown')}")
-                    return {
-                        'type': 'promotion',
-                        'title': promotion.get('name', ''),
-                        'content': promotion.get('about', ''),
-                        'url': promotion.get('wikipedia_url', ''),
-                        'entity': promotion
-                    }
-
-            elif entity_type == 'event':
-                offset = random.randint(0, max(0, total_events - 10))
-                logger.info(f"Fetching events with offset={offset}, limit=10")
-                events = self.api_client.list_events(limit=10, offset=offset)
-                logger.info(f"Got {len(events) if events else 0} events from API")
-                if events:
-                    event = random.choice(events)
-                    logger.info(f"Selected event: {event.get('name', 'Unknown')}")
-                    return {
-                        'type': 'event',
-                        'title': event.get('name', ''),
-                        'content': event.get('about', ''),
-                        'url': event.get('wikipedia_url', ''),
-                        'entity': event
-                    }
-
-            logger.warning(f"No pages found for entity type: {entity_type}")
+            logger.info("No suitable wrestling pages found in category")
             return None
 
         except Exception as e:
-            logger.error(f"Error getting incomplete page: {e}", exc_info=True)
+            logger.error(f"Error fetching random Wikipedia page: {e}", exc_info=True)
             return None
 
     def _get_wrestler_needing_enrichment(self) -> Optional[Dict]:

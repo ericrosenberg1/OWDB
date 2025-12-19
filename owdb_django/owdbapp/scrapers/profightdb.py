@@ -37,6 +37,15 @@ class ProFightDBScraper(BaseScraper):
     REQUESTS_PER_HOUR = 60
     REQUESTS_PER_DAY = 500
 
+    # ProFightDB has SSL certificate issues - disable verification
+    VERIFY_SSL = False
+
+    def _create_session(self):
+        """Create a requests session with SSL verification disabled for ProFightDB."""
+        session = super()._create_session()
+        session.verify = self.VERIFY_SSL
+        return session
+
     def _clean_text(self, text: str) -> str:
         """Clean extracted text."""
         if not text:

@@ -1288,8 +1288,9 @@ class Hot100Calculator:
                 )
             ),
         ).filter(
-            # Include wrestlers with recent activity OR any matches if sparse data
-            Q(period_matches__gt=0) | Q(trailing_matches__gt=0) | Q(total_matches__gt=0)
+            # Include wrestlers with matches OR those marked as active
+            Q(period_matches__gt=0) | Q(trailing_matches__gt=0) | Q(total_matches__gt=0) |
+            Q(retirement_year__isnull=True, debut_year__isnull=False)
         ).order_by('-period_matches', '-trailing_matches', '-total_matches')
 
         scores = []
@@ -1409,10 +1410,24 @@ class Hot100Calculator:
         Currently returns placeholder - would integrate with news API.
         """
         # TODO: Integrate with news aggregation service
-        # For now, return a small random component based on match activity
-        import random
-        base = getattr(wrestler, 'period_matches', 0) * 0.5
-        return min(base + random.uniform(0, 3), 15)
+        # For now, use deterministic score based on wrestler data richness
+        import hashlib
+        score = 0
+
+        # Active wrestlers get bonus
+        if wrestler.retirement_year is None and wrestler.debut_year:
+            score += 4.0
+
+        # Wrestlers with rich profiles get news bonus (implies notability)
+        if wrestler.about and len(wrestler.about) > 200:
+            score += 3.0
+        if wrestler.wikipedia_url:
+            score += 2.5
+
+        # Add deterministic variation based on wrestler name
+        hash_val = int(hashlib.md5(wrestler.name.encode()).hexdigest()[:8], 16)
+        variation = (hash_val % 100) / 100 * 3.0  # 0-3 variation
+        return min(score + variation, 15)
 
     def _calc_social_score(self, wrestler) -> float:
         """
@@ -1420,9 +1435,27 @@ class Hot100Calculator:
         Currently returns placeholder - would integrate with YouTube API.
         """
         # TODO: Integrate with YouTube Data API, podcast mentions
-        import random
-        base = getattr(wrestler, 'period_matches', 0) * 0.3
-        return min(base + random.uniform(0, 2), 10)
+        import hashlib
+        score = 0
+
+        # Recent active wrestlers likely have more social engagement
+        if wrestler.debut_year and wrestler.debut_year >= 2010:
+            score += 3.0
+        if wrestler.retirement_year is None:
+            score += 2.0
+
+        # Wrestlers with multiple data sources are more notable
+        sources = sum([
+            bool(wrestler.wikipedia_url),
+            bool(wrestler.cagematch_url),
+            bool(wrestler.profightdb_url),
+        ])
+        score += sources * 1.2
+
+        # Deterministic variation
+        hash_val = int(hashlib.md5(f"{wrestler.name}_social".encode()).hexdigest()[:8], 16)
+        variation = (hash_val % 100) / 100 * 2.0
+        return min(score + variation, 10)
 
     def _calc_views_score(self, wrestler) -> float:
         """
@@ -1430,8 +1463,16 @@ class Hot100Calculator:
         Currently returns placeholder - would integrate with analytics.
         """
         # TODO: Integrate with site analytics
-        import random
-        return random.uniform(0, 5)
+        import hashlib
+        # Deterministic variation based on wrestler
+        hash_val = int(hashlib.md5(f"{wrestler.name}_views".encode()).hexdigest()[:8], 16)
+        base = (hash_val % 100) / 100 * 4.0
+
+        # Boost for wrestlers with images (more likely to be viewed)
+        if wrestler.image_url:
+            base += 1.5
+
+        return min(base, 5)
 
     def generate_ranking(self, publish: bool = False) -> Hot100Ranking:
         """Generate and save Hot 100 ranking for the month."""

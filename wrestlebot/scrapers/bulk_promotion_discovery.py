@@ -136,7 +136,10 @@ class BulkPromotionDiscovery:
                         extract = page_data.get('extract', '')
 
                         name = title.replace(' (wrestling)', '').replace(' (professional wrestling)', '')
+                        # Create valid slug - only letters, numbers, hyphens, underscores
                         slug = name.lower().replace(' ', '-').replace("'", '').replace('&', 'and')
+                        slug = ''.join(c for c in slug if c.isalnum() or c in '-_')
+                        slug = slug.strip('-_')
 
                         promotion_data = {
                             'name': name,

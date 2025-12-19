@@ -153,7 +153,10 @@ class BulkWrestlerDiscovery:
 
                         # Parse data
                         name = title.replace(' (wrestler)', '').replace(' (professional wrestler)', '')
+                        # Create valid slug - only letters, numbers, hyphens, underscores
                         slug = name.lower().replace(' ', '-').replace("'", '')
+                        slug = ''.join(c for c in slug if c.isalnum() or c in '-_')
+                        slug = slug.strip('-_')
 
                         wrestler_data = {
                             'name': name,

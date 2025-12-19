@@ -140,7 +140,10 @@ class BulkEventDiscovery:
 
                         # Extract event name and slug
                         name = title
+                        # Create valid slug - only letters, numbers, hyphens, underscores
                         slug = name.lower().replace(' ', '-').replace("'", '').replace(':', '')
+                        slug = ''.join(c for c in slug if c.isalnum() or c in '-_')
+                        slug = slug.strip('-_')
 
                         event_data = {
                             'name': name,

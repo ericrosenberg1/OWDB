@@ -108,9 +108,14 @@ class BulkVideoGameDiscovery:
                         title = page.get('title', '')
                         extract = page.get('extract', '')
 
+                        # Create valid slug - only letters, numbers, hyphens, underscores
+                        slug = title.lower().replace(' ', '-').replace("'", '')
+                        slug = ''.join(c for c in slug if c.isalnum() or c in '-_')
+                        slug = slug.strip('-_')
+
                         game_data = {
                             'name': title,
-                            'slug': title.lower().replace(' ', '-').replace("'", ''),
+                            'slug': slug,
                             'about': extract[:1000] if extract else '',
                         }
 
@@ -249,9 +254,14 @@ class BulkBookDiscovery:
                             if author_match:
                                 author = author_match.group(1).strip()
 
+                        # Create valid slug - only letters, numbers, hyphens, underscores
+                        slug = title.lower().replace(' ', '-').replace("'", '')
+                        slug = ''.join(c for c in slug if c.isalnum() or c in '-_')
+                        slug = slug.strip('-_')
+
                         book_data = {
                             'title': title,
-                            'slug': title.lower().replace(' ', '-').replace("'", ''),
+                            'slug': slug,
                             'about': extract[:1000] if extract else '',
                         }
 
@@ -377,9 +387,14 @@ class BulkDocumentaryDiscovery:
                         title = page.get('title', '')
                         extract = page.get('extract', '')
 
+                        # Create valid slug - only letters, numbers, hyphens, underscores
+                        slug = title.lower().replace(' ', '-').replace("'", '')
+                        slug = ''.join(c for c in slug if c.isalnum() or c in '-_')
+                        slug = slug.strip('-_')
+
                         doc_data = {
                             'title': title,
-                            'slug': title.lower().replace(' ', '-').replace("'", ''),
+                            'slug': slug,
                             'about': extract[:1000] if extract else '',
                             'type': 'documentary',
                         }

@@ -31,6 +31,8 @@ from .models import (
     EmailVerificationToken,
     WrestleBotLog,
     WrestleBotConfig,
+    Hot100Ranking,
+    Hot100Entry,
 )
 
 
@@ -1164,3 +1166,45 @@ def wrestlebot_trigger(request):
             'success': False,
             'error': str(e)
         }, status=500)
+
+
+# =============================================================================
+# Hot 100 Rankings Views
+# =============================================================================
+
+class Hot100View(TemplateView):
+    """Display the current Hot 100 wrestler rankings."""
+    template_name = 'hot100.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Get year/month from URL or use current
+        year = self.kwargs.get('year')
+        month = self.kwargs.get('month')
+
+        if year and month:
+            ranking = Hot100Ranking.get_for_month(int(year), int(month))
+        else:
+            ranking = Hot100Ranking.get_current()
+
+        context['ranking'] = ranking
+        context['entries'] = ranking.entries.select_related('wrestler').all() if ranking else []
+
+        # Get available months for navigation
+        context['available_rankings'] = Hot100Ranking.objects.filter(
+            is_published=True
+        ).values('year', 'month').order_by('-year', '-month')[:12]
+
+        return context
+
+
+class Hot100HistoryView(ListView):
+    """List all available Hot 100 rankings."""
+    model = Hot100Ranking
+    template_name = 'hot100_history.html'
+    context_object_name = 'rankings'
+    paginate_by = 12
+
+    def get_queryset(self):
+        return Hot100Ranking.objects.filter(is_published=True).order_by('-year', '-month')

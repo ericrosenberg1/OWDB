@@ -1105,3 +1105,364 @@ class WrestleBotConfig(TimeStampedModel):
             last_run=timezone.now(),
         )
         self.refresh_from_db()
+
+
+# =============================================================================
+# Hot 100 Wrestlers - Monthly Rankings
+# =============================================================================
+
+class Hot100Ranking(TimeStampedModel):
+    """
+    Monthly Hot 100 ranking for wrestlers.
+
+    Generated automatically on the 1st of each month using a proprietary
+    scoring algorithm that considers match activity, title importance,
+    media mentions, and more.
+    """
+    # Period this ranking covers
+    year = models.IntegerField(db_index=True)
+    month = models.IntegerField(db_index=True)  # 1-12
+
+    # Metadata
+    generated_at = models.DateTimeField(auto_now_add=True)
+    is_published = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-year', '-month']
+        unique_together = ['year', 'month']
+        verbose_name = "Hot 100 Ranking"
+        verbose_name_plural = "Hot 100 Rankings"
+
+    def __str__(self):
+        return f"Hot 100 - {self.get_month_display()} {self.year}"
+
+    def get_month_display(self):
+        """Get the month name."""
+        import calendar
+        return calendar.month_name[self.month]
+
+    @classmethod
+    def get_current(cls):
+        """Get the most recent published ranking."""
+        return cls.objects.filter(is_published=True).first()
+
+    @classmethod
+    def get_for_month(cls, year: int, month: int):
+        """Get ranking for a specific month."""
+        return cls.objects.filter(year=year, month=month).first()
+
+
+class Hot100Entry(TimeStampedModel):
+    """
+    Individual entry in a Hot 100 ranking.
+
+    Stores the wrestler's rank, total score, and breakdown of scoring
+    components for transparency (without revealing exact weights).
+    """
+    ranking = models.ForeignKey(
+        Hot100Ranking,
+        on_delete=models.CASCADE,
+        related_name='entries'
+    )
+    wrestler = models.ForeignKey(
+        'Wrestler',
+        on_delete=models.CASCADE,
+        related_name='hot100_entries'
+    )
+
+    # Overall position and score
+    rank = models.IntegerField(db_index=True)
+    total_score = models.FloatField()
+
+    # Score components (stored for display, actual weights are proprietary)
+    match_count_score = models.FloatField(default=0)
+    match_importance_score = models.FloatField(default=0)  # Main event, title matches, etc.
+    title_activity_score = models.FloatField(default=0)  # Title wins/defenses
+    opponent_quality_score = models.FloatField(default=0)  # Based on opponent rankings
+    news_mention_score = models.FloatField(default=0)  # Media coverage
+    social_engagement_score = models.FloatField(default=0)  # YouTube, podcasts, etc.
+    website_views_score = models.FloatField(default=0)  # Views on this site
+
+    # Trend from previous month
+    previous_rank = models.IntegerField(null=True, blank=True)
+    rank_change = models.IntegerField(default=0)  # Positive = improved, negative = dropped
+
+    class Meta:
+        ordering = ['rank']
+        unique_together = ['ranking', 'wrestler']
+        indexes = [
+            models.Index(fields=['ranking', 'rank']),
+            models.Index(fields=['wrestler']),
+        ]
+
+    def __str__(self):
+        return f"#{self.rank} {self.wrestler.name} ({self.ranking})"
+
+    @property
+    def trend_display(self):
+        """Get trend arrow for display."""
+        if self.previous_rank is None:
+            return "NEW"
+        elif self.rank_change > 0:
+            return f"↑{self.rank_change}"
+        elif self.rank_change < 0:
+            return f"↓{abs(self.rank_change)}"
+        else:
+            return "–"
+
+    @property
+    def trend_class(self):
+        """CSS class for trend styling."""
+        if self.previous_rank is None:
+            return "new"
+        elif self.rank_change > 0:
+            return "up"
+        elif self.rank_change < 0:
+            return "down"
+        return "same"
+
+
+class Hot100Calculator:
+    """
+    Proprietary scoring algorithm for Hot 100 rankings.
+
+    CONFIDENTIAL: Actual weights and formulas are intentionally not documented
+    in comments to protect the proprietary nature of the ranking system.
+    """
+
+    def __init__(self, year: int, month: int):
+        self.year = year
+        self.month = month
+        self._previous_ranking = None
+
+    def calculate_rankings(self, limit: int = 100) -> list:
+        """
+        Calculate Hot 100 rankings for the specified month.
+
+        Returns list of dicts with wrestler_id and score components.
+        """
+        from datetime import date
+        from django.db.models import Count, Q, Sum, Avg, F
+        from django.db.models.functions import Coalesce
+
+        # Get date range for this month
+        start_date = date(self.year, self.month, 1)
+        if self.month == 12:
+            end_date = date(self.year + 1, 1, 1)
+        else:
+            end_date = date(self.year, self.month + 1, 1)
+
+        # Get previous month's ranking for trend calculation
+        prev_year = self.year if self.month > 1 else self.year - 1
+        prev_month = self.month - 1 if self.month > 1 else 12
+        self._previous_ranking = Hot100Ranking.get_for_month(prev_year, prev_month)
+
+        wrestlers = Wrestler.objects.annotate(
+            # Match count in period
+            period_matches=Count(
+                'matches',
+                filter=Q(matches__event__date__gte=start_date, matches__event__date__lt=end_date)
+            ),
+            # Wins in period
+            period_wins=Count(
+                'matches_won',
+                filter=Q(matches_won__event__date__gte=start_date, matches_won__event__date__lt=end_date)
+            ),
+            # Title matches in period
+            period_title_matches=Count(
+                'matches',
+                filter=Q(
+                    matches__event__date__gte=start_date,
+                    matches__event__date__lt=end_date,
+                    matches__title_matches__isnull=False
+                )
+            ),
+            # Main events (high match order)
+            period_main_events=Count(
+                'matches',
+                filter=Q(
+                    matches__event__date__gte=start_date,
+                    matches__event__date__lt=end_date,
+                    matches__match_order__gte=8
+                )
+            ),
+        ).filter(
+            period_matches__gt=0  # Only wrestlers with activity
+        ).order_by('-period_matches')
+
+        scores = []
+        for wrestler in wrestlers:
+            score_data = self._calculate_wrestler_score(wrestler, start_date, end_date)
+            scores.append(score_data)
+
+        # Sort by total score and limit
+        scores.sort(key=lambda x: x['total_score'], reverse=True)
+        return scores[:limit]
+
+    def _calculate_wrestler_score(self, wrestler, start_date, end_date) -> dict:
+        """Calculate score components for a wrestler."""
+        # Component scores with proprietary weights
+        match_score = self._calc_match_score(wrestler)
+        importance_score = self._calc_importance_score(wrestler)
+        title_score = self._calc_title_score(wrestler, start_date, end_date)
+        opponent_score = self._calc_opponent_score(wrestler)
+        news_score = self._calc_news_score(wrestler)
+        social_score = self._calc_social_score(wrestler)
+        views_score = self._calc_views_score(wrestler)
+
+        total = (
+            match_score + importance_score + title_score +
+            opponent_score + news_score + social_score + views_score
+        )
+
+        # Get previous rank if exists
+        prev_rank = None
+        if self._previous_ranking:
+            prev_entry = Hot100Entry.objects.filter(
+                ranking=self._previous_ranking,
+                wrestler=wrestler
+            ).first()
+            if prev_entry:
+                prev_rank = prev_entry.rank
+
+        return {
+            'wrestler_id': wrestler.id,
+            'wrestler': wrestler,
+            'total_score': round(total, 2),
+            'match_count_score': round(match_score, 2),
+            'match_importance_score': round(importance_score, 2),
+            'title_activity_score': round(title_score, 2),
+            'opponent_quality_score': round(opponent_score, 2),
+            'news_mention_score': round(news_score, 2),
+            'social_engagement_score': round(social_score, 2),
+            'website_views_score': round(views_score, 2),
+            'previous_rank': prev_rank,
+        }
+
+    def _calc_match_score(self, wrestler) -> float:
+        """Calculate score based on match count."""
+        # Uses logarithmic scaling to prevent runaway scores
+        import math
+        matches = getattr(wrestler, 'period_matches', 0)
+        if matches == 0:
+            return 0
+        return min(math.log(matches + 1) * 8.7, 35)
+
+    def _calc_importance_score(self, wrestler) -> float:
+        """Calculate score based on match importance."""
+        main_events = getattr(wrestler, 'period_main_events', 0)
+        title_matches = getattr(wrestler, 'period_title_matches', 0)
+        return (main_events * 4.2) + (title_matches * 3.1)
+
+    def _calc_title_score(self, wrestler, start_date, end_date) -> float:
+        """Calculate score based on title activity."""
+        from .models import TitleMatch
+        title_wins = TitleMatch.objects.filter(
+            winner=wrestler,
+            match__event__date__gte=start_date,
+            match__event__date__lt=end_date
+        ).count()
+        title_defenses = TitleMatch.objects.filter(
+            match__wrestlers=wrestler,
+            match__event__date__gte=start_date,
+            match__event__date__lt=end_date,
+            winner=wrestler
+        ).exclude(title_change=True).count()
+        return (title_wins * 12.5) + (title_defenses * 5.8)
+
+    def _calc_opponent_score(self, wrestler) -> float:
+        """Calculate score based on opponent quality from previous rankings."""
+        if not self._previous_ranking:
+            return 0
+        # Opponents who were in last month's Hot 100
+        from django.db.models import Avg
+        opponent_ranks = Hot100Entry.objects.filter(
+            ranking=self._previous_ranking,
+            wrestler__matches__wrestlers=wrestler
+        ).exclude(wrestler=wrestler).values_list('rank', flat=True)
+
+        if not opponent_ranks:
+            return 0
+
+        # Higher score for facing higher-ranked opponents
+        avg_rank = sum(opponent_ranks) / len(opponent_ranks)
+        quality_bonus = max(0, (50 - avg_rank) * 0.15)
+        return quality_bonus * len(opponent_ranks) * 0.3
+
+    def _calc_news_score(self, wrestler) -> float:
+        """
+        Calculate score based on news mentions.
+        Currently returns placeholder - would integrate with news API.
+        """
+        # TODO: Integrate with news aggregation service
+        # For now, return a small random component based on match activity
+        import random
+        base = getattr(wrestler, 'period_matches', 0) * 0.5
+        return min(base + random.uniform(0, 3), 15)
+
+    def _calc_social_score(self, wrestler) -> float:
+        """
+        Calculate score based on social/media engagement.
+        Currently returns placeholder - would integrate with YouTube API.
+        """
+        # TODO: Integrate with YouTube Data API, podcast mentions
+        import random
+        base = getattr(wrestler, 'period_matches', 0) * 0.3
+        return min(base + random.uniform(0, 2), 10)
+
+    def _calc_views_score(self, wrestler) -> float:
+        """
+        Calculate score based on page views on this website.
+        Currently returns placeholder - would integrate with analytics.
+        """
+        # TODO: Integrate with site analytics
+        import random
+        return random.uniform(0, 5)
+
+    def generate_ranking(self, publish: bool = False) -> Hot100Ranking:
+        """Generate and save Hot 100 ranking for the month."""
+        # Check if ranking already exists
+        existing = Hot100Ranking.objects.filter(
+            year=self.year, month=self.month
+        ).first()
+
+        if existing:
+            # Delete old entries to regenerate
+            existing.entries.all().delete()
+            ranking = existing
+        else:
+            ranking = Hot100Ranking.objects.create(
+                year=self.year,
+                month=self.month
+            )
+
+        # Calculate scores
+        scores = self.calculate_rankings(limit=100)
+
+        # Create entries
+        for i, score_data in enumerate(scores, 1):
+            rank_change = 0
+            if score_data['previous_rank']:
+                rank_change = score_data['previous_rank'] - i  # Positive = improved
+
+            Hot100Entry.objects.create(
+                ranking=ranking,
+                wrestler=score_data['wrestler'],
+                rank=i,
+                total_score=score_data['total_score'],
+                match_count_score=score_data['match_count_score'],
+                match_importance_score=score_data['match_importance_score'],
+                title_activity_score=score_data['title_activity_score'],
+                opponent_quality_score=score_data['opponent_quality_score'],
+                news_mention_score=score_data['news_mention_score'],
+                social_engagement_score=score_data['social_engagement_score'],
+                website_views_score=score_data['website_views_score'],
+                previous_rank=score_data['previous_rank'],
+                rank_change=rank_change,
+            )
+
+        if publish:
+            ranking.is_published = True
+            ranking.save()
+
+        return ranking

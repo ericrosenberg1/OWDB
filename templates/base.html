@@ -51,12 +51,15 @@
                 </button>
                 <div class="collapse navbar-collapse" id="navbarContent">
                     <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link text-warning fw-bold" href="{% url 'hot100' %}">Hot 100</a>
+                        </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 Wrestlers
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'wrestlers' %}">Popular</a></li>
+                                <li><a class="dropdown-item" href="{% url 'hot100' %}">Hot 100</a></li>
                                 <li><a class="dropdown-item" href="{% url 'wrestlers' %}">All Wrestlers</a></li>
                             </ul>
                         </li>
@@ -167,6 +170,7 @@
                     <div class="footer-section">
                         <h4>The Basics</h4>
                         <ul>
+                            <li><a href="{% url 'hot100' %}">Hot 100</a></li>
                             <li><a href="{% url 'about' %}">About OWDB</a></li>
                             <li><a href="{% url 'wrestlebot' %}">WrestleBot AI</a></li>
                             <li><a href="{% url 'account' %}">API</a></li>

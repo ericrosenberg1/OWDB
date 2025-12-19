@@ -62,6 +62,11 @@ urlpatterns = [
     path('specials/<int:pk>/', views.SpecialDetailView.as_view(), name='special_detail'),
     path('specials/<slug:slug>/', views.SpecialDetailView.as_view(), name='special_detail_slug'),
 
+    # Hot 100 Rankings
+    path('hot100/', views.Hot100View.as_view(), name='hot100'),
+    path('hot100/<int:year>/<int:month>/', views.Hot100View.as_view(), name='hot100_month'),
+    path('hot100/history/', views.Hot100HistoryView.as_view(), name='hot100_history'),
+
     # Authentication
     path('signup/', views.signup, name='signup'),
     path('login/', views.login_view, name='login'),

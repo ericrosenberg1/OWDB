@@ -1611,3 +1611,60 @@ def restart_stale_bot_tasks():
     except Exception as e:
         logger.error(f"Failed to check stale tasks: {e}")
         return {"status": "error", "error": str(e)}
+
+
+# =============================================================================
+# Hot 100 Rankings Task
+# =============================================================================
+
+@shared_task(
+    bind=True,
+    soft_time_limit=5 * 60,
+    time_limit=7 * 60,
+)
+def generate_hot100_ranking(self, year: int = None, month: int = None, publish: bool = True):
+    """
+    Generate monthly Hot 100 wrestler rankings.
+
+    Runs automatically on the 1st of each month via Celery Beat.
+    Can also be triggered manually to regenerate rankings.
+
+    Args:
+        year: Year to generate ranking for (default: previous month)
+        month: Month to generate ranking for (default: previous month)
+        publish: Whether to publish the ranking immediately
+    """
+    from django.utils import timezone
+    from datetime import date
+    from .models import Hot100Calculator, Hot100Ranking
+
+    try:
+        # Default to previous month
+        if year is None or month is None:
+            today = timezone.now().date()
+            if today.month == 1:
+                year = today.year - 1
+                month = 12
+            else:
+                year = today.year
+                month = today.month - 1
+
+        logger.info(f"Generating Hot 100 ranking for {month}/{year}")
+
+        calculator = Hot100Calculator(year, month)
+        ranking = calculator.generate_ranking(publish=publish)
+
+        entry_count = ranking.entries.count()
+        logger.info(f"Hot 100 generated: {entry_count} entries for {ranking}")
+
+        return {
+            "status": "success",
+            "year": year,
+            "month": month,
+            "entries": entry_count,
+            "published": publish,
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to generate Hot 100 ranking: {e}", exc_info=True)
+        raise self.retry(exc=e, max_retries=2)

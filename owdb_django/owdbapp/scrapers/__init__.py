@@ -43,6 +43,15 @@ from .wikimedia_commons import WikimediaCommonsClient
 # Coordinator
 from .coordinator import ScraperCoordinator, DataValidator, DataDeduplicator
 
+# Multi-source rotation
+from .source_rotator import (
+    SourceRotator,
+    MultiSourceScraper,
+    get_wrestler_scraper,
+    get_promotion_scraper,
+    get_event_scraper,
+)
+
 __all__ = [
     # Base
     'APIClient',
@@ -69,4 +78,10 @@ __all__ = [
     'ScraperCoordinator',
     'DataValidator',
     'DataDeduplicator',
+    # Multi-source rotation
+    'SourceRotator',
+    'MultiSourceScraper',
+    'get_wrestler_scraper',
+    'get_promotion_scraper',
+    'get_event_scraper',
 ]

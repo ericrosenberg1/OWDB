@@ -37,6 +37,9 @@ class WikipediaWrestlerScraper:
         })
         self.last_request_time = 0
         self.min_delay = 1.0  # Minimum 1 second between requests
+        self.discovered_slugs = set()  # Track discovered wrestlers
+        self.current_category_index = 0
+        self.current_category_offset = 0
 
     def _rate_limit(self):
         """Enforce rate limiting."""
@@ -45,8 +48,8 @@ class WikipediaWrestlerScraper:
             time.sleep(self.min_delay - elapsed)
         self.last_request_time = time.time()
 
-    def get_category_members(self, category: str, limit: int = 20) -> List[str]:
-        """Get member pages from a Wikipedia category."""
+    def get_category_members(self, category: str, limit: int = 20, offset: int = 0) -> List[str]:
+        """Get member pages from a Wikipedia category with pagination."""
         self._rate_limit()
 
         params = {
@@ -57,6 +60,10 @@ class WikipediaWrestlerScraper:
             'cmlimit': limit,
             'cmtype': 'page',  # Only pages, not subcategories
         }
+
+        # Add offset for pagination if needed
+        if offset > 0:
+            params['cmstart'] = offset
 
         try:
             response = self.session.get(self.BASE_URL, params=params, timeout=10)
@@ -71,7 +78,7 @@ class WikipediaWrestlerScraper:
                     if not member['title'].startswith('Category:')
                 ]
 
-            logger.info(f"Found {len(members)} members in category {category}")
+            logger.info(f"Found {len(members)} members in category {category} (offset: {offset})")
             return members
 
         except Exception as e:
@@ -152,27 +159,46 @@ class WikipediaWrestlerScraper:
         return wrestler_data
 
     def discover_wrestlers(self, max_wrestlers: int = 10) -> List[Dict]:
-        """Discover wrestlers from Wikipedia categories."""
+        """Discover NEW wrestlers from Wikipedia categories with pagination."""
         wrestlers = []
-        checked_titles = set()
+        attempts = 0
+        max_attempts = 50  # Prevent infinite loops
 
         logger.info(f"Starting wrestler discovery (max: {max_wrestlers})")
 
-        for category in self.WRESTLER_CATEGORIES:
-            if len(wrestlers) >= max_wrestlers:
-                break
+        while len(wrestlers) < max_wrestlers and attempts < max_attempts:
+            attempts += 1
 
-            logger.info(f"Checking category: {category}")
-            members = self.get_category_members(category, limit=20)
+            # Get current category
+            if self.current_category_index >= len(self.WRESTLER_CATEGORIES):
+                self.current_category_index = 0
+                self.current_category_offset += 20  # Move to next page
 
+            category = self.WRESTLER_CATEGORIES[self.current_category_index]
+            logger.info(f"Checking category: {category} (offset: {self.current_category_offset})")
+
+            members = self.get_category_members(category, limit=20, offset=self.current_category_offset)
+
+            if not members:
+                # No more members in this category, move to next
+                self.current_category_index += 1
+                self.current_category_offset = 0
+                logger.info(f"Category exhausted, moving to next")
+                continue
+
+            found_new = False
             for title in members:
                 if len(wrestlers) >= max_wrestlers:
                     break
 
-                if title in checked_titles:
-                    continue
+                # Create slug to check if already discovered
+                slug = title.lower().replace(' ', '-').replace("'", '')
+                for suffix in ['-wrestler', '-professional-wrestler']:
+                    if slug.endswith(suffix):
+                        slug = slug[:-len(suffix)]
 
-                checked_titles.add(title)
+                if slug in self.discovered_slugs:
+                    continue
 
                 page_info = self.get_page_info(title)
                 if not page_info:
@@ -180,8 +206,15 @@ class WikipediaWrestlerScraper:
 
                 wrestler_data = self.parse_wrestler_data(title, page_info)
                 if wrestler_data:
+                    self.discovered_slugs.add(wrestler_data['slug'])
                     wrestlers.append(wrestler_data)
-                    logger.info(f"Discovered wrestler: {wrestler_data['name']}")
+                    found_new = True
+                    logger.info(f"Discovered NEW wrestler: {wrestler_data['name']}")
 
-        logger.info(f"Discovery complete: found {len(wrestlers)} wrestlers")
+            if not found_new:
+                # Didn't find any new wrestlers in this batch, move to next category
+                self.current_category_index += 1
+                self.current_category_offset = 0
+
+        logger.info(f"Discovery complete: found {len(wrestlers)} new wrestlers (total tracked: {len(self.discovered_slugs)})")
         return wrestlers

@@ -125,3 +125,9 @@ celerybeat.pid
 *.temp
 instance/
 owdb_django/owdbapp/wrestlingdb.code-workspace
+
+# =============================================================================
+# Documentation (keep only README.md in root)
+# =============================================================================
+*.md
+!README.md

@@ -155,6 +155,7 @@ class PageEnrichmentDiscovery:
 
             import random
             category = random.choice(wrestling_categories)
+            logger.info(f"Querying Wikipedia category: {category}")
 
             # Get random members from the category
             params = {
@@ -167,13 +168,21 @@ class PageEnrichmentDiscovery:
             }
 
             response = self.session.get(self.wikipedia_base, params=params, timeout=10)
+            response.raise_for_status()
             data = response.json()
 
+            logger.info(f"Wikipedia response keys: {list(data.keys())}")
+
             if 'query' in data and 'categorymembers' in data['query']:
+                all_members = data['query']['categorymembers']
+                logger.info(f"Found {len(all_members)} total members in category")
+
                 members = [
-                    m['title'] for m in data['query']['categorymembers']
+                    m['title'] for m in all_members
                     if not m['title'].startswith(('Category:', 'List of', 'Template:'))
                 ]
+
+                logger.info(f"Filtered to {len(members)} suitable pages")
 
                 if members:
                     # Pick a random page from this category
@@ -190,8 +199,14 @@ class PageEnrichmentDiscovery:
                             'content': page_info.get('extract', ''),
                             'url': f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}"
                         }
+                    else:
+                        logger.warning(f"Could not get page content for {title}")
+                else:
+                    logger.warning(f"No suitable pages after filtering")
 
-            logger.info("No suitable wrestling pages found in category")
+            else:
+                logger.warning(f"No categorymembers in response. Response: {data}")
+
             return None
 
         except Exception as e:

@@ -119,9 +119,16 @@ services:
       start_period: 40s
 
   # ---------------------------------------------------------------------------
-  # Celery Worker - Background Tasks
+  # Celery All-in-One: Worker + Beat + WrestleBot
   # ---------------------------------------------------------------------------
-  celery_worker:
+  # This single container runs:
+  #   - Celery worker (background task processing)
+  #   - Celery beat (scheduled task scheduler, embedded with -B flag)
+  #   - WrestleBot (now runs as a Celery periodic task instead of standalone)
+  #
+  # This consolidation saves ~260MB RAM and reduces container complexity.
+  # ---------------------------------------------------------------------------
+  celery:
     build: .
     restart: unless-stopped
     env_file:
@@ -136,6 +143,9 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
       OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+      # WrestleBot environment (now used by Celery task)
+      WRESTLEBOT_API_TOKEN: ${WRESTLEBOT_API_TOKEN}
+      WRESTLEBOT_LOG_LEVEL: ${WRESTLEBOT_LOG_LEVEL:-INFO}
     depends_on:
       db:
         condition: service_healthy
@@ -143,42 +153,14 @@ services:
         condition: service_healthy
       ollama:
         condition: service_healthy
-    command: celery -A owdb_django worker --loglevel=info --concurrency=2
-    healthcheck:
-      test: ["CMD", "celery", "-A", "owdb_django", "inspect", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-
-  # ---------------------------------------------------------------------------
-  # Celery Beat - Scheduled Tasks
-  # ---------------------------------------------------------------------------
-  celery_beat:
-    build: .
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      APP_ENV: ${APP_ENV:-production}
-      USE_POSTGRES: "true"
-      USE_REDIS: "true"
-      DB_HOST: db
-      DB_PORT: 5432
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
-      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      celery_worker:
-        condition: service_started
-      ollama:
-        condition: service_healthy
-    command: celery -A owdb_django beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    # Run worker with embedded beat scheduler (-B flag)
+    # Uses DatabaseScheduler for persistent schedules across restarts
+    command: >
+      celery -A owdb_django worker
+      --beat
+      --scheduler django_celery_beat.schedulers:DatabaseScheduler
+      --loglevel=info
+      --concurrency=2
     volumes:
       - celery_beat_schedule:/app/celerybeat-schedule
     healthcheck:
@@ -187,29 +169,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-
-  # ---------------------------------------------------------------------------
-  # WrestleBot - Standalone Data Collection Service
-  # ---------------------------------------------------------------------------
-  wrestlebot:
-    build:
-      context: ./wrestlebot
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    environment:
-      DJANGO_API_URL: http://web:8000/api/wrestlebot
-      WRESTLEBOT_API_TOKEN: ${WRESTLEBOT_API_TOKEN}
-      LOG_LEVEL: ${WRESTLEBOT_LOG_LEVEL:-INFO}
-      WRESTLEBOT_VERSION: 2.0.0
-    depends_on:
-      web:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
 
 # =============================================================================
 # Volumes

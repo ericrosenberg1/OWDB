@@ -1214,6 +1214,213 @@ def wrestlebot_health_check():
         return health_status
 
 
+# =============================================================================
+# WrestleBot Bulk Discovery Task (replaces standalone wrestlebot container)
+# =============================================================================
+
+@shared_task(
+    bind=True,
+    soft_time_limit=30 * 60,  # 30 minutes soft limit
+    time_limit=35 * 60,       # 35 minutes hard limit
+    max_retries=1,
+)
+def wrestlebot_bulk_discovery(self):
+    """
+    Run WrestleBot bulk discovery cycle.
+
+    This task replaces the standalone wrestlebot container. It runs
+    bulk discovery for wrestlers, promotions, events, and media,
+    then continues with page enrichment cycles.
+
+    Runs every 30 minutes via Celery Beat. Each run processes one
+    bulk category or runs enrichment if all bulk categories are done.
+    """
+    import os
+    import sys
+    from pathlib import Path
+    from django.core.cache import cache
+    from django.utils import timezone
+
+    lock_key = "wrestlebot_bulk_discovery_lock"
+    lock_timeout = 35 * 60 + 60  # Slightly longer than hard limit
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("WrestleBot bulk discovery skipped: already running")
+        return {"status": "skipped", "reason": "already_running"}
+
+    try:
+        # Track which bulk modes are complete (persisted in cache)
+        bulk_status = cache.get("wrestlebot_bulk_status", {
+            'wrestlers': False,
+            'promotions': False,
+            'events': False,
+            'videogames': False,
+            'books': False,
+            'documentaries': False,
+        })
+
+        # Add wrestlebot directory to path for imports
+        wrestlebot_path = Path(__file__).parent.parent.parent / 'wrestlebot'
+        if str(wrestlebot_path) not in sys.path:
+            sys.path.insert(0, str(wrestlebot_path))
+
+        from api_client.django_api import DjangoAPIClient
+        from scrapers.bulk_wrestler_discovery import BulkWrestlerDiscovery
+        from scrapers.bulk_promotion_discovery import BulkPromotionDiscovery
+        from scrapers.bulk_event_discovery import BulkEventDiscovery
+        from scrapers.bulk_media_discovery import (
+            BulkVideoGameDiscovery,
+            BulkBookDiscovery,
+            BulkDocumentaryDiscovery
+        )
+        from scrapers.page_enrichment import PageEnrichmentDiscovery
+
+        api_client = DjangoAPIClient()
+
+        # Check API health
+        if not api_client.health_check():
+            logger.warning("WrestleBot bulk: API health check failed")
+            return {"status": "error", "reason": "api_unhealthy"}
+
+        results = {"status": "success", "action": None, "added": 0}
+
+        # Run bulk discovery stages in order
+        if not bulk_status.get('wrestlers'):
+            logger.info("=== BULK MODE: Discovering wrestlers ===")
+            scraper = BulkWrestlerDiscovery()
+            all_names = scraper.discover_all_wrestlers()
+            logger.info(f"Discovered {len(all_names)} unique wrestler names")
+
+            added = 0
+            batch_size = 100
+            for i in range(0, min(len(all_names), 500), batch_size):  # Limit per run
+                batch_names = all_names[i:i + batch_size]
+                wrestlers = scraper.get_wrestler_details_batch(batch_names)
+                for wrestler_data in wrestlers:
+                    try:
+                        if api_client.create_wrestler(wrestler_data):
+                            added += 1
+                    except Exception:
+                        pass
+
+            bulk_status['wrestlers'] = True
+            results = {"status": "success", "action": "wrestlers", "added": added}
+
+        elif not bulk_status.get('promotions'):
+            logger.info("=== BULK MODE: Discovering promotions ===")
+            scraper = BulkPromotionDiscovery()
+            all_names = scraper.discover_all_promotions()
+            logger.info(f"Discovered {len(all_names)} unique promotions")
+
+            added = 0
+            batch_size = 100
+            for i in range(0, min(len(all_names), 200), batch_size):
+                batch_names = all_names[i:i + batch_size]
+                promotions = scraper.get_promotion_details_batch(batch_names)
+                for promotion_data in promotions:
+                    try:
+                        if api_client.create_promotion(promotion_data):
+                            added += 1
+                    except Exception:
+                        pass
+
+            bulk_status['promotions'] = True
+            results = {"status": "success", "action": "promotions", "added": added}
+
+        elif not bulk_status.get('events'):
+            logger.info("=== BULK MODE: Discovering events ===")
+            scraper = BulkEventDiscovery()
+            all_names = scraper.discover_all_events()
+            logger.info(f"Discovered {len(all_names)} unique events")
+
+            added = 0
+            batch_size = 100
+            for i in range(0, min(len(all_names), 300), batch_size):
+                batch_names = all_names[i:i + batch_size]
+                events = scraper.get_event_details_batch(batch_names)
+                for event_data in events:
+                    try:
+                        if api_client.create_event(event_data):
+                            added += 1
+                    except Exception:
+                        pass
+
+            bulk_status['events'] = True
+            results = {"status": "success", "action": "events", "added": added}
+
+        elif not bulk_status.get('videogames'):
+            logger.info("=== BULK MODE: Discovering video games ===")
+            scraper = BulkVideoGameDiscovery()
+            games = scraper.discover_all()
+
+            added = 0
+            for game_data in games[:100]:
+                try:
+                    if api_client.create_videogame(game_data):
+                        added += 1
+                except Exception:
+                    pass
+
+            bulk_status['videogames'] = True
+            results = {"status": "success", "action": "videogames", "added": added}
+
+        elif not bulk_status.get('books'):
+            logger.info("=== BULK MODE: Discovering books ===")
+            scraper = BulkBookDiscovery()
+            books = scraper.discover_all()
+
+            added = 0
+            for book_data in books[:100]:
+                try:
+                    if api_client.create_book(book_data):
+                        added += 1
+                except Exception:
+                    pass
+
+            bulk_status['books'] = True
+            results = {"status": "success", "action": "books", "added": added}
+
+        elif not bulk_status.get('documentaries'):
+            logger.info("=== BULK MODE: Discovering documentaries ===")
+            scraper = BulkDocumentaryDiscovery()
+            docs = scraper.discover_all()
+
+            added = 0
+            for doc_data in docs[:100]:
+                try:
+                    if api_client.create_special(doc_data):
+                        added += 1
+                except Exception:
+                    pass
+
+            bulk_status['documentaries'] = True
+            results = {"status": "success", "action": "documentaries", "added": added}
+
+        else:
+            # All bulk modes complete - run enrichment
+            logger.info("=== PAGE ENRICHMENT CYCLE ===")
+            page_enrichment = PageEnrichmentDiscovery(api_client)
+            improved = page_enrichment.find_and_enrich_incomplete_entries()
+            results = {"status": "success", "action": "enrichment", "improved": improved}
+
+        # Save bulk status
+        cache.set("wrestlebot_bulk_status", bulk_status, timeout=None)  # Persist indefinitely
+
+        logger.info(f"WrestleBot bulk discovery complete: {results}")
+        return results
+
+    except SoftTimeLimitExceeded:
+        logger.warning("WrestleBot bulk discovery exceeded time limit")
+        return {"status": "timeout"}
+
+    except Exception as e:
+        logger.error(f"WrestleBot bulk discovery failed: {e}", exc_info=True)
+        raise self.retry(exc=e)
+
+    finally:
+        cache.delete(lock_key)
+
+
 @shared_task(soft_time_limit=60, time_limit=90)
 def restart_stale_bot_tasks():
     """

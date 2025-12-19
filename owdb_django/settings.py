@@ -270,6 +270,11 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'owdb_django.owdbapp.tasks.restart_stale_bot_tasks',
         'schedule': 300.0,  # Every 5 minutes
     },
+    # Bulk discovery task (replaces standalone wrestlebot container)
+    'wrestlebot-bulk-discovery': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_bulk_discovery',
+        'schedule': 1800.0,  # Every 30 minutes
+    },
     # ==========================================================================
     # Image Fetch Tasks (Wikimedia Commons CC Images)
     # ==========================================================================

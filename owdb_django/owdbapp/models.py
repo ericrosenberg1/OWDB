@@ -1268,22 +1268,13 @@ class Hot100Calculator:
                 'matches_won',
                 filter=Q(matches_won__event__date__gte=start_date, matches_won__event__date__lt=end_date)
             ),
-            # Title matches in period
-            period_title_matches=Count(
-                'matches',
-                filter=Q(
-                    matches__event__date__gte=start_date,
-                    matches__event__date__lt=end_date,
-                    matches__title_matches__isnull=False
-                )
-            ),
-            # Main events (high match order)
+            # Main events (high match order - simplified)
             period_main_events=Count(
                 'matches',
                 filter=Q(
                     matches__event__date__gte=start_date,
                     matches__event__date__lt=end_date,
-                    matches__match_order__gte=8
+                    matches__match_order__gte=6
                 )
             ),
         ).filter(

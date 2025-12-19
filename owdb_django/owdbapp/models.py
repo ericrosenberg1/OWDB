@@ -23,6 +23,8 @@ class ImageMixin(models.Model):
     - CC BY (Attribution)
     - CC BY-SA (Attribution-ShareAlike)
     - Public Domain
+
+    Images are cached to Cloudflare R2 and served via images.wrestlingdb.org CDN.
     """
     LICENSE_CHOICES = [
         ('cc0', 'CC0 - Public Domain'),
@@ -32,9 +34,11 @@ class ImageMixin(models.Model):
     ]
 
     image_url = models.URLField(max_length=500, blank=True, null=True,
-                                 help_text="URL to the image file")
+                                 help_text="URL to the cached image on R2 CDN")
     image_source_url = models.URLField(max_length=500, blank=True, null=True,
                                         help_text="URL to the original source page (e.g., Wikimedia Commons)")
+    image_original_url = models.URLField(max_length=500, blank=True, null=True,
+                                          help_text="Original image URL before caching to R2")
     image_license = models.CharField(max_length=20, choices=LICENSE_CHOICES,
                                       blank=True, default='',
                                       help_text="Creative Commons license type")
@@ -49,6 +53,112 @@ class ImageMixin(models.Model):
     def has_image(self):
         """Check if this entity has an image."""
         return bool(self.image_url)
+
+    def image_age_days(self):
+        """Get the age of the current image in days."""
+        if not self.image_fetched_at:
+            return None
+        from django.utils import timezone
+        delta = timezone.now() - self.image_fetched_at
+        return delta.days
+
+    def needs_image_refresh(self, min_age_days=30):
+        """Check if the image should be refreshed (older than min_age_days)."""
+        age = self.image_age_days()
+        return age is not None and age >= min_age_days
+
+
+class ImageHistory(TimeStampedModel):
+    """
+    Historical record of images for entities.
+
+    Stores previous images when they are replaced, allowing users to
+    browse through the image history of wrestlers, promotions, etc.
+    """
+    ENTITY_TYPES = [
+        ('wrestler', 'Wrestler'),
+        ('promotion', 'Promotion'),
+        ('venue', 'Venue'),
+        ('event', 'Event'),
+        ('title', 'Title'),
+        ('stable', 'Stable'),
+    ]
+
+    LICENSE_CHOICES = [
+        ('cc0', 'CC0 - Public Domain'),
+        ('cc-by', 'CC BY'),
+        ('cc-by-sa', 'CC BY-SA'),
+        ('pd', 'Public Domain'),
+    ]
+
+    entity_type = models.CharField(max_length=20, choices=ENTITY_TYPES, db_index=True)
+    entity_id = models.PositiveIntegerField(db_index=True)
+
+    # Image data (stored on R2)
+    image_url = models.URLField(max_length=500,
+                                 help_text="URL to the cached image on R2 CDN")
+    image_source_url = models.URLField(max_length=500, blank=True, null=True,
+                                        help_text="URL to the original source page")
+    image_original_url = models.URLField(max_length=500, blank=True, null=True,
+                                          help_text="Original image URL before caching")
+    image_license = models.CharField(max_length=20, choices=LICENSE_CHOICES,
+                                      blank=True, default='')
+    image_credit = models.CharField(max_length=500, blank=True, default='')
+
+    # When this was the active image
+    active_from = models.DateTimeField(help_text="When this image became active")
+    active_until = models.DateTimeField(auto_now_add=True,
+                                         help_text="When this image was replaced")
+
+    # Why it was replaced
+    replacement_reason = models.CharField(max_length=100, blank=True, default='',
+                                           help_text="Why image was replaced (e.g., 'better_image_found', 'scheduled_refresh')")
+
+    class Meta:
+        ordering = ['-active_until']
+        indexes = [
+            models.Index(fields=['entity_type', 'entity_id']),
+            models.Index(fields=['entity_type', 'entity_id', '-active_until']),
+        ]
+        verbose_name_plural = "Image histories"
+
+    def __str__(self):
+        return f"{self.entity_type}:{self.entity_id} - {self.active_until}"
+
+    @classmethod
+    def archive_current_image(cls, entity, reason='scheduled_refresh'):
+        """
+        Archive the current image of an entity before replacing it.
+
+        Args:
+            entity: The model instance (Wrestler, Promotion, etc.)
+            reason: Why the image is being replaced
+        """
+        if not entity.image_url:
+            return None
+
+        # Determine entity type from model name
+        entity_type = entity.__class__.__name__.lower()
+
+        return cls.objects.create(
+            entity_type=entity_type,
+            entity_id=entity.pk,
+            image_url=entity.image_url,
+            image_source_url=entity.image_source_url or '',
+            image_original_url=getattr(entity, 'image_original_url', '') or '',
+            image_license=entity.image_license or '',
+            image_credit=entity.image_credit or '',
+            active_from=entity.image_fetched_at or entity.created_at,
+            replacement_reason=reason,
+        )
+
+    @classmethod
+    def get_history_for_entity(cls, entity_type, entity_id, limit=10):
+        """Get image history for a specific entity."""
+        return cls.objects.filter(
+            entity_type=entity_type,
+            entity_id=entity_id
+        ).order_by('-active_until')[:limit]
 
 
 class Venue(ImageMixin, TimeStampedModel):

@@ -796,31 +796,39 @@ def wrestlebot_reset_daily_limits():
     soft_time_limit=IMAGE_FETCH_SOFT_LIMIT,
     time_limit=IMAGE_FETCH_HARD_LIMIT,
 )
-def fetch_wrestler_images(self, batch_size: int = 20):
+def fetch_wrestler_images(self, batch_size: int = 20, refresh_old: bool = True):
     """
-    Fetch CC-licensed images for wrestlers without images.
+    Fetch CC-licensed images for wrestlers and cache to R2.
 
-    Prioritizes wrestlers by match count (most active first).
-    Only uses images with permissive CC licenses.
+    - Fetches images for wrestlers without images
+    - Optionally refreshes images older than 30 days with better alternatives
+    - Caches all images to Cloudflare R2 CDN
+    - Archives old images to history for users to browse
 
     Runs every 6 hours via Celery Beat.
     """
     try:
         from .models import Wrestler
         from .scrapers import WikimediaCommonsClient
+        from .services import get_image_cache_service
+        from django.db.models import Q
         from django.utils import timezone
+        from datetime import timedelta
 
         client = WikimediaCommonsClient()
+        cache_service = get_image_cache_service()
 
-        # Get wrestlers without images, ordered by match count
-        wrestlers = Wrestler.objects.filter(
+        fetched = 0
+        refreshed = 0
+
+        # 1. First, fetch images for wrestlers without any image
+        wrestlers_no_image = Wrestler.objects.filter(
             image_url__isnull=True
         ).annotate(
             match_count=Count('matches')
         ).order_by('-match_count')[:batch_size]
 
-        fetched = 0
-        for wrestler in wrestlers:
+        for wrestler in wrestlers_no_image:
             try:
                 result = client.find_wrestler_image(
                     name=wrestler.name,
@@ -828,24 +836,51 @@ def fetch_wrestler_images(self, batch_size: int = 20):
                 )
 
                 if result and result.get('url'):
-                    wrestler.image_url = result.get('thumb_url') or result.get('url')
-                    wrestler.image_source_url = result.get('description_url')
-                    wrestler.image_license = result.get('license', '')
-                    wrestler.image_credit = result.get('artist', '')
-                    wrestler.image_fetched_at = timezone.now()
-                    wrestler.save(update_fields=[
-                        'image_url', 'image_source_url', 'image_license',
-                        'image_credit', 'image_fetched_at'
-                    ])
-                    fetched += 1
-                    logger.info(f"Fetched image for wrestler: {wrestler.name}")
+                    if cache_service.cache_and_update_entity(wrestler, result, archive_old=False):
+                        fetched += 1
+                        logger.info(f"Fetched and cached image for wrestler: {wrestler.name}")
 
             except Exception as e:
                 logger.warning(f"Failed to fetch image for {wrestler.name}: {e}")
                 continue
 
-        logger.info(f"Wrestler images: fetched {fetched}/{len(wrestlers)}")
-        return {"fetched": fetched, "attempted": len(wrestlers)}
+        # 2. Refresh old images (older than 30 days) if enabled
+        if refresh_old and fetched < batch_size:
+            remaining = batch_size - fetched
+            cutoff = timezone.now() - timedelta(days=30)
+
+            wrestlers_old_image = Wrestler.objects.filter(
+                image_url__isnull=False,
+                image_fetched_at__lt=cutoff
+            ).annotate(
+                match_count=Count('matches')
+            ).order_by('image_fetched_at')[:remaining]
+
+            for wrestler in wrestlers_old_image:
+                try:
+                    result = client.find_wrestler_image(
+                        name=wrestler.name,
+                        real_name=wrestler.real_name
+                    )
+
+                    if result and result.get('url'):
+                        new_url = result.get('url') or result.get('thumb_url')
+                        # Only update if it's a different image
+                        if new_url != wrestler.image_original_url:
+                            if cache_service.cache_and_update_entity(wrestler, result, archive_old=True):
+                                refreshed += 1
+                                logger.info(f"Refreshed image for wrestler: {wrestler.name}")
+                        else:
+                            # Same image, update timestamp
+                            wrestler.image_fetched_at = timezone.now()
+                            wrestler.save(update_fields=['image_fetched_at'])
+
+                except Exception as e:
+                    logger.warning(f"Failed to refresh image for {wrestler.name}: {e}")
+                    continue
+
+        logger.info(f"Wrestler images: fetched {fetched}, refreshed {refreshed}")
+        return {"fetched": fetched, "refreshed": refreshed, "attempted": len(wrestlers_no_image)}
 
     except Exception as e:
         logger.error(f"Wrestler image fetch failed: {e}")
@@ -859,18 +894,24 @@ def fetch_wrestler_images(self, batch_size: int = 20):
     soft_time_limit=IMAGE_FETCH_SOFT_LIMIT,
     time_limit=IMAGE_FETCH_HARD_LIMIT,
 )
-def fetch_promotion_images(self, batch_size: int = 10):
+def fetch_promotion_images(self, batch_size: int = 10, refresh_old: bool = True):
     """
-    Fetch CC-licensed images/logos for promotions without images.
+    Fetch CC-licensed images/logos for promotions and cache to R2.
 
     Runs every 12 hours via Celery Beat.
     """
     try:
         from .models import Promotion
         from .scrapers import WikimediaCommonsClient
+        from .services import get_image_cache_service
         from django.utils import timezone
+        from datetime import timedelta
 
         client = WikimediaCommonsClient()
+        cache_service = get_image_cache_service()
+
+        fetched = 0
+        refreshed = 0
 
         # Get promotions without images, ordered by event count
         promotions = Promotion.objects.filter(
@@ -879,7 +920,6 @@ def fetch_promotion_images(self, batch_size: int = 10):
             event_count=Count('events')
         ).order_by('-event_count')[:batch_size]
 
-        fetched = 0
         for promotion in promotions:
             try:
                 result = client.find_promotion_image(
@@ -888,24 +928,43 @@ def fetch_promotion_images(self, batch_size: int = 10):
                 )
 
                 if result and result.get('url'):
-                    promotion.image_url = result.get('thumb_url') or result.get('url')
-                    promotion.image_source_url = result.get('description_url')
-                    promotion.image_license = result.get('license', '')
-                    promotion.image_credit = result.get('artist', '')
-                    promotion.image_fetched_at = timezone.now()
-                    promotion.save(update_fields=[
-                        'image_url', 'image_source_url', 'image_license',
-                        'image_credit', 'image_fetched_at'
-                    ])
-                    fetched += 1
-                    logger.info(f"Fetched image for promotion: {promotion.name}")
+                    if cache_service.cache_and_update_entity(promotion, result, archive_old=False):
+                        fetched += 1
+                        logger.info(f"Fetched and cached image for promotion: {promotion.name}")
 
             except Exception as e:
                 logger.warning(f"Failed to fetch image for {promotion.name}: {e}")
                 continue
 
-        logger.info(f"Promotion images: fetched {fetched}/{len(promotions)}")
-        return {"fetched": fetched, "attempted": len(promotions)}
+        # Refresh old images
+        if refresh_old and fetched < batch_size:
+            remaining = batch_size - fetched
+            cutoff = timezone.now() - timedelta(days=30)
+
+            old_promotions = Promotion.objects.filter(
+                image_url__isnull=False,
+                image_fetched_at__lt=cutoff
+            ).order_by('image_fetched_at')[:remaining]
+
+            for promotion in old_promotions:
+                try:
+                    result = client.find_promotion_image(
+                        name=promotion.name,
+                        abbreviation=promotion.abbreviation
+                    )
+                    if result and result.get('url'):
+                        new_url = result.get('url') or result.get('thumb_url')
+                        if new_url != promotion.image_original_url:
+                            if cache_service.cache_and_update_entity(promotion, result, archive_old=True):
+                                refreshed += 1
+                        else:
+                            promotion.image_fetched_at = timezone.now()
+                            promotion.save(update_fields=['image_fetched_at'])
+                except Exception as e:
+                    logger.warning(f"Failed to refresh image for {promotion.name}: {e}")
+
+        logger.info(f"Promotion images: fetched {fetched}, refreshed {refreshed}")
+        return {"fetched": fetched, "refreshed": refreshed, "attempted": len(promotions)}
 
     except Exception as e:
         logger.error(f"Promotion image fetch failed: {e}")
@@ -919,53 +978,70 @@ def fetch_promotion_images(self, batch_size: int = 10):
     soft_time_limit=IMAGE_FETCH_SOFT_LIMIT,
     time_limit=IMAGE_FETCH_HARD_LIMIT,
 )
-def fetch_venue_images(self, batch_size: int = 10):
+def fetch_venue_images(self, batch_size: int = 10, refresh_old: bool = True):
     """
-    Fetch CC-licensed images for venues without images.
+    Fetch CC-licensed images for venues and cache to R2.
 
     Runs every 12 hours via Celery Beat.
     """
     try:
         from .models import Venue
         from .scrapers import WikimediaCommonsClient
+        from .services import get_image_cache_service
         from django.utils import timezone
+        from datetime import timedelta
 
         client = WikimediaCommonsClient()
+        cache_service = get_image_cache_service()
 
-        # Get venues without images, ordered by event count
+        fetched = 0
+        refreshed = 0
+
+        # Get venues without images
         venues = Venue.objects.filter(
             image_url__isnull=True
         ).annotate(
             event_count=Count('events')
         ).order_by('-event_count')[:batch_size]
 
-        fetched = 0
         for venue in venues:
             try:
                 result = client.find_venue_image(
                     name=venue.name,
                     location=venue.location
                 )
-
                 if result and result.get('url'):
-                    venue.image_url = result.get('thumb_url') or result.get('url')
-                    venue.image_source_url = result.get('description_url')
-                    venue.image_license = result.get('license', '')
-                    venue.image_credit = result.get('artist', '')
-                    venue.image_fetched_at = timezone.now()
-                    venue.save(update_fields=[
-                        'image_url', 'image_source_url', 'image_license',
-                        'image_credit', 'image_fetched_at'
-                    ])
-                    fetched += 1
-                    logger.info(f"Fetched image for venue: {venue.name}")
-
+                    if cache_service.cache_and_update_entity(venue, result, archive_old=False):
+                        fetched += 1
+                        logger.info(f"Fetched and cached image for venue: {venue.name}")
             except Exception as e:
                 logger.warning(f"Failed to fetch image for {venue.name}: {e}")
-                continue
 
-        logger.info(f"Venue images: fetched {fetched}/{len(venues)}")
-        return {"fetched": fetched, "attempted": len(venues)}
+        # Refresh old images
+        if refresh_old and fetched < batch_size:
+            remaining = batch_size - fetched
+            cutoff = timezone.now() - timedelta(days=30)
+            old_venues = Venue.objects.filter(
+                image_url__isnull=False,
+                image_fetched_at__lt=cutoff
+            ).order_by('image_fetched_at')[:remaining]
+
+            for venue in old_venues:
+                try:
+                    result = client.find_venue_image(name=venue.name, location=venue.location)
+                    if result and result.get('url'):
+                        new_url = result.get('url') or result.get('thumb_url')
+                        if new_url != venue.image_original_url:
+                            if cache_service.cache_and_update_entity(venue, result, archive_old=True):
+                                refreshed += 1
+                        else:
+                            venue.image_fetched_at = timezone.now()
+                            venue.save(update_fields=['image_fetched_at'])
+                except Exception as e:
+                    logger.warning(f"Failed to refresh image for {venue.name}: {e}")
+
+        logger.info(f"Venue images: fetched {fetched}, refreshed {refreshed}")
+        return {"fetched": fetched, "refreshed": refreshed, "attempted": len(venues)}
 
     except Exception as e:
         logger.error(f"Venue image fetch failed: {e}")
@@ -979,53 +1055,73 @@ def fetch_venue_images(self, batch_size: int = 10):
     soft_time_limit=IMAGE_FETCH_SOFT_LIMIT,
     time_limit=IMAGE_FETCH_HARD_LIMIT,
 )
-def fetch_title_images(self, batch_size: int = 10):
+def fetch_title_images(self, batch_size: int = 10, refresh_old: bool = True):
     """
-    Fetch CC-licensed images for championship titles without images.
+    Fetch CC-licensed images for championship titles and cache to R2.
 
     Runs every 12 hours via Celery Beat.
     """
     try:
         from .models import Title
         from .scrapers import WikimediaCommonsClient
+        from .services import get_image_cache_service
         from django.utils import timezone
+        from datetime import timedelta
 
         client = WikimediaCommonsClient()
+        cache_service = get_image_cache_service()
 
-        # Get titles without images, ordered by title match count
+        fetched = 0
+        refreshed = 0
+
+        # Get titles without images
         titles = Title.objects.filter(
             image_url__isnull=True
         ).annotate(
             match_count=Count('title_matches')
         ).order_by('-match_count')[:batch_size]
 
-        fetched = 0
         for title in titles:
             try:
                 result = client.find_title_image(
                     name=title.name,
-                    promotion=title.promotion.abbreviation or title.promotion.name
+                    promotion=title.promotion.abbreviation or title.promotion.name if title.promotion else None
                 )
-
                 if result and result.get('url'):
-                    title.image_url = result.get('thumb_url') or result.get('url')
-                    title.image_source_url = result.get('description_url')
-                    title.image_license = result.get('license', '')
-                    title.image_credit = result.get('artist', '')
-                    title.image_fetched_at = timezone.now()
-                    title.save(update_fields=[
-                        'image_url', 'image_source_url', 'image_license',
-                        'image_credit', 'image_fetched_at'
-                    ])
-                    fetched += 1
-                    logger.info(f"Fetched image for title: {title.name}")
-
+                    if cache_service.cache_and_update_entity(title, result, archive_old=False):
+                        fetched += 1
+                        logger.info(f"Fetched and cached image for title: {title.name}")
             except Exception as e:
                 logger.warning(f"Failed to fetch image for {title.name}: {e}")
-                continue
 
-        logger.info(f"Title images: fetched {fetched}/{len(titles)}")
-        return {"fetched": fetched, "attempted": len(titles)}
+        # Refresh old images
+        if refresh_old and fetched < batch_size:
+            remaining = batch_size - fetched
+            cutoff = timezone.now() - timedelta(days=30)
+            old_titles = Title.objects.filter(
+                image_url__isnull=False,
+                image_fetched_at__lt=cutoff
+            ).order_by('image_fetched_at')[:remaining]
+
+            for title in old_titles:
+                try:
+                    result = client.find_title_image(
+                        name=title.name,
+                        promotion=title.promotion.abbreviation or title.promotion.name if title.promotion else None
+                    )
+                    if result and result.get('url'):
+                        new_url = result.get('url') or result.get('thumb_url')
+                        if new_url != title.image_original_url:
+                            if cache_service.cache_and_update_entity(title, result, archive_old=True):
+                                refreshed += 1
+                        else:
+                            title.image_fetched_at = timezone.now()
+                            title.save(update_fields=['image_fetched_at'])
+                except Exception as e:
+                    logger.warning(f"Failed to refresh image for {title.name}: {e}")
+
+        logger.info(f"Title images: fetched {fetched}, refreshed {refreshed}")
+        return {"fetched": fetched, "refreshed": refreshed, "attempted": len(titles)}
 
     except Exception as e:
         logger.error(f"Title image fetch failed: {e}")
@@ -1039,52 +1135,73 @@ def fetch_title_images(self, batch_size: int = 10):
     soft_time_limit=IMAGE_FETCH_SOFT_LIMIT,
     time_limit=IMAGE_FETCH_HARD_LIMIT,
 )
-def fetch_event_images(self, batch_size: int = 15):
+def fetch_event_images(self, batch_size: int = 15, refresh_old: bool = True):
     """
-    Fetch CC-licensed images for events without images.
+    Fetch CC-licensed images for events and cache to R2.
 
     Runs every 12 hours via Celery Beat.
     """
     try:
         from .models import Event
         from .scrapers import WikimediaCommonsClient
+        from .services import get_image_cache_service
         from django.utils import timezone
+        from datetime import timedelta
 
         client = WikimediaCommonsClient()
+        cache_service = get_image_cache_service()
 
-        # Get events without images, ordered by most recent
+        fetched = 0
+        refreshed = 0
+
+        # Get events without images
         events = Event.objects.filter(
             image_url__isnull=True
         ).order_by('-date')[:batch_size]
 
-        fetched = 0
         for event in events:
             try:
                 result = client.find_event_image(
                     name=event.name,
-                    promotion=event.promotion.abbreviation or event.promotion.name,
+                    promotion=event.promotion.abbreviation or event.promotion.name if event.promotion else None,
                     year=event.date.year if event.date else None
                 )
-
                 if result and result.get('url'):
-                    event.image_url = result.get('thumb_url') or result.get('url')
-                    event.image_source_url = result.get('description_url')
-                    event.image_license = result.get('license', '')
-                    event.image_credit = result.get('artist', '')
-                    event.image_fetched_at = timezone.now()
-                    event.save(update_fields=[
-                        'image_url', 'image_source_url', 'image_license',
-                        'image_credit', 'image_fetched_at'
-                    ])
-                    fetched += 1
-                    logger.info(f"Fetched image for event: {event.name}")
-
+                    if cache_service.cache_and_update_entity(event, result, archive_old=False):
+                        fetched += 1
+                        logger.info(f"Fetched and cached image for event: {event.name}")
             except Exception as e:
                 logger.warning(f"Failed to fetch image for {event.name}: {e}")
-                continue
 
-        logger.info(f"Event images: fetched {fetched}/{len(events)}")
-        return {"fetched": fetched, "attempted": len(events)}
+        # Refresh old images
+        if refresh_old and fetched < batch_size:
+            remaining = batch_size - fetched
+            cutoff = timezone.now() - timedelta(days=30)
+            old_events = Event.objects.filter(
+                image_url__isnull=False,
+                image_fetched_at__lt=cutoff
+            ).order_by('image_fetched_at')[:remaining]
+
+            for event in old_events:
+                try:
+                    result = client.find_event_image(
+                        name=event.name,
+                        promotion=event.promotion.abbreviation or event.promotion.name if event.promotion else None,
+                        year=event.date.year if event.date else None
+                    )
+                    if result and result.get('url'):
+                        new_url = result.get('url') or result.get('thumb_url')
+                        if new_url != event.image_original_url:
+                            if cache_service.cache_and_update_entity(event, result, archive_old=True):
+                                refreshed += 1
+                        else:
+                            event.image_fetched_at = timezone.now()
+                            event.save(update_fields=['image_fetched_at'])
+                except Exception as e:
+                    logger.warning(f"Failed to refresh image for {event.name}: {e}")
+
+        logger.info(f"Event images: fetched {fetched}, refreshed {refreshed}")
+        return {"fetched": fetched, "refreshed": refreshed, "attempted": len(events)}
 
     except Exception as e:
         logger.error(f"Event image fetch failed: {e}")

@@ -50,9 +50,9 @@
                     <p class="lead">
                         WrestleBot 2.0 is our self-hosted AI assistant that runs as a standalone service,
                         completely separated from the Django web application. It automatically discovers and
-                        adds wrestling data from multiple sources including Wikipedia, RSS feeds, and news
-                        archives. Running 24/7 in its own Docker container, WrestleBot communicates with the
-                        database via a secure REST API, ensuring the website never freezes or slows down.
+                        aggregates wrestling data from many authoritative sources to build the most comprehensive
+                        wrestling encyclopedia ever. Running 24/7 in its own Docker container, WrestleBot communicates
+                        with the database via a secure REST API, ensuring the website never freezes or slows down.
                     </p>
 
                     <!-- System Health Indicators -->
@@ -130,20 +130,22 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <h5 class="text-primary">Data Sources</h5>
+                            <h5 class="text-primary">Multi-Source Aggregation</h5>
                             <ul>
-                                <li><strong>Wikipedia</strong> - Wrestler biographies, promotions, and event data</li>
-                                <li><strong>Wrestling News Sites</strong> - Latest news and updates via RSS feeds</li>
-                                <li><strong>Historical Archives</strong> - Classic wrestling coverage and records</li>
+                                <li><strong>Many authoritative sources</strong> - Wrestling databases, official sites, biographical data</li>
+                                <li><strong>Intelligent merging</strong> - Combines data from multiple sources for the most complete profiles</li>
+                                <li><strong>Source attribution</strong> - Tracks where data came from for transparency</li>
+                                <li><strong>Continuous enrichment</strong> - Pages are regularly updated with new information</li>
                                 <li>All sources accessed respectfully with proper rate limiting</li>
                             </ul>
 
-                            <h5 class="text-primary mt-4">AI Assistant</h5>
+                            <h5 class="text-primary mt-4">AI-Powered Enrichment</h5>
                             <ul>
                                 <li>Self-hosted AI runs locally - no external services or data sharing</li>
-                                <li>Verifies data accuracy and detects duplicates</li>
-                                <li>Enriches information (infers details like nationality)</li>
-                                <li>Always attributes sources properly</li>
+                                <li>Verifies data accuracy across sources and detects duplicates</li>
+                                <li>Intelligently merges conflicting information using source priorities</li>
+                                <li>Discovers entities mentioned in existing pages (wrestlers, promotions, stables, etc.)</li>
+                                <li>Enriches information to create the most complete profiles possible</li>
                             </ul>
                         </div>
                         <div class="col-md-6">
@@ -159,8 +161,8 @@
                             </div>
                             <p class="text-muted small">
                                 Under US copyright law (Feist v. Rural), factual data like names and dates
-                                cannot be copyrighted. However, we always attribute Wikipedia as the source
-                                and link back to original articles.
+                                cannot be copyrighted. We always attribute our sources and link back to
+                                original articles for transparency.
                             </p>
 
                             <h5 class="text-primary mt-4">Trademark Respect</h5>
@@ -321,7 +323,7 @@
                                         </td>
                                         <td>
                                             {% if log.source_url %}
-                                                <a href="{{ log.source_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary" title="View on Wikipedia">
+                                                <a href="{{ log.source_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary" title="View Source">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
                                                 </a>
                                             {% else %}
@@ -426,7 +428,7 @@ function getConfidenceHtml(confidence) {
 
 function getSourceHtml(sourceUrl) {
     if (!sourceUrl) return '<span class="text-muted">-</span>';
-    return `<a href="${sourceUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary" title="View on Wikipedia">
+    return `<a href="${sourceUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary" title="View Source">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
     </a>`;
 }

@@ -6,7 +6,7 @@
     <div class="welcome-content">
         <div class="container">
             <h1>Welcome to OWDB.</h1>
-            <h2>Millions of wrestlers, events, matches, and promotions to discover. It's a slobberknocker!</h2>
+            <h2>The most comprehensive wrestling encyclopedia. Millions of wrestlers, events, matches, and promotions aggregated from many authoritative sources. It's a slobberknocker!</h2>
             <div class="search-wrapper">
                 <form action="{% url 'wrestlers' %}" method="get" class="hero-search-form">
                     <input type="text" name="q" class="hero-search-input" placeholder="Search for a wrestler, event, promotion...">
@@ -258,6 +258,10 @@
                         <span class="stat-name">Venues</span>
                     </div>
                     <div class="stat-item">
+                        <span class="stat-value">{{ stats.stables|default:0 }}</span>
+                        <span class="stat-name">Stables</span>
+                    </div>
+                    <div class="stat-item">
                         <span class="stat-value">{{ stats.video_games|default:0 }}</span>
                         <span class="stat-name">Video Games</span>
                     </div>
@@ -280,12 +284,13 @@
                     <h3>API Access</h3>
                 </div>
                 <div class="api-promo">
-                    <p>Access our comprehensive wrestling data through our REST API. Build apps, create integrations, or analyze wrestling history.</p>
+                    <p>Access our comprehensive wrestling data through our REST API. Multi-source aggregated data perfect for apps, integrations, and wrestling history analysis.</p>
                     <ul class="api-features">
                         <li>Free tier: 100 requests/hour</li>
-                        <li>Full wrestler, event, and match data</li>
-                        <li>Real-time updates</li>
-                        <li>JSON responses</li>
+                        <li>Complete wrestler, event, match, and stable data</li>
+                        <li>Aggregated from many authoritative sources</li>
+                        <li>Real-time updates via WrestleBot AI</li>
+                        <li>Clean JSON responses</li>
                     </ul>
                     {% if user.is_authenticated %}
                     <a href="{% url 'account' %}" class="btn btn-primary">Manage API Keys</a>

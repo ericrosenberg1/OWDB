@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from api_client.django_api import DjangoAPIClient
 from utils.circuit_breaker import circuit_breaker_manager
 from scrapers import WikipediaWrestlerScraper
+from scrapers.bulk_wrestler_discovery import BulkWrestlerDiscovery
 
 # Configure logging
 logging.basicConfig(
@@ -40,8 +41,10 @@ class WrestleBotService:
         self.running = False
         self.api_client = None
         self.scraper = None
+        self.bulk_scraper = None
         self.start_time = None
         self.wrestlers_added = 0
+        self.bulk_mode_complete = False
 
         # Set up signal handlers for graceful shutdown
         signal.signal(signal.SIGTERM, self._signal_handler)
@@ -76,12 +79,13 @@ class WrestleBotService:
             logger.error(f"Failed to initialize API client: {e}")
             sys.exit(1)
 
-        # Initialize scraper
+        # Initialize scrapers
         try:
             self.scraper = WikipediaWrestlerScraper()
-            logger.info("Wikipedia scraper initialized")
+            self.bulk_scraper = BulkWrestlerDiscovery()
+            logger.info("Wikipedia scrapers initialized")
         except Exception as e:
-            logger.error(f"Failed to initialize scraper: {e}")
+            logger.error(f"Failed to initialize scrapers: {e}")
             sys.exit(1)
 
         # Test API connection
@@ -131,12 +135,49 @@ class WrestleBotService:
                 else:
                     logger.info("API health check: OK")
 
-                # Run scraping cycle every 10 cycles (every ~1 minute with 5s sleep)
-                if cycle % 10 == 1:
+                # Run bulk discovery on first cycle
+                if cycle == 1 and not self.bulk_mode_complete:
                     try:
-                        logger.info("Starting scraping cycle...")
+                        logger.info("=== BULK MODE: Discovering ALL wrestlers from Wikipedia ===")
 
-                        # Discover wrestlers from Wikipedia
+                        # Get all wrestler names from categories
+                        all_names = self.bulk_scraper.discover_all_wrestlers()
+                        logger.info(f"Discovered {len(all_names)} unique wrestler names")
+
+                        # Process in batches
+                        batch_size = 100
+                        for i in range(0, min(len(all_names), 1000), batch_size):  # Limit to 1000 for now
+                            batch_names = all_names[i:i + batch_size]
+                            logger.info(f"Processing batch {i//batch_size + 1}: {len(batch_names)} wrestlers")
+
+                            # Get details for batch
+                            wrestlers = self.bulk_scraper.get_wrestler_details_batch(batch_names)
+
+                            # Add to database
+                            for wrestler_data in wrestlers:
+                                try:
+                                    result = self.api_client.create_wrestler(wrestler_data)
+                                    if result:
+                                        self.wrestlers_added += 1
+                                        if self.wrestlers_added % 10 == 0:
+                                            logger.info(f"Progress: {self.wrestlers_added} wrestlers added")
+                                except Exception as e:
+                                    # Don't log every error, just continue
+                                    pass
+
+                        self.bulk_mode_complete = True
+                        logger.info(f"=== BULK MODE COMPLETE: Added {self.wrestlers_added} wrestlers ===")
+
+                    except Exception as e:
+                        logger.error(f"Bulk discovery failed: {e}", exc_info=True)
+                        self.bulk_mode_complete = True  # Don't retry
+
+                # Run incremental scraping after bulk mode
+                elif self.bulk_mode_complete and cycle % 10 == 1:
+                    try:
+                        logger.info("Starting incremental scraping cycle...")
+
+                        # Discover new wrestlers from Wikipedia
                         wrestlers = self.scraper.discover_wrestlers(max_wrestlers=5)
 
                         if wrestlers:
@@ -148,10 +189,8 @@ class WrestleBotService:
                                     if result:
                                         self.wrestlers_added += 1
                                         logger.info(f"✓ Added wrestler: {wrestler_data['name']}")
-                                    else:
-                                        logger.warning(f"Failed to add wrestler: {wrestler_data['name']}")
                                 except Exception as e:
-                                    logger.error(f"Error adding wrestler {wrestler_data['name']}: {e}")
+                                    pass
                         else:
                             logger.info("No new wrestlers discovered this cycle")
 

@@ -1366,18 +1366,22 @@ class Hot100Calculator:
 
     def _calc_title_score(self, wrestler, start_date, end_date) -> float:
         """Calculate score based on title activity."""
-        from .models import TitleMatch
-        title_wins = TitleMatch.objects.filter(
+        # Title matches where this wrestler won in the period
+        title_wins = Match.objects.filter(
+            wrestlers=wrestler,
             winner=wrestler,
-            match__event__date__gte=start_date,
-            match__event__date__lt=end_date
+            title__isnull=False,
+            event__date__gte=start_date,
+            event__date__lt=end_date
         ).count()
-        title_defenses = TitleMatch.objects.filter(
-            match__wrestlers=wrestler,
-            match__event__date__gte=start_date,
-            match__event__date__lt=end_date,
-            winner=wrestler
-        ).exclude(title_change=True).count()
+        # Title matches where wrestler participated (defenses, challenges)
+        title_participations = Match.objects.filter(
+            wrestlers=wrestler,
+            title__isnull=False,
+            event__date__gte=start_date,
+            event__date__lt=end_date
+        ).count()
+        title_defenses = title_participations - title_wins
         return (title_wins * 12.5) + (title_defenses * 5.8)
 
     def _calc_opponent_score(self, wrestler) -> float:

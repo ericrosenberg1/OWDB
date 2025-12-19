@@ -1257,12 +1257,22 @@ class Hot100Calculator:
         prev_month = self.month - 1 if self.month > 1 else 12
         self._previous_ranking = Hot100Ranking.get_for_month(prev_year, prev_month)
 
+        # Look back up to 12 months for activity (handles sparse data periods)
+        lookback_date = date(self.year - 1, self.month, 1) if self.month <= 12 else date(self.year, 1, 1)
+
         wrestlers = Wrestler.objects.annotate(
-            # Match count in period
+            # Match count in period (current month)
             period_matches=Count(
                 'matches',
                 filter=Q(matches__event__date__gte=start_date, matches__event__date__lt=end_date)
             ),
+            # Trailing 12 month matches
+            trailing_matches=Count(
+                'matches',
+                filter=Q(matches__event__date__gte=lookback_date, matches__event__date__lt=end_date)
+            ),
+            # All-time matches (fallback)
+            total_matches=Count('matches'),
             # Wins in period
             period_wins=Count(
                 'matches_won',
@@ -1278,8 +1288,9 @@ class Hot100Calculator:
                 )
             ),
         ).filter(
-            period_matches__gt=0  # Only wrestlers with activity
-        ).order_by('-period_matches')
+            # Include wrestlers with recent activity OR any matches if sparse data
+            Q(period_matches__gt=0) | Q(trailing_matches__gt=0) | Q(total_matches__gt=0)
+        ).order_by('-period_matches', '-trailing_matches', '-total_matches')
 
         scores = []
         for wrestler in wrestlers:
@@ -1334,10 +1345,18 @@ class Hot100Calculator:
         """Calculate score based on match count."""
         # Uses logarithmic scaling to prevent runaway scores
         import math
-        matches = getattr(wrestler, 'period_matches', 0)
-        if matches == 0:
-            return 0
-        return min(math.log(matches + 1) * 8.7, 35)
+        period_matches = getattr(wrestler, 'period_matches', 0)
+        trailing_matches = getattr(wrestler, 'trailing_matches', 0)
+        total_matches = getattr(wrestler, 'total_matches', 0)
+
+        # Priority: current month > trailing 12 months > all-time (with decay)
+        if period_matches > 0:
+            return min(math.log(period_matches + 1) * 8.7, 35)
+        elif trailing_matches > 0:
+            return min(math.log(trailing_matches + 1) * 5.2, 25)  # Reduced weight for older
+        elif total_matches > 0:
+            return min(math.log(total_matches + 1) * 2.5, 15)  # Further reduced for historical
+        return 0
 
     def _calc_importance_score(self, wrestler) -> float:
         """Calculate score based on match importance."""

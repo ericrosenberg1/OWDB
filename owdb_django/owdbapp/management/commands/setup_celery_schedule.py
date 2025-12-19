@@ -73,6 +73,10 @@ class Command(BaseCommand):
                 defaults={
                     'task': task_path,
                     'interval': interval,
+                    'crontab': None,
+                    'solar': None,
+                    'clocked': None,
+                    'one_off': False,
                     'args': json.dumps(args),
                     'kwargs': json.dumps(kwargs),
                     'enabled': True,

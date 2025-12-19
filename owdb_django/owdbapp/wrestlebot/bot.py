@@ -19,6 +19,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
@@ -40,9 +41,10 @@ class WrestleBot:
 
     def __init__(self):
         self.wikipedia = WikipediaAPIFetcher()
-        self.ai = OllamaProcessor()
+        self.ai = None
         self.batch_id = None
         self._config = None
+        self.refresh_config()
 
     @property
     def config(self):
@@ -55,7 +57,24 @@ class WrestleBot:
     def refresh_config(self):
         """Refresh configuration from database."""
         self._config = None
-        return self.config
+        config = self.config
+        self._refresh_ai(config)
+        return config
+
+    def _refresh_ai(self, config=None):
+        """Ensure AI processor matches current config."""
+        if config is None:
+            config = self.config
+
+        model = config.ai_model_name or getattr(
+            settings, 'WRESTLEBOT_AI_MODEL', OllamaProcessor.DEFAULT_MODEL
+        )
+        temperature = config.ai_temperature if config.ai_temperature is not None else 0.3
+
+        if self.ai and self.ai.model == model and self.ai.temperature == temperature:
+            return
+
+        self.ai = OllamaProcessor(model=model, temperature=temperature)
 
     def start_batch(self) -> str:
         """Start a new batch of operations."""

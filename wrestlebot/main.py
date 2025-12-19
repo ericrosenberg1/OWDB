@@ -163,19 +163,23 @@ class WrestleBotService:
                 logger.info(f"Uptime: {uptime:.0f} seconds")
 
                 # Check API connection
-                if not self.api_client.health_check():
+                api_healthy = self.api_client.health_check()
+                if not api_healthy:
                     logger.warning("API health check failed, will retry next cycle")
                 else:
                     logger.info("API health check: OK")
 
-                # Run bulk discovery for wrestlers
-                if cycle == 1 and not self.bulk_modes_complete['wrestlers']:
+                # Run bulk discovery stages in order until complete
+                if not api_healthy:
+                    logger.info("Skipping bulk/enrichment work while API is unhealthy")
+                elif not self.bulk_modes_complete['wrestlers']:
                     try:
                         logger.info("=== BULK MODE: Discovering ALL wrestlers from Wikipedia ===")
                         all_names = self.bulk_scraper.discover_all_wrestlers()
                         logger.info(f"Discovered {len(all_names)} unique wrestler names")
 
                         batch_size = 100
+                        errors = 0
                         for i in range(0, len(all_names), batch_size):
                             batch_names = all_names[i:i + batch_size]
                             wrestlers = self.bulk_scraper.get_wrestler_details_batch(batch_names)
@@ -188,23 +192,29 @@ class WrestleBotService:
                                         if self.wrestlers_added % 50 == 0:
                                             logger.info(f"Progress: {self.wrestlers_added} wrestlers added")
                                 except Exception as e:
-                                    pass
+                                    errors += 1
+                                    if errors <= 5:
+                                        logger.warning(
+                                            f"Failed to create wrestler {wrestler_data.get('name')}: {e}"
+                                        )
+
+                        if errors:
+                            logger.warning(f"Wrestler bulk had {errors} errors")
 
                         self.bulk_modes_complete['wrestlers'] = True
                         logger.info(f"=== WRESTLERS BULK COMPLETE: Added {self.wrestlers_added} ===")
 
                     except Exception as e:
                         logger.error(f"Wrestler bulk discovery failed: {e}", exc_info=True)
-                        self.bulk_modes_complete['wrestlers'] = True
 
-                # Run bulk discovery for promotions
-                if cycle == 2 and not self.bulk_modes_complete['promotions']:
+                elif not self.bulk_modes_complete['promotions']:
                     try:
                         logger.info("=== BULK MODE: Discovering ALL promotions from Wikipedia ===")
                         all_names = self.bulk_promotion_scraper.discover_all_promotions()
                         logger.info(f"Discovered {len(all_names)} unique promotions")
 
                         batch_size = 100
+                        errors = 0
                         for i in range(0, len(all_names), batch_size):
                             batch_names = all_names[i:i + batch_size]
                             promotions = self.bulk_promotion_scraper.get_promotion_details_batch(batch_names)
@@ -217,23 +227,29 @@ class WrestleBotService:
                                         if self.promotions_added % 20 == 0:
                                             logger.info(f"Progress: {self.promotions_added} promotions added")
                                 except Exception as e:
-                                    pass
+                                    errors += 1
+                                    if errors <= 5:
+                                        logger.warning(
+                                            f"Failed to create promotion {promotion_data.get('name')}: {e}"
+                                        )
+
+                        if errors:
+                            logger.warning(f"Promotion bulk had {errors} errors")
 
                         self.bulk_modes_complete['promotions'] = True
                         logger.info(f"=== PROMOTIONS BULK COMPLETE: Added {self.promotions_added} ===")
 
                     except Exception as e:
                         logger.error(f"Promotion bulk discovery failed: {e}", exc_info=True)
-                        self.bulk_modes_complete['promotions'] = True
 
-                # Run bulk discovery for events
-                if cycle == 3 and not self.bulk_modes_complete['events']:
+                elif not self.bulk_modes_complete['events']:
                     try:
                         logger.info("=== BULK MODE: Discovering ALL events from Wikipedia ===")
                         all_names = self.bulk_event_scraper.discover_all_events()
                         logger.info(f"Discovered {len(all_names)} unique events")
 
                         batch_size = 100
+                        errors = 0
                         for i in range(0, len(all_names), batch_size):
                             batch_names = all_names[i:i + batch_size]
                             events = self.bulk_event_scraper.get_event_details_batch(batch_names)
@@ -246,77 +262,101 @@ class WrestleBotService:
                                         if self.events_added % 20 == 0:
                                             logger.info(f"Progress: {self.events_added} events added")
                                 except Exception as e:
-                                    pass
+                                    errors += 1
+                                    if errors <= 5:
+                                        logger.warning(
+                                            f"Failed to create event {event_data.get('name')}: {e}"
+                                        )
+
+                        if errors:
+                            logger.warning(f"Event bulk had {errors} errors")
 
                         self.bulk_modes_complete['events'] = True
                         logger.info(f"=== EVENTS BULK COMPLETE: Added {self.events_added} ===")
 
                     except Exception as e:
                         logger.error(f"Event bulk discovery failed: {e}", exc_info=True)
-                        self.bulk_modes_complete['events'] = True
 
-                # Run bulk discovery for video games
-                if cycle == 4 and not self.bulk_modes_complete['videogames']:
+                elif not self.bulk_modes_complete['videogames']:
                     try:
                         logger.info("=== BULK MODE: Discovering video games ===")
                         games = self.bulk_videogame_scraper.discover_all()
 
+                        errors = 0
                         for game_data in games:
                             try:
                                 result = self.api_client.create_videogame(game_data)
                                 if result:
                                     self.videogames_added += 1
                             except Exception as e:
-                                pass
+                                errors += 1
+                                if errors <= 5:
+                                    logger.warning(
+                                        f"Failed to create video game {game_data.get('name')}: {e}"
+                                    )
+
+                        if errors:
+                            logger.warning(f"Video game bulk had {errors} errors")
 
                         self.bulk_modes_complete['videogames'] = True
                         logger.info(f"=== VIDEO GAMES BULK COMPLETE: Added {self.videogames_added} ===")
 
                     except Exception as e:
                         logger.error(f"Video game bulk discovery failed: {e}", exc_info=True)
-                        self.bulk_modes_complete['videogames'] = True
 
-                # Run bulk discovery for books
-                if cycle == 5 and not self.bulk_modes_complete['books']:
+                elif not self.bulk_modes_complete['books']:
                     try:
                         logger.info("=== BULK MODE: Discovering books ===")
                         books = self.bulk_book_scraper.discover_all()
 
+                        errors = 0
                         for book_data in books:
                             try:
                                 result = self.api_client.create_book(book_data)
                                 if result:
                                     self.books_added += 1
                             except Exception as e:
-                                pass
+                                errors += 1
+                                if errors <= 5:
+                                    logger.warning(
+                                        f"Failed to create book {book_data.get('title')}: {e}"
+                                    )
+
+                        if errors:
+                            logger.warning(f"Book bulk had {errors} errors")
 
                         self.bulk_modes_complete['books'] = True
                         logger.info(f"=== BOOKS BULK COMPLETE: Added {self.books_added} ===")
 
                     except Exception as e:
                         logger.error(f"Book bulk discovery failed: {e}", exc_info=True)
-                        self.bulk_modes_complete['books'] = True
 
-                # Run bulk discovery for documentaries
-                if cycle == 6 and not self.bulk_modes_complete['documentaries']:
+                elif not self.bulk_modes_complete['documentaries']:
                     try:
                         logger.info("=== BULK MODE: Discovering documentaries ===")
                         docs = self.bulk_documentary_scraper.discover_all()
 
+                        errors = 0
                         for doc_data in docs:
                             try:
                                 result = self.api_client.create_special(doc_data)
                                 if result:
                                     self.documentaries_added += 1
                             except Exception as e:
-                                pass
+                                errors += 1
+                                if errors <= 5:
+                                    logger.warning(
+                                        f"Failed to create documentary {doc_data.get('title')}: {e}"
+                                    )
+
+                        if errors:
+                            logger.warning(f"Documentary bulk had {errors} errors")
 
                         self.bulk_modes_complete['documentaries'] = True
                         logger.info(f"=== DOCUMENTARIES BULK COMPLETE: Added {self.documentaries_added} ===")
 
                     except Exception as e:
                         logger.error(f"Documentary bulk discovery failed: {e}", exc_info=True)
-                        self.bulk_modes_complete['documentaries'] = True
 
                 # Run incremental page enrichment after all bulk modes complete
                 # Every cycle (15 seconds) - enrich one page

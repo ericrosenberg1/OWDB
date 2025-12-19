@@ -350,7 +350,7 @@ LISTEN_NOTES_API_KEY = os.getenv('LISTEN_NOTES_API_KEY')
 
 # Ollama settings (self-hosted AI)
 OLLAMA_URL = os.getenv('OLLAMA_URL', 'http://localhost:11434')
-WRESTLEBOT_AI_MODEL = os.getenv('WRESTLEBOT_AI_MODEL', 'llama3.2')
+WRESTLEBOT_AI_MODEL = os.getenv('WRESTLEBOT_AI_MODEL', os.getenv('OLLAMA_MODEL', 'llama3.2'))
 
 # WrestleBot is enabled by default but can be disabled via env var
 WRESTLEBOT_ENABLED = os.getenv('WRESTLEBOT_ENABLED', 'true').lower() == 'true'

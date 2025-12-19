@@ -384,28 +384,72 @@ class WrestleBotService:
                                         entity_created = True
                                         break
 
-                            # Log other discovered entities for visibility
-                            if mentioned.get('stables'):
-                                logger.info(f"Also mentioned stables: {list(mentioned['stables'])[:3]}")
-                            if mentioned.get('titles'):
-                                logger.info(f"Also mentioned titles: {list(mentioned['titles'])[:3]}")
+                            # Try stables if nothing else was created
+                            if not entity_created:
+                                for stable_name in list(mentioned.get('stables', []))[:2]:
+                                    logger.info(f"Found mentioned stable: {stable_name}")
+                                    result = self.page_enrichment.create_or_update_entity('stable', stable_name)
+                                    if result:
+                                        self.entities_enriched += 1
+                                        if result.get('_http_status') == 201:
+                                            logger.info(f"✓ Created NEW stable: {stable_name}")
+                                        else:
+                                            logger.info(f"✓ Updated existing stable: {stable_name}")
+                                        entity_created = True
+                                        break
+
+                            # Try titles if nothing else was created
+                            if not entity_created:
+                                for title_name in list(mentioned.get('titles', []))[:2]:
+                                    logger.info(f"Found mentioned title: {title_name}")
+                                    result = self.page_enrichment.create_or_update_entity('title', title_name)
+                                    if result:
+                                        self.entities_enriched += 1
+                                        if result.get('_http_status') == 201:
+                                            logger.info(f"✓ Created NEW title: {title_name}")
+                                        else:
+                                            logger.info(f"✓ Updated existing title: {title_name}")
+                                        entity_created = True
+                                        break
+
+                            # Try venues if nothing else was created
+                            if not entity_created:
+                                for venue_name in list(mentioned.get('venues', []))[:2]:
+                                    logger.info(f"Found mentioned venue: {venue_name}")
+                                    result = self.page_enrichment.create_or_update_entity('venue', venue_name)
+                                    if result:
+                                        self.entities_enriched += 1
+                                        if result.get('_http_status') == 201:
+                                            logger.info(f"✓ Created NEW venue: {venue_name}")
+                                        else:
+                                            logger.info(f"✓ Updated existing venue: {venue_name}")
+                                        entity_created = True
+                                        break
 
                         else:
-                            logger.info("No suitable page found for enrichment, trying direct discovery...")
-                            # Fallback to direct wrestler discovery
-                            wrestlers = self.scraper.discover_wrestlers(max_wrestlers=1)
-                            if wrestlers:
-                                for wrestler_data in wrestlers:
-                                    try:
-                                        result = self.api_client.create_wrestler(wrestler_data)
-                                        if result:
-                                            if result.get('_http_status') == 201:
-                                                self.wrestlers_added += 1
-                                                logger.info(f"✓ Created NEW wrestler: {wrestler_data['name']}")
-                                            else:
-                                                logger.info(f"✓ Updated existing wrestler: {wrestler_data['name']}")
-                                    except Exception as e:
-                                        pass
+                            # Try autonomous quality improvement first
+                            logger.info("Running autonomous quality improvement cycle...")
+                            improved = self.page_enrichment.find_and_enrich_incomplete_entries()
+
+                            if improved > 0:
+                                self.entities_enriched += improved
+                                logger.info(f"✓ Autonomously improved {improved} entries")
+                            else:
+                                # Fallback to direct wrestler discovery
+                                logger.info("No entries to improve, trying direct discovery...")
+                                wrestlers = self.scraper.discover_wrestlers(max_wrestlers=1)
+                                if wrestlers:
+                                    for wrestler_data in wrestlers:
+                                        try:
+                                            result = self.api_client.create_wrestler(wrestler_data)
+                                            if result:
+                                                if result.get('_http_status') == 201:
+                                                    self.wrestlers_added += 1
+                                                    logger.info(f"✓ Created NEW wrestler: {wrestler_data['name']}")
+                                                else:
+                                                    logger.info(f"✓ Updated existing wrestler: {wrestler_data['name']}")
+                                        except Exception as e:
+                                            pass
 
                     except Exception as e:
                         logger.error(f"Enrichment cycle failed: {e}", exc_info=True)

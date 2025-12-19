@@ -230,6 +230,86 @@ class DjangoAPIClient:
             logger.error(f"Failed to create special: {e}")
             return None
 
+    def create_stable(self, data: Dict) -> Optional[Dict]:
+        """Create or update a stable/faction."""
+        try:
+            return self._make_request('POST', 'stables/', data=data)
+        except Exception as e:
+            logger.error(f"Failed to create stable: {e}")
+            return None
+
+    def get_stable(self, slug: str) -> Optional[Dict]:
+        """Get stable by slug."""
+        try:
+            return self._make_request('GET', f'stables/{slug}/')
+        except Exception as e:
+            logger.error(f"Failed to get stable {slug}: {e}")
+            return None
+
+    def create_venue(self, data: Dict) -> Optional[Dict]:
+        """Create or update a venue."""
+        try:
+            return self._make_request('POST', 'venues/', data=data)
+        except Exception as e:
+            logger.error(f"Failed to create venue: {e}")
+            return None
+
+    def get_venue(self, slug: str) -> Optional[Dict]:
+        """Get venue by slug."""
+        try:
+            return self._make_request('GET', f'venues/{slug}/')
+        except Exception as e:
+            logger.error(f"Failed to get venue {slug}: {e}")
+            return None
+
+    def create_title(self, data: Dict) -> Optional[Dict]:
+        """Create or update a championship title."""
+        try:
+            return self._make_request('POST', 'titles/', data=data)
+        except Exception as e:
+            logger.error(f"Failed to create title: {e}")
+            return None
+
+    def get_title(self, slug: str) -> Optional[Dict]:
+        """Get title by slug."""
+        try:
+            return self._make_request('GET', f'titles/{slug}/')
+        except Exception as e:
+            logger.error(f"Failed to get title {slug}: {e}")
+            return None
+
+    def create_match(self, data: Dict) -> Optional[Dict]:
+        """Create or update a match."""
+        try:
+            return self._make_request('POST', 'matches/', data=data)
+        except Exception as e:
+            logger.error(f"Failed to create match: {e}")
+            return None
+
+    def update_wrestler(self, slug: str, data: Dict) -> Optional[Dict]:
+        """Update an existing wrestler's data (for enrichment)."""
+        try:
+            return self._make_request('PATCH', f'wrestlers/{slug}/', data=data)
+        except Exception as e:
+            logger.error(f"Failed to update wrestler {slug}: {e}")
+            return None
+
+    def update_promotion(self, slug: str, data: Dict) -> Optional[Dict]:
+        """Update an existing promotion's data (for enrichment)."""
+        try:
+            return self._make_request('PATCH', f'promotions/{slug}/', data=data)
+        except Exception as e:
+            logger.error(f"Failed to update promotion {slug}: {e}")
+            return None
+
+    def update_event(self, slug: str, data: Dict) -> Optional[Dict]:
+        """Update an existing event's data (for enrichment)."""
+        try:
+            return self._make_request('PATCH', f'events/{slug}/', data=data)
+        except Exception as e:
+            logger.error(f"Failed to update event {slug}: {e}")
+            return None
+
     def list_wrestlers(self, limit: int = 10, offset: int = 0) -> Optional[List[Dict]]:
         """List wrestlers with pagination."""
         try:

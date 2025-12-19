@@ -41,6 +41,62 @@ class PageEnrichmentDiscovery:
             self.multi_source = None
             self.use_multi_source = False
 
+    def find_and_enrich_incomplete_entries(self) -> int:
+        """
+        Autonomously find incomplete database entries and enrich them with better data.
+
+        This gives WrestleBot autonomy to improve data quality on its own.
+        Returns number of entries enriched.
+        """
+        enriched_count = 0
+
+        try:
+            # Get wrestlers with minimal data (missing key fields)
+            wrestlers = self.api_client.list_wrestlers(limit=20)
+
+            for wrestler in wrestlers:
+                # Check if wrestler needs enrichment
+                needs_enrichment = False
+                missing_fields = []
+
+                if not wrestler.get('real_name'):
+                    missing_fields.append('real_name')
+                    needs_enrichment = True
+                if not wrestler.get('debut_year'):
+                    missing_fields.append('debut_year')
+                    needs_enrichment = True
+                if not wrestler.get('hometown'):
+                    missing_fields.append('hometown')
+                    needs_enrichment = True
+                if not wrestler.get('about') or len(wrestler.get('about', '')) < 100:
+                    missing_fields.append('about')
+                    needs_enrichment = True
+
+                if needs_enrichment:
+                    logger.info(f"Autonomously enriching {wrestler['name']} - missing: {', '.join(missing_fields)}")
+
+                    # Use multi-source enrichment if available
+                    if self.use_multi_source and self.multi_source:
+                        enriched_data = self.multi_source.enrich_wrestler(
+                            wrestler['name'],
+                            existing_data=wrestler
+                        )
+                    else:
+                        enriched_data = self.enrich_wrestler_from_wikipedia(wrestler['name'])
+
+                    if enriched_data:
+                        # Update the wrestler with enriched data
+                        result = self.api_client.update_wrestler(wrestler['slug'], enriched_data)
+                        if result:
+                            enriched_count += 1
+                            logger.info(f"✓ Quality improvement: Enriched {wrestler['name']}")
+                            break  # Only do one per cycle to avoid overload
+
+        except Exception as e:
+            logger.error(f"Error in autonomous quality improvement: {e}")
+
+        return enriched_count
+
     def analyze_page_for_missing_entities(self, page_type: str, page_data: Dict) -> Dict:
         """
         Analyze a page's content to find mentioned entities not yet in database.
@@ -549,8 +605,19 @@ class PageEnrichmentDiscovery:
                     return self.api_client.create_promotion(promotion_data)
 
             elif entity_type == 'title':
-                # TODO: Implement title enrichment
-                pass
+                title_data = self.enrich_title_from_wikipedia(entity_name)
+                if title_data:
+                    return self.api_client.create_title(title_data)
+
+            elif entity_type == 'stable':
+                stable_data = self.enrich_stable_from_wikipedia(entity_name)
+                if stable_data:
+                    return self.api_client.create_stable(stable_data)
+
+            elif entity_type == 'venue':
+                venue_data = self.enrich_venue_from_wikipedia(entity_name)
+                if venue_data:
+                    return self.api_client.create_venue(venue_data)
 
             elif entity_type == 'event':
                 event_data = self.enrich_event_from_wikipedia(entity_name)
@@ -559,5 +626,186 @@ class PageEnrichmentDiscovery:
 
         except Exception as e:
             logger.error(f"Error creating/updating {entity_type} {entity_name}: {e}")
+
+        return None
+
+    def enrich_title_from_wikipedia(self, title_name: str) -> Optional[Dict]:
+        """Enrich championship title data from Wikipedia."""
+        try:
+            logger.info(f"Enriching title from Wikipedia: {title_name}")
+
+            # Search for title page
+            search_params = {
+                'action': 'query',
+                'format': 'json',
+                'list': 'search',
+                'srsearch': f'{title_name} championship wrestling',
+                'srlimit': 1,
+            }
+
+            response = self.session.get(self.wikipedia_base, params=search_params, timeout=10)
+            data = response.json()
+
+            if 'query' in data and 'search' in data['query'] and data['query']['search']:
+                page_title = data['query']['search'][0]['title']
+
+                # Get full page content
+                page_info = self._get_wikipedia_page(page_title)
+                if not page_info:
+                    return None
+
+                extract = page_info['extract']
+
+                # Create slug
+                slug = title_name.lower().replace(' ', '-').replace("'", '')
+                slug = ''.join(c for c in slug if c.isalnum() or c in '-_')
+                slug = slug.strip('-_')
+
+                title_data = {
+                    'name': title_name,
+                    'slug': slug,
+                    'about': extract[:2000] if extract else '',
+                    'wikipedia_url': f"https://en.wikipedia.org/wiki/{page_title.replace(' ', '_')}"
+                }
+
+                # Extract current champion
+                current_match = re.search(r'current champion(?:s)?:?\s+([^\n.]+)', extract, re.IGNORECASE)
+                if current_match:
+                    title_data['current_champion'] = current_match.group(1).strip()
+
+                # Extract established year
+                established_match = re.search(r'(?:established|created)(?:\s+in)?\s+(\d{4})', extract, re.IGNORECASE)
+                if established_match:
+                    title_data['established_year'] = int(established_match.group(1))
+
+                # Extract retired year
+                retired_match = re.search(r'(?:retired|discontinued|deactivated)(?:\s+in)?\s+(\d{4})', extract, re.IGNORECASE)
+                if retired_match:
+                    title_data['retirement_year'] = int(retired_match.group(1))
+
+                return title_data
+
+        except Exception as e:
+            logger.error(f"Error enriching title {title_name}: {e}")
+
+        return None
+
+    def enrich_stable_from_wikipedia(self, stable_name: str) -> Optional[Dict]:
+        """Enrich stable/faction data from Wikipedia."""
+        try:
+            logger.info(f"Enriching stable from Wikipedia: {stable_name}")
+
+            # Search for stable page
+            search_params = {
+                'action': 'query',
+                'format': 'json',
+                'list': 'search',
+                'srsearch': f'{stable_name} wrestling stable',
+                'srlimit': 1,
+            }
+
+            response = self.session.get(self.wikipedia_base, params=search_params, timeout=10)
+            data = response.json()
+
+            if 'query' in data and 'search' in data['query'] and data['query']['search']:
+                page_title = data['query']['search'][0]['title']
+
+                # Get full page content
+                page_info = self._get_wikipedia_page(page_title)
+                if not page_info:
+                    return None
+
+                extract = page_info['extract']
+
+                # Create slug
+                slug = stable_name.lower().replace(' ', '-').replace("'", '')
+                slug = ''.join(c for c in slug if c.isalnum() or c in '-_')
+                slug = slug.strip('-_')
+
+                stable_data = {
+                    'name': stable_name,
+                    'slug': slug,
+                    'about': extract[:2000] if extract else '',
+                    'wikipedia_url': f"https://en.wikipedia.org/wiki/{page_title.replace(' ', '_')}"
+                }
+
+                # Extract formed year
+                formed_match = re.search(r'(?:formed|founded)(?:\s+in)?\s+(\d{4})', extract, re.IGNORECASE)
+                if formed_match:
+                    stable_data['formed_year'] = int(formed_match.group(1))
+
+                # Extract disbanded year
+                disbanded_match = re.search(r'(?:disbanded|split|ended)(?:\s+in)?\s+(\d{4})', extract, re.IGNORECASE)
+                if disbanded_match:
+                    stable_data['disbanded_year'] = int(disbanded_match.group(1))
+
+                # Extract manager
+                manager_match = re.search(r'manager:?\s+([^\n.]+)', extract, re.IGNORECASE)
+                if manager_match:
+                    stable_data['manager'] = manager_match.group(1).strip()
+
+                return stable_data
+
+        except Exception as e:
+            logger.error(f"Error enriching stable {stable_name}: {e}")
+
+        return None
+
+    def enrich_venue_from_wikipedia(self, venue_name: str) -> Optional[Dict]:
+        """Enrich venue data from Wikipedia."""
+        try:
+            logger.info(f"Enriching venue from Wikipedia: {venue_name}")
+
+            # Search for venue page
+            search_params = {
+                'action': 'query',
+                'format': 'json',
+                'list': 'search',
+                'srsearch': f'{venue_name} arena',
+                'srlimit': 1,
+            }
+
+            response = self.session.get(self.wikipedia_base, params=search_params, timeout=10)
+            data = response.json()
+
+            if 'query' in data and 'search' in data['query'] and data['query']['search']:
+                page_title = data['query']['search'][0]['title']
+
+                # Get full page content
+                page_info = self._get_wikipedia_page(page_title)
+                if not page_info:
+                    return None
+
+                extract = page_info['extract']
+
+                # Create slug
+                slug = venue_name.lower().replace(' ', '-').replace("'", '')
+                slug = ''.join(c for c in slug if c.isalnum() or c in '-_')
+                slug = slug.strip('-_')
+
+                venue_data = {
+                    'name': venue_name,
+                    'slug': slug,
+                    'about': extract[:2000] if extract else '',
+                    'wikipedia_url': f"https://en.wikipedia.org/wiki/{page_title.replace(' ', '_')}"
+                }
+
+                # Extract location
+                location_match = re.search(r'(?:located in|in)\s+([^,\n]+,\s*[A-Z]{2,})', extract, re.IGNORECASE)
+                if location_match:
+                    venue_data['location'] = location_match.group(1).strip()
+
+                # Extract capacity
+                capacity_match = re.search(r'capacity:?\s+([\d,]+)', extract, re.IGNORECASE)
+                if capacity_match:
+                    try:
+                        venue_data['capacity'] = int(capacity_match.group(1).replace(',', ''))
+                    except:
+                        pass
+
+                return venue_data
+
+        except Exception as e:
+            logger.error(f"Error enriching venue {venue_name}: {e}")
 
         return None

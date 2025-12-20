@@ -62,11 +62,11 @@ class Command(BaseCommand):
             self.stdout.write(f'  + Created title: {name}')
         return title
 
-    def get_or_create_venue(self, name, city=None, state=None, country='USA'):
+    def get_or_create_venue(self, name, location=None):
         """Get or create a venue."""
         venue = Venue.objects.filter(name__iexact=name).first()
         if not venue:
-            venue = Venue.objects.create(name=name, city=city, state=state, country=country)
+            venue = Venue.objects.create(name=name, location=location)
         return venue
 
     def create_event_with_matches(self, promotion, event_data, matches_data):
@@ -83,9 +83,7 @@ class Command(BaseCommand):
         if 'venue' in event_data:
             venue = self.get_or_create_venue(
                 event_data['venue'],
-                event_data.get('city'),
-                event_data.get('state'),
-                event_data.get('country', 'USA')
+                event_data.get('location')
             )
 
         event = Event.objects.create(
@@ -140,8 +138,6 @@ class Command(BaseCommand):
             'name': 'Bound for Glory 2005',
             'date': date(2005, 10, 23),
             'venue': 'Impact Zone',
-            'city': 'Orlando',
-            'state': 'FL',
             'location': 'Orlando, FL',
             'about': 'The first Bound for Glory PPV, TNA\'s biggest annual event.'
         }, [
@@ -160,8 +156,6 @@ class Command(BaseCommand):
             'name': 'Bound for Glory 2006',
             'date': date(2006, 10, 22),
             'venue': 'Impact Zone',
-            'city': 'Orlando',
-            'state': 'FL',
             'location': 'Orlando, FL',
             'about': 'TNA\'s second annual Bound for Glory event.'
         }, [
@@ -179,8 +173,6 @@ class Command(BaseCommand):
             'name': 'Bound for Glory 2007',
             'date': date(2007, 10, 14),
             'venue': 'Gwinnett Center',
-            'city': 'Duluth',
-            'state': 'GA',
             'location': 'Duluth, GA',
             'attendance': 7000,
             'about': 'First TNA PPV held outside the Impact Zone.'
@@ -196,8 +188,6 @@ class Command(BaseCommand):
             'name': 'Bound for Glory 2008',
             'date': date(2008, 10, 12),
             'venue': 'Sears Centre',
-            'city': 'Chicago',
-            'state': 'IL',
             'location': 'Hoffman Estates, IL',
             'attendance': 8100,
             'about': 'TNA\'s fourth annual Bound for Glory.'
@@ -215,8 +205,6 @@ class Command(BaseCommand):
             'name': 'Bound for Glory 2009',
             'date': date(2009, 10, 18),
             'venue': 'Irvine Spectrum',
-            'city': 'Irvine',
-            'state': 'CA',
             'location': 'Irvine, CA',
             'about': 'Fifth annual Bound for Glory event.'
         }, [
@@ -233,8 +221,6 @@ class Command(BaseCommand):
             'name': 'Bound for Glory 2010',
             'date': date(2010, 10, 10),
             'venue': 'Ocean Center',
-            'city': 'Daytona Beach',
-            'state': 'FL',
             'location': 'Daytona Beach, FL',
             'about': 'The debut of Immortal faction.'
         }, [
@@ -249,8 +235,6 @@ class Command(BaseCommand):
             'name': 'Slammiversary 2005',
             'date': date(2005, 6, 19),
             'venue': 'Impact Zone',
-            'city': 'Orlando',
-            'state': 'FL',
             'location': 'Orlando, FL',
             'about': 'TNA\'s third anniversary celebration PPV.'
         }, [
@@ -265,8 +249,6 @@ class Command(BaseCommand):
             'name': 'Slammiversary 2006',
             'date': date(2006, 6, 18),
             'venue': 'Impact Zone',
-            'city': 'Orlando',
-            'state': 'FL',
             'location': 'Orlando, FL',
             'about': 'TNA\'s fourth anniversary PPV.'
         }, [
@@ -282,8 +264,6 @@ class Command(BaseCommand):
             'name': 'Lockdown 2005',
             'date': date(2005, 4, 24),
             'venue': 'Impact Zone',
-            'city': 'Orlando',
-            'state': 'FL',
             'location': 'Orlando, FL',
             'about': 'First TNA Lockdown PPV - all matches inside Six Sides of Steel.'
         }, [
@@ -299,8 +279,6 @@ class Command(BaseCommand):
             'name': 'Lockdown 2008',
             'date': date(2008, 4, 13),
             'venue': 'Tsongas Center',
-            'city': 'Lowell',
-            'state': 'MA',
             'location': 'Lowell, MA',
             'about': 'Every match inside Six Sides of Steel.'
         }, [
@@ -315,8 +293,6 @@ class Command(BaseCommand):
             'name': 'Genesis 2005',
             'date': date(2005, 11, 13),
             'venue': 'Impact Zone',
-            'city': 'Orlando',
-            'state': 'FL',
             'location': 'Orlando, FL',
             'about': 'First TNA Genesis PPV.'
         }, [
@@ -331,8 +307,6 @@ class Command(BaseCommand):
             'name': 'Sacrifice 2005',
             'date': date(2005, 5, 14),
             'venue': 'Impact Zone',
-            'city': 'Orlando',
-            'state': 'FL',
             'location': 'Orlando, FL',
             'about': 'First TNA Sacrifice PPV.'
         }, [
@@ -352,8 +326,6 @@ class Command(BaseCommand):
             'name': 'Heatwave 1998',
             'date': date(1998, 8, 2),
             'venue': 'Lost Battalion Hall',
-            'city': 'Ridgewood',
-            'state': 'NY',
             'location': 'Queens, NY',
             'about': 'One of ECW\'s most critically acclaimed PPVs.'
         }, [
@@ -372,8 +344,6 @@ class Command(BaseCommand):
             'name': 'November to Remember 1997',
             'date': date(1997, 11, 30),
             'venue': 'ECW Arena',
-            'city': 'Philadelphia',
-            'state': 'PA',
             'location': 'Philadelphia, PA',
             'about': 'ECW\'s annual November event.'
         }, [
@@ -390,8 +360,6 @@ class Command(BaseCommand):
             'name': 'November to Remember 1998',
             'date': date(1998, 11, 1),
             'venue': 'Lakefront Arena',
-            'city': 'New Orleans',
-            'state': 'LA',
             'location': 'New Orleans, LA',
             'about': 'Annual November event.'
         }, [
@@ -408,8 +376,6 @@ class Command(BaseCommand):
             'name': 'November to Remember 1999',
             'date': date(1999, 11, 7),
             'venue': 'Burt Flickinger Center',
-            'city': 'Buffalo',
-            'state': 'NY',
             'location': 'Buffalo, NY',
             'about': 'Another edition of the annual November event.'
         }, [
@@ -426,8 +392,6 @@ class Command(BaseCommand):
             'name': 'Living Dangerously 1998',
             'date': date(1998, 3, 1),
             'venue': 'Asbury Park Convention Hall',
-            'city': 'Asbury Park',
-            'state': 'NJ',
             'location': 'Asbury Park, NJ',
             'about': 'ECW PPV from New Jersey.'
         }, [
@@ -444,8 +408,6 @@ class Command(BaseCommand):
             'name': 'Living Dangerously 1999',
             'date': date(1999, 3, 21),
             'venue': 'Asbury Park Convention Hall',
-            'city': 'Asbury Park',
-            'state': 'NJ',
             'location': 'Asbury Park, NJ',
             'about': 'Featured the infamous scaffold dive.'
         }, [
@@ -462,8 +424,6 @@ class Command(BaseCommand):
             'name': 'Anarchy Rulz 1999',
             'date': date(1999, 9, 19),
             'venue': 'Odeum',
-            'city': 'Villa Park',
-            'state': 'IL',
             'location': 'Villa Park, IL',
             'about': 'First Anarchy Rulz PPV.'
         }, [
@@ -480,8 +440,6 @@ class Command(BaseCommand):
             'name': 'Guilty as Charged 1999',
             'date': date(1999, 1, 10),
             'venue': 'Millenium Theatre',
-            'city': 'Kissimmee',
-            'state': 'FL',
             'location': 'Kissimmee, FL',
             'about': 'ECW\'s first PPV of 1999.'
         }, [
@@ -496,8 +454,6 @@ class Command(BaseCommand):
             'name': 'Guilty as Charged 2001',
             'date': date(2001, 1, 7),
             'venue': 'Hammerstein Ballroom',
-            'city': 'New York',
-            'state': 'NY',
             'location': 'New York City, NY',
             'about': 'The final ECW PPV before the company closed.'
         }, [
@@ -519,8 +475,6 @@ class Command(BaseCommand):
             'name': 'Wrestle Kingdom 10',
             'date': date(2016, 1, 4),
             'venue': 'Tokyo Dome',
-            'city': 'Tokyo',
-            'country': 'Japan',
             'location': 'Tokyo, Japan',
             'attendance': 25204,
             'about': 'NJPW\'s premiere event featuring the crowning of a new ace.'
@@ -541,8 +495,6 @@ class Command(BaseCommand):
             'name': 'Wrestle Kingdom 11',
             'date': date(2017, 1, 4),
             'venue': 'Tokyo Dome',
-            'city': 'Tokyo',
-            'country': 'Japan',
             'location': 'Tokyo, Japan',
             'attendance': 26192,
             'about': 'NJPW\'s premier Tokyo Dome event.'
@@ -560,8 +512,6 @@ class Command(BaseCommand):
             'name': 'Wrestle Kingdom 12',
             'date': date(2018, 1, 4),
             'venue': 'Tokyo Dome',
-            'city': 'Tokyo',
-            'country': 'Japan',
             'location': 'Tokyo, Japan',
             'attendance': 34995,
             'about': 'Record-setting attendance for NJPW.'
@@ -579,8 +529,6 @@ class Command(BaseCommand):
             'name': 'Wrestle Kingdom 13',
             'date': date(2019, 1, 4),
             'venue': 'Tokyo Dome',
-            'city': 'Tokyo',
-            'country': 'Japan',
             'location': 'Tokyo, Japan',
             'attendance': 38162,
             'about': 'One of the highest attended wrestling events in Japanese history.'
@@ -598,8 +546,6 @@ class Command(BaseCommand):
             'name': 'Wrestle Kingdom 14 Night 1',
             'date': date(2020, 1, 4),
             'venue': 'Tokyo Dome',
-            'city': 'Tokyo',
-            'country': 'Japan',
             'location': 'Tokyo, Japan',
             'attendance': 40008,
             'about': 'First night of the two-night Wrestle Kingdom.'
@@ -617,8 +563,6 @@ class Command(BaseCommand):
             'name': 'Wrestle Kingdom 14 Night 2',
             'date': date(2020, 1, 5),
             'venue': 'Tokyo Dome',
-            'city': 'Tokyo',
-            'country': 'Japan',
             'location': 'Tokyo, Japan',
             'attendance': 40008,
             'about': 'Historic double title unification match.'
@@ -634,8 +578,6 @@ class Command(BaseCommand):
             'name': 'G1 Climax 29 Finals',
             'date': date(2019, 8, 12),
             'venue': 'Nippon Budokan',
-            'city': 'Tokyo',
-            'country': 'Japan',
             'location': 'Tokyo, Japan',
             'attendance': 12000,
             'about': 'Finals of the prestigious G1 Climax tournament.'
@@ -651,8 +593,6 @@ class Command(BaseCommand):
             'name': 'G1 Climax 28 Finals',
             'date': date(2018, 8, 12),
             'venue': 'Nippon Budokan',
-            'city': 'Tokyo',
-            'country': 'Japan',
             'location': 'Tokyo, Japan',
             'attendance': 12000,
             'about': 'Finals of the G1 Climax 28 tournament.'
@@ -668,8 +608,6 @@ class Command(BaseCommand):
             'name': 'Dominion 6.9 in Osaka-jo Hall',
             'date': date(2019, 6, 9),
             'venue': 'Osaka-jo Hall',
-            'city': 'Osaka',
-            'country': 'Japan',
             'location': 'Osaka, Japan',
             'attendance': 12000,
             'about': 'NJPW\'s second biggest annual event.'
@@ -687,8 +625,6 @@ class Command(BaseCommand):
             'name': 'Dominion 6.11 in Osaka-jo Hall',
             'date': date(2017, 6, 11),
             'venue': 'Osaka-jo Hall',
-            'city': 'Osaka',
-            'country': 'Japan',
             'location': 'Osaka, Japan',
             'attendance': 12000,
             'about': 'Featured another Okada vs Omega classic.'
@@ -706,8 +642,6 @@ class Command(BaseCommand):
             'name': 'Sakura Genesis 2017',
             'date': date(2017, 4, 9),
             'venue': 'Ryogoku Kokugikan',
-            'city': 'Tokyo',
-            'country': 'Japan',
             'location': 'Tokyo, Japan',
             'about': 'Spring\'s biggest NJPW event.'
         }, [

@@ -233,13 +233,24 @@ class WrestlerDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         wrestler = self.object
         context['page_title'] = wrestler.name
-        context['matches'] = wrestler.matches.select_related('event', 'event__promotion')[:20]
+        context['matches'] = wrestler.matches.select_related('event', 'event__promotion', 'winner', 'title')[:20]
 
         # Interlinking: promotions, titles, rivals, record
         context['promotions'] = wrestler.get_promotions()[:10]
+        context['promotion_history'] = wrestler.get_promotion_history_with_years()
         context['titles_won'] = wrestler.get_titles_won()
         context['rivals'] = wrestler.get_rivals(limit=10)
         context['record'] = wrestler.get_win_loss_record()
+
+        # Extended meta categories
+        context['stables'] = wrestler.get_stables()
+        context['podcast_appearances'] = wrestler.get_podcast_appearances()[:10]
+        context['books'] = wrestler.get_books()
+        context['specials'] = wrestler.get_specials()
+        context['meta_counts'] = wrestler.get_all_meta_categories()
+
+        # Events breakdown
+        context['recent_events'] = wrestler.get_events(limit=10)
 
         return context
 

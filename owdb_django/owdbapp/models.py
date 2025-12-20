@@ -475,6 +475,110 @@ class Wrestler(ImageMixin, TimeStampedModel):
             'win_percentage': round((wins / total_matches * 100), 1) if total_matches > 0 else 0
         }
 
+    def get_promotion_history_with_years(self):
+        """
+        Get promotion history with years, derived from match data.
+        Returns list of dicts: [{'promotion': Promotion, 'start_year': int, 'end_year': int}, ...]
+        """
+        from django.db.models import Min, Max
+        from django.db.models.functions import ExtractYear
+
+        # Get years for each promotion from matches
+        promo_years = self.matches.values(
+            'event__promotion__id',
+            'event__promotion__name',
+            'event__promotion__slug',
+            'event__promotion__abbreviation',
+        ).annotate(
+            start_year=Min(ExtractYear('event__date')),
+            end_year=Max(ExtractYear('event__date'))
+        ).order_by('-end_year', '-start_year')
+
+        result = []
+        for item in promo_years:
+            if item['event__promotion__id']:
+                result.append({
+                    'promotion_id': item['event__promotion__id'],
+                    'name': item['event__promotion__name'],
+                    'slug': item['event__promotion__slug'],
+                    'abbreviation': item['event__promotion__abbreviation'],
+                    'start_year': item['start_year'],
+                    'end_year': item['end_year'],
+                })
+        return result
+
+    def get_podcast_appearances(self):
+        """Get all podcast episodes this wrestler appeared on as a guest."""
+        return self.podcast_appearances.select_related('podcast').order_by('-published_date')
+
+    def get_podcast_count(self):
+        """Get count of podcast appearances."""
+        return self.podcast_appearances.count()
+
+    def get_books(self):
+        """Get all books related to this wrestler."""
+        return self.books.all().order_by('-publication_year')
+
+    def get_specials(self):
+        """Get all documentaries/specials featuring this wrestler."""
+        return self.specials.all().order_by('-release_year')
+
+    def get_video_games(self):
+        """Get video games this wrestler appears in (via promotions)."""
+        from django.db.models import Q
+        # Get promotions this wrestler worked for
+        promo_ids = self.matches.values_list('event__promotion_id', flat=True).distinct()
+        return VideoGame.objects.filter(promotions__in=promo_ids).distinct().order_by('-release_year')
+
+    def get_stables(self):
+        """Get all stables this wrestler has been a member of."""
+        return self.stables.select_related('promotion').order_by('-formed_year')
+
+    def get_events(self, limit=50):
+        """Get events this wrestler has appeared at."""
+        return Event.objects.filter(
+            matches__wrestlers=self
+        ).distinct().select_related('promotion', 'venue').order_by('-date')[:limit]
+
+    def get_tv_appearances(self, limit=50):
+        """Get TV show episodes this wrestler has appeared on."""
+        # Filter for events that look like TV episodes
+        return Event.objects.filter(
+            matches__wrestlers=self
+        ).filter(
+            # TV shows typically have names like "Raw #123" or "SmackDown - April 5"
+            name__icontains='Raw'
+        ) | Event.objects.filter(
+            matches__wrestlers=self
+        ).filter(
+            name__icontains='SmackDown'
+        ) | Event.objects.filter(
+            matches__wrestlers=self
+        ).filter(
+            name__icontains='Dynamite'
+        ) | Event.objects.filter(
+            matches__wrestlers=self
+        ).filter(
+            name__icontains='Nitro'
+        ).distinct().select_related('promotion', 'venue').order_by('-date')[:limit]
+
+    def get_all_meta_categories(self):
+        """
+        Get counts for all meta categories this wrestler appears in.
+        Returns a dict with category names and counts.
+        """
+        return {
+            'matches': self.matches.count(),
+            'events': Event.objects.filter(matches__wrestlers=self).distinct().count(),
+            'promotions': Promotion.objects.filter(events__matches__wrestlers=self).distinct().count(),
+            'titles': Title.objects.filter(title_matches__wrestlers=self).distinct().count(),
+            'stables': self.stables.count(),
+            'podcast_appearances': self.podcast_appearances.count(),
+            'books': self.books.count(),
+            'specials': self.specials.count(),
+            'rivals': Wrestler.objects.filter(matches__in=self.matches.all()).exclude(id=self.id).distinct().count(),
+        }
+
     def get_completeness_score(self):
         """
         Calculate how complete this wrestler's profile is (0-100).
@@ -722,11 +826,22 @@ class Podcast(TimeStampedModel):
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     hosts = models.TextField(blank=True, null=True, help_text="Comma-separated list of hosts")
+    host_wrestlers = models.ManyToManyField(Wrestler, blank=True, related_name='podcasts_hosted',
+                                            help_text="Wrestler hosts of this podcast")
     related_wrestlers = models.ManyToManyField(Wrestler, blank=True, related_name='podcasts')
     launch_year = models.IntegerField(blank=True, null=True)
     end_year = models.IntegerField(blank=True, null=True)
     url = models.URLField(blank=True, null=True)
+    rss_feed_url = models.URLField(max_length=500, blank=True, null=True,
+                                   help_text="RSS feed URL for automatic episode import")
+    last_rss_fetch = models.DateTimeField(blank=True, null=True,
+                                          help_text="When episodes were last fetched from RSS")
     about = models.TextField(blank=True, null=True)
+
+    # Additional metadata
+    apple_podcasts_url = models.URLField(max_length=500, blank=True, null=True)
+    spotify_url = models.URLField(max_length=500, blank=True, null=True)
+    youtube_url = models.URLField(max_length=500, blank=True, null=True)
 
     class Meta:
         ordering = ['name']
@@ -745,6 +860,132 @@ class Podcast(TimeStampedModel):
     @property
     def is_active(self):
         return self.end_year is None
+
+    def get_episode_count(self):
+        """Get total number of episodes."""
+        return self.episodes.count()
+
+    def get_guest_wrestlers(self):
+        """Get all wrestlers who have appeared as guests, ordered by appearance count."""
+        from django.db.models import Count
+        return Wrestler.objects.filter(
+            podcast_appearances__podcast=self
+        ).annotate(
+            appearance_count=Count('podcast_appearances')
+        ).order_by('-appearance_count')
+
+
+class PodcastEpisode(TimeStampedModel):
+    """
+    Individual episode of a podcast with guest links.
+
+    Episodes are imported from RSS feeds and linked to wrestler guests.
+    """
+    podcast = models.ForeignKey(
+        'Podcast', on_delete=models.CASCADE, related_name='episodes'
+    )
+    title = models.CharField(max_length=500, db_index=True)
+    slug = models.SlugField(max_length=255, blank=True)
+    episode_number = models.IntegerField(blank=True, null=True)
+    season_number = models.IntegerField(blank=True, null=True)
+
+    # Episode metadata
+    published_date = models.DateTimeField(blank=True, null=True, db_index=True)
+    duration_seconds = models.IntegerField(blank=True, null=True, help_text="Duration in seconds")
+    description = models.TextField(blank=True, null=True)
+
+    # Links
+    audio_url = models.URLField(max_length=500, blank=True, null=True)
+    episode_url = models.URLField(max_length=500, blank=True, null=True)
+    image_url = models.URLField(max_length=500, blank=True, null=True)
+
+    # Guests (wrestlers who appeared)
+    guests = models.ManyToManyField(
+        'Wrestler', blank=True, related_name='podcast_appearances',
+        help_text="Wrestlers who appeared as guests on this episode"
+    )
+
+    # RSS feed tracking
+    guid = models.CharField(max_length=500, unique=True, blank=True, null=True,
+                           help_text="Unique ID from RSS feed for deduplication")
+
+    class Meta:
+        ordering = ['-published_date']
+        indexes = [
+            models.Index(fields=['podcast', '-published_date']),
+            models.Index(fields=['guid']),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.title[:200])
+            date_str = self.published_date.strftime('%Y%m%d') if self.published_date else ''
+            self.slug = f"{base_slug}-{date_str}" if date_str else base_slug
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.podcast.name}: {self.title}"
+
+    @property
+    def duration_display(self):
+        """Format duration as HH:MM:SS or MM:SS."""
+        if not self.duration_seconds:
+            return ""
+        hours, remainder = divmod(self.duration_seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        if hours:
+            return f"{hours}:{minutes:02d}:{seconds:02d}"
+        return f"{minutes}:{seconds:02d}"
+
+
+class WrestlerPromotionHistory(TimeStampedModel):
+    """
+    Tracks a wrestler's history with each promotion they've worked for.
+
+    This model explicitly records the years a wrestler was active with
+    a promotion, allowing for accurate timeline display.
+    """
+    wrestler = models.ForeignKey(
+        'Wrestler', on_delete=models.CASCADE, related_name='promotion_history'
+    )
+    promotion = models.ForeignKey(
+        'Promotion', on_delete=models.CASCADE, related_name='wrestler_history'
+    )
+
+    # Date range
+    start_year = models.IntegerField(blank=True, null=True)
+    end_year = models.IntegerField(blank=True, null=True, help_text="Null if currently active")
+
+    # Additional context
+    notes = models.CharField(max_length=255, blank=True, null=True,
+                            help_text="e.g., 'As Stone Cold', 'NXT only'")
+    is_current = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-start_year']
+        unique_together = ['wrestler', 'promotion', 'start_year']
+        verbose_name_plural = "Wrestler promotion histories"
+        indexes = [
+            models.Index(fields=['wrestler', '-start_year']),
+            models.Index(fields=['promotion', '-start_year']),
+        ]
+
+    def __str__(self):
+        years = f"{self.start_year or '?'}-{self.end_year or 'present'}"
+        return f"{self.wrestler.name} @ {self.promotion.name} ({years})"
+
+    @property
+    def years_display(self):
+        """Format the years range for display."""
+        if self.start_year and self.end_year:
+            if self.start_year == self.end_year:
+                return str(self.start_year)
+            return f"{self.start_year}-{self.end_year}"
+        elif self.start_year:
+            return f"{self.start_year}-present"
+        elif self.end_year:
+            return f"?-{self.end_year}"
+        return "Unknown"
 
 
 class Book(TimeStampedModel):

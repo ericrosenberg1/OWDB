@@ -107,13 +107,50 @@
                     </div>
                     {% endif %}
 
-                    {% if promotions %}
+                    {% if promotion_history %}
+                    <div class="info-block">
+                        <h4>Promotions</h4>
+                        <ul class="link-list promotion-history-list">
+                            {% for promo in promotion_history %}
+                            <li>
+                                <a href="{% url 'promotion_detail' promo.promotion_id %}">{{ promo.abbreviation|default:promo.name }}</a>
+                                <span class="promo-years">{{ promo.start_year }}-{{ promo.end_year }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% elif promotions %}
                     <div class="info-block">
                         <h4>Promotions</h4>
                         <ul class="link-list">
                             {% for promotion in promotions %}
                             <li><a href="{% url 'promotion_detail_slug' promotion.slug %}">{{ promotion.abbreviation|default:promotion.name }}</a></li>
                             {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    {% if stables %}
+                    <div class="info-block">
+                        <h4>Stables & Factions</h4>
+                        <ul class="link-list">
+                            {% for stable in stables %}
+                            <li><a href="{% url 'stable_detail' stable.pk %}">{{ stable.name }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    {% if meta_counts %}
+                    <div class="info-block">
+                        <h4>Appears In</h4>
+                        <ul class="meta-counts-list">
+                            {% if meta_counts.matches > 0 %}<li><span class="count">{{ meta_counts.matches }}</span> Matches</li>{% endif %}
+                            {% if meta_counts.events > 0 %}<li><span class="count">{{ meta_counts.events }}</span> Events</li>{% endif %}
+                            {% if meta_counts.titles > 0 %}<li><span class="count">{{ meta_counts.titles }}</span> Title Reigns</li>{% endif %}
+                            {% if meta_counts.podcast_appearances > 0 %}<li><span class="count">{{ meta_counts.podcast_appearances }}</span> Podcast Episodes</li>{% endif %}
+                            {% if meta_counts.books > 0 %}<li><span class="count">{{ meta_counts.books }}</span> Books</li>{% endif %}
+                            {% if meta_counts.specials > 0 %}<li><span class="count">{{ meta_counts.specials }}</span> Documentaries</li>{% endif %}
                         </ul>
                     </div>
                     {% endif %}
@@ -212,6 +249,76 @@
                                     {% endif %}
                                     <p class="media-title">{{ rival.name }}</p>
                                     <p class="media-meta">{{ rival.encounter_count }} matches</p>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Podcast Appearances Section -->
+                {% if podcast_appearances %}
+                <div class="known-for-section">
+                    <h3>Podcast Appearances</h3>
+                    <div class="credits-list podcast-list">
+                        {% for episode in podcast_appearances %}
+                        <div class="credit-item">
+                            <div class="credit-year">
+                                {% if episode.published_date %}{{ episode.published_date|date:"Y" }}{% else %}&mdash;{% endif %}
+                            </div>
+                            <div class="credit-separator">
+                                <span class="dot"></span>
+                            </div>
+                            <div class="credit-info">
+                                <a href="{% url 'podcast_detail' episode.podcast.pk %}" class="credit-title">{{ episode.title|truncatechars:60 }}</a>
+                                <span class="credit-meta">
+                                    {{ episode.podcast.name }}
+                                    {% if episode.duration_display %}<span class="duration">{{ episode.duration_display }}</span>{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Books Section -->
+                {% if books %}
+                <div class="known-for-section">
+                    <h3>Books</h3>
+                    <div class="scroller-wrap">
+                        <div class="scroller">
+                            {% for book in books %}
+                            <a href="{% url 'book_detail' book.pk %}" class="card-link">
+                                <div class="media-card">
+                                    <div class="media-poster placeholder book-placeholder">
+                                        <span>📚</span>
+                                    </div>
+                                    <p class="media-title">{{ book.title|truncatechars:30 }}</p>
+                                    <p class="media-meta">{{ book.publication_year|default:"" }}</p>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Documentaries/Specials Section -->
+                {% if specials %}
+                <div class="known-for-section">
+                    <h3>Documentaries & Specials</h3>
+                    <div class="scroller-wrap">
+                        <div class="scroller">
+                            {% for special in specials %}
+                            <a href="{% url 'special_detail' special.pk %}" class="card-link">
+                                <div class="media-card">
+                                    <div class="media-poster placeholder special-placeholder">
+                                        <span>🎬</span>
+                                    </div>
+                                    <p class="media-title">{{ special.title|truncatechars:30 }}</p>
+                                    <p class="media-meta">{{ special.release_year|default:"" }}</p>
                                 </div>
                             </a>
                             {% endfor %}

@@ -712,6 +712,65 @@ a:hover {
     padding: 0.1rem 0;
 }
 
+/* Promotion history with years */
+.promotion-history-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.promo-years {
+    color: var(--wwf-light-gray);
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
+}
+
+/* Meta counts list */
+.meta-counts-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.meta-counts-list li {
+    display: flex;
+    align-items: center;
+    padding: 0.25rem 0;
+    color: var(--wwf-silver);
+    font-size: 0.875rem;
+}
+
+.meta-counts-list .count {
+    background: var(--wwf-gray);
+    color: var(--wwf-gold);
+    padding: 0.1rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+    margin-right: 0.5rem;
+    min-width: 35px;
+    text-align: center;
+}
+
+/* Podcast list specific styling */
+.podcast-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.podcast-list .credit-item .duration {
+    color: var(--wwf-light-gray);
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
+}
+
+/* Book and special placeholder styling */
+.book-placeholder, .special-placeholder {
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .status-badge {
     display: inline-block;
     padding: 0.2rem 0.75rem;

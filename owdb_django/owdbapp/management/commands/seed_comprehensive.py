@@ -393,12 +393,20 @@ class Command(BaseCommand):
         ]
 
         for data in promotions_data:
-            promo, created = Promotion.objects.get_or_create(
-                name=data['name'],
-                defaults=data
-            )
-            if created:
-                self.stdout.write(f'  + {promo.name}')
+            slug = slugify(data['name'])
+            existing = Promotion.objects.filter(slug=slug).first()
+            if existing:
+                self.stdout.write(f'  = {data["name"]} (exists as {existing.name})')
+                continue
+            try:
+                promo, created = Promotion.objects.get_or_create(
+                    name=data['name'],
+                    defaults=data
+                )
+                if created:
+                    self.stdout.write(f'  + {promo.name}')
+            except Exception as e:
+                self.stdout.write(self.style.WARNING(f'  ! {data["name"]}: {e}'))
 
     def seed_titles(self):
         """Seed comprehensive list of wrestling championships."""
@@ -472,12 +480,20 @@ class Command(BaseCommand):
 
         for data in titles_data:
             if data.get('promotion'):
-                title, created = Title.objects.get_or_create(
-                    name=data['name'],
-                    defaults=data
-                )
-                if created:
-                    self.stdout.write(f'  + {title.name}')
+                slug = slugify(data['name'])
+                existing = Title.objects.filter(slug=slug).first()
+                if existing:
+                    self.stdout.write(f'  = {data["name"]} (exists)')
+                    continue
+                try:
+                    title, created = Title.objects.get_or_create(
+                        name=data['name'],
+                        defaults=data
+                    )
+                    if created:
+                        self.stdout.write(f'  + {title.name}')
+                except Exception as e:
+                    self.stdout.write(self.style.WARNING(f'  ! {data["name"]}: {e}'))
 
     def seed_venues(self):
         """Seed comprehensive list of wrestling venues."""
@@ -537,12 +553,20 @@ class Command(BaseCommand):
         ]
 
         for data in venues_data:
-            venue, created = Venue.objects.get_or_create(
-                name=data['name'],
-                defaults=data
-            )
-            if created:
-                self.stdout.write(f'  + {venue.name}')
+            slug = slugify(data['name'])
+            existing = Venue.objects.filter(slug=slug).first()
+            if existing:
+                self.stdout.write(f'  = {data["name"]} (exists)')
+                continue
+            try:
+                venue, created = Venue.objects.get_or_create(
+                    name=data['name'],
+                    defaults=data
+                )
+                if created:
+                    self.stdout.write(f'  + {venue.name}')
+            except Exception as e:
+                self.stdout.write(self.style.WARNING(f'  ! {data["name"]}: {e}'))
 
     def seed_stables(self):
         """Seed comprehensive list of wrestling stables/factions."""
@@ -587,12 +611,20 @@ class Command(BaseCommand):
         ]
 
         for data in stables_data:
-            stable, created = Stable.objects.get_or_create(
-                name=data['name'],
-                defaults=data
-            )
-            if created:
-                self.stdout.write(f'  + {stable.name}')
+            slug = slugify(data['name'])
+            existing = Stable.objects.filter(slug=slug).first()
+            if existing:
+                self.stdout.write(f'  = {data["name"]} (exists)')
+                continue
+            try:
+                stable, created = Stable.objects.get_or_create(
+                    name=data['name'],
+                    defaults=data
+                )
+                if created:
+                    self.stdout.write(f'  + {stable.name}')
+            except Exception as e:
+                self.stdout.write(self.style.WARNING(f'  ! {data["name"]}: {e}'))
 
     def seed_media(self):
         """Seed video games, podcasts, books, and documentaries."""
@@ -615,9 +647,17 @@ class Command(BaseCommand):
         ]
 
         for data in games_data:
-            game, created = VideoGame.objects.get_or_create(name=data['name'], defaults=data)
-            if created:
-                self.stdout.write(f'  + Game: {game.name}')
+            slug = slugify(data['name'])
+            existing = VideoGame.objects.filter(slug=slug).first()
+            if existing:
+                self.stdout.write(f'  = Game: {data["name"]} (exists)')
+                continue
+            try:
+                game, created = VideoGame.objects.get_or_create(name=data['name'], defaults=data)
+                if created:
+                    self.stdout.write(f'  + Game: {game.name}')
+            except Exception as e:
+                self.stdout.write(self.style.WARNING(f'  ! Game {data["name"]}: {e}'))
 
         # Podcasts
         podcasts_data = [
@@ -639,9 +679,17 @@ class Command(BaseCommand):
         ]
 
         for data in podcasts_data:
-            podcast, created = Podcast.objects.get_or_create(name=data['name'], defaults=data)
-            if created:
-                self.stdout.write(f'  + Podcast: {podcast.name}')
+            slug = slugify(data['name'])
+            existing = Podcast.objects.filter(slug=slug).first()
+            if existing:
+                self.stdout.write(f'  = Podcast: {data["name"]} (exists)')
+                continue
+            try:
+                podcast, created = Podcast.objects.get_or_create(name=data['name'], defaults=data)
+                if created:
+                    self.stdout.write(f'  + Podcast: {podcast.name}')
+            except Exception as e:
+                self.stdout.write(self.style.WARNING(f'  ! Podcast {data["name"]}: {e}'))
 
         # Books
         books_data = [
@@ -665,9 +713,17 @@ class Command(BaseCommand):
         ]
 
         for data in books_data:
-            book, created = Book.objects.get_or_create(title=data['title'], defaults=data)
-            if created:
-                self.stdout.write(f'  + Book: {book.title}')
+            slug = slugify(data['title'])
+            existing = Book.objects.filter(slug=slug).first()
+            if existing:
+                self.stdout.write(f'  = Book: {data["title"]} (exists)')
+                continue
+            try:
+                book, created = Book.objects.get_or_create(title=data['title'], defaults=data)
+                if created:
+                    self.stdout.write(f'  + Book: {book.title}')
+            except Exception as e:
+                self.stdout.write(self.style.WARNING(f'  ! Book {data["title"]}: {e}'))
 
         # Documentaries/Specials
         specials_data = [
@@ -694,6 +750,14 @@ class Command(BaseCommand):
         ]
 
         for data in specials_data:
-            special, created = Special.objects.get_or_create(title=data['title'], defaults=data)
-            if created:
-                self.stdout.write(f'  + Special: {special.title}')
+            slug = slugify(data['title'])
+            existing = Special.objects.filter(slug=slug).first()
+            if existing:
+                self.stdout.write(f'  = Special: {data["title"]} (exists)')
+                continue
+            try:
+                special, created = Special.objects.get_or_create(title=data['title'], defaults=data)
+                if created:
+                    self.stdout.write(f'  + Special: {special.title}')
+            except Exception as e:
+                self.stdout.write(self.style.WARNING(f'  ! Special {data["title"]}: {e}'))

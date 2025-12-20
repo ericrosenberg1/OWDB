@@ -92,7 +92,6 @@ class Command(BaseCommand):
             date=event_date,
             promotion=promotion,
             venue=venue,
-            location=event_data.get('location'),
             attendance=event_data.get('attendance'),
             about=event_data.get('about', '')
         )

@@ -509,6 +509,103 @@ a:hover {
     font-weight: 600;
 }
 
+/* Stats grid full width for homepage */
+.stats-grid-full {
+    grid-template-columns: repeat(6, 1fr);
+}
+
+/* Clickable stat items */
+.stat-link {
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.stat-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.stat-link:hover .stat-value {
+    color: var(--wwf-gold);
+}
+
+/* Section title links */
+.section-title-link {
+    color: var(--wwf-gold);
+    text-decoration: none;
+}
+
+.section-title-link:hover {
+    color: var(--wwf-red);
+}
+
+.section-link {
+    font-size: 0.875rem;
+    color: var(--wwf-silver);
+    margin-left: auto;
+}
+
+.section-link:hover {
+    color: var(--wwf-gold);
+}
+
+/* Hot 100 card styling */
+.hot100-card .card-poster {
+    position: relative;
+}
+
+.hot100-rank {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: var(--wwf-red);
+    color: white;
+    font-weight: 700;
+    font-size: 0.875rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    z-index: 2;
+}
+
+.hot100-movement {
+    font-weight: 600;
+}
+
+.movement-up {
+    color: #22c55e;
+}
+
+.movement-down {
+    color: var(--wwf-red);
+}
+
+.movement-same {
+    color: var(--wwf-silver);
+}
+
+/* Join & API Section */
+.join-api-section .row {
+    gap: 1.5rem;
+}
+
+.join-card, .api-card {
+    background: var(--wwf-dark);
+    border: 1px solid var(--wwf-gray);
+    border-radius: 8px;
+    padding: 2rem;
+    height: 100%;
+}
+
+.join-card h3, .api-card h3 {
+    color: var(--wwf-gold);
+    margin-bottom: 1rem;
+}
+
+.join-card p, .api-card p {
+    color: var(--wwf-silver);
+    margin-bottom: 1.5rem;
+}
+
 .api-promo {
     background: var(--wwf-dark);
     border: 1px solid var(--wwf-gray);
@@ -1160,6 +1257,14 @@ a:hover {
 
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stats-grid-full {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .join-api-section .col-lg-6 {
+        margin-bottom: 1rem;
     }
 
     .person-header h1 {

@@ -56,44 +56,34 @@
                         </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Wrestlers
+                                Entries
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'hot100' %}">Hot 100</a></li>
-                                <li><a class="dropdown-item" href="{% url 'wrestlers' %}">All Wrestlers</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Events
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'events' %}">All Events</a></li>
+                                <li><a class="dropdown-item" href="{% url 'wrestlers' %}">Wrestlers</a></li>
+                                <li><a class="dropdown-item" href="{% url 'promotions' %}">Promotions</a></li>
+                                <li><a class="dropdown-item" href="{% url 'events' %}">Events</a></li>
                                 <li><a class="dropdown-item" href="{% url 'matches' %}">Matches</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Promotions
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'promotions' %}">All Promotions</a></li>
                                 <li><a class="dropdown-item" href="{% url 'titles' %}">Championships</a></li>
                                 <li><a class="dropdown-item" href="{% url 'venues' %}">Venues</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                More
-                            </a>
-                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'stables' %}">Stables</a></li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'games' %}">Video Games</a></li>
                                 <li><a class="dropdown-item" href="{% url 'podcasts' %}">Podcasts</a></li>
                                 <li><a class="dropdown-item" href="{% url 'books' %}">Books</a></li>
                                 <li><a class="dropdown-item" href="{% url 'specials' %}">Documentaries</a></li>
-                                <li><hr class="dropdown-divider"></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                About
+                            </a>
+                            <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="{% url 'about' %}">About OWDB</a></li>
+                                <li><a class="dropdown-item" href="{% url 'wrestlebot' %}">WrestleBot AI</a></li>
                                 <li><a class="dropdown-item" href="{% url 'account' %}">API</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'privacy' %}">Privacy Policy</a></li>
+                                <li><a class="dropdown-item" href="https://github.com/ericrosenberg1/OWDB" target="_blank" rel="noopener">GitHub</a></li>
                             </ul>
                         </li>
                     </ul>

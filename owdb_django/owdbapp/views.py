@@ -22,6 +22,7 @@ from .models import (
     Match,
     Title,
     Venue,
+    Stable,
     VideoGame,
     Podcast,
     Book,
@@ -156,6 +157,13 @@ class IndexView(TemplateView):
         context['aew_events'] = Event.objects.select_related('promotion').filter(
             promotion__name__icontains='AEW'
         ).order_by('-date')[:10]
+
+        # Get Hot 100 for homepage
+        hot100_ranking = Hot100Ranking.get_current()
+        if hot100_ranking:
+            context['hot100_entries'] = hot100_ranking.entries.select_related('wrestler').all()[:10]
+        else:
+            context['hot100_entries'] = []
 
         return context
 

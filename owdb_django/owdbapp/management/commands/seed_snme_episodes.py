@@ -78,7 +78,7 @@ class Command(BaseCommand):
             date=episode_date,
             promotion=promotion,
             venue=venue,
-            event_type='TV',
+            
             about=episode_data.get('about', '')
         )
 

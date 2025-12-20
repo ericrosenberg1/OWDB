@@ -4,7 +4,8 @@ Management command to seed popular wrestling podcasts with RSS feeds.
 
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
-from owdbapp.models import Podcast, Wrestler
+
+from owdb_django.owdbapp.models import Podcast, Wrestler
 
 
 class Command(BaseCommand):

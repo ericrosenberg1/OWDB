@@ -65,10 +65,13 @@ class Command(BaseCommand):
             {'name': 'New Japan Pro-Wrestling', 'abbreviation': 'NJPW'},
         ]
         for p in promos:
-            Promotion.objects.get_or_create(
-                abbreviation=p['abbreviation'],
-                defaults={'name': p['name']}
-            )
+            # Check if exists first to avoid duplicates
+            existing = Promotion.objects.filter(abbreviation=p['abbreviation']).first()
+            if not existing:
+                Promotion.objects.create(
+                    name=p['name'],
+                    abbreviation=p['abbreviation']
+                )
 
     def print_stats(self):
         self.stdout.write(f'\nTotal Events: {Event.objects.count()}')

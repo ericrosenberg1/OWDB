@@ -55,7 +55,11 @@ class Command(BaseCommand):
             {'name': 'Impact Wrestling', 'abbreviation': 'IMPACT', 'founded_year': 2017},
         ]
         for p in promotions:
+            # Check by abbreviation OR slug to avoid duplicate constraint violations
+            slug = slugify(p['name'])
             existing = Promotion.objects.filter(abbreviation=p['abbreviation']).first()
+            if not existing:
+                existing = Promotion.objects.filter(slug=slug).first()
             if not existing:
                 Promotion.objects.create(
                     name=p['name'],

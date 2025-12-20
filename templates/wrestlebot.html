@@ -1,18 +1,6 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<!-- Auto-refresh indicator -->
-<div class="auto-refresh-bar" id="autoRefreshBar">
-    <div class="container d-flex align-items-center justify-content-between py-2">
-        <small class="text-muted">
-            <span id="refreshStatus">Live updating every 10 seconds</span>
-            <span id="lastUpdated"></span>
-        </small>
-        <button class="btn btn-sm btn-outline-secondary" onclick="toggleAutoRefresh()">
-            <span id="refreshToggle">Pause</span>
-        </button>
-    </div>
-</div>
 <div class="container py-4">
     <!-- Hero Section -->
     <div class="row mb-4">
@@ -30,55 +18,23 @@
                             </svg>
                         </div>
                         <div>
-                            <h1 class="mb-0">WrestleBot</h1>
-                            <p class="text-muted mb-0">AI-Powered Wrestling Data Discovery</p>
+                            <h1 class="mb-0">WrestleBot AI</h1>
+                            <p class="text-muted mb-0">Our AI-Powered Research Assistant</p>
                         </div>
                         <div class="ms-auto text-end">
-                            <span class="badge bg-{{ status_class }} fs-6" id="statusBadge">
-                                {% if status == 'active' %}Active
-                                {% elif status == 'paused' %}Paused
-                                {% elif status == 'degraded' %}Degraded
-                                {% elif status == 'rate_limited' %}Rate Limited
-                                {% elif status == 'warning' %}Warning
-                                {% else %}Error{% endif %}
+                            <span class="badge bg-{{ status_class }} fs-6">
+                                {% if status == 'active' %}Working
+                                {% elif status == 'paused' %}Resting
+                                {% else %}Online{% endif %}
                             </span>
-                            <br>
-                            <small class="text-muted" id="statusMessage">{{ status_message }}</small>
                         </div>
                     </div>
 
-                    <p class="lead">
-                        WrestleBot 2.0 is our self-hosted AI assistant that runs as a standalone service,
-                        completely separated from the Django web application. It automatically discovers and
-                        aggregates wrestling data from many authoritative sources to build the most comprehensive
-                        wrestling encyclopedia ever. Running 24/7 in its own Docker container, WrestleBot communicates
-                        with the database via a secure REST API, ensuring the website never freezes or slows down.
+                    <p class="lead mb-0">
+                        WrestleBot is our tireless AI assistant that works around the clock to build the most
+                        comprehensive wrestling database ever created. It automatically finds and organizes
+                        information about wrestlers, events, matches, and championships from across the internet.
                     </p>
-
-                    <!-- System Health Indicators -->
-                    <div class="d-flex gap-3 mt-3 flex-wrap align-items-center" id="healthIndicators">
-                        <span class="badge {% if health.redis %}bg-success{% else %}bg-danger{% endif %}" title="Redis Cache">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><circle cx="12" cy="12" r="10"/></svg>
-                            Redis
-                        </span>
-                        <span class="badge {% if health.celery %}bg-success{% else %}bg-danger{% endif %}" title="Celery Worker">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><circle cx="12" cy="12" r="10"/></svg>
-                            Celery
-                        </span>
-                        <span class="badge {% if health.ollama %}bg-success{% else %}bg-warning text-dark{% endif %}" title="Ollama AI">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><circle cx="12" cy="12" r="10"/></svg>
-                            AI {% if health.ollama %}({{ config.ai_model_name }}){% else %}(Fallback){% endif %}
-                        </span>
-
-                        {% if is_staff %}
-                        <div class="ms-auto">
-                            <button class="btn btn-sm btn-outline-primary" onclick="triggerDiscovery()" id="triggerBtn" {% if not health.celery %}disabled{% endif %}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                                Run Discovery Now
-                            </button>
-                        </div>
-                        {% endif %}
-                    </div>
                 </div>
             </div>
         </div>
@@ -86,91 +42,98 @@
 
     <!-- Stats Cards -->
     <div class="row mb-4">
-        <div class="col-md-3 col-6 mb-3">
+        <div class="col-md-4 col-6 mb-3">
             <div class="card bg-dark border-secondary h-100">
                 <div class="card-body text-center">
-                    <h3 class="text-primary mb-0" id="stat-total">{{ stats.total_added|default:0 }}</h3>
-                    <small class="text-muted">Total Items Added</small>
+                    <h3 class="text-primary mb-0">{{ stats.total_added|default:0 }}</h3>
+                    <small class="text-muted">Records Added</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-6 mb-3">
+        <div class="col-md-4 col-6 mb-3">
             <div class="card bg-dark border-secondary h-100">
                 <div class="card-body text-center">
-                    <h3 class="text-success mb-0" id="stat-24h">{{ recent_creates_24h|default:0 }}</h3>
-                    <small class="text-muted">Last 24 Hours</small>
+                    <h3 class="text-success mb-0">{{ recent_creates_24h|default:0 }}</h3>
+                    <small class="text-muted">Added Today</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-6 mb-3">
+        <div class="col-md-4 col-12 mb-3">
             <div class="card bg-dark border-secondary h-100">
                 <div class="card-body text-center">
-                    <h3 class="text-info mb-0" id="stat-hour">{{ stats.added_this_hour|default:0 }}</h3>
-                    <small class="text-muted">This Hour</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 col-6 mb-3">
-            <div class="card bg-dark border-secondary h-100">
-                <div class="card-body text-center">
-                    <h3 class="{% if recent_errors_24h > 10 %}text-danger{% else %}text-warning{% endif %} mb-0" id="stat-errors">{{ recent_errors_24h|default:0 }}</h3>
-                    <small class="text-muted">Errors (24h)</small>
+                    <h3 class="text-info mb-0">24/7</h3>
+                    <small class="text-muted">Always Working</small>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- How It Works -->
+    <!-- What WrestleBot Does -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card bg-dark border-secondary">
                 <div class="card-header">
-                    <h4 class="mb-0">How WrestleBot Works</h4>
+                    <h4 class="mb-0">What WrestleBot Does</h4>
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-6">
-                            <h5 class="text-primary">Multi-Source Aggregation</h5>
-                            <ul>
-                                <li><strong>Many authoritative sources</strong> - Wrestling databases, official sites, biographical data</li>
-                                <li><strong>Intelligent merging</strong> - Combines data from multiple sources for the most complete profiles</li>
-                                <li><strong>Source attribution</strong> - Tracks where data came from for transparency</li>
-                                <li><strong>Continuous enrichment</strong> - Pages are regularly updated with new information</li>
-                                <li>All sources accessed respectfully with proper rate limiting</li>
-                            </ul>
-
-                            <h5 class="text-primary mt-4">AI-Powered Enrichment</h5>
-                            <ul>
-                                <li>Self-hosted AI runs locally - no external services or data sharing</li>
-                                <li>Verifies data accuracy across sources and detects duplicates</li>
-                                <li>Intelligently merges conflicting information using source priorities</li>
-                                <li>Discovers entities mentioned in existing pages (wrestlers, promotions, stables, etc.)</li>
-                                <li>Enriches information to create the most complete profiles possible</li>
-                            </ul>
+                        <div class="col-md-6 mb-4 mb-md-0">
+                            <div class="d-flex mb-3">
+                                <div class="feature-icon me-3 text-primary">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                </div>
+                                <div>
+                                    <h5>Discovers New Data</h5>
+                                    <p class="text-muted mb-0">Finds wrestlers, events, and matches from trusted sources across the web, then adds them to our database.</p>
+                                </div>
+                            </div>
+                            <div class="d-flex mb-3">
+                                <div class="feature-icon me-3 text-success">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                                </div>
+                                <div>
+                                    <h5>Verifies Information</h5>
+                                    <p class="text-muted mb-0">Cross-checks facts from multiple sources to ensure accuracy and reliability.</p>
+                                </div>
+                            </div>
+                            <div class="d-flex">
+                                <div class="feature-icon me-3 text-warning">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                                </div>
+                                <div>
+                                    <h5>Enriches Profiles</h5>
+                                    <p class="text-muted mb-0">Adds photos, biographical details, and connections between wrestlers, promotions, and events.</p>
+                                </div>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <h5 class="text-primary">Copyright Compliance</h5>
-                            <div class="alert alert-info">
-                                <strong>We only extract factual, non-copyrightable data:</strong>
-                                <ul class="mb-0 mt-2">
-                                    <li>Names (ring names, real names, aliases)</li>
-                                    <li>Dates (birth, debut, retirement, events)</li>
-                                    <li>Numbers (attendance, reign counts)</li>
-                                    <li>Locations (birthplace, venue, billed from)</li>
-                                </ul>
+                            <div class="d-flex mb-3">
+                                <div class="feature-icon me-3 text-info">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m8 17 4 4 4-4"/></svg>
+                                </div>
+                                <div>
+                                    <h5>Updates Automatically</h5>
+                                    <p class="text-muted mb-0">Keeps the database fresh by checking for new events and results every day.</p>
+                                </div>
                             </div>
-                            <p class="text-muted small">
-                                Under US copyright law (Feist v. Rural), factual data like names and dates
-                                cannot be copyrighted. We always attribute our sources and link back to
-                                original articles for transparency.
-                            </p>
-
-                            <h5 class="text-primary mt-4">Trademark Respect</h5>
-                            <p class="text-muted small">
-                                We use official promotion names (WWE, AEW, etc.) as factual references only.
-                                All trademarks remain property of their respective owners. OWDB is an
-                                independent fan project with no affiliation to any wrestling promotion.
-                            </p>
+                            <div class="d-flex mb-3">
+                                <div class="feature-icon me-3 text-danger">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                </div>
+                                <div>
+                                    <h5>Respects Sources</h5>
+                                    <p class="text-muted mb-0">Only collects factual data (names, dates, results) and always credits where information comes from.</p>
+                                </div>
+                            </div>
+                            <div class="d-flex">
+                                <div class="feature-icon me-3 text-primary">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                </div>
+                                <div>
+                                    <h5>Connects Everything</h5>
+                                    <p class="text-muted mb-0">Links wrestlers to their matches, stables, championships, and career history.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -178,494 +141,167 @@
         </div>
     </div>
 
-    <!-- Rate Limits -->
+    <!-- Currently Tracking -->
     <div class="row mb-4">
-        <div class="col-md-6 mb-3">
-            <div class="card bg-dark border-secondary h-100">
+        <div class="col-12">
+            <div class="card bg-dark border-secondary">
                 <div class="card-header">
-                    <h5 class="mb-0">Rate Limits</h5>
+                    <h4 class="mb-0">Currently Tracking</h4>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span>This Hour</span>
-                            <span>{{ stats.added_this_hour }} / {{ config.max_items_per_hour }}</span>
-                        </div>
-                        <div class="progress" style="height: 10px;">
-                            {% widthratio stats.added_this_hour config.max_items_per_hour 100 as hour_pct %}
-                            <div class="progress-bar bg-info" style="width: {{ hour_pct|default:0 }}%"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="d-flex justify-content-between mb-1">
-                            <span>Today</span>
-                            <span>{{ stats.added_today }} / {{ config.max_items_per_day }}</span>
-                        </div>
-                        <div class="progress" style="height: 10px;">
-                            {% widthratio stats.added_today config.max_items_per_day 100 as day_pct %}
-                            <div class="progress-bar bg-success" style="width: {{ day_pct|default:0 }}%"></div>
-                        </div>
-                    </div>
-                    <p class="text-muted small mt-3 mb-0">
-                        WrestleBot limits itself to {{ config.max_items_per_hour }} items/hour and
-                        {{ config.max_items_per_day }} items/day to ensure responsible data collection.
-                    </p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 mb-3">
-            <div class="card bg-dark border-secondary h-100">
-                <div class="card-header">
-                    <h5 class="mb-0">Current Focus</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex flex-wrap gap-2">
+                    <div class="d-flex flex-wrap gap-3">
                         {% if config.focus_wrestlers %}
-                            <span class="badge bg-primary">Wrestlers</span>
+                        <div class="tracking-badge">
+                            <span class="badge bg-primary p-2 fs-6">Wrestlers</span>
+                        </div>
                         {% endif %}
                         {% if config.focus_promotions %}
-                            <span class="badge bg-success">Promotions</span>
+                        <div class="tracking-badge">
+                            <span class="badge bg-success p-2 fs-6">Promotions</span>
+                        </div>
                         {% endif %}
                         {% if config.focus_events %}
-                            <span class="badge bg-info">Events</span>
+                        <div class="tracking-badge">
+                            <span class="badge bg-info p-2 fs-6">Events</span>
+                        </div>
                         {% endif %}
                         {% if config.focus_titles %}
-                            <span class="badge bg-warning text-dark">Championships</span>
+                        <div class="tracking-badge">
+                            <span class="badge bg-warning text-dark p-2 fs-6">Championships</span>
+                        </div>
                         {% endif %}
                         {% if config.focus_matches %}
-                            <span class="badge bg-danger">Matches</span>
+                        <div class="tracking-badge">
+                            <span class="badge bg-danger p-2 fs-6">Matches</span>
+                        </div>
                         {% endif %}
                     </div>
-                    <p class="text-muted small mt-3 mb-0">
-                        {% if stats.last_run %}
-                            Last run: {{ stats.last_run|timesince }} ago
-                        {% else %}
-                            Waiting for first run...
-                        {% endif %}
+                    <p class="text-muted mt-3 mb-0">
+                        WrestleBot is currently focused on these categories. It works continuously in the
+                        background to grow our database while you browse.
                     </p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Activity Log -->
+    <!-- Recent Activity Summary -->
     <div class="row">
         <div class="col-12">
             <div class="card bg-dark border-secondary">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">Activity Log</h4>
-                    <div class="btn-group btn-group-sm">
-                        <a href="{% url 'wrestlebot' %}" class="btn btn-outline-secondary {% if not current_filter and not current_action %}active{% endif %}">All</a>
-                        {% for type, data in entity_counts.items %}
-                            <a href="{% url 'wrestlebot' %}?entity={{ type }}" class="btn btn-outline-secondary {% if current_filter == type %}active{% endif %}">
-                                {{ data.label }} ({{ data.count }})
-                            </a>
+                <div class="card-header">
+                    <h4 class="mb-0">Recent Discoveries</h4>
+                </div>
+                <div class="card-body">
+                    {% if logs %}
+                    <div class="row">
+                        {% for log in logs|slice:":12" %}
+                        <div class="col-md-4 col-6 mb-3">
+                            <div class="discovery-item d-flex align-items-center">
+                                {% if log.action_type == 'create' %}
+                                <span class="badge bg-success me-2">New</span>
+                                {% elif log.action_type == 'update' %}
+                                <span class="badge bg-info me-2">Updated</span>
+                                {% else %}
+                                <span class="badge bg-secondary me-2">Found</span>
+                                {% endif %}
+                                <div>
+                                    <strong>{{ log.entity_name|truncatechars:25 }}</strong>
+                                    <br><small class="text-muted">{{ log.entity_type|title }}</small>
+                                </div>
+                            </div>
+                        </div>
                         {% endfor %}
                     </div>
-                </div>
-                <div class="card-body p-0" id="activity-log-container">
-                    {% if logs %}
-                        <div class="table-responsive">
-                            <table class="table table-dark table-hover mb-0">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 140px;">Time</th>
-                                        <th style="width: 100px;">Action</th>
-                                        <th style="width: 100px;">Type</th>
-                                        <th>Entity</th>
-                                        <th style="width: 100px;">Confidence</th>
-                                        <th style="width: 80px;">Source</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="activity-log-body">
-                                    {% for log in logs %}
-                                    <tr class="{% if not log.success %}table-danger{% endif %}" data-log-id="{{ log.id }}">
-                                        <td class="text-muted small">{{ log.created_at|date:"M d, H:i" }}</td>
-                                        <td>
-                                            {% if log.action_type == 'create' %}
-                                                <span class="badge bg-success">Created</span>
-                                            {% elif log.action_type == 'update' %}
-                                                <span class="badge bg-info">Updated</span>
-                                            {% elif log.action_type == 'skip' %}
-                                                <span class="badge bg-secondary">Skipped</span>
-                                            {% elif log.action_type == 'error' %}
-                                                <span class="badge bg-danger">Error</span>
-                                            {% elif log.action_type == 'discover' %}
-                                                <span class="badge bg-primary">Discovered</span>
-                                            {% elif log.action_type == 'link' %}
-                                                <span class="badge bg-warning text-dark">Linked</span>
-                                            {% elif log.action_type == 'verify' %}
-                                                <span class="badge bg-info">Verified</span>
-                                            {% else %}
-                                                <span class="badge bg-secondary">{{ log.get_action_type_display }}</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <span class="text-capitalize">{{ log.entity_type }}</span>
-                                        </td>
-                                        <td>
-                                            <strong>{{ log.entity_name }}</strong>
-                                            {% if log.ai_reasoning %}
-                                                <br><small class="text-muted">{{ log.ai_reasoning|truncatechars:60 }}</small>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if log.ai_confidence %}
-                                                <div class="progress" style="height: 6px;">
-                                                    {% widthratio log.ai_confidence 1 100 as conf_pct %}
-                                                    <div class="progress-bar {% if log.ai_confidence >= 0.8 %}bg-success{% elif log.ai_confidence >= 0.6 %}bg-warning{% else %}bg-danger{% endif %}"
-                                                         style="width: {{ conf_pct }}%"></div>
-                                                </div>
-                                                <small class="text-muted">{% widthratio log.ai_confidence 1 100 %}%</small>
-                                            {% else %}
-                                                <small class="text-muted">-</small>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if log.source_url %}
-                                                <a href="{{ log.source_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary" title="View Source">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
-                                                </a>
-                                            {% else %}
-                                                <span class="text-muted">-</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Pagination -->
-                        {% if logs.has_other_pages %}
-                        <div class="card-footer">
-                            <nav aria-label="Activity log pagination">
-                                <ul class="pagination pagination-sm justify-content-center mb-0">
-                                    {% if logs.has_previous %}
-                                        <li class="page-item">
-                                            <a class="page-link" href="?page={{ logs.previous_page_number }}{% if current_filter %}&entity={{ current_filter }}{% endif %}">Previous</a>
-                                        </li>
-                                    {% endif %}
-
-                                    <li class="page-item disabled">
-                                        <span class="page-link">Page {{ logs.number }} of {{ logs.paginator.num_pages }}</span>
-                                    </li>
-
-                                    {% if logs.has_next %}
-                                        <li class="page-item">
-                                            <a class="page-link" href="?page={{ logs.next_page_number }}{% if current_filter %}&entity={{ current_filter }}{% endif %}">Next</a>
-                                        </li>
-                                    {% endif %}
-                                </ul>
-                            </nav>
-                        </div>
-                        {% endif %}
                     {% else %}
-                        <div class="text-center py-5">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted mb-3">
-                                <rect width="18" height="10" x="3" y="11" rx="2"/>
-                                <circle cx="12" cy="5" r="2"/>
-                                <path d="M12 7v4"/>
-                                <line x1="8" x2="8" y1="16" y2="16"/>
-                                <line x1="16" x2="16" y1="16" y2="16"/>
-                            </svg>
-                            <h5 class="text-muted">No activity yet</h5>
-                            <p class="text-muted small">WrestleBot will start discovering data on its next scheduled run.</p>
-                        </div>
+                    <div class="text-center py-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted mb-3">
+                            <rect width="18" height="10" x="3" y="11" rx="2"/>
+                            <circle cx="12" cy="5" r="2"/>
+                            <path d="M12 7v4"/>
+                            <line x1="8" x2="8" y1="16" y2="16"/>
+                            <line x1="16" x2="16" y1="16" y2="16"/>
+                        </svg>
+                        <h5 class="text-muted">Getting Started</h5>
+                        <p class="text-muted mb-0">WrestleBot is warming up and will start discovering data soon!</p>
+                    </div>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
 
+    {% if is_staff %}
+    <!-- Admin Controls (staff only) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card bg-dark border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">Admin Controls</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>System Health</h6>
+                            <div class="d-flex gap-2 mb-3">
+                                <span class="badge {% if health.redis %}bg-success{% else %}bg-danger{% endif %}">Redis: {% if health.redis %}OK{% else %}Down{% endif %}</span>
+                                <span class="badge {% if health.celery %}bg-success{% else %}bg-danger{% endif %}">Celery: {% if health.celery %}OK{% else %}Down{% endif %}</span>
+                                <span class="badge {% if health.ollama %}bg-success{% else %}bg-warning text-dark{% endif %}">AI: {% if health.ollama %}{{ config.ai_model_name }}{% else %}Fallback{% endif %}</span>
+                            </div>
+                            <p class="text-muted small mb-0">
+                                Rate: {{ stats.added_this_hour }}/{{ config.max_items_per_hour }} this hour,
+                                {{ stats.added_today }}/{{ config.max_items_per_day }} today
+                            </p>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <button class="btn btn-warning" onclick="triggerDiscovery()" id="triggerBtn" {% if not health.celery %}disabled{% endif %}>
+                                Run Discovery Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
 
 {% block extra_js %}
+{% if is_staff %}
 <script>
-// Auto-refresh functionality for WrestleBot page
-let autoRefreshEnabled = true;
-let refreshInterval = null;
-let lastLogId = null;
-const REFRESH_INTERVAL_MS = 10000; // 10 seconds for more responsive updates
-
-const STATUS_CONFIG = {
-    'active': { class: 'success', label: 'Active' },
-    'paused': { class: 'secondary', label: 'Paused' },
-    'degraded': { class: 'warning', label: 'Degraded' },
-    'rate_limited': { class: 'info', label: 'Rate Limited' },
-    'warning': { class: 'warning', label: 'Warning' },
-    'error': { class: 'danger', label: 'Error' }
-};
-
-function updateLastUpdated() {
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString();
-    document.getElementById('lastUpdated').textContent = ' • Last updated: ' + timeStr;
-}
-
-function getActionBadge(actionType) {
-    const badges = {
-        'create': '<span class="badge bg-success">Created</span>',
-        'update': '<span class="badge bg-info">Updated</span>',
-        'skip': '<span class="badge bg-secondary">Skipped</span>',
-        'error': '<span class="badge bg-danger">Error</span>',
-        'discover': '<span class="badge bg-primary">Discovered</span>',
-        'link': '<span class="badge bg-warning text-dark">Linked</span>',
-        'verify': '<span class="badge bg-info">Verified</span>'
-    };
-    return badges[actionType] || `<span class="badge bg-secondary">${actionType}</span>`;
-}
-
-function getConfidenceHtml(confidence) {
-    if (!confidence) return '<small class="text-muted">-</small>';
-    const pct = Math.round(confidence * 100);
-    let colorClass = 'bg-danger';
-    if (confidence >= 0.8) colorClass = 'bg-success';
-    else if (confidence >= 0.6) colorClass = 'bg-warning';
-    return `<div class="progress" style="height: 6px;"><div class="progress-bar ${colorClass}" style="width: ${pct}%"></div></div><small class="text-muted">${pct}%</small>`;
-}
-
-function getSourceHtml(sourceUrl) {
-    if (!sourceUrl) return '<span class="text-muted">-</span>';
-    return `<a href="${sourceUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary" title="View Source">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
-    </a>`;
-}
-
-function createLogRow(log) {
-    const rowClass = log.success === false ? 'table-danger' : '';
-    const reasoning = log.ai_reasoning ? `<br><small class="text-muted">${log.ai_reasoning}</small>` : '';
-    return `
-        <tr class="${rowClass}" data-log-id="${log.id}">
-            <td class="text-muted small">${log.created_at}</td>
-            <td>${getActionBadge(log.action_type)}</td>
-            <td><span class="text-capitalize">${log.entity_type}</span></td>
-            <td><strong>${log.entity_name}</strong>${reasoning}</td>
-            <td>${getConfidenceHtml(log.ai_confidence)}</td>
-            <td>${getSourceHtml(log.source_url)}</td>
-        </tr>
-    `;
-}
-
-function updateHealthIndicator(name, isHealthy, extra) {
-    const container = document.getElementById('healthIndicators');
-    if (!container) return;
-
-    const badges = container.querySelectorAll('.badge');
-    badges.forEach(badge => {
-        if (badge.textContent.toLowerCase().includes(name.toLowerCase())) {
-            badge.className = `badge ${isHealthy ? 'bg-success' : (name === 'AI' ? 'bg-warning text-dark' : 'bg-danger')}`;
-            if (name === 'AI' && extra) {
-                badge.innerHTML = badge.innerHTML.replace(/\(.*\)/, `(${extra})`);
-            }
-        }
-    });
-}
-
-function updateStatus(status, message) {
-    const statusBadge = document.getElementById('statusBadge');
-    const statusMessage = document.getElementById('statusMessage');
-
-    if (statusBadge && STATUS_CONFIG[status]) {
-        const config = STATUS_CONFIG[status];
-        statusBadge.className = `badge bg-${config.class} fs-6`;
-        statusBadge.textContent = config.label;
-    }
-
-    if (statusMessage && message) {
-        statusMessage.textContent = message;
-    }
-}
-
-async function refreshStats() {
-    if (!autoRefreshEnabled) return;
-
-    try {
-        const response = await fetch('/api/wrestlebot/');
-        if (!response.ok) throw new Error('API request failed');
-
-        const data = await response.json();
-
-        // Update status and health indicators
-        if (data.status) {
-            updateStatus(data.status, data.status_message);
-        }
-
-        if (data.health) {
-            updateHealthIndicator('Redis', data.health.redis);
-            updateHealthIndicator('Celery', data.health.celery);
-            updateHealthIndicator('AI', data.health.ollama, data.health.ollama ? data.ai?.model : 'Fallback');
-        }
-
-        // Update stat cards with animation
-        updateStatWithAnimation('stat-total', data.stats.total_added);
-        updateStatWithAnimation('stat-24h', data.stats.recent_creates_24h || 0);
-        updateStatWithAnimation('stat-hour', data.stats.added_this_hour);
-        updateStatWithAnimation('stat-errors', data.stats.recent_errors_24h || 0);
-
-        // Update activity log with new entries
-        const tbody = document.getElementById('activity-log-body');
-        if (tbody && data.logs && data.logs.length > 0) {
-            // Check if there are new logs
-            const firstNewLogId = data.logs[0].id;
-            if (lastLogId !== firstNewLogId) {
-                // Find which logs are new
-                let newLogs = [];
-                for (const log of data.logs) {
-                    if (log.id === lastLogId) break;
-                    newLogs.push(log);
-                }
-
-                // Prepend new logs with highlight animation
-                if (newLogs.length > 0) {
-                    for (let i = newLogs.length - 1; i >= 0; i--) {
-                        const row = createLogRow(newLogs[i]);
-                        tbody.insertAdjacentHTML('afterbegin', row);
-                        // Add highlight animation to new row
-                        const newRow = tbody.querySelector(`[data-log-id="${newLogs[i].id}"]`);
-                        if (newRow) {
-                            newRow.classList.add('new-log-row');
-                            setTimeout(() => newRow.classList.remove('new-log-row'), 3000);
-                        }
-                    }
-                    // Remove excess rows to keep table manageable
-                    while (tbody.children.length > 50) {
-                        tbody.removeChild(tbody.lastChild);
-                    }
-                }
-                lastLogId = firstNewLogId;
-            }
-        }
-
-        updateLastUpdated();
-
-    } catch (error) {
-        console.error('Failed to refresh WrestleBot stats:', error);
-        // Don't disable auto-refresh on error, just try again next interval
-    }
-}
-
-function updateStatWithAnimation(elementId, newValue) {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-
-    const currentValue = parseInt(el.textContent) || 0;
-    if (currentValue !== newValue) {
-        el.textContent = newValue;
-        el.classList.add('stat-updated');
-        setTimeout(() => el.classList.remove('stat-updated'), 1000);
-    }
-}
-
-function toggleAutoRefresh() {
-    autoRefreshEnabled = !autoRefreshEnabled;
-    const toggleBtn = document.getElementById('refreshToggle');
-    const statusEl = document.getElementById('refreshStatus');
-
-    if (autoRefreshEnabled) {
-        toggleBtn.textContent = 'Pause';
-        statusEl.textContent = 'Live updating every 10 seconds';
-        startAutoRefresh();
-    } else {
-        toggleBtn.textContent = 'Resume';
-        statusEl.textContent = 'Live updates paused';
-        stopAutoRefresh();
-    }
-}
-
-function startAutoRefresh() {
-    if (refreshInterval) clearInterval(refreshInterval);
-    refreshInterval = setInterval(refreshStats, REFRESH_INTERVAL_MS);
-}
-
-function stopAutoRefresh() {
-    if (refreshInterval) {
-        clearInterval(refreshInterval);
-        refreshInterval = null;
-    }
-}
-
-// Manual trigger function (staff only)
 async function triggerDiscovery() {
     const btn = document.getElementById('triggerBtn');
     if (!btn) return;
 
-    const originalHtml = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Running...';
+    btn.textContent = 'Running...';
 
     try {
         const response = await fetch('/api/wrestlebot/trigger/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': getCsrfToken()
+                'X-CSRFToken': document.cookie.split(';').find(c => c.trim().startsWith('csrftoken=')).split('=')[1]
             },
             body: 'max_items=15'
         });
 
         const data = await response.json();
-
         if (data.success) {
-            btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><polyline points="20 6 9 17 4 12"/></svg> Triggered!';
-            btn.classList.remove('btn-outline-primary');
-            btn.classList.add('btn-success');
-
-            // Refresh stats after a delay to show new activity
-            setTimeout(() => {
-                refreshStats();
-                btn.innerHTML = originalHtml;
-                btn.classList.remove('btn-success');
-                btn.classList.add('btn-outline-primary');
-                btn.disabled = false;
-            }, 3000);
+            btn.textContent = 'Triggered!';
+            setTimeout(() => location.reload(), 2000);
         } else {
-            alert('Failed to trigger: ' + (data.error || 'Unknown error'));
-            btn.innerHTML = originalHtml;
+            alert('Failed: ' + (data.error || 'Unknown error'));
+            btn.textContent = 'Run Discovery Now';
             btn.disabled = false;
         }
     } catch (error) {
-        console.error('Trigger failed:', error);
-        alert('Failed to trigger discovery cycle');
-        btn.innerHTML = originalHtml;
+        alert('Failed to trigger');
+        btn.textContent = 'Run Discovery Now';
         btn.disabled = false;
     }
 }
-
-function getCsrfToken() {
-    const cookie = document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='));
-    return cookie ? cookie.split('=')[1] : '';
-}
-
-// Initialize
-document.addEventListener('DOMContentLoaded', function() {
-    // Get initial last log ID
-    const firstRow = document.querySelector('#activity-log-body tr[data-log-id]');
-    if (firstRow) {
-        lastLogId = parseInt(firstRow.dataset.logId);
-    }
-    updateLastUpdated();
-    startAutoRefresh();
-});
 </script>
-<style>
-/* Animation for updated stats */
-.stat-updated {
-    animation: pulse-highlight 1s ease-out;
-}
-@keyframes pulse-highlight {
-    0% { color: #ffc107; transform: scale(1.1); }
-    100% { color: inherit; transform: scale(1); }
-}
-/* Animation for new log rows */
-.new-log-row {
-    animation: slide-in 0.5s ease-out;
-    background-color: rgba(25, 135, 84, 0.3) !important;
-}
-@keyframes slide-in {
-    from { opacity: 0; transform: translateX(-20px); }
-    to { opacity: 1; transform: translateX(0); }
-}
-</style>
+{% endif %}
 {% endblock %}

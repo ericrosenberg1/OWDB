@@ -494,6 +494,21 @@ a:hover {
     letter-spacing: 1px;
 }
 
+.stat-item.stat-total {
+    background: linear-gradient(135deg, var(--wwf-gold-dark), var(--wwf-gold));
+    border-color: var(--wwf-gold);
+}
+
+.stat-item.stat-total .stat-value {
+    color: var(--wwf-black);
+    font-size: 2rem;
+}
+
+.stat-item.stat-total .stat-name {
+    color: var(--wwf-black);
+    font-weight: 600;
+}
+
 .api-promo {
     background: var(--wwf-dark);
     border: 1px solid var(--wwf-gray);

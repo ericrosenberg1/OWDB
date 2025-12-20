@@ -138,6 +138,7 @@ class IndexView(TemplateView):
                 'books': Book.objects.count(),
                 'specials': Special.objects.count(),
             }
+            stats['total'] = sum(stats.values())
             cache.set('homepage_stats', stats, 900)  # Cache for 15 minutes
 
         context['stats'] = stats

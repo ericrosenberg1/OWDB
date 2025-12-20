@@ -85,8 +85,13 @@ class Command(BaseCommand):
             "iiurlwidth": 400,  # Thumbnail width
         }
 
+        headers = {
+            "User-Agent": "OWDB/1.0 (https://owdb.io; contact@owdb.io) Python/3.11",
+            "Accept": "application/json",
+        }
+
         try:
-            response = requests.get(base_url, params=params, timeout=10)
+            response = requests.get(base_url, params=params, headers=headers, timeout=10)
             data = response.json()
 
             if 'query' not in data or 'pages' not in data['query']:

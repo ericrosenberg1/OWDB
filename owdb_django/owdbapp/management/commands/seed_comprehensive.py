@@ -59,13 +59,25 @@ class Command(BaseCommand):
 
     def get_or_create_wrestler(self, name, **kwargs):
         """Get or create wrestler, returns (wrestler, created)."""
-        wrestler, created = Wrestler.objects.get_or_create(
-            name=name,
-            defaults=kwargs
-        )
-        if created:
-            self.stdout.write(f'  + {name}')
-        return wrestler, created
+        # First check by slug to avoid collisions
+        slug = slugify(name)
+        existing = Wrestler.objects.filter(slug=slug).first()
+        if existing:
+            self.stdout.write(f'  = {name} (exists as {existing.name})')
+            return existing, False
+
+        # Then try by exact name
+        try:
+            wrestler, created = Wrestler.objects.get_or_create(
+                name=name,
+                defaults=kwargs
+            )
+            if created:
+                self.stdout.write(f'  + {name}')
+            return wrestler, created
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f'  ! {name}: {e}'))
+            return None, False
 
     def seed_wrestlers(self):
         """Seed comprehensive list of wrestling personalities."""

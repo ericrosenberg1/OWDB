@@ -114,13 +114,16 @@ class Command(BaseCommand):
         if match_data.get('title'):
             title = self.get_or_create_title(match_data['title'], promotion)
 
+        wrestler_names = match_data.get('wrestlers', [])
+        match_text = ' vs '.join(wrestler_names) if wrestler_names else 'Match'
+
         match = Match.objects.create(
             event=event,
+            match_text=match_text,
             match_type=match_data.get('match_type', 'Singles'),
             winner=winner,
             title=title,
-            order=order,
-            title_changed=match_data.get('title_changed', False),
+            match_order=order,
             about=match_data.get('about', '')
         )
         match.wrestlers.set(wrestlers)

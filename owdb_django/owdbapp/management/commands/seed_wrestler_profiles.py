@@ -5,6 +5,7 @@ Usage:
     python manage.py seed_wrestler_profiles
 """
 from django.core.management.base import BaseCommand
+from django.utils.text import slugify
 from datetime import date
 from owdb_django.owdbapp.models import Wrestler
 
@@ -325,7 +326,11 @@ class Command(BaseCommand):
 
         for data in wrestlers_data:
             name = data.pop('name')
+            slug = slugify(name)
+            # Check by name or slug to avoid duplicates
             wrestler = Wrestler.objects.filter(name__iexact=name).first()
+            if not wrestler:
+                wrestler = Wrestler.objects.filter(slug=slug).first()
 
             if wrestler:
                 # Update existing wrestler

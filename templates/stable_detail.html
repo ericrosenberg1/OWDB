@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load linking_tags %}
+
+{% block content %}
+<div class="detail-page">
+    <div class="container">
+        <div class="detail-header">
+            <h1>{{ stable.name }}</h1>
+            {% if stable.aliases %}
+            <p class="text-muted">Also known as: {{ stable.aliases }}</p>
+            {% endif %}
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- About Section -->
+                {% if stable.about %}
+                <div class="detail-section">
+                    <h3>About</h3>
+                    {% with about_text=stable|about_with_links %}
+                    <p>{{ about_text|linebreaks }}</p>
+                    {% endwith %}
+                </div>
+                {% endif %}
+
+                <!-- Members Section -->
+                <div class="detail-section">
+                    <h3>Members</h3>
+                    {% if members %}
+                    <div class="member-grid">
+                        {% for wrestler in members %}
+                        <a href="{% url 'wrestler_detail' wrestler.pk %}" class="member-card">
+                            <div class="member-avatar">
+                                {% if wrestler.image_url %}
+                                <img src="{{ wrestler.image_url }}" alt="{{ wrestler.name }}">
+                                {% else %}
+                                <div class="avatar-placeholder">
+                                    {{ wrestler.name|slice:":1" }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <span class="member-name">{{ wrestler.name }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No members listed yet.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Related Events -->
+                {% if events %}
+                <div class="detail-section">
+                    <h3>Events Featuring Members</h3>
+                    <div class="credits-list">
+                        {% for event in events %}
+                        <div class="credit-item">
+                            <div class="credit-year">{{ event.date|date:"Y" }}</div>
+                            <div class="credit-separator"><span class="dot"></span></div>
+                            <div class="credit-info">
+                                <a href="{% url 'event_detail' event.pk %}" class="credit-title">{{ event.name }}</a>
+                                <span class="credit-meta">
+                                    {% if event.promotion %}
+                                    <a href="{% url 'promotion_detail' event.promotion.pk %}">{{ event.promotion.abbreviation|default:event.promotion.name }}</a>
+                                    {% endif %}
+                                    {% if event.venue %} - {{ event.venue.name }}{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Sidebar Info -->
+                <div class="detail-sidebar">
+                    <div class="sidebar-card">
+                        <h4>Info</h4>
+                        <dl class="info-list">
+                            {% if stable.promotion %}
+                            <dt>Promotion</dt>
+                            <dd><a href="{% url 'promotion_detail' stable.promotion.pk %}">{{ stable.promotion.name }}</a></dd>
+                            {% endif %}
+
+                            {% if stable.formed_year %}
+                            <dt>Formed</dt>
+                            <dd>{{ stable.formed_year }}</dd>
+                            {% endif %}
+
+                            {% if stable.disbanded_year %}
+                            <dt>Disbanded</dt>
+                            <dd>{{ stable.disbanded_year }}</dd>
+                            {% else %}
+                            <dt>Status</dt>
+                            <dd><span class="status-badge active">Active</span></dd>
+                            {% endif %}
+
+                            <dt>Members</dt>
+                            <dd>{{ members.count }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

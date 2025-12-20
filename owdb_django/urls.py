@@ -62,6 +62,15 @@ urlpatterns = [
     path('specials/<int:pk>/', views.SpecialDetailView.as_view(), name='special_detail'),
     path('specials/<slug:slug>/', views.SpecialDetailView.as_view(), name='special_detail_slug'),
 
+    # Stables & Factions
+    path('stables/', views.StableListView.as_view(), name='stables'),
+    path('stables/<int:pk>/', views.StableDetailView.as_view(), name='stable_detail'),
+    path('stables/<slug:slug>/', views.StableDetailView.as_view(), name='stable_detail_slug'),
+
+    # Podcast Episodes
+    path('episodes/<int:pk>/', views.PodcastEpisodeDetailView.as_view(), name='episode_detail'),
+    path('episodes/<slug:slug>/', views.PodcastEpisodeDetailView.as_view(), name='episode_detail_slug'),
+
     # Hot 100 Rankings
     path('hot100/', views.Hot100View.as_view(), name='hot100'),
     path('hot100/<int:year>/<int:month>/', views.Hot100View.as_view(), name='hot100_month'),

@@ -1004,6 +1004,159 @@ a:hover {
 }
 
 /* --------------------------------------------------------------------------
+   Detail Pages - Generic Styles
+   -------------------------------------------------------------------------- */
+.detail-page {
+    padding: 2rem 0;
+}
+
+.detail-header {
+    margin-bottom: 2rem;
+}
+
+.detail-header h1 {
+    color: var(--wwf-gold);
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.breadcrumb-text {
+    font-size: 0.875rem;
+    color: var(--wwf-silver);
+    margin-bottom: 0.5rem;
+}
+
+.breadcrumb-text a {
+    color: var(--wwf-silver);
+}
+
+.breadcrumb-text a:hover {
+    color: var(--wwf-gold);
+}
+
+.detail-section {
+    margin-bottom: 2rem;
+}
+
+.detail-section h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--wwf-white);
+}
+
+.detail-sidebar {
+    position: sticky;
+    top: 80px;
+}
+
+.sidebar-card {
+    background: var(--wwf-dark);
+    border: 1px solid var(--wwf-gray);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.sidebar-card h4 {
+    color: var(--wwf-gold);
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--wwf-gray);
+}
+
+.info-list {
+    margin: 0;
+}
+
+.info-list dt {
+    font-size: 0.75rem;
+    color: var(--wwf-light-gray);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+}
+
+.info-list dd {
+    margin-bottom: 1rem;
+    color: var(--wwf-silver);
+}
+
+.info-list dd a {
+    color: var(--wwf-gold);
+}
+
+/* Member Grid - for stables, podcast guests, etc. */
+.member-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 1rem;
+}
+
+.member-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1rem;
+    background: var(--wwf-dark);
+    border: 1px solid var(--wwf-gray);
+    border-radius: 8px;
+    transition: all var(--transition-base);
+    text-decoration: none;
+}
+
+.member-card:hover {
+    border-color: var(--wwf-gold);
+    transform: translateY(-2px);
+}
+
+.member-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+    background: var(--wwf-gray);
+}
+
+.member-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--wwf-gold);
+    background: var(--wwf-darker);
+}
+
+.member-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--wwf-white);
+}
+
+/* Episode player */
+.episode-player audio {
+    border-radius: 8px;
+}
+
+.episode-description {
+    line-height: 1.8;
+    color: var(--wwf-silver);
+}
+
+/* --------------------------------------------------------------------------
    Footer - TMDB Style
    -------------------------------------------------------------------------- */
 .site-footer {

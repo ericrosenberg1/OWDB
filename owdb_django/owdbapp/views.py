@@ -25,6 +25,7 @@ from .models import (
     Stable,
     VideoGame,
     Podcast,
+    PodcastEpisode,
     Book,
     Special,
     APIKey,
@@ -579,6 +580,68 @@ class SpecialDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = self.object.title
+        return context
+
+
+# =============================================================================
+# Stable Views
+# =============================================================================
+
+class StableListView(PaginatedListView):
+    model = Stable
+    template_name = 'stables.html'
+    context_object_name = 'stables'
+    search_fields = ['name', 'aliases']
+    search_placeholder = 'stables by name...'
+
+    def get_queryset(self):
+        return super().get_queryset().select_related('promotion').prefetch_related('members')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = 'Stables & Factions'
+        return context
+
+
+class StableDetailView(DetailView):
+    model = Stable
+    template_name = 'stable_detail.html'
+    context_object_name = 'stable'
+
+    def get_queryset(self):
+        return super().get_queryset().select_related('promotion').prefetch_related('members')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        stable = self.object
+        context['page_title'] = stable.name
+        context['members'] = stable.members.all()
+        context['events'] = Event.objects.filter(
+            matches__wrestlers__in=stable.members.all()
+        ).distinct().select_related('promotion', 'venue').order_by('-date')[:20]
+        return context
+
+
+# =============================================================================
+# Podcast Episode Views
+# =============================================================================
+
+class PodcastEpisodeDetailView(DetailView):
+    model = PodcastEpisode
+    template_name = 'podcast_episode_detail.html'
+    context_object_name = 'episode'
+
+    def get_queryset(self):
+        return super().get_queryset().select_related('podcast').prefetch_related('guests')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = self.object.title
+        context['guests'] = self.object.guests.all()
+        # Get other episodes from same podcast
+        context['related_episodes'] = self.object.podcast.episodes.exclude(
+            pk=self.object.pk
+        ).order_by('-published_date')[:10]
         return context
 
 

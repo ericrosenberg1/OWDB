@@ -2,58 +2,156 @@
 {% load linking_tags %}
 
 {% block content %}
-<div class="detail-header">
-    <h1 class="detail-title">{{ podcast.name }}</h1>
-    <div class="detail-meta">
-        {% if podcast.hosts %}
-        <div class="detail-meta-item">
-            <span class="detail-meta-label">Hosts:</span> {{ podcast.hosts }}
+<div class="detail-page">
+    <div class="container">
+        <div class="detail-header">
+            <h1>{{ podcast.name }}</h1>
+            <div class="detail-meta">
+                {% if podcast.hosts %}
+                <span class="text-muted">Hosted by {{ podcast.hosts }}</span>
+                {% endif %}
+            </div>
         </div>
-        {% endif %}
-        {% if podcast.launch_year %}
-        <div class="detail-meta-item">
-            <span class="detail-meta-label">Launch Year:</span> {{ podcast.launch_year }}
+
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- About Section -->
+                {% with about_text=podcast|about_with_links %}
+                {% if about_text %}
+                <div class="detail-section">
+                    <h3>About</h3>
+                    <p>{{ about_text|linebreaks }}</p>
+                </div>
+                {% endif %}
+                {% endwith %}
+
+                <!-- Episodes Section -->
+                {% if podcast.episodes.exists %}
+                <div class="detail-section">
+                    <h3>Episodes ({{ podcast.get_episode_count }})</h3>
+                    <div class="credits-list">
+                        {% for episode in podcast.episodes.all|slice:":50" %}
+                        <div class="credit-item">
+                            <div class="credit-year">{% if episode.published_date %}{{ episode.published_date|date:"Y" }}{% else %}—{% endif %}</div>
+                            <div class="credit-separator"><span class="dot"></span></div>
+                            <div class="credit-info">
+                                <a href="{% url 'episode_detail' episode.pk %}" class="credit-title">{{ episode.title|truncatechars:60 }}</a>
+                                <span class="credit-meta">
+                                    {% if episode.published_date %}{{ episode.published_date|date:"M j" }}{% endif %}
+                                    {% if episode.duration_display %} - {{ episode.duration_display }}{% endif %}
+                                    {% if episode.guests.exists %} - {{ episode.guests.count }} guests{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Host Wrestlers Section -->
+                {% if podcast.host_wrestlers.exists %}
+                <div class="detail-section">
+                    <h3>Hosts</h3>
+                    <div class="member-grid">
+                        {% for wrestler in podcast.host_wrestlers.all %}
+                        <a href="{% url 'wrestler_detail' wrestler.pk %}" class="member-card">
+                            <div class="member-avatar">
+                                {% if wrestler.image_url %}
+                                <img src="{{ wrestler.image_url }}" alt="{{ wrestler.name }}">
+                                {% else %}
+                                <div class="avatar-placeholder">
+                                    {{ wrestler.name|slice:":1" }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <span class="member-name">{{ wrestler.name }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Related Wrestlers Section -->
+                {% if podcast.related_wrestlers.exists %}
+                <div class="detail-section">
+                    <h3>Related Wrestlers</h3>
+                    <div class="member-grid">
+                        {% for wrestler in podcast.related_wrestlers.all %}
+                        <a href="{% url 'wrestler_detail' wrestler.pk %}" class="member-card">
+                            <div class="member-avatar">
+                                {% if wrestler.image_url %}
+                                <img src="{{ wrestler.image_url }}" alt="{{ wrestler.name }}">
+                                {% else %}
+                                <div class="avatar-placeholder">
+                                    {{ wrestler.name|slice:":1" }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <span class="member-name">{{ wrestler.name }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Sidebar -->
+                <div class="detail-sidebar">
+                    <div class="sidebar-card">
+                        <h4>Podcast Info</h4>
+                        <dl class="info-list">
+                            {% if podcast.hosts %}
+                            <dt>Hosts</dt>
+                            <dd>{{ podcast.hosts }}</dd>
+                            {% endif %}
+
+                            {% if podcast.launch_year %}
+                            <dt>Launched</dt>
+                            <dd>{{ podcast.launch_year }}</dd>
+                            {% endif %}
+
+                            <dt>Status</dt>
+                            <dd>
+                                {% if podcast.is_active %}
+                                <span class="status-badge active">Active</span>
+                                {% else %}
+                                <span class="status-badge retired">Ended {{ podcast.end_year }}</span>
+                                {% endif %}
+                            </dd>
+
+                            {% if podcast.episodes.exists %}
+                            <dt>Episodes</dt>
+                            <dd>{{ podcast.get_episode_count }}</dd>
+                            {% endif %}
+                        </dl>
+
+                        <div class="podcast-links mt-3">
+                            {% if podcast.url %}
+                            <a href="{{ podcast.url }}" target="_blank" rel="noopener" class="btn btn-primary btn-sm w-100 mb-2">
+                                Official Website
+                            </a>
+                            {% endif %}
+                            {% if podcast.apple_podcasts_url %}
+                            <a href="{{ podcast.apple_podcasts_url }}" target="_blank" rel="noopener" class="btn btn-outline-light btn-sm w-100 mb-2">
+                                Apple Podcasts
+                            </a>
+                            {% endif %}
+                            {% if podcast.spotify_url %}
+                            <a href="{{ podcast.spotify_url }}" target="_blank" rel="noopener" class="btn btn-outline-light btn-sm w-100 mb-2">
+                                Spotify
+                            </a>
+                            {% endif %}
+                            {% if podcast.youtube_url %}
+                            <a href="{{ podcast.youtube_url }}" target="_blank" rel="noopener" class="btn btn-outline-light btn-sm w-100">
+                                YouTube
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        {% endif %}
-        <div class="detail-meta-item">
-            <span class="detail-meta-label">Status:</span>
-            {% if podcast.is_active %}
-            <span class="badge badge-gold">Active</span>
-            {% else %}
-            <span class="badge badge-silver">Ended ({{ podcast.end_year }})</span>
-            {% endif %}
-        </div>
-        {% if podcast.url %}
-        <div class="detail-meta-item">
-            <a href="{{ podcast.url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-light">Listen Now</a>
-        </div>
-        {% endif %}
     </div>
 </div>
-
-{% with about_text=podcast|about_with_links %}
-    {% if about_text %}
-    <div class="card mb-4">
-        <div class="card-header">About</div>
-        <div class="card-body">
-            <p>{{ about_text|linebreaks }}</p>
-        </div>
-    </div>
-    {% endif %}
-{% endwith %}
-
-{% if podcast.related_wrestlers.exists %}
-<div class="card mb-4">
-    <div class="card-header">Related Wrestlers</div>
-    <ul class="list-group list-group-flush">
-        {% for wrestler in podcast.related_wrestlers.all %}
-        <li class="list-group-item bg-transparent">
-            <a href="{% url 'wrestler_detail' wrestler.pk %}">{{ wrestler.name }}</a>
-        </li>
-        {% endfor %}
-    </ul>
-</div>
-{% endif %}
-
-<a href="{% url 'podcasts' %}" class="btn btn-secondary">&larr; Back to Podcasts</a>
 {% endblock %}

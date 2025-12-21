@@ -124,25 +124,22 @@ class IndexView(TemplateView):
         context = super().get_context_data(**kwargs)
         context['page_title'] = 'Home'
 
-        # Get stats from cache or compute fresh (cached for 15 minutes)
-        stats = cache.get('homepage_stats')
-        if stats is None:
-            stats = {
-                'wrestlers': Wrestler.objects.count(),
-                'promotions': Promotion.objects.count(),
-                'events': Event.objects.count(),
-                'matches': Match.objects.count(),
-                'titles': Title.objects.count(),
-                'venues': Venue.objects.count(),
-                'stables': Stable.objects.count(),
-                'video_games': VideoGame.objects.count(),
-                'podcasts': Podcast.objects.count(),
-                'books': Book.objects.count(),
-                'specials': Special.objects.count(),
-            }
-            stats['total'] = sum(stats.values())
-            cache.set('homepage_stats', stats, 900)  # Cache for 15 minutes
-
+        # Always compute stats fresh - caching was causing stale data issues
+        # Database counts are fast enough and accurate data is more important
+        stats = {
+            'wrestlers': Wrestler.objects.count(),
+            'promotions': Promotion.objects.count(),
+            'events': Event.objects.count(),
+            'matches': Match.objects.count(),
+            'titles': Title.objects.count(),
+            'venues': Venue.objects.count(),
+            'stables': Stable.objects.count(),
+            'video_games': VideoGame.objects.count(),
+            'podcasts': Podcast.objects.count(),
+            'books': Book.objects.count(),
+            'specials': Special.objects.count(),
+        }
+        stats['total'] = sum(stats.values())
         context['stats'] = stats
 
         # Get latest additions (wrestlers, promotions, titles)

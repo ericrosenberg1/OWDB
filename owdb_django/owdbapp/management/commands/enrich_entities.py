@@ -40,14 +40,20 @@ class Command(BaseCommand):
             total_updated += self.enrich_promotions_batch_4()
             total_updated += self.enrich_promotions_batch_5()
             total_updated += self.enrich_promotions_batch_6()
+            total_updated += self.enrich_promotions_batch_7()
+            total_updated += self.enrich_promotions_batch_8()
+            total_updated += self.enrich_promotions_batch_9()
         if entity_type in ['all', 'championships']:
             total_updated += self.enrich_championships()
             total_updated += self.enrich_championships_batch_2()
             total_updated += self.enrich_championships_batch_3()
+            total_updated += self.enrich_championships_batch_4()
+            total_updated += self.enrich_championships_batch_5()
         if entity_type in ['all', 'venues']:
             total_updated += self.enrich_venues()
         if entity_type in ['all', 'games']:
             total_updated += self.enrich_video_games()
+            total_updated += self.enrich_video_games_batch_2()
         if entity_type in ['all', 'podcasts']:
             total_updated += self.enrich_podcasts()
             total_updated += self.enrich_podcasts_batch_2()
@@ -660,4 +666,171 @@ class Command(BaseCommand):
             name = data.pop('name')
             updated += self.update_stable(name, **data)
         self.stdout.write(f'  Updated {updated} stables')
+        return updated
+
+    def enrich_promotions_batch_7(self):
+        """Enrich wrestling promotions batch 7 - American Indies."""
+        self.stdout.write('--- Enriching Promotions Batch 7 ---')
+        updated = 0
+        promotions_data = [
+            {'name': 'CZW', 'about': 'Combat Zone Wrestling was founded in 1999 in New Jersey. Known for ultraviolent deathmatches and Tournament of Death. Launched careers of many hardcore stars.'},
+            {'name': 'Game Changer Wrestling', 'about': 'GCW was founded in 2010. Jersey-based promotion featuring deathmatch wrestling and indie stars. The Wrld on GCW and Homecoming are signature events.'},
+            {'name': 'PWG', 'about': 'Pro Wrestling Guerrilla was founded in 2003 in California. BOLA tournament and indie showcase. Super Dragon and Excalibur founded the promotion.'},
+            {'name': 'SHIMMER', 'about': 'SHIMMER Women Athletes was founded in 2005. Premier American women\'s promotion. Features international joshi and American talent.'},
+            {'name': 'CHIKARA', 'about': 'Chikara was a Philadelphia promotion founded in 2002. Comic book storytelling and unique characters. King of Trios tournament.'},
+            {'name': 'Beyond Wrestling', 'about': 'Beyond Wrestling is a New England promotion founded in 2009. Uncharted Territory weekly show. Indie showcase.'},
+            {'name': 'AIW', 'about': 'Absolute Intense Wrestling is an Ohio promotion founded in 2005. Midwest indie scene. Hell on Earth and other signature events.'},
+            {'name': 'AAW', 'about': 'AAW Pro Wrestling is a Chicago promotion founded in 2004. Jim Lynam Memorial Tournament. Midwest indie showcase.'},
+            {'name': 'Black Label Pro', 'about': 'Black Label Pro is an Indiana promotion founded in 2017. Slamilton and other unique events. Midwest indie wrestling.'},
+            {'name': 'DEFY Wrestling', 'about': 'DEFY Wrestling is a Seattle promotion founded in 2017. Pacific Northwest indie scene. Features international talent.'},
+            {'name': 'Create A Pro', 'about': 'Create A Pro Wrestling is a New York school and promotion. Pat Buck\'s wrestling academy. NXT UK and WWE alumni.'},
+            {'name': 'Wrestling Revolver', 'about': 'Wrestling Revolver is an Iowa promotion founded in 2016. Sami Callihan\'s promotion. Midwest hardcore indie.'},
+            {'name': 'GCW Tournament of Death', 'about': 'The Tournament of Death is GCW\'s annual deathmatch tournament. Ultraviolent wrestling showcase. Crown jewel event.'},
+            {'name': 'Warrior Wrestling', 'about': 'Warrior Wrestling is a Chicago-area promotion founded in 2018. Stadium series events. Family-friendly indie wrestling.'},
+            {'name': 'Glory Pro', 'about': 'Glory Pro Wrestling is a Missouri promotion. Midwest indie scene. Features rising talent.'},
+        ]
+        for data in promotions_data:
+            name = data.pop('name')
+            updated += self.update_promotion(name, **data)
+        self.stdout.write(f'  Updated {updated} promotions batch 7')
+        return updated
+
+    def enrich_promotions_batch_8(self):
+        """Enrich wrestling promotions batch 8 - Historical territories."""
+        self.stdout.write('--- Enriching Promotions Batch 8 ---')
+        updated = 0
+        promotions_data = [
+            {'name': 'Georgia Championship Wrestling', 'about': 'GCW was the premier NWA territory in the Southeast. TBS home before WWF buyout. Gordon Solie commentary. Dusty Rhodes, Tommy Rich, and more.'},
+            {'name': 'Jim Crockett Promotions', 'about': 'JCP was the Mid-Atlantic NWA territory run by the Crockett family. Became WCW. Starrcade originated here. Ric Flair territory.'},
+            {'name': 'Central States Wrestling', 'about': 'Central States was the Kansas City NWA territory. Operated from 1963-1989. Bob Geigel promoter. Harley Race home territory.'},
+            {'name': 'Pacific Northwest Wrestling', 'about': 'Pacific Northwest Wrestling was the Oregon and Washington NWA territory. Portland base. Don Owen promoted. Regional powerhouse.'},
+            {'name': 'Big Time Wrestling', 'about': 'Big Time Wrestling was the Detroit NWA territory. The Sheik dominated. Ed Farhat\'s promotion. Midwest wrestling.'},
+            {'name': 'International Wrestling', 'about': 'International Wrestling was the Montreal territory. Andre the Giant started here. French-Canadian wrestling hub.'},
+            {'name': 'Maple Leaf Wrestling', 'about': 'Maple Leaf Wrestling was the Toronto territory. Frank Tunney promotion. Canadian wrestling hub until WWF expansion.'},
+            {'name': 'Western States Sports', 'about': 'Western States Sports was the Amarillo territory. Dory Funk Sr. promotion. Produced Dory Jr. and Terry Funk.'},
+            {'name': 'San Francisco NWA', 'about': 'San Francisco was an NWA territory featuring Pat Patterson and other stars. Cow Palace venue. West Coast wrestling.'},
+            {'name': 'Houston Wrestling', 'about': 'Houston Wrestling was Paul Boesch\'s Texas territory. Sam Houston Coliseum. NWA affiliate. Texas wrestling legacy.'},
+            {'name': 'Central Wrestling Association', 'about': 'CWA was Jerry Lawler and Jerry Jarrett\'s Memphis territory. USWA predecessor. Best angles in wrestling.'},
+            {'name': 'USWA', 'about': 'United States Wrestling Association merged Memphis and Dallas from 1989-1997. Jerry Lawler. Jeff Jarrett development.'},
+            {'name': 'Southwest Championship Wrestling', 'about': 'SWCW was the San Antonio territory. Joe Blanchard promotion. Later became TWA.'},
+            {'name': 'Western Championship Wrestling', 'about': 'WCW (the territory) was the Omaha NWA affiliate. Not the Turner WCW. Midwest wrestling.'},
+            {'name': 'All South Wrestling', 'about': 'All South Wrestling was a Tennessee and Mississippi territory. Southern wrestling circuit.'},
+        ]
+        for data in promotions_data:
+            name = data.pop('name')
+            updated += self.update_promotion(name, **data)
+        self.stdout.write(f'  Updated {updated} promotions batch 8')
+        return updated
+
+    def enrich_promotions_batch_9(self):
+        """Enrich wrestling promotions batch 9 - Modern and misc."""
+        self.stdout.write('--- Enriching Promotions Batch 9 ---')
+        updated = 0
+        promotions_data = [
+            {'name': 'National Wrestling Alliance', 'about': 'The NWA was founded in 1948 as an alliance of territories. The World Heavyweight Championship is one of wrestling\'s oldest. Billy Corgan owns current NWA.'},
+            {'name': 'TNA Wrestling', 'about': 'TNA Wrestling operated from 2002-2017. Founded by Jeff Jarrett. Six-sided ring. Became Impact Wrestling. Jeff Hardy, AJ Styles, Kurt Angle.'},
+            {'name': 'NWA Powerrr', 'about': 'NWA Powerrr is the current NWA\'s studio wrestling show. Retro presentation. YouTube and Fite TV. Nick Aldis era.'},
+            {'name': 'Championship Wrestling from Hollywood', 'about': 'CWFH is a Los Angeles indie promotion. NWA affiliate. United Wrestling Network. TV show format.'},
+            {'name': 'NWA Hollywood', 'about': 'NWA Hollywood is the Los Angeles NWA affiliate. United Wrestling Network. West Coast wrestling.'},
+            {'name': 'Reality of Wrestling', 'about': 'ROW is Booker T\'s Texas promotion and training center. Houston-based. Develops talent for WWE and AEW.'},
+            {'name': 'Thunder Rosa Presenta', 'about': 'Thunder Rosa\'s Mission Pro is Texas-based women\'s wrestling. Develops Latina and women talent.'},
+            {'name': 'Women of Wrestling', 'about': 'WOW is David McLane\'s women\'s promotion. GLOW successor. TV-oriented presentation.'},
+            {'name': 'WrestlePro', 'about': 'WrestlePro is a New Jersey promotion. Northeast indie scene. Features touring talent.'},
+            {'name': 'FEST Wrestling', 'about': 'FEST Wrestling is a Florida punk rock wrestling show. Music festival integration. Unique presentation.'},
+            {'name': 'Black and Brave', 'about': 'Black and Brave is Seth Rollins and Marek Brave\'s wrestling school. Iowa training center. Tyler Black legacy.'},
+            {'name': 'Freelance Wrestling', 'about': 'Freelance Wrestling is a Chicago indie promotion. Monthly shows. Midwest indie scene.'},
+            {'name': 'Scenic City Invitational', 'about': 'SCI is an annual Tennessee tournament. Top indie talent showcase. NWA affiliate.'},
+            {'name': 'Pro Wrestling ZERO1 USA', 'about': 'ZERO1 USA is the American branch of the Japanese promotion. Strong style wrestling.'},
+            {'name': 'West Coast Pro', 'about': 'WCP is a California indie promotion. Bay Area wrestling scene. Features indie stars.'},
+        ]
+        for data in promotions_data:
+            name = data.pop('name')
+            updated += self.update_promotion(name, **data)
+        self.stdout.write(f'  Updated {updated} promotions batch 9')
+        return updated
+
+    def enrich_championships_batch_4(self):
+        """Enrich wrestling championships batch 4 - Women's titles."""
+        self.stdout.write('--- Enriching Championships Batch 4 ---')
+        updated = 0
+        titles_data = [
+            {'name': 'NXT Women\'s Championship', 'about': 'The NXT Women\'s Championship was introduced in 2013. Paige was first champion. Charlotte, Sasha, Bayley, and Asuka defined the title.'},
+            {'name': 'WWE Divas Championship', 'about': 'The Divas Championship was WWE\'s women\'s title from 2008-2016. Butterfly design. Replaced by Women\'s Championship.'},
+            {'name': 'Impact Knockouts Championship', 'about': 'The Knockouts Championship is Impact\'s women\'s title since 2007. Gail Kim, Awesome Kong, and Tessa Blanchard held it.'},
+            {'name': 'ROH Women\'s World Championship', 'about': 'The ROH Women\'s World Championship was introduced in 2018. Features top women\'s talent.'},
+            {'name': 'World of Stardom Championship', 'about': 'The World of Stardom Championship is Stardom\'s secondary singles title. Red belt design.'},
+            {'name': 'Wonder of Stardom Championship', 'about': 'The Wonder of Stardom Championship is Stardom\'s white belt. High-work rate secondary title.'},
+            {'name': 'IWGP Women\'s Championship', 'about': 'The IWGP Women\'s Championship was introduced in 2022. Stardom integration. KAIRI Saya was first champion.'},
+            {'name': 'CMLL World Women\'s Championship', 'about': 'The CMLL World Women\'s Championship is lucha libre\'s top women\'s title. Arena Mexico defended.'},
+            {'name': 'AAA Reina de Reinas Championship', 'about': 'The Reina de Reinas is AAA\'s top women\'s title. Queen of Queens. Mexican women\'s wrestling.'},
+            {'name': 'WWE Women\'s Tag Team Championship', 'about': 'The WWE Women\'s Tag Team Championship was introduced in 2019. Boss \'n\' Hug Connection first champs.'},
+            {'name': 'NXT UK Women\'s Championship', 'about': 'The NXT UK Women\'s Championship featured British women\'s talent. Rhea Ripley and Meiko Satomura held it.'},
+            {'name': 'AEW Women\'s World Championship', 'about': 'The AEW Women\'s World Championship is AEW\'s top women\'s title. Riho first champion.'},
+            {'name': 'Shimmer Championship', 'about': 'The SHIMMER Championship is SHIMMER\'s top women\'s title. American women\'s wrestling showcase.'},
+            {'name': 'ChocoPro Championship', 'about': 'The ChocoPro Championship is the apartment wrestling title. Emi Sakura\'s promotion top prize.'},
+            {'name': 'SEAdLINNNG Beyond the Sea Championship', 'about': 'The Beyond the Sea Championship is SEAdLINNNG\'s top women\'s title. Joshi wrestling.'},
+        ]
+        for data in titles_data:
+            name = data.pop('name')
+            updated += self.update_title(name, **data)
+        self.stdout.write(f'  Updated {updated} championships batch 4')
+        return updated
+
+    def enrich_championships_batch_5(self):
+        """Enrich wrestling championships batch 5 - Historical and misc."""
+        self.stdout.write('--- Enriching Championships Batch 5 ---')
+        updated = 0
+        titles_data = [
+            {'name': 'AWA World Heavyweight Championship', 'about': 'The AWA World Heavyweight Championship was the American Wrestling Association\'s top title. Verne Gagne, Nick Bockwinkel legends.'},
+            {'name': 'AWA World Tag Team Championship', 'about': 'The AWA World Tag Team Championship was the AWA\'s tag title. Road Warriors, High Flyers held it.'},
+            {'name': 'NWA Television Championship', 'about': 'The NWA TV Championship was a workhorse title. Arn Anderson and Tully Blanchard defined it.'},
+            {'name': 'NWA United States Championship', 'about': 'The NWA US Championship was Mid-Atlantic\'s top title. Ric Flair, Magnum TA legends.'},
+            {'name': 'WCW United States Championship', 'about': 'The WCW US Championship continued NWA lineage. Sting, DDP, Goldberg held it.'},
+            {'name': 'WCW Television Championship', 'about': 'The WCW TV Championship was the workhorse title. Lord Steven Regal defined it.'},
+            {'name': 'WCW Cruiserweight Championship', 'about': 'The WCW Cruiserweight Championship showcased luchadores. Rey Mysterio, Dean Malenko, Eddie Guerrero.'},
+            {'name': 'WCW World Tag Team Championship', 'about': 'The WCW World Tag Team Championship was held by legendary teams. Road Warriors, Steiners, Outsiders.'},
+            {'name': 'Impact World Tag Team Championship', 'about': 'The Impact World Tag Team Championship is Impact\'s tag title. The North, LAX, and others.'},
+            {'name': 'GHC National Championship', 'about': 'The GHC National Championship is Pro Wrestling NOAH\'s secondary title. Junior heavyweight focused.'},
+            {'name': 'Open the Brave Gate Championship', 'about': 'The Open the Brave Gate is Dragon Gate\'s secondary title. Junior heavyweight showcase.'},
+            {'name': 'ROH Pure Championship', 'about': 'The ROH Pure Championship emphasizes technical wrestling. Pure wrestling rules. Jonathan Gresham defined it.'},
+            {'name': 'NWA World Junior Heavyweight Championship', 'about': 'The NWA World Junior Heavyweight Championship is one of wrestling\'s oldest junior titles.'},
+            {'name': 'PWG World Championship', 'about': 'The PWG World Championship is Pro Wrestling Guerrilla\'s top title. BOLA winner often challenges.'},
+            {'name': 'CZW World Heavyweight Championship', 'about': 'The CZW World Heavyweight Championship is Combat Zone Wrestling\'s top title. Deathmatch company.'},
+        ]
+        for data in titles_data:
+            name = data.pop('name')
+            updated += self.update_title(name, **data)
+        self.stdout.write(f'  Updated {updated} championships batch 5')
+        return updated
+
+    def enrich_video_games_batch_2(self):
+        """Enrich wrestling video games batch 2."""
+        self.stdout.write('--- Enriching Video Games Batch 2 ---')
+        updated = 0
+        games_data = [
+            {'name': 'WWE 2K20', 'about': 'WWE 2K20 was critically panned for bugs and glitches. Led to the series taking a year off. Roman Reigns and Becky Lynch cover.'},
+            {'name': 'WWE 2K15', 'about': 'WWE 2K15 was the first next-gen WWE game. John Cena cover. MyCareer mode introduced.'},
+            {'name': 'WWE 2K14', 'about': 'WWE 2K14 featured The Rock on the cover. 30 Years of WrestleMania mode. Streak vs Career.'},
+            {'name': 'WWE 13', 'about': 'WWE 13 featured the Attitude Era. CM Punk cover. Revolution mode for historical storylines.'},
+            {'name': 'WWE 12', 'about': 'WWE 12 introduced the Predator engine. Randy Orton cover. Bigger, Badder, Better tagline.'},
+            {'name': 'WWE All Stars', 'about': 'WWE All Stars featured exaggerated arcade action. Legends vs current stars. Over the top presentation.'},
+            {'name': 'SmackDown vs. Raw 2011', 'about': 'SVR 2011 introduced WWE Universe mode. John Cena cover. Last THQ pre-2K era.'},
+            {'name': 'SmackDown vs. Raw 2010', 'about': 'SVR 2010 featured story designer. Create your own storylines. THQ era peak.'},
+            {'name': 'SmackDown vs. Raw 2009', 'about': 'SVR 2009 featured Road to WrestleMania mode. Triple H, Undertaker, Cena, Batista covers.'},
+            {'name': 'SmackDown vs. Raw 2008', 'about': 'SVR 2008 introduced ECW brand. John Cena cover. Fighting style system.'},
+            {'name': 'SmackDown! vs. Raw', 'about': 'The first SVR introduced superstar voices. Eddie Guerrero tribute. PS2 classic.'},
+            {'name': 'SmackDown! Shut Your Mouth', 'about': 'Shut Your Mouth had massive roster. The Rock cover. Iconic PS2 era.'},
+            {'name': 'SmackDown! Just Bring It', 'about': 'Just Bring It was the first PS2 SmackDown game. Fred Durst in-game. Rock cover.'},
+            {'name': 'WWF SmackDown! 2', 'about': 'SmackDown 2: Know Your Role was PS1 classic. The Rock cover. Season mode.'},
+            {'name': 'WWF SmackDown!', 'about': 'The original SmackDown game for PS1. Launched the THQ series. Fast paced action.'},
+            {'name': 'WWF Raw', 'about': 'WWF Raw for Xbox was anchor of original Xbox. Brock Lesnar era. Unfamiliar controls.'},
+            {'name': 'WWE Legends of WrestleMania', 'about': 'Legends of WrestleMania featured classic wrestlers. WrestleMania relive mode. Hulk Hogan cover.'},
+            {'name': 'WWE Battlegrounds', 'about': 'WWE Battlegrounds was arcade brawler style. Cartoon graphics. Power-ups and over-top-action.'},
+            {'name': 'WCW vs. nWo: World Tour', 'about': 'WCW World Tour for N64 introduced AKI engine. WCW roster. THQ era beginning.'},
+            {'name': 'WCW Nitro', 'about': 'WCW Nitro was THQ\'s first WCW game. Goldberg era roster. PS1 and N64.'},
+        ]
+        for data in games_data:
+            name = data.pop('name')
+            updated += self.update_game(name, **data)
+        self.stdout.write(f'  Updated {updated} video games batch 2')
         return updated

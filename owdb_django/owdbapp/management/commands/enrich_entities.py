@@ -153,11 +153,11 @@ class Command(BaseCommand):
                 return 1
         return 0
 
-    def update_documentary(self, name, **kwargs):
+    def update_documentary(self, title, **kwargs):
         """Update a documentary with enriched data."""
-        doc = Special.objects.filter(name__iexact=name).first()
+        doc = Special.objects.filter(title__iexact=title).first()
         if not doc:
-            doc = Special.objects.filter(name__icontains=name).first()
+            doc = Special.objects.filter(title__icontains=title).first()
         if doc:
             updated = False
             for field, value in kwargs.items():
@@ -372,7 +372,7 @@ class Command(BaseCommand):
             {'name': 'Kayfabe: A Fake Real Movie About A Fake Real Sport', 'about': 'Kayfabe explores the art of maintaining wrestling\'s illusion and its evolution.'},
         ]
         for data in docs_data:
-            name = data.pop('name')
-            updated += self.update_documentary(name, **data)
+            title = data.pop('name')
+            updated += self.update_documentary(title, **data)
         self.stdout.write(f'  Updated {updated} documentaries')
         return updated

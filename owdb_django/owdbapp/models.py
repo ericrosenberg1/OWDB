@@ -923,6 +923,8 @@ class VideoGame(TimeStampedModel):
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     promotions = models.ManyToManyField(Promotion, blank=True, related_name='video_games')
+    wrestlers = models.ManyToManyField('Wrestler', blank=True, related_name='video_games',
+                                       help_text="Wrestlers featured in this game's roster")
     release_year = models.IntegerField(blank=True, null=True, db_index=True)
     systems = models.CharField(max_length=255, blank=True, null=True, help_text="e.g., PS5, Xbox, PC")
     developer = models.CharField(max_length=255, blank=True, null=True)

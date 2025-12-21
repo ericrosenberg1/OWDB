@@ -52,6 +52,34 @@ class Command(BaseCommand):
             total_updated += self.enrich_mexican_wrestlers()
         if batch == 0 or batch == 10:
             total_updated += self.enrich_british_indie()
+        if batch == 0 or batch == 11:
+            total_updated += self.enrich_womens_pioneers()
+        if batch == 0 or batch == 12:
+            total_updated += self.enrich_tag_team_specialists()
+        if batch == 0 or batch == 13:
+            total_updated += self.enrich_managers_personalities()
+        if batch == 0 or batch == 14:
+            total_updated += self.enrich_cruiserweights()
+        if batch == 0 or batch == 15:
+            total_updated += self.enrich_hardcore_legends()
+        if batch == 0 or batch == 16:
+            total_updated += self.enrich_nxt_stars()
+        if batch == 0 or batch == 17:
+            total_updated += self.enrich_roh_legends()
+        if batch == 0 or batch == 18:
+            total_updated += self.enrich_classic_territorial()
+        if batch == 0 or batch == 19:
+            total_updated += self.enrich_modern_indie()
+        if batch == 0 or batch == 20:
+            total_updated += self.enrich_additional_wwe()
+        if batch == 0 or batch == 21:
+            total_updated += self.enrich_additional_aew()
+        if batch == 0 or batch == 22:
+            total_updated += self.enrich_additional_japan()
+        if batch == 0 or batch == 23:
+            total_updated += self.enrich_additional_mexico()
+        if batch == 0 or batch == 24:
+            total_updated += self.enrich_remaining_wrestlers()
 
         self.stdout.write(self.style.SUCCESS(f'\n=== ENRICHMENT COMPLETE ==='))
         self.stdout.write(f'Total wrestlers updated: {total_updated}')
@@ -1595,4 +1623,346 @@ class Command(BaseCommand):
             updated += self.update_wrestler(name, **data)
 
         self.stdout.write(f'  Updated {updated} British/Indie stars')
+        return updated
+
+    def enrich_womens_pioneers(self):
+        """Enrich women's wrestling pioneers."""
+        self.stdout.write('--- Enriching Women\'s Pioneers ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'The Fabulous Moolah', 'real_name': 'Mary Lillian Ellison', 'birth_date': '1923-07-22', 'hometown': 'Columbia, South Carolina', 'nationality': 'American', 'debut_year': 1949, 'about': 'The Fabulous Moolah held the WWF Women\'s Championship for 28 years, the longest reign in wrestling history. She trained many female wrestlers and was a fixture in WWF/WWE for decades.'},
+            {'name': 'Mae Young', 'real_name': 'Johnnie Mae Young', 'birth_date': '1923-03-12', 'hometown': 'Sand Springs, Oklahoma', 'nationality': 'American', 'debut_year': 1939, 'about': 'Mae Young was a pioneer who wrestled for over 70 years. Known for her toughness and humor, she remained active in WWE into her 80s.'},
+            {'name': 'Wendi Richter', 'real_name': 'Wendi Richter', 'birth_date': '1961-09-06', 'hometown': 'Dallas, Texas', 'nationality': 'American', 'debut_year': 1979, 'about': 'Wendi Richter was central to the Rock \'n\' Wrestling Connection, winning the WWF Women\'s Championship with Cyndi Lauper in her corner.'},
+            {'name': 'Alundra Blayze', 'real_name': 'Debra Miceli', 'birth_date': '1964-02-09', 'hometown': 'Tampa, Florida', 'nationality': 'American', 'aliases': 'Madusa', 'about': 'Alundra Blayze (Madusa) was WWF Women\'s Champion three times and brought athletic credibility to women\'s wrestling. WWE Hall of Famer.'},
+            {'name': 'Jacqueline', 'real_name': 'Jacqueline Moore', 'birth_date': '1964-01-06', 'hometown': 'Dallas, Texas', 'nationality': 'American', 'about': 'Jacqueline was the first African American WWF Women\'s Champion and also held the Cruiserweight Championship.'},
+            {'name': 'Ivory', 'real_name': 'Lisa Moretti', 'birth_date': '1961-11-26', 'hometown': 'Los Angeles, California', 'nationality': 'American', 'about': 'Ivory was a three-time WWF Women\'s Champion and memorable member of Right to Censor.'},
+            {'name': 'Molly Holly', 'real_name': 'Nora Greenwald', 'birth_date': '1977-08-31', 'hometown': 'Forest Lake, Minnesota', 'nationality': 'American', 'finishers': 'Molly-Go-Round', 'about': 'Molly Holly was a two-time Women\'s Champion known for her exceptional technical wrestling ability.'},
+            {'name': 'Jazz', 'real_name': 'Carlene Moore-Begnaud', 'birth_date': '1972-08-27', 'hometown': 'New Orleans, Louisiana', 'nationality': 'American', 'about': 'Jazz was a two-time WWE Women\'s Champion known for her aggressive, no-nonsense style.'},
+            {'name': 'Victoria', 'real_name': 'Lisa Marie Varon', 'birth_date': '1971-02-10', 'hometown': 'San Bernardino, California', 'nationality': 'American', 'aliases': 'Tara', 'finishers': 'Widow\'s Peak', 'about': 'Victoria was a two-time WWE Women\'s Champion. She later had success in TNA as Tara.'},
+            {'name': 'Gail Kim', 'real_name': 'Gail Kim-Irvine', 'birth_date': '1976-02-20', 'hometown': 'Toronto, Ontario', 'nationality': 'Canadian', 'finishers': 'Eat Defeat', 'about': 'Gail Kim won the WWE Women\'s Championship in her debut match and became the face of TNA\'s Knockouts Division.'},
+            {'name': 'Mickie James', 'real_name': 'Mickie James-Aldis', 'birth_date': '1979-08-31', 'hometown': 'Montpelier, Virginia', 'nationality': 'American', 'finishers': 'Mick Kick', 'about': 'Mickie James is a six-time women\'s champion in WWE. Her obsessed fan storyline with Trish Stratus is legendary.'},
+            {'name': 'Natalya', 'real_name': 'Natalie Neidhart-Wilson', 'birth_date': '1982-05-27', 'hometown': 'Calgary, Alberta', 'nationality': 'Canadian', 'finishers': 'Sharpshooter', 'about': 'Natalya is from the legendary Hart wrestling family, daughter of Jim Neidhart and niece of Bret Hart.'},
+            {'name': 'Paige', 'real_name': 'Saraya-Jade Bevis', 'birth_date': '1992-08-17', 'hometown': 'Norwich, England', 'nationality': 'British', 'aliases': 'Saraya', 'about': 'Paige was the first NXT Women\'s Champion. Now wrestles as Saraya in AEW.'},
+            {'name': 'AJ Lee', 'real_name': 'April Mendez Brooks', 'birth_date': '1987-03-19', 'hometown': 'Union City, New Jersey', 'nationality': 'American', 'finishers': 'Black Widow', 'about': 'AJ Lee was a three-time Divas Champion with the longest combined reign in history.'},
+            {'name': 'Manami Toyota', 'real_name': 'Manami Toyota', 'birth_date': '1971-03-02', 'hometown': 'Matsudo, Japan', 'nationality': 'Japanese', 'about': 'Manami Toyota is widely considered the greatest female wrestler ever. Her innovative moves set the standard.'},
+            {'name': 'Bull Nakano', 'real_name': 'Keiko Nakano', 'birth_date': '1968-01-08', 'hometown': 'Kawaguchi, Japan', 'nationality': 'Japanese', 'about': 'Bull Nakano was an iconic joshi wrestler who became WWF Women\'s Champion. WWE Hall of Famer.'},
+            {'name': 'Akira Hokuto', 'real_name': 'Hisako Sasahara', 'birth_date': '1967-07-14', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'about': 'Akira Hokuto is a joshi legend known for brutal matches and determination despite injuries.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Women\'s pioneers')
+        return updated
+
+    def enrich_tag_team_specialists(self):
+        """Enrich tag team specialists."""
+        self.stdout.write('--- Enriching Tag Team Specialists ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Arn Anderson', 'real_name': 'Martin Lunde', 'birth_date': '1958-09-20', 'hometown': 'Rome, Georgia', 'nationality': 'American', 'finishers': 'Spinebuster, DDT', 'about': 'Arn Anderson, The Enforcer, was one of the greatest tag wrestlers ever as part of the Four Horsemen and Brain Busters.'},
+            {'name': 'Tully Blanchard', 'real_name': 'Tully Arthur Blanchard', 'birth_date': '1954-01-22', 'hometown': 'San Antonio, Texas', 'nationality': 'American', 'about': 'Tully Blanchard was a Four Horsemen member and half of the Brain Busters with Arn Anderson.'},
+            {'name': 'Rick Rude', 'real_name': 'Richard Erwin Rood', 'birth_date': '1958-12-07', 'hometown': 'Robbinsdale, Minnesota', 'nationality': 'American', 'finishers': 'Rude Awakening', 'about': 'Ravishing Rick Rude was known for his physique, charisma, and in-ring ability. Intercontinental Champion and WCW US Champion.'},
+            {'name': 'Hawk', 'real_name': 'Michael Hegstrand', 'birth_date': '1957-09-12', 'hometown': 'Minneapolis, Minnesota', 'nationality': 'American', 'about': 'Hawk was half of the Legion of Doom/Road Warriors, the most dominant tag team in wrestling history.'},
+            {'name': 'Animal', 'real_name': 'Joseph Laurinaitis', 'birth_date': '1960-09-12', 'hometown': 'Philadelphia, Pennsylvania', 'nationality': 'American', 'about': 'Animal was half of the Legion of Doom/Road Warriors. A power house who dominated tag team wrestling.'},
+            {'name': 'Demolition Ax', 'real_name': 'Bill Eadie', 'birth_date': '1947-12-27', 'hometown': 'Brownsville, Pennsylvania', 'nationality': 'American', 'aliases': 'Ax', 'about': 'Ax was half of Demolition, three-time WWF Tag Team Champions with the longest combined reign.'},
+            {'name': 'Demolition Smash', 'real_name': 'Barry Darsow', 'birth_date': '1959-10-06', 'hometown': 'Minneapolis, Minnesota', 'nationality': 'American', 'aliases': 'Smash, Repo Man, Krusher Khruschev', 'about': 'Smash was half of Demolition and later became Repo Man. Three-time WWF Tag Team Champion.'},
+            {'name': 'Jim Neidhart', 'real_name': 'James Henry Neidhart', 'birth_date': '1955-02-08', 'hometown': 'Tampa, Florida', 'nationality': 'American', 'about': 'Jim "The Anvil" Neidhart was half of the Hart Foundation with Bret Hart. Two-time WWF Tag Team Champion.'},
+            {'name': 'Marty Jannetty', 'real_name': 'Marty Jannetty', 'birth_date': '1960-02-03', 'hometown': 'Columbus, Georgia', 'nationality': 'American', 'about': 'Marty Jannetty was half of the Rockers with Shawn Michaels. Their innovative high-flying style influenced tag wrestling.'},
+            {'name': 'Rick Steiner', 'real_name': 'Robert Rechsteiner', 'birth_date': '1961-03-09', 'hometown': 'Bay City, Michigan', 'nationality': 'American', 'finishers': 'Steiner Bulldog', 'about': 'Rick Steiner was half of the Steiner Brothers, one of the greatest tag teams ever.'},
+            {'name': 'Scott Steiner', 'real_name': 'Scott Carl Rechsteiner', 'birth_date': '1962-07-29', 'hometown': 'Bay City, Michigan', 'nationality': 'American', 'finishers': 'Frankensteiner, Steiner Recliner', 'about': 'Scott Steiner transformed from tag team star to Big Poppa Pump. WCW World Champion and legendary for his promos.'},
+            {'name': 'Bully Ray', 'real_name': 'Mark LoMonaco', 'birth_date': '1971-07-14', 'hometown': 'New York City, New York', 'nationality': 'American', 'aliases': 'Bubba Ray Dudley', 'about': 'Bubba Ray Dudley was half of the Dudley Boyz, the most decorated tag team in history.'},
+            {'name': 'D-Von Dudley', 'real_name': 'Devon Hughes', 'birth_date': '1972-08-01', 'hometown': 'New Rochelle, New York', 'nationality': 'American', 'about': 'D-Von Dudley was half of the Dudley Boyz. 23-time tag team champion across multiple promotions.'},
+            {'name': 'Dax Harwood', 'real_name': 'Daniel Wheeler', 'birth_date': '1984-08-14', 'hometown': 'Mocksville, North Carolina', 'nationality': 'American', 'aliases': 'Dash Wilder', 'about': 'Dax Harwood is half of FTR, considered the best tag team in the world. Multiple time champions across WWE, AEW, and NJPW.'},
+            {'name': 'Cash Wheeler', 'real_name': 'David Harwood', 'birth_date': '1987-06-26', 'hometown': 'Wilson, North Carolina', 'nationality': 'American', 'aliases': 'Scott Dawson', 'about': 'Cash Wheeler is half of FTR. Their old-school style has made them tag team champions worldwide.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Tag team specialists')
+        return updated
+
+    def enrich_managers_personalities(self):
+        """Enrich managers and personalities."""
+        self.stdout.write('--- Enriching Managers/Personalities ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Paul Bearer', 'real_name': 'William Moody', 'birth_date': '1954-04-10', 'hometown': 'Mobile, Alabama', 'nationality': 'American', 'about': 'Paul Bearer was the iconic manager of The Undertaker and Kane. His voice and urn became wrestling legends.'},
+            {'name': 'Bobby Heenan', 'real_name': 'Raymond Heenan', 'birth_date': '1944-11-01', 'hometown': 'Chicago, Illinois', 'nationality': 'American', 'about': 'Bobby "The Brain" Heenan was the greatest manager and commentator in wrestling history. His wit was unmatched.'},
+            {'name': 'Jimmy Hart', 'real_name': 'James Ray Hart', 'birth_date': '1944-01-01', 'hometown': 'Jackson, Mississippi', 'nationality': 'American', 'about': 'Jimmy "Mouth of the South" Hart managed over 40 wrestlers in his career. Known for his megaphone and colorful jackets.'},
+            {'name': 'Mr. Fuji', 'real_name': 'Harry Fujiwara', 'birth_date': '1934-05-04', 'hometown': 'Honolulu, Hawaii', 'nationality': 'American', 'about': 'Mr. Fuji was a five-time WWF Tag Team Champion as a wrestler and later became a legendary devious manager.'},
+            {'name': 'Sensational Sherri', 'real_name': 'Sherri Martel', 'birth_date': '1958-02-08', 'hometown': 'Birmingham, Alabama', 'nationality': 'American', 'about': 'Sensational Sherri was a WWF Women\'s Champion who became a legendary manager for Shawn Michaels and others.'},
+            {'name': 'Miss Elizabeth', 'real_name': 'Elizabeth Hulette', 'birth_date': '1960-11-19', 'hometown': 'Frankfort, Kentucky', 'nationality': 'American', 'about': 'Miss Elizabeth was the beloved manager and wife of Randy Savage. Their love story defined 80s wrestling.'},
+            {'name': 'Paul Ellering', 'real_name': 'Paul Ellering', 'birth_date': '1953-06-15', 'hometown': 'Melrose Park, Illinois', 'nationality': 'American', 'about': 'Paul Ellering managed the Road Warriors/Legion of Doom to tag team dominance across multiple promotions.'},
+            {'name': 'Jim Cornette', 'real_name': 'James Mark Cornette', 'birth_date': '1961-09-17', 'hometown': 'Louisville, Kentucky', 'nationality': 'American', 'about': 'Jim Cornette managed the Midnight Express and became a legendary booker, podcaster, and wrestling historian.'},
+            {'name': 'Paul Heyman', 'real_name': 'Paul Heyman', 'birth_date': '1965-09-11', 'hometown': 'Bronx, New York', 'nationality': 'American', 'about': 'Paul Heyman created ECW and became the greatest advocate in wrestling history, managing Brock Lesnar and Roman Reigns.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Managers/Personalities')
+        return updated
+
+    def enrich_cruiserweights(self):
+        """Enrich cruiserweight wrestlers."""
+        self.stdout.write('--- Enriching Cruiserweights ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Dean Malenko', 'real_name': 'Dean Simon', 'birth_date': '1960-08-04', 'hometown': 'Tampa, Florida', 'nationality': 'American', 'finishers': 'Texas Cloverleaf', 'about': 'Dean Malenko, the Man of 1000 Holds, was a four-time WCW Cruiserweight Champion known for his technical mastery.'},
+            {'name': 'Juventud Guerrera', 'real_name': 'Juventud Guerrera', 'birth_date': '1974-10-22', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'finishers': 'Juvi Driver', 'about': 'Juventud Guerrera was a high-flying WCW Cruiserweight Champion known for incredible aerial moves.'},
+            {'name': 'Psicosis', 'real_name': 'Dionicio Castellanos', 'birth_date': '1971-01-19', 'hometown': 'Tijuana, Mexico', 'nationality': 'Mexican', 'about': 'Psicosis was a masked luchador known for his high-flying style in WCW\'s cruiserweight division.'},
+            {'name': 'Super Crazy', 'real_name': 'Francisco Islas Rueda', 'birth_date': '1973-07-11', 'hometown': 'Tulancingo, Mexico', 'nationality': 'Mexican', 'finishers': 'Moonsault', 'about': 'Super Crazy was an ECW and WCW star known for his insane moonsaults and fearless style.'},
+            {'name': 'Tajiri', 'real_name': 'Yoshihiro Tajiri', 'birth_date': '1970-09-29', 'hometown': 'Tochigi, Japan', 'nationality': 'Japanese', 'finishers': 'Buzzsaw Kick, Tarantula', 'about': 'Tajiri brought Japanese strong style to ECW and WWE. His mist and kicks made him a fan favorite.'},
+            {'name': 'Jamie Noble', 'real_name': 'James Gibson', 'birth_date': '1976-12-23', 'hometown': 'Hanover, West Virginia', 'nationality': 'American', 'about': 'Jamie Noble was a WWE Cruiserweight Champion and later a producer. Known for his trailer park character.'},
+            {'name': 'Paul London', 'real_name': 'Paul London', 'birth_date': '1980-04-16', 'hometown': 'Austin, Texas', 'nationality': 'American', 'about': 'Paul London was a high-flying WWE Tag Team Champion with Brian Kendrick. Known for incredible aerial offense.'},
+            {'name': 'Brian Kendrick', 'real_name': 'Brian Kendrick', 'birth_date': '1979-05-29', 'hometown': 'Fairfax, Virginia', 'nationality': 'American', 'finishers': 'Sliced Bread #2', 'about': 'Brian Kendrick was a WWE Tag Team and Cruiserweight Champion. Later became "The" Brian Kendrick.'},
+            {'name': 'Ultimo Dragon', 'real_name': 'Yoshihiro Asai', 'birth_date': '1966-12-12', 'hometown': 'Aichi, Japan', 'nationality': 'Japanese', 'finishers': 'Asai Moonsault, Dragon Sleeper', 'about': 'Ultimo Dragon held 10 titles simultaneously and invented the Asai Moonsault. A true legend of cruiserweight wrestling.'},
+            {'name': 'Jushin Thunder Liger', 'real_name': 'Keiichi Yamada', 'birth_date': '1964-11-30', 'hometown': 'Hiroshima, Japan', 'nationality': 'Japanese', 'finishers': 'Liger Bomb, Shooting Star Press', 'about': 'Jushin Thunder Liger is the greatest junior heavyweight ever. His 30+ year career defined the style. WWE Hall of Famer.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Cruiserweights')
+        return updated
+
+    def enrich_hardcore_legends(self):
+        """Enrich hardcore legends."""
+        self.stdout.write('--- Enriching Hardcore Legends ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Mick Foley', 'real_name': 'Michael Foley', 'birth_date': '1965-06-07', 'hometown': 'Long Island, New York', 'nationality': 'American', 'aliases': 'Cactus Jack, Mankind, Dude Love', 'finishers': 'Mandible Claw, Double Arm DDT', 'about': 'Mick Foley is the Hardcore Legend. As Cactus Jack, Mankind, and Dude Love, he defined extreme wrestling. His Hell in a Cell fall is iconic.'},
+            {'name': 'Terry Funk', 'real_name': 'Terrence Funk', 'birth_date': '1944-06-30', 'hometown': 'Amarillo, Texas', 'nationality': 'American', 'finishers': 'Spinning Toe Hold', 'about': 'Terry Funk is a hardcore legend who wrestled across six decades. Former NWA World Champion who helped create ECW.'},
+            {'name': 'Sandman', 'real_name': 'James Fullington', 'birth_date': '1963-06-16', 'hometown': 'Philadelphia, Pennsylvania', 'nationality': 'American', 'about': 'The Sandman was the beer-drinking, cane-swinging heart of ECW. His entrance through the crowd became legendary.'},
+            {'name': 'New Jack', 'real_name': 'Jerome Young', 'birth_date': '1963-01-03', 'hometown': 'Greensboro, North Carolina', 'nationality': 'American', 'about': 'New Jack was the most controversial figure in ECW. His matches were violent spectacles set to "Natural Born Killaz."'},
+            {'name': 'Balls Mahoney', 'real_name': 'Jonathan Rechner', 'birth_date': '1972-08-22', 'hometown': 'Nutley, New Jersey', 'nationality': 'American', 'about': 'Balls Mahoney was an ECW legend known for his chair shots and fan connection.'},
+            {'name': 'Axl Rotten', 'real_name': 'Brian Knighton', 'birth_date': '1971-02-05', 'hometown': 'Baltimore, Maryland', 'nationality': 'American', 'about': 'Axl Rotten was a hardcore specialist in ECW, often teaming with Balls Mahoney.'},
+            {'name': 'Tommy Dreamer', 'real_name': 'Thomas Laughlin', 'birth_date': '1971-02-14', 'hometown': 'Yonkers, New York', 'nationality': 'American', 'finishers': 'Dreamer DDT, Dreamer Driver', 'about': 'Tommy Dreamer was the heart and soul of ECW. He bled for the company and never stopped fighting.'},
+            {'name': 'Raven', 'real_name': 'Scott Levy', 'birth_date': '1964-09-08', 'hometown': 'Philadelphia, Pennsylvania', 'nationality': 'American', 'finishers': 'Evenflow DDT', 'about': 'Raven was the philosophical anti-hero of ECW. His feud with Tommy Dreamer is legendary. Also successful in WCW and WWE.'},
+            {'name': 'Al Snow', 'real_name': 'Allen Sarven', 'birth_date': '1963-07-18', 'hometown': 'Lima, Ohio', 'nationality': 'American', 'about': 'Al Snow found fame in ECW and WWE with his mannequin head "Head." Former Hardcore and Tag Team Champion.'},
+            {'name': 'Hardcore Holly', 'real_name': 'Robert Howard', 'birth_date': '1963-01-29', 'hometown': 'Mobile, Alabama', 'nationality': 'American', 'finishers': 'Alabama Slam', 'about': 'Hardcore Holly was a tough-as-nails competitor. Six-time Hardcore Champion known for his stiff style.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Hardcore legends')
+        return updated
+
+    def enrich_nxt_stars(self):
+        """Enrich NXT stars."""
+        self.stdout.write('--- Enriching NXT Stars ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Adam Cole', 'real_name': 'Austin Jenkins', 'birth_date': '1989-07-05', 'hometown': 'Panama City, Florida', 'nationality': 'American', 'finishers': 'Panama Sunrise, Last Shot', 'about': 'Adam Cole was the longest-reigning NXT Champion in history. Leader of Undisputed Era before joining AEW.'},
+            {'name': 'Johnny Gargano', 'real_name': 'John Gargano', 'birth_date': '1987-08-14', 'hometown': 'Cleveland, Ohio', 'nationality': 'American', 'finishers': 'One Final Beat, Gargano Escape', 'about': 'Johnny Gargano was NXT Champion and known for his epic feuds with Tommaso Ciampa. Johnny Wrestling is beloved by fans.'},
+            {'name': 'Tommaso Ciampa', 'real_name': 'Tommaso Whitney', 'birth_date': '1985-05-08', 'hometown': 'Boston, Massachusetts', 'nationality': 'American', 'finishers': 'Fairy Tale Ending, Willow\'s Bell', 'about': 'Tommaso Ciampa was a two-time NXT Champion. His turn on Johnny Gargano is one of the greatest heel turns ever.'},
+            {'name': 'Velveteen Dream', 'real_name': 'Patrick Clark Jr.', 'birth_date': '1995-08-28', 'hometown': 'Washington, D.C.', 'nationality': 'American', 'about': 'Velveteen Dream was an NXT North American Champion known for his flamboyant character inspired by Prince.'},
+            {'name': 'Aleister Black', 'real_name': 'Tom Budgen', 'birth_date': '1985-05-19', 'hometown': 'Amsterdam, Netherlands', 'nationality': 'Dutch', 'aliases': 'Malakai Black', 'finishers': 'Black Mass', 'about': 'Aleister Black was NXT Champion with a dark mystical character. Now Malakai Black in AEW leading the House of Black.'},
+            {'name': 'Ricochet', 'real_name': 'Trevor Mann', 'birth_date': '1988-10-11', 'hometown': 'Paducah, Kentucky', 'nationality': 'American', 'finishers': '630 Senton, Recoil', 'about': 'Ricochet is one of the greatest high-flyers ever. His athleticism is unmatched. NXT North American and WWE IC Champion.'},
+            {'name': 'Keith Lee', 'real_name': 'Keith Lee', 'birth_date': '1984-11-08', 'hometown': 'Wichita Falls, Texas', 'nationality': 'American', 'finishers': 'Spirit Bomb, Big Bang Catastrophe', 'about': 'Keith Lee was NXT Champion and North American Champion simultaneously. His combination of size and agility is remarkable.'},
+            {'name': 'Karrion Kross', 'real_name': 'Kevin Kesar', 'birth_date': '1985-07-19', 'hometown': 'New York City, New York', 'nationality': 'American', 'finishers': 'Kross Jacket', 'about': 'Karrion Kross was a two-time NXT Champion. His apocalyptic character with Scarlett was dominant.'},
+            {'name': 'Io Shirai', 'real_name': 'Masami Odate', 'birth_date': '1990-05-26', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'aliases': 'Iyo Sky', 'finishers': 'Moonsault', 'about': 'Io Shirai was NXT Women\'s Champion and is considered the best female high-flyer ever. Now IYO SKY in WWE.'},
+            {'name': 'Shayna Baszler', 'real_name': 'Shayna Baszler', 'birth_date': '1980-08-08', 'hometown': 'Sioux Falls, South Dakota', 'nationality': 'American', 'finishers': 'Kirifuda Clutch', 'about': 'Shayna Baszler was a two-time NXT Women\'s Champion. Former MMA fighter who dominated the division.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} NXT stars')
+        return updated
+
+    def enrich_roh_legends(self):
+        """Enrich ROH legends."""
+        self.stdout.write('--- Enriching ROH Legends ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Bryan Danielson', 'real_name': 'Bryan Danielson', 'birth_date': '1981-05-22', 'hometown': 'Aberdeen, Washington', 'nationality': 'American', 'aliases': 'Daniel Bryan', 'finishers': 'Cattle Mutilation, LeBell Lock, Busaiku Knee', 'about': 'Bryan Danielson is considered one of the greatest technical wrestlers ever. ROH Champion, WWE Champion, AEW Champion.'},
+            {'name': 'Samoa Joe', 'real_name': 'Nuufolau Joel Seanoa', 'birth_date': '1979-03-17', 'hometown': 'Orange County, California', 'nationality': 'American', 'finishers': 'Muscle Buster, Coquina Clutch', 'about': 'Samoa Joe was ROH\'s first homegrown star. His trilogy with CM Punk is legendary. NXT, TNA, and ROH Champion.'},
+            {'name': 'Austin Aries', 'real_name': 'Daniel Healy Solwold Jr.', 'birth_date': '1978-04-15', 'hometown': 'Milwaukee, Wisconsin', 'nationality': 'American', 'finishers': 'Brainbuster, Last Chancery', 'about': 'Austin Aries is a three-time ROH World Champion and TNA World Champion. The Greatest Man That Ever Lived.'},
+            {'name': 'Tyler Black', 'real_name': 'Colby Lopez', 'birth_date': '1986-05-28', 'hometown': 'Davenport, Iowa', 'nationality': 'American', 'aliases': 'Seth Rollins', 'about': 'Tyler Black was ROH World Champion before becoming Seth Rollins in WWE. One of the greatest wrestlers of his generation.'},
+            {'name': 'Davey Richards', 'real_name': 'Wesley Richards', 'birth_date': '1983-02-01', 'hometown': 'Othello, Washington', 'nationality': 'American', 'finishers': 'Damage Reflex, Ankle Lock', 'about': 'Davey Richards was ROH World Champion and half of the American Wolves. Known for his intense in-ring style.'},
+            {'name': 'Eddie Edwards', 'real_name': 'Edward Edwards', 'birth_date': '1983-12-30', 'hometown': 'Boston, Massachusetts', 'nationality': 'American', 'finishers': 'Die Hard Driver', 'about': 'Eddie Edwards was ROH World Champion and TNA World Champion. One half of the American Wolves.'},
+            {'name': 'Jay Lethal', 'real_name': 'Jamar Shipman', 'birth_date': '1985-04-29', 'hometown': 'Elizabeth, New Jersey', 'nationality': 'American', 'finishers': 'Lethal Injection, Lethal Combination', 'about': 'Jay Lethal is a two-time ROH World Champion. His Black Machismo and Ric Flair impressions made him a star.'},
+            {'name': 'Low Ki', 'real_name': 'Brandon Silvestry', 'birth_date': '1979-12-21', 'hometown': 'Brooklyn, New York', 'nationality': 'American', 'finishers': 'Ki Krusher, Warrior\'s Way', 'about': 'Low Ki was the first ROH Champion. His stiff striking style and intensity set the tone for the promotion.'},
+            {'name': 'Christopher Daniels', 'real_name': 'Daniel Covell', 'birth_date': '1970-03-24', 'hometown': 'Kalamazoo, Michigan', 'nationality': 'American', 'finishers': 'Angel\'s Wings, Best Moonsault Ever', 'about': 'Christopher Daniels was the first ROH Triple Crown winner. The Fallen Angel competed at the highest level for decades.'},
+            {'name': 'Alex Shelley', 'real_name': 'Patrick Martin', 'birth_date': '1983-05-23', 'hometown': 'Detroit, Michigan', 'nationality': 'American', 'about': 'Alex Shelley is half of the Motor City Machine Guns. One of the most innovative wrestlers of his generation.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} ROH legends')
+        return updated
+
+    def enrich_classic_territorial(self):
+        """Enrich classic territorial era wrestlers."""
+        self.stdout.write('--- Enriching Classic Territorial Era ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Harley Race', 'real_name': 'Harley Leland Race', 'birth_date': '1943-04-11', 'hometown': 'Quitman, Missouri', 'nationality': 'American', 'finishers': 'Diving Headbutt', 'about': 'Harley Race was an eight-time NWA World Champion. The King of Wrestling was tough and respected worldwide.'},
+            {'name': 'Jack Brisco', 'real_name': 'Jack Brisco', 'birth_date': '1941-09-21', 'hometown': 'Blackwell, Oklahoma', 'nationality': 'American', 'finishers': 'Figure Four Leglock', 'about': 'Jack Brisco was a two-time NWA World Champion and NCAA wrestling champion. One of the greatest scientific wrestlers.'},
+            {'name': 'Dory Funk Jr.', 'real_name': 'Dorrance Funk Jr.', 'birth_date': '1941-02-03', 'hometown': 'Amarillo, Texas', 'nationality': 'American', 'finishers': 'Spinning Toe Hold', 'about': 'Dory Funk Jr. was NWA World Champion for over four years. His technical style influenced generations.'},
+            {'name': 'Lou Thesz', 'real_name': 'Aloysius Martin Thesz', 'birth_date': '1916-04-24', 'hometown': 'Banat, Michigan', 'nationality': 'American', 'finishers': 'Thesz Press, STF', 'about': 'Lou Thesz was the greatest champion of the territorial era. His six NWA World Championships spanned decades.'},
+            {'name': 'Verne Gagne', 'real_name': 'LaVerne Clarence Gagne', 'birth_date': '1926-02-26', 'hometown': 'Corcoran, Minnesota', 'nationality': 'American', 'finishers': 'Sleeper Hold', 'about': 'Verne Gagne was a 10-time AWA World Champion and built the AWA into a major territory. Olympic-caliber athlete.'},
+            {'name': 'Nick Bockwinkel', 'real_name': 'Nicholas Warren Francis Bockwinkel', 'birth_date': '1934-12-06', 'hometown': 'St. Louis, Missouri', 'nationality': 'American', 'about': 'Nick Bockwinkel was a four-time AWA World Champion. His sophisticated heel character was years ahead of its time.'},
+            {'name': 'Fritz Von Erich', 'real_name': 'Jack Barton Adkisson', 'birth_date': '1929-08-16', 'hometown': 'Jewett, Texas', 'nationality': 'American', 'finishers': 'Iron Claw', 'about': 'Fritz Von Erich was a legend who built WCCW. His Iron Claw was feared. Father of the Von Erich wrestling dynasty.'},
+            {'name': 'Kerry Von Erich', 'real_name': 'Kerry Gene Adkisson', 'birth_date': '1960-02-03', 'hometown': 'Niagara Falls, New York', 'nationality': 'American', 'aliases': 'Texas Tornado', 'finishers': 'Iron Claw, Tornado Punch', 'about': 'Kerry Von Erich was NWA World Champion and WWF IC Champion. The Modern Day Warrior overcame tragedy to become a star.'},
+            {'name': 'Kevin Von Erich', 'real_name': 'Kevin Ross Adkisson', 'birth_date': '1957-05-15', 'hometown': 'Dallas, Texas', 'nationality': 'American', 'finishers': 'Iron Claw', 'about': 'Kevin Von Erich was a WCCW legend and the only surviving Von Erich brother. WWE Hall of Famer.'},
+            {'name': 'Bruiser Brody', 'real_name': 'Frank Goodish', 'birth_date': '1946-06-18', 'hometown': 'Detroit, Michigan', 'nationality': 'American', 'finishers': 'King Kong Knee Drop', 'about': 'Bruiser Brody was a wild, uncontrollable force. His brawling style influenced hardcore wrestling. A legend in Japan.'},
+            {'name': 'Stan Hansen', 'real_name': 'John Stanley Hansen II', 'birth_date': '1949-08-29', 'hometown': 'Borger, Texas', 'nationality': 'American', 'finishers': 'Western Lariat', 'about': 'Stan Hansen was a legend in Japan and America. His stiff Lariat and wild style made him an icon. WWE Hall of Famer.'},
+            {'name': 'Killer Kowalski', 'real_name': 'Władek Kowalski', 'birth_date': '1926-10-13', 'hometown': 'Windsor, Ontario', 'nationality': 'Canadian', 'about': 'Killer Kowalski was one of the original monster heels. Later trained Triple H and Chyna. WWE Hall of Famer.'},
+            {'name': 'Bruno Sammartino', 'real_name': 'Bruno Leopoldo Francesco Sammartino', 'birth_date': '1935-10-06', 'hometown': 'Pizzoferrato, Italy', 'nationality': 'Italian-American', 'finishers': 'Bearhug', 'about': 'Bruno Sammartino held the WWWF Championship for 11 combined years. The Living Legend sold out Madison Square Garden over 180 times.'},
+            {'name': 'Pedro Morales', 'real_name': 'Pedro Morales', 'birth_date': '1942-10-22', 'hometown': 'Culebra, Puerto Rico', 'nationality': 'Puerto Rican', 'about': 'Pedro Morales was WWWF Champion and the first Triple Crown winner. A hero to Latino fans.'},
+            {'name': 'Bob Backlund', 'real_name': 'Robert Louis Backlund', 'birth_date': '1949-08-14', 'hometown': 'Princeton, Minnesota', 'nationality': 'American', 'finishers': 'Crossface Chickenwing', 'about': 'Bob Backlund was WWF Champion for nearly six years. His amateur background made him a technical master. Two-time champion.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Classic territorial wrestlers')
+        return updated
+
+    def enrich_modern_indie(self):
+        """Enrich modern indie stars."""
+        self.stdout.write('--- Enriching Modern Indie Stars ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Bandido', 'real_name': 'Carlos Romo', 'birth_date': '1994-12-16', 'hometown': 'Torreon, Mexico', 'nationality': 'Mexican', 'finishers': '21 Plex', 'about': 'Bandido is a lucha libre sensation. His incredible athleticism made him ROH World Champion and indie star.'},
+            {'name': 'Jonathan Gresham', 'real_name': 'Jonathan Gresham', 'birth_date': '1988-10-28', 'hometown': 'Atlanta, Georgia', 'nationality': 'American', 'finishers': 'Octopus Hold', 'about': 'Jonathan Gresham was ROH World Champion. The Octopus is known for his technical mastery and unique style.'},
+            {'name': 'Trent Seven', 'real_name': 'Benjamin Webb', 'birth_date': '1981-11-12', 'hometown': 'Wolverhampton, England', 'nationality': 'British', 'about': 'Trent Seven was NXT UK Tag Team Champion as half of Moustache Mountain. A key figure in British wrestling.'},
+            {'name': 'Mark Andrews', 'real_name': 'Mark Andrews', 'birth_date': '1992-04-17', 'hometown': 'Cardiff, Wales', 'nationality': 'Welsh', 'finishers': 'Stundog Millionaire', 'about': 'Mark Andrews was NXT UK Tag Team Champion. High-flying Welsh star who competed worldwide.'},
+            {'name': 'Toni Storm', 'real_name': 'Toni Rossall', 'birth_date': '1995-10-19', 'hometown': 'Gold Coast, Australia', 'nationality': 'Australian', 'finishers': 'Storm Zero', 'about': 'Toni Storm was NXT UK Women\'s Champion and AEW Women\'s Champion. One of the best female wrestlers worldwide.'},
+            {'name': 'Kota Ibushi', 'real_name': 'Kota Ibushi', 'birth_date': '1982-05-21', 'hometown': 'Amagasaki, Japan', 'nationality': 'Japanese', 'finishers': 'Kamigoye, Phoenix Splash', 'about': 'Kota Ibushi is known for his breathtaking athleticism and willingness to take risks. IWGP Heavyweight Champion.'},
+            {'name': 'Zack Sabre Jr.', 'real_name': 'Zack Sherwin Mayall', 'birth_date': '1987-07-24', 'hometown': 'Sheerness, England', 'nationality': 'British', 'finishers': 'Zack Driver, Various Submissions', 'about': 'Zack Sabre Jr. is the best technical wrestler of his generation. His submission game is unmatched. NJPW and IWGP Champion.'},
+            {'name': 'WALTER', 'real_name': 'Walter Hahn', 'birth_date': '1987-08-10', 'hometown': 'Vienna, Austria', 'nationality': 'Austrian', 'aliases': 'Gunther', 'finishers': 'Powerbomb, Chops', 'about': 'WALTER had the longest NXT UK Championship reign at 870 days. Now Gunther in WWE with IC Championship dominance.'},
+            {'name': 'Killer Kross', 'real_name': 'Kevin Kesar', 'birth_date': '1985-07-19', 'hometown': 'Las Vegas, Nevada', 'nationality': 'American', 'aliases': 'Karrion Kross', 'about': 'Killer Kross was a two-time NXT Champion. His apocalyptic persona made him a dominant champion.'},
+            {'name': 'Penta El Zero M', 'real_name': 'Unknown', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'aliases': 'Pentagon Jr, Pentagon Dark', 'finishers': 'Fear Factor, Package Piledriver', 'about': 'Pentagon Jr is one of the most popular luchadors of his generation. His Cero Miedo persona made him a worldwide star.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Modern indie stars')
+        return updated
+
+    def enrich_additional_wwe(self):
+        """Enrich additional WWE wrestlers."""
+        self.stdout.write('--- Enriching Additional WWE ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Sheamus', 'real_name': 'Stephen Farrelly', 'birth_date': '1978-01-28', 'hometown': 'Dublin, Ireland', 'nationality': 'Irish', 'finishers': 'Brogue Kick, White Noise', 'about': 'Sheamus is a four-time WWE Champion and first Irish-born world champion. The Celtic Warrior is known for his bruising style.'},
+            {'name': 'Drew McIntyre', 'real_name': 'Andrew Galloway IV', 'birth_date': '1985-06-06', 'hometown': 'Ayr, Scotland', 'nationality': 'Scottish', 'finishers': 'Claymore Kick, Future Shock DDT', 'about': 'Drew McIntyre is a two-time WWE Champion. He won the title at WrestleMania 36. The Scottish Warrior is a fighting champion.'},
+            {'name': 'Kofi Kingston', 'real_name': 'Kofi Sarkodie-Mensah', 'birth_date': '1981-08-14', 'hometown': 'Ghana', 'nationality': 'Ghanaian-American', 'finishers': 'Trouble in Paradise', 'about': 'Kofi Kingston is a WWE Champion and member of The New Day. KofiMania was a legendary WrestleMania moment.'},
+            {'name': 'Big E', 'real_name': 'Ettore Ewen', 'birth_date': '1986-03-01', 'hometown': 'Tampa, Florida', 'nationality': 'American', 'finishers': 'Big Ending', 'about': 'Big E is a WWE Champion and member of The New Day. His charisma and power make him a unique star.'},
+            {'name': 'Xavier Woods', 'real_name': 'Austin Watson', 'birth_date': '1986-09-04', 'hometown': 'Columbus, Georgia', 'nationality': 'American', 'finishers': 'Lost in the Woods', 'about': 'Xavier Woods is the mastermind behind The New Day and King of the Ring winner. Also hosts UpUpDownDown gaming channel.'},
+            {'name': 'The Miz', 'real_name': 'Michael Mizanin', 'birth_date': '1980-10-08', 'hometown': 'Cleveland, Ohio', 'nationality': 'American', 'finishers': 'Skull Crushing Finale', 'about': 'The Miz is a two-time WWE Champion and reality TV star from The Real World. His heel work is exceptional.'},
+            {'name': 'Dolph Ziggler', 'real_name': 'Nicholas Nemeth', 'birth_date': '1980-07-27', 'hometown': 'Cleveland, Ohio', 'nationality': 'American', 'finishers': 'Zig Zag, Superkick', 'about': 'Dolph Ziggler is a two-time World Heavyweight Champion known for his incredible selling and bumping.'},
+            {'name': 'Rusev', 'real_name': 'Miroslav Barnyashev', 'birth_date': '1985-12-25', 'hometown': 'Plovdiv, Bulgaria', 'nationality': 'Bulgarian', 'aliases': 'Miro', 'finishers': 'Accolade, Machka Kick', 'about': 'Rusev was WWE US Champion and beloved by fans for Rusev Day. Now Miro in AEW, the Redeemer.'},
+            {'name': 'Cesaro', 'real_name': 'Claudio Castagnoli', 'birth_date': '1980-12-27', 'hometown': 'Lucerne, Switzerland', 'nationality': 'Swiss', 'finishers': 'Neutralizer, Giant Swing', 'about': 'Cesaro was US Champion and tag champion in WWE. His strength is legendary. Now Claudio Castagnoli in AEW.'},
+            {'name': 'Alberto Del Rio', 'real_name': 'José Alberto Rodríguez', 'birth_date': '1977-05-25', 'hometown': 'San Luis Potosí, Mexico', 'nationality': 'Mexican', 'finishers': 'Cross Armbreaker', 'about': 'Alberto Del Rio is a two-time WWE Champion and Royal Rumble winner. Represented Mexican aristocracy.'},
+            {'name': 'R-Truth', 'real_name': 'Ronnie Killings', 'birth_date': '1972-01-19', 'hometown': 'Charlotte, North Carolina', 'nationality': 'American', 'about': 'R-Truth is a 54-time 24/7 Champion and beloved comedy character. His in-ring ability is often underrated.'},
+            {'name': 'Booker T', 'real_name': 'Robert Booker Tio Huffman', 'birth_date': '1965-03-01', 'hometown': 'Houston, Texas', 'nationality': 'American', 'finishers': 'Scissor Kick, Spinaroonie', 'about': 'Booker T is a five-time WCW Champion and WWE Hall of Famer. Can you dig it, sucka?'},
+            {'name': 'Mark Henry', 'real_name': 'Mark Henry', 'birth_date': '1971-06-12', 'hometown': 'Silsbee, Texas', 'nationality': 'American', 'finishers': 'World\'s Strongest Slam', 'about': 'Mark Henry is the World\'s Strongest Man and World Heavyweight Champion. Olympic weightlifter turned wrestler.'},
+            {'name': 'JBL', 'real_name': 'John Charles Layfield', 'birth_date': '1966-11-29', 'hometown': 'Sweetwater, Texas', 'nationality': 'American', 'finishers': 'Clothesline from Hell', 'about': 'JBL was a dominant WWE Champion with a 280-day reign. Former APA member and successful commentator.'},
+            {'name': 'MVP', 'real_name': 'Alvin Burke Jr.', 'birth_date': '1973-10-28', 'hometown': 'Miami, Florida', 'nationality': 'American', 'finishers': 'Playmaker', 'about': 'MVP was US Champion with the longest reign ever. His unique character and ability made him a standout.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Additional WWE wrestlers')
+        return updated
+
+    def enrich_additional_aew(self):
+        """Enrich additional AEW wrestlers."""
+        self.stdout.write('--- Enriching Additional AEW ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Jungle Boy', 'real_name': 'Jack Perry', 'birth_date': '1997-03-15', 'hometown': 'Los Angeles, California', 'nationality': 'American', 'finishers': 'Snare Trap', 'about': 'Jungle Boy is a fan favorite and son of Luke Perry. His athleticism and heart make him a future star.'},
+            {'name': 'Luchasaurus', 'real_name': 'Austin Matelson', 'birth_date': '1984-08-07', 'hometown': 'Los Angeles, California', 'nationality': 'American', 'finishers': 'Tail Whip', 'about': 'Luchasaurus is a 65 million year old dinosaur who does impressive high-flying moves despite his size.'},
+            {'name': 'Dustin Rhodes', 'real_name': 'Dustin Patrick Runnels', 'birth_date': '1969-04-11', 'hometown': 'Austin, Texas', 'nationality': 'American', 'aliases': 'Goldust', 'finishers': 'Cross Rhodes', 'about': 'Dustin Rhodes is a legend who revitalized his career in AEW. His match with Cody at Double or Nothing 2019 was emotional.'},
+            {'name': 'Scorpio Sky', 'real_name': 'Schuyler Andrews', 'birth_date': '1983-03-29', 'hometown': 'Inglewood, California', 'nationality': 'American', 'about': 'Scorpio Sky was an original AEW Tag Team Champion with SCU. TNT Champion and consistent performer.'},
+            {'name': 'Frankie Kazarian', 'real_name': 'Frank Gerdelman', 'birth_date': '1977-11-12', 'hometown': 'Anaheim, California', 'nationality': 'American', 'finishers': 'Flux Capacitor', 'about': 'Frankie Kazarian is a veteran of TNA and AEW. Part of SCU and multiple time tag team champion.'},
+            {'name': 'Shawn Spears', 'real_name': 'Ronald Spears', 'birth_date': '1981-02-15', 'hometown': 'Niagara Falls, Ontario', 'nationality': 'Canadian', 'aliases': 'Tye Dillinger', 'about': 'Shawn Spears is the Perfect 10 who reinvented himself in AEW with a darker persona.'},
+            {'name': 'Wardlow', 'real_name': 'Michael Wardlow', 'birth_date': '1988-07-09', 'hometown': 'Cleveland, Ohio', 'nationality': 'American', 'finishers': 'Powerbomb Symphony', 'about': 'Wardlow is a powerhouse who broke free from MJF to become TNT Champion. His powerbombs are devastating.'},
+            {'name': 'Powerhouse Hobbs', 'real_name': 'William Hobbs', 'birth_date': '1991-11-26', 'hometown': 'Modesto, California', 'nationality': 'American', 'finishers': 'Town Business', 'about': 'Powerhouse Hobbs is a rising star with incredible strength and potential.'},
+            {'name': 'Ricky Starks', 'real_name': 'Ricky Starks', 'birth_date': '1990-04-05', 'hometown': 'New Orleans, Louisiana', 'nationality': 'American', 'finishers': 'Rochambeau', 'about': 'Ricky Starks is Absolute and has incredible charisma. His star is rising in AEW.'},
+            {'name': 'Brian Cage', 'real_name': 'Brian Button', 'birth_date': '1984-11-04', 'hometown': 'Hacienda Heights, California', 'nationality': 'American', 'finishers': 'Drill Claw', 'about': 'Brian Cage is The Machine with an incredible physique and Lucha Underground championship pedigree.'},
+            {'name': 'Lance Archer', 'real_name': 'Lance Hoyt', 'birth_date': '1977-09-12', 'hometown': 'Dallas, Texas', 'nationality': 'American', 'finishers': 'Blackout', 'about': 'Lance Archer became a star in NJPW as the Murderhawk Monster before joining AEW. Everybody dies!'},
+            {'name': 'Jake Hager', 'real_name': 'Jacob Hager Jr.', 'birth_date': '1982-03-24', 'hometown': 'Perry, Oklahoma', 'nationality': 'American', 'aliases': 'Jack Swagger', 'finishers': 'Hager Bomb, Ankle Lock', 'about': 'Jake Hager is a former WWE Champion who joined AEW and Bellator MMA. Inner Circle member.'},
+            {'name': 'Santana', 'real_name': 'Mike Draztik', 'birth_date': '1985-11-19', 'hometown': 'New York City, New York', 'nationality': 'American', 'about': 'Santana was half of Proud and Powerful and LAX. Inner Circle member with incredible charisma.'},
+            {'name': 'Ortiz', 'real_name': 'Angel Ortiz', 'birth_date': '1984-07-04', 'hometown': 'New York City, New York', 'nationality': 'American', 'about': 'Ortiz was half of Proud and Powerful and LAX. His chemistry with Santana is undeniable.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Additional AEW wrestlers')
+        return updated
+
+    def enrich_additional_japan(self):
+        """Enrich additional Japanese wrestlers."""
+        self.stdout.write('--- Enriching Additional Japan ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Toru Yano', 'real_name': 'Toru Yano', 'birth_date': '1978-05-18', 'hometown': 'Arakawa, Tokyo, Japan', 'nationality': 'Japanese', 'about': 'Toru Yano is NJPW\'s comedy genius who sells DVDs and wins with low blows. KOPW Champion.'},
+            {'name': 'Hirooki Goto', 'real_name': 'Hirooki Goto', 'birth_date': '1979-06-25', 'hometown': 'Kuwana, Mie, Japan', 'nationality': 'Japanese', 'finishers': 'GTR', 'about': 'Hirooki Goto is a NEVER Openweight Champion known for his stoic warrior persona.'},
+            {'name': 'Tomohiro Ishii', 'real_name': 'Tomohiro Ishii', 'birth_date': '1975-12-10', 'hometown': 'Sagamihara, Kanagawa, Japan', 'nationality': 'Japanese', 'finishers': 'Brainbuster', 'about': 'Tomohiro Ishii is the Stone Pitbull. His hard-hitting matches consistently deliver.'},
+            {'name': 'SANADA', 'real_name': 'Seiya Sanada', 'birth_date': '1988-01-28', 'hometown': 'Niigata, Japan', 'nationality': 'Japanese', 'finishers': 'Skull End, Moonsault', 'about': 'SANADA is a charismatic star who became IWGP World Heavyweight Champion. Former LIJ member.'},
+            {'name': 'EVIL', 'real_name': 'Takaaki Watanabe', 'birth_date': '1987-06-25', 'hometown': 'Kamakura, Kanagawa, Japan', 'nationality': 'Japanese', 'finishers': 'EVIL', 'about': 'EVIL is a former IWGP Heavyweight Champion who betrayed LIJ to join Bullet Club.'},
+            {'name': 'Hiromu Takahashi', 'real_name': 'Hiromu Takahashi', 'birth_date': '1989-12-04', 'hometown': 'Hachioji, Tokyo, Japan', 'nationality': 'Japanese', 'finishers': 'Time Bomb', 'about': 'Hiromu Takahashi is a charismatic IWGP Junior Heavyweight Champion. His wild style and Daryl the cat make him beloved.'},
+            {'name': 'Tetsuya Naito', 'real_name': 'Tetsuya Naito', 'birth_date': '1982-06-22', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'finishers': 'Destino', 'about': 'Tetsuya Naito is the leader of Los Ingobernables de Japon. Two-time IWGP Heavyweight and IC Champion simultaneously.'},
+            {'name': 'Taichi', 'real_name': 'Taichi Ishikari', 'birth_date': '1980-03-19', 'hometown': 'Hokkaido, Japan', 'nationality': 'Japanese', 'finishers': 'Black Mephisto', 'about': 'Taichi is NJPW\'s crooning holy emperor. His entrance songs and pants-ripping are legendary.'},
+            {'name': 'Jeff Cobb', 'real_name': 'Jeffrey Cobb', 'birth_date': '1982-08-12', 'hometown': 'Honolulu, Hawaii', 'nationality': 'American', 'finishers': 'Tour of the Islands', 'about': 'Jeff Cobb is an Olympic wrestler who became a powerhouse in NJPW. His suplexes are incredible.'},
+            {'name': 'Great-O-Khan', 'real_name': 'Tomoyuki Oka', 'birth_date': '1991-02-04', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'finishers': 'Eliminator', 'about': 'Great-O-Khan is the Dominator of United Empire. His Mongolian-inspired character is unique.'},
+            {'name': 'Shingo Takagi', 'real_name': 'Shingo Takagi', 'birth_date': '1982-11-21', 'hometown': 'Nagano, Japan', 'nationality': 'Japanese', 'finishers': 'Last of the Dragon', 'about': 'Shingo Takagi is a former IWGP World Heavyweight Champion. The Dragon from Dragon Gate proved himself at the top.'},
+            {'name': 'El Desperado', 'real_name': 'Unknown', 'hometown': 'Unknown', 'nationality': 'Japanese', 'finishers': 'Pinche Loco', 'about': 'El Desperado is a NJPW Junior Heavyweight Champion. His masked lucha style makes him a standout.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Additional Japanese wrestlers')
+        return updated
+
+    def enrich_additional_mexico(self):
+        """Enrich additional Mexican wrestlers."""
+        self.stdout.write('--- Enriching Additional Mexico ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Rush', 'real_name': 'Alberto Escamilla', 'birth_date': '1988-06-25', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'finishers': 'Rush\'s Driver', 'about': 'Rush is a CMLL legend and ROH Champion. The bull of CMLL brings intensity to every match.'},
+            {'name': 'Dragon Lee', 'real_name': 'William Lee', 'birth_date': '1995-12-28', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'finishers': 'Desnucadora', 'about': 'Dragon Lee is a CMLL World Lightweight Champion who has competed worldwide. Incredible high-flyer.'},
+            {'name': 'Andrade', 'real_name': 'Manuel Oropeza', 'birth_date': '1989-11-03', 'hometown': 'Gomez Palacio, Mexico', 'nationality': 'Mexican', 'aliases': 'La Sombra, Andrade Cien Almas', 'finishers': 'Hammerlock DDT', 'about': 'Andrade is a former NXT Champion and Mexican star. His combination of power and lucha is unique.'},
+            {'name': 'Caristico', 'real_name': 'Luis Urive', 'birth_date': '1982-12-22', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'aliases': 'Mistico', 'finishers': 'La Mistica', 'about': 'Caristico as Mistico was the biggest star in CMLL history. His high-flying revolutionized lucha libre.'},
+            {'name': 'Volador Jr.', 'real_name': 'Ramir Alejandro', 'birth_date': '1979-03-31', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'about': 'Volador Jr. is a CMLL World Heavyweight Champion. His high-flying style honors his father\'s legacy.'},
+            {'name': 'Ultimo Guerrero', 'real_name': 'Benigno Ugalde', 'birth_date': '1971-11-24', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'finishers': 'Guerrero Special', 'about': 'Ultimo Guerrero is a CMLL legend and multi-time champion. The original Los Guerreros member.'},
+            {'name': 'Negro Casas', 'real_name': 'Jose Casas', 'birth_date': '1960-02-05', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'about': 'Negro Casas is a legendary technician and part of the Casas wrestling family. CMLL icon for decades.'},
+            {'name': 'Atlantis', 'real_name': 'Unknown', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'about': 'Atlantis is a CMLL legend and masked icon. His mask vs mask matches are historic.'},
+            {'name': 'Blue Demon Jr.', 'real_name': 'Unknown', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'about': 'Blue Demon Jr. carries his father\'s legendary mask. A CMLL and AAA star who represents lucha royalty.'},
+            {'name': 'Hijo del Fantasma', 'real_name': 'Jorge Solis', 'birth_date': '1980-10-13', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'aliases': 'Santos Escobar', 'about': 'Hijo del Fantasma became Santos Escobar in WWE NXT. Two-time NXT Cruiserweight Champion.'},
+            {'name': 'Mascara Dorada', 'real_name': 'Urive Mendoza', 'birth_date': '1987-04-15', 'hometown': 'Guadalajara, Mexico', 'nationality': 'Mexican', 'aliases': 'Gran Metalik', 'about': 'Mascara Dorada competed as Gran Metalik in WWE. His aerial offense is incredible.'},
+            {'name': 'LA Park', 'real_name': 'Adolfo Tapia', 'birth_date': '1965-03-13', 'hometown': 'Hermosillo, Mexico', 'nationality': 'Mexican', 'aliases': 'La Parka', 'about': 'LA Park was the original La Parka in WCW. His dancing skeleton character became iconic.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Additional Mexican wrestlers')
+        return updated
+
+    def enrich_remaining_wrestlers(self):
+        """Enrich remaining notable wrestlers."""
+        self.stdout.write('--- Enriching Remaining Wrestlers ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Cody Rhodes', 'real_name': 'Cody Garrett Runnels', 'birth_date': '1985-06-30', 'hometown': 'Marietta, Georgia', 'nationality': 'American', 'finishers': 'Cross Rhodes, Cody Cutter', 'about': 'Cody Rhodes finished the story at WrestleMania 40, becoming WWE Undisputed Champion. Son of Dusty Rhodes.'},
+            {'name': 'Roman Reigns', 'real_name': 'Leati Joseph Anoa\'i', 'birth_date': '1985-05-25', 'hometown': 'Pensacola, Florida', 'nationality': 'American', 'finishers': 'Spear, Guillotine Choke', 'about': 'Roman Reigns is the Tribal Chief with the longest world title reign in modern history. Head of the Table.'},
+            {'name': 'Seth Rollins', 'real_name': 'Colby Lopez', 'birth_date': '1986-05-28', 'hometown': 'Davenport, Iowa', 'nationality': 'American', 'finishers': 'Stomp, Pedigree', 'about': 'Seth Rollins is a multi-time world champion and visionary. From Shield member to main event star.'},
+            {'name': 'Becky Lynch', 'real_name': 'Rebecca Quin', 'birth_date': '1987-01-30', 'hometown': 'Limerick, Ireland', 'nationality': 'Irish', 'finishers': 'Dis-arm-her', 'about': 'Becky Lynch is The Man. Her rise to the main event at WrestleMania 35 changed women\'s wrestling.'},
+            {'name': 'Charlotte Flair', 'real_name': 'Ashley Fliehr', 'birth_date': '1986-04-05', 'hometown': 'Charlotte, North Carolina', 'nationality': 'American', 'finishers': 'Figure Eight, Natural Selection', 'about': 'Charlotte Flair is a 14-time women\'s champion, matching her father Ric. The Queen of WWE.'},
+            {'name': 'Sasha Banks', 'real_name': 'Mercedes Varnado', 'birth_date': '1992-01-26', 'hometown': 'Boston, Massachusetts', 'nationality': 'American', 'aliases': 'Mercedes Mone', 'finishers': 'Bank Statement', 'about': 'Sasha Banks is The Boss and one of the Four Horsewomen. Now Mercedes Mone in NJPW and AEW.'},
+            {'name': 'Bayley', 'real_name': 'Pamela Rose Martinez', 'birth_date': '1989-06-15', 'hometown': 'San Jose, California', 'nationality': 'American', 'finishers': 'Rose Plant', 'about': 'Bayley is a grand slam champion and leader of Damage CTRL. From hugger to role model.'},
+            {'name': 'Asuka', 'real_name': 'Kanako Urai', 'birth_date': '1981-09-26', 'hometown': 'Osaka, Japan', 'nationality': 'Japanese', 'finishers': 'Asuka Lock', 'about': 'Asuka had an undefeated streak of 914 days in NXT. The Empress of Tomorrow is always ready.'},
+            {'name': 'Bianca Belair', 'real_name': 'Bianca Crawford', 'birth_date': '1989-04-09', 'hometown': 'Knoxville, Tennessee', 'nationality': 'American', 'finishers': 'KOD', 'about': 'Bianca Belair is the EST of WWE. Her WrestleMania win over Sasha Banks was historic.'},
+            {'name': 'Rhea Ripley', 'real_name': 'Demi Bennett', 'birth_date': '1996-10-11', 'hometown': 'Adelaide, Australia', 'nationality': 'Australian', 'finishers': 'Riptide', 'about': 'Rhea Ripley is Mami and Women\'s World Champion. The Nightmare emerged as a dominant force.'},
+            {'name': 'Kenny Omega', 'real_name': 'Tyson Smith', 'birth_date': '1983-10-16', 'hometown': 'Winnipeg, Manitoba', 'nationality': 'Canadian', 'finishers': 'One Winged Angel, V-Trigger', 'about': 'Kenny Omega is the Best Bout Machine. His matches in NJPW and AEW are consistently legendary.'},
+            {'name': 'Jon Moxley', 'real_name': 'Jonathan Good', 'birth_date': '1985-12-07', 'hometown': 'Cincinnati, Ohio', 'nationality': 'American', 'aliases': 'Dean Ambrose', 'finishers': 'Paradigm Shift, Bulldog Choke', 'about': 'Jon Moxley is a three-time AEW World Champion and deathmatch legend. From Shield to AEW main eventer.'},
+            {'name': 'MJF', 'real_name': 'Maxwell Jacob Friedman', 'birth_date': '1996-03-15', 'hometown': 'Long Island, New York', 'nationality': 'American', 'finishers': 'Salt of the Earth, Heat Seeker', 'about': 'MJF is a two-time AEW World Champion. The salt of the earth is better than you and you know it.'},
+            {'name': 'CM Punk', 'real_name': 'Phillip Brooks', 'birth_date': '1978-10-26', 'hometown': 'Chicago, Illinois', 'nationality': 'American', 'finishers': 'GTS, Anaconda Vise', 'about': 'CM Punk is the Voice of the Voiceless. His pipe bomb changed wrestling. Two-time WWE Champion.'},
+            {'name': 'AJ Styles', 'real_name': 'Allen Jones', 'birth_date': '1977-06-02', 'hometown': 'Gainesville, Georgia', 'nationality': 'American', 'finishers': 'Styles Clash, Phenomenal Forearm', 'about': 'AJ Styles is the Phenomenal One. Two-time WWE Champion and one of the greatest ever.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Remaining wrestlers')
         return updated

@@ -1003,11 +1003,92 @@ a:hover {
     color: white;
 }
 
+.result-badge.defense {
+    background: var(--wwf-gold-dark);
+    color: var(--wwf-white);
+}
+
+.result-badge.draw {
+    background: var(--wwf-gray);
+    color: var(--wwf-white);
+}
+
+.result-badge.unknown {
+    background: var(--wwf-light-gray);
+    color: var(--wwf-white);
+}
+
 /* --------------------------------------------------------------------------
    Detail Pages - Generic Styles
    -------------------------------------------------------------------------- */
 .detail-page {
     padding: 2rem 0;
+}
+
+.linked-from-group {
+    margin-bottom: 1.5rem;
+}
+
+.linked-from-group:last-child {
+    margin-bottom: 0;
+}
+
+.linked-from-title {
+    color: var(--wwf-gold);
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 0.75rem;
+}
+
+.title-history-section {
+    margin-top: 2rem;
+}
+
+.title-history-group {
+    margin-bottom: 2rem;
+}
+
+.title-history-promo {
+    color: var(--wwf-gold);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 1rem;
+}
+
+.title-history-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.title-history-belt {
+    width: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.title-history-belt .media-poster {
+    width: 80px;
+    height: 50px;
+}
+
+.title-history-belt img {
+    max-height: 60px;
+    max-width: 120px;
+    object-fit: contain;
+}
+
+.title-history-name {
+    display: block;
+    font-weight: 700;
+    color: var(--wwf-white);
+    margin-bottom: 0.15rem;
+}
+
+.title-history-meta {
+    color: var(--wwf-silver);
+    font-size: 0.85rem;
 }
 
 .detail-header {

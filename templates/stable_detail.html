@@ -23,6 +23,10 @@
                 </div>
                 {% endif %}
 
+                {% with linked_sections=stable|linked_from_sections %}
+                    {% include "partials/linked_from.html" with sections=linked_sections %}
+                {% endwith %}
+
                 <!-- Members Section -->
                 <div class="detail-section">
                     <h3>Members</h3>

@@ -49,6 +49,10 @@
     {% endif %}
 {% endwith %}
 
+{% with linked_sections=title|linked_from_sections %}
+    {% include "partials/linked_from.html" with sections=linked_sections %}
+{% endwith %}
+
 <!-- All Champions -->
 {% if all_champions %}
 <div class="card mb-4">

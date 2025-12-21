@@ -50,6 +50,10 @@
     {% endif %}
 {% endwith %}
 
+{% with linked_sections=event|linked_from_sections %}
+    {% include "partials/linked_from.html" with sections=linked_sections %}
+{% endwith %}
+
 <!-- Wrestlers on Card -->
 {% if all_wrestlers %}
 <div class="card mb-4">

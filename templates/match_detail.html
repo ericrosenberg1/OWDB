@@ -74,6 +74,10 @@
             {% endif %}
         {% endwith %}
 
+        {% with linked_sections=match|linked_from_sections %}
+            {% include "partials/linked_from.html" with sections=linked_sections %}
+        {% endwith %}
+
         <!-- Related Matches -->
         {% if related_matches %}
         <div class="card mb-4">

@@ -240,6 +240,7 @@ class WrestlerDetailView(DetailView):
         context['promotions'] = wrestler.get_promotions()[:10]
         context['promotion_history'] = wrestler.get_promotion_history_with_years()
         context['titles_won'] = wrestler.get_titles_won()
+        context['title_history'] = wrestler.get_title_history()
         context['rivals'] = wrestler.get_rivals(limit=10)
         context['record'] = wrestler.get_win_loss_record()
 

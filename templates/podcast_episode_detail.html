@@ -30,13 +30,15 @@
 
                     {% if episode.description %}
                     <h3>Description</h3>
-                    {% with desc=episode|about_with_links %}
                     <div class="episode-description">
-                        {{ desc|linebreaks }}
+                        {{ episode.description|linebreaks }}
                     </div>
-                    {% endwith %}
                     {% endif %}
                 </div>
+
+                {% with linked_sections=episode|linked_from_sections %}
+                    {% include "partials/linked_from.html" with sections=linked_sections %}
+                {% endwith %}
 
                 <!-- Guests Section -->
                 {% if guests %}

@@ -39,6 +39,10 @@
     {% endif %}
 {% endwith %}
 
+{% with linked_sections=game|linked_from_sections %}
+    {% include "partials/linked_from.html" with sections=linked_sections %}
+{% endwith %}
+
 {% if game.promotions.exists %}
 <div class="card mb-4">
     <div class="card-header">Featured Promotions</div>

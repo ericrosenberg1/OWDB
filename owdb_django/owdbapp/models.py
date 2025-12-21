@@ -448,6 +448,129 @@ class Wrestler(ImageMixin, TimeStampedModel):
             title_matches__winner=self
         ).distinct()
 
+    def get_title_history(self, limit_titles: int | None = None):
+        """
+        Build a structured title history grouped by promotion.
+
+        Returns a list of dicts:
+        [
+            {
+                "promotion": Promotion,
+                "titles": [
+                    {"title": Title, "entries": [...], "prominence": int, "most_recent": date}
+                ],
+            },
+        ]
+        """
+        from datetime import date as date_cls
+        from django.db.models import Count
+
+        titles = (
+            Title.objects.filter(title_matches__wrestlers=self)
+            .select_related("promotion")
+            .distinct()
+            .annotate(prominence=Count("title_matches", distinct=True))
+        )
+        if limit_titles:
+            titles = titles[:limit_titles]
+
+        promotion_groups = {}
+
+        for title in titles:
+            entries, most_recent = self._build_title_entries(title)
+            if not entries:
+                continue
+            group = promotion_groups.setdefault(
+                title.promotion_id,
+                {"promotion": title.promotion, "titles": []},
+            )
+            group["titles"].append(
+                {
+                    "title": title,
+                    "entries": entries,
+                    "prominence": title.prominence or 0,
+                    "most_recent": most_recent,
+                }
+            )
+
+        group_list = list(promotion_groups.values())
+        for group in group_list:
+            group["titles"].sort(
+                key=lambda item: (
+                    item.get("prominence", 0),
+                    item.get("most_recent") or date_cls.min,
+                ),
+                reverse=True,
+            )
+            group["most_recent"] = max(
+                (item.get("most_recent") for item in group["titles"]),
+                default=None,
+            )
+
+        group_list.sort(
+            key=lambda group: (
+                group["promotion"].name if group.get("promotion") else "",
+            )
+        )
+
+        return group_list
+
+    def _build_title_entries(self, title):
+        """Build ordered match entries for a specific title."""
+        from datetime import date as date_cls
+
+        matches = (
+            Match.objects.filter(title=title)
+            .select_related("event", "event__promotion", "winner")
+            .prefetch_related("wrestlers")
+            .order_by("event__date", "match_order", "pk")
+        )
+
+        champion_id = None
+        entries = []
+
+        for match in matches:
+            participants = set(match.wrestlers.values_list("id", flat=True))
+            is_participant = self.id in participants
+            result = "unknown"
+            label = "Unknown"
+
+            if match.winner_id:
+                if is_participant:
+                    if match.winner_id == self.id:
+                        if champion_id == self.id:
+                            result = "defense"
+                            label = "Defense"
+                        else:
+                            result = "win"
+                            label = "Win"
+                    else:
+                        result = "loss"
+                        label = "Loss"
+                champion_id = match.winner_id
+            elif is_participant:
+                result = "draw"
+                label = "Draw"
+
+            if is_participant:
+                entries.append(
+                    {
+                        "match": match,
+                        "event": match.event,
+                        "date": match.event.date if match.event else None,
+                        "result": result,
+                        "result_label": label,
+                    }
+                )
+
+        entries.sort(
+            key=lambda item: item.get("date") or date_cls.min,
+            reverse=True,
+        )
+        most_recent = entries[0]["date"] if entries else None
+
+        return entries, most_recent
+
     def get_rivals(self, limit=10):
         """Get wrestlers this person has faced most often."""
         from django.db.models import Count

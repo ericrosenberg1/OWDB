@@ -1,0 +1,41 @@
+{% if sections %}
+<div class="card mb-4 linked-from-card">
+    <div class="card-header">Linked From</div>
+    <div class="card-body">
+        {% for section in sections %}
+        {% if section.items %}
+        <div class="linked-from-group">
+            <h4 class="linked-from-title">{{ section.label }}</h4>
+            <div class="credits-list">
+                {% for item in section.items %}
+                <div class="credit-item">
+                    <div class="credit-year">{% if item.year %}{{ item.year }}{% else %}&mdash;{% endif %}</div>
+                    <div class="credit-separator"><span class="dot"></span></div>
+                    <div class="credit-info">
+                        {% if item.url %}
+                        <a href="{{ item.url }}" class="credit-title">{{ item.name }}</a>
+                        {% else %}
+                        <span class="credit-title">{{ item.name }}</span>
+                        {% endif %}
+                        {% if item.meta %}
+                        <span class="credit-meta">
+                            {% for meta in item.meta %}
+                                {% if meta.url %}
+                                <a href="{{ meta.url }}">{{ meta.text }}</a>
+                                {% else %}
+                                {{ meta.text }}
+                                {% endif %}
+                                {% if not forloop.last %} &bull; {% endif %}
+                            {% endfor %}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endif %}

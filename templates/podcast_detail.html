@@ -25,6 +25,10 @@
                 {% endif %}
                 {% endwith %}
 
+                {% with linked_sections=podcast|linked_from_sections %}
+                    {% include "partials/linked_from.html" with sections=linked_sections %}
+                {% endwith %}
+
                 <!-- Episodes Section -->
                 {% if podcast.episodes.exists %}
                 <div class="detail-section">

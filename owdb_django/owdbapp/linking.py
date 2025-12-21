@@ -5,13 +5,16 @@ Used to enrich the "about" field with linked-from context such as podcasts,
 movies, PPVs, and other cross-media mentions.
 """
 
-from typing import Iterable, List, Sequence, Tuple
+from typing import Iterable, List, Sequence, Tuple, Dict, Any, Optional
+
+from django.urls import reverse
 
 from .models import (
     Book,
     Event,
     Match,
     Podcast,
+    PodcastEpisode,
     Promotion,
     Special,
     Title,
@@ -28,6 +31,64 @@ def _display_name(obj) -> str:
         if value:
             return value
     return str(obj)
+
+
+def _build_url(obj) -> Optional[str]:
+    """Build a detail URL for known model types."""
+    if isinstance(obj, Wrestler):
+        if obj.slug:
+            return reverse("wrestler_detail_slug", args=[obj.slug])
+        return reverse("wrestler_detail", args=[obj.pk])
+    if isinstance(obj, Promotion):
+        if obj.slug:
+            return reverse("promotion_detail_slug", args=[obj.slug])
+        return reverse("promotion_detail", args=[obj.pk])
+    if isinstance(obj, Event):
+        if obj.slug:
+            return reverse("event_detail_slug", args=[obj.slug])
+        return reverse("event_detail", args=[obj.pk])
+    if isinstance(obj, Match):
+        return reverse("match_detail", args=[obj.pk])
+    if isinstance(obj, Title):
+        if obj.slug:
+            return reverse("title_detail_slug", args=[obj.slug])
+        return reverse("title_detail", args=[obj.pk])
+    if isinstance(obj, Venue):
+        if obj.slug:
+            return reverse("venue_detail_slug", args=[obj.slug])
+        return reverse("venue_detail", args=[obj.pk])
+    if isinstance(obj, VideoGame):
+        if obj.slug:
+            return reverse("game_detail_slug", args=[obj.slug])
+        return reverse("game_detail", args=[obj.pk])
+    if isinstance(obj, Podcast):
+        if obj.slug:
+            return reverse("podcast_detail_slug", args=[obj.slug])
+        return reverse("podcast_detail", args=[obj.pk])
+    if isinstance(obj, PodcastEpisode):
+        if obj.slug:
+            return reverse("episode_detail_slug", args=[obj.slug])
+        return reverse("episode_detail", args=[obj.pk])
+    if isinstance(obj, Book):
+        if obj.slug:
+            return reverse("book_detail_slug", args=[obj.slug])
+        return reverse("book_detail", args=[obj.pk])
+    if isinstance(obj, Special):
+        if obj.slug:
+            return reverse("special_detail_slug", args=[obj.slug])
+        return reverse("special_detail", args=[obj.pk])
+    return None
+
+
+def _make_item(obj, year: str = "", meta: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+    """Build a display-ready linked item dict."""
+    return {
+        "name": _display_name(obj),
+        "url": _build_url(obj),
+        "year": year or "",
+        "meta": meta or [],
+        "image_url": getattr(obj, "image_url", None),
+    }
 
 
 def _limit_objects(items: Iterable, limit: int = 5) -> Tuple[List[str], bool]:
@@ -58,6 +119,18 @@ def _dedupe(items: List[str]) -> List[str]:
         seen.add(item)
         unique_items.append(item)
     return unique_items
+
+
+def _year_from_date(value) -> str:
+    """Return a year string for a date-like value."""
+    if value and hasattr(value, "year"):
+        return str(value.year)
+    return ""
+
+
+def _meta_text(text: str, url: Optional[str] = None) -> Dict[str, Any]:
+    """Create a metadata entry, optionally linked."""
+    return {"text": text, "url": url} if url else {"text": text}
 
 
 def _format_sources(sources: List[Tuple[str, List[str], bool]]) -> str:
@@ -255,13 +328,256 @@ def build_linked_from_summary(obj, limit: int = 5) -> str:
     return _format_sources(sources)
 
 
+def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
+    """
+    Build rich, interlinked sections for related data.
+    Returns a list of dicts: {label: str, items: [item, ...]}.
+    """
+    sections: List[Dict[str, Any]] = []
+
+    if isinstance(obj, Wrestler):
+        promo_years = {
+            item["promotion_id"]: item for item in obj.get_promotion_history_with_years()
+        }
+        promotions = obj.get_promotions()[:limit]
+        promo_items = []
+        for promo in promotions:
+            years = promo_years.get(promo.id)
+            year_text = ""
+            if years:
+                start = years.get("start_year")
+                end = years.get("end_year")
+                if start and end:
+                    year_text = f"{start}-{end}"
+                elif start:
+                    year_text = f"{start}-present"
+                elif end:
+                    year_text = f"?-{end}"
+            meta = []
+            if getattr(promo, "match_count", None) is not None:
+                meta.append(_meta_text(f"{promo.match_count} matches"))
+            promo_items.append(_make_item(promo, year=year_text, meta=meta))
+        sections.append({"label": "Promotions", "items": promo_items})
+
+        events = (
+            Event.objects.filter(matches__wrestlers=obj)
+            .select_related("promotion")
+            .distinct()
+            .order_by("-date")[:limit]
+        )
+        event_items = []
+        for event in events:
+            meta = []
+            if event.promotion:
+                meta.append(_meta_text(event.promotion.name, _build_url(event.promotion)))
+            event_items.append(_make_item(event, year=_year_from_date(event.date), meta=meta))
+        sections.append({"label": "Events/PPVs", "items": event_items})
+
+        titles = obj.get_titles_won().select_related("promotion")[:limit]
+        title_items = []
+        for title in titles:
+            meta = []
+            if title.promotion:
+                meta.append(_meta_text(title.promotion.name, _build_url(title.promotion)))
+            year_text = str(title.debut_year) if title.debut_year else ""
+            title_items.append(_make_item(title, year=year_text, meta=meta))
+        sections.append({"label": "Titles", "items": title_items})
+
+        episodes = obj.get_podcast_appearances()[:limit]
+        podcast_items = []
+        for episode in episodes:
+            meta = []
+            if episode.podcast:
+                meta.append(_meta_text(episode.podcast.name, _build_url(episode.podcast)))
+            podcast_items.append(_make_item(episode, year=_year_from_date(episode.published_date), meta=meta))
+        sections.append({"label": "Podcast Appearances", "items": podcast_items})
+
+        books = obj.get_books()[:limit]
+        book_items = []
+        for book in books:
+            meta = []
+            if book.author:
+                meta.append(_meta_text(book.author))
+            year_text = str(book.publication_year) if book.publication_year else ""
+            book_items.append(_make_item(book, year=year_text, meta=meta))
+        sections.append({"label": "Books", "items": book_items})
+
+        specials = obj.get_specials()[:limit]
+        special_items = []
+        for special in specials:
+            year_text = str(special.release_year) if special.release_year else ""
+            special_items.append(_make_item(special, year=year_text))
+        sections.append({"label": "Documentaries & Specials", "items": special_items})
+
+        games = obj.get_video_games()[:limit]
+        game_items = []
+        for game in games:
+            year_text = str(game.release_year) if game.release_year else ""
+            game_items.append(_make_item(game, year=year_text))
+        sections.append({"label": "Video Games", "items": game_items})
+
+    elif isinstance(obj, Promotion):
+        events = obj.events.select_related("venue").order_by("-date")[:limit]
+        event_items = []
+        for event in events:
+            meta = []
+            if event.venue:
+                meta.append(_meta_text(event.venue.name, _build_url(event.venue)))
+            event_items.append(_make_item(event, year=_year_from_date(event.date), meta=meta))
+        sections.append({"label": "Events/PPVs", "items": event_items})
+
+        titles = obj.titles.all()[:limit]
+        title_items = []
+        for title in titles:
+            year_text = str(title.debut_year) if title.debut_year else ""
+            meta = []
+            status = "Active" if title.is_active else "Retired"
+            meta.append(_meta_text(status))
+            title_items.append(_make_item(title, year=year_text, meta=meta))
+        sections.append({"label": "Titles", "items": title_items})
+
+        wrestlers = obj.get_all_wrestlers(limit=limit)
+        wrestler_items = []
+        for wrestler in wrestlers:
+            meta = []
+            if getattr(wrestler, "match_count", None) is not None:
+                meta.append(_meta_text(f"{wrestler.match_count} matches"))
+            wrestler_items.append(_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "", meta=meta))
+        sections.append({"label": "Featured Wrestlers", "items": wrestler_items})
+
+        games = obj.video_games.all()[:limit]
+        game_items = []
+        for game in games:
+            year_text = str(game.release_year) if game.release_year else ""
+            game_items.append(_make_item(game, year=year_text))
+        sections.append({"label": "Video Games", "items": game_items})
+
+        venues = obj.get_venues(limit=limit)
+        venue_items = []
+        for venue in venues:
+            meta = []
+            if getattr(venue, "event_count", None) is not None:
+                meta.append(_meta_text(f"{venue.event_count} events"))
+            venue_items.append(_make_item(venue, meta=meta))
+        sections.append({"label": "Venues", "items": venue_items})
+
+    elif isinstance(obj, Event):
+        if obj.promotion:
+            sections.append({"label": "Promotion", "items": [_make_item(obj.promotion)]})
+        if obj.venue:
+            sections.append({"label": "Venue", "items": [_make_item(obj.venue)]})
+
+        wrestlers = obj.get_all_wrestlers()[:limit]
+        wrestler_items = [_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "") for wrestler in wrestlers]
+        sections.append({"label": "Wrestlers", "items": wrestler_items})
+
+        titles = obj.get_titles_defended()[:limit]
+        title_items = []
+        for title in titles:
+            meta = []
+            if title.promotion:
+                meta.append(_meta_text(title.promotion.name, _build_url(title.promotion)))
+            title_items.append(_make_item(title, year=str(title.debut_year) if title.debut_year else "", meta=meta))
+        sections.append({"label": "Titles Defended", "items": title_items})
+
+    elif isinstance(obj, Title):
+        if obj.promotion:
+            sections.append({"label": "Promotion", "items": [_make_item(obj.promotion)]})
+
+        champions = obj.get_all_champions()[:limit]
+        champion_items = []
+        for champion in champions:
+            champion_items.append(_make_item(champion, year=str(champion.debut_year) if champion.debut_year else ""))
+        sections.append({"label": "Champions", "items": champion_items})
+
+        events = (
+            Event.objects.filter(matches__title=obj)
+            .select_related("promotion")
+            .distinct()
+            .order_by("-date")[:limit]
+        )
+        event_items = []
+        for event in events:
+            meta = []
+            if event.promotion:
+                meta.append(_meta_text(event.promotion.name, _build_url(event.promotion)))
+            event_items.append(_make_item(event, year=_year_from_date(event.date), meta=meta))
+        sections.append({"label": "Events/PPVs", "items": event_items})
+
+    elif isinstance(obj, Match):
+        if obj.event:
+            sections.append({"label": "Event", "items": [_make_item(obj.event, year=_year_from_date(obj.event.date))]})
+        if obj.event and obj.event.promotion:
+            sections.append({"label": "Promotion", "items": [_make_item(obj.event.promotion)]})
+
+        participants = obj.wrestlers.all()[:limit]
+        participant_items = [_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "") for wrestler in participants]
+        sections.append({"label": "Participants", "items": participant_items})
+
+        if obj.title:
+            sections.append({"label": "Title On The Line", "items": [_make_item(obj.title, year=str(obj.title.debut_year) if obj.title.debut_year else "")]})
+
+    elif isinstance(obj, VideoGame):
+        promotions = obj.promotions.all()[:limit]
+        promo_items = [_make_item(promo, year=str(promo.founded_year) if promo.founded_year else "") for promo in promotions]
+        sections.append({"label": "Promotions", "items": promo_items})
+
+    elif isinstance(obj, Podcast):
+        wrestlers = obj.related_wrestlers.all()[:limit]
+        wrestler_items = [_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "") for wrestler in wrestlers]
+        sections.append({"label": "Featuring Wrestlers", "items": wrestler_items})
+
+    elif isinstance(obj, PodcastEpisode):
+        if obj.podcast:
+            sections.append({"label": "Podcast", "items": [_make_item(obj.podcast)]})
+        guests = obj.guests.all()[:limit]
+        guest_items = [_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "") for wrestler in guests]
+        sections.append({"label": "Guests", "items": guest_items})
+
+    elif isinstance(obj, Book):
+        wrestlers = obj.related_wrestlers.all()[:limit]
+        wrestler_items = [_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "") for wrestler in wrestlers]
+        sections.append({"label": "Featuring Wrestlers", "items": wrestler_items})
+
+    elif isinstance(obj, Special):
+        wrestlers = obj.related_wrestlers.all()[:limit]
+        wrestler_items = [_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "") for wrestler in wrestlers]
+        sections.append({"label": "Featuring Wrestlers", "items": wrestler_items})
+
+    elif isinstance(obj, Venue):
+        events = obj.events.order_by("-date")[:limit]
+        event_items = []
+        for event in events:
+            meta = []
+            if event.promotion:
+                meta.append(_meta_text(event.promotion.name, _build_url(event.promotion)))
+            event_items.append(_make_item(event, year=_year_from_date(event.date), meta=meta))
+        sections.append({"label": "Events/PPVs", "items": event_items})
+
+        promotions = obj.get_promotions()[:limit]
+        promo_items = []
+        for promo in promotions:
+            meta = []
+            if getattr(promo, "event_count", None) is not None:
+                meta.append(_meta_text(f"{promo.event_count} events"))
+            promo_items.append(_make_item(promo, year=str(promo.founded_year) if promo.founded_year else "", meta=meta))
+        sections.append({"label": "Promotions", "items": promo_items})
+
+        wrestlers = obj.get_wrestlers(limit=limit)
+        wrestler_items = []
+        for wrestler in wrestlers:
+            meta = []
+            if getattr(wrestler, "appearance_count", None) is not None:
+                meta.append(_meta_text(f"{wrestler.appearance_count} appearances"))
+            wrestler_items.append(_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "", meta=meta))
+        sections.append({"label": "Performing Wrestlers", "items": wrestler_items})
+
+    return [section for section in sections if section.get("items")]
+
+
 def build_about_with_links(obj, limit: int = 5) -> str:
     """
     Combine the stored about text with linked-from context.
     """
-    summary = build_linked_from_summary(obj, limit=limit)
     about_text = (getattr(obj, "about", None) or "").strip()
-
-    if summary and about_text:
-        return f"{about_text}\n\n{summary}"
-    return summary or about_text
+    return about_text

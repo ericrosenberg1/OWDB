@@ -39,6 +39,10 @@
     {% endif %}
 {% endwith %}
 
+{% with linked_sections=book|linked_from_sections %}
+    {% include "partials/linked_from.html" with sections=linked_sections %}
+{% endwith %}
+
 {% if book.related_wrestlers.exists %}
 <div class="card mb-4">
     <div class="card-header">Related Wrestlers</div>

@@ -81,6 +81,10 @@
             {% endif %}
         {% endwith %}
 
+        {% with linked_sections=promotion|linked_from_sections %}
+            {% include "partials/linked_from.html" with sections=linked_sections %}
+        {% endwith %}
+
         <!-- Wrestler Roster -->
         {% if all_wrestlers %}
         <div class="card mb-4">

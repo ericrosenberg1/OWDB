@@ -178,6 +178,10 @@
                     {% endwith %}
                 </div>
 
+                {% with linked_sections=wrestler|linked_from_sections %}
+                    {% include "partials/linked_from.html" with sections=linked_sections %}
+                {% endwith %}
+
                 <!-- Known For Section (TMDB Style horizontal scroller) -->
                 {% if wrestler.finishers %}
                 <div class="known-for-section">
@@ -228,6 +232,67 @@
                 </div>
                 {% endif %}
 
+                {% if title_history %}
+                <div class="title-history-section">
+                    <h3>Title History</h3>
+                    {% for group in title_history %}
+                    <div class="title-history-group">
+                        <h4 class="title-history-promo">{{ group.promotion.name }}</h4>
+                        {% for entry in group.titles %}
+                        <div class="card mb-3">
+                            <div class="card-header title-history-header">
+                                <div class="title-history-belt">
+                                    {% if entry.title.image_url %}
+                                    <img src="{{ entry.title.image_url }}" alt="{{ entry.title.name }}">
+                                    {% else %}
+                                    <div class="media-poster placeholder">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                            <circle cx="12" cy="8" r="6"></circle>
+                                            <path d="M15.5 18H8.5L6 22h12l-2.5-4z"></path>
+                                        </svg>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="title-history-info">
+                                    <a href="{% url 'title_detail_slug' entry.title.slug %}" class="title-history-name">{{ entry.title.name }}</a>
+                                    <span class="title-history-meta">{{ entry.title.promotion.abbreviation|default:entry.title.promotion.name }}</span>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-striped mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Result</th>
+                                                <th>Date</th>
+                                                <th>Event</th>
+                                                <th>Match</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for match_entry in entry.entries %}
+                                            <tr>
+                                                <td>
+                                                    <span class="result-badge {{ match_entry.result }}">
+                                                        {{ match_entry.result_label }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ match_entry.event.date|date:"M j, Y" }}</td>
+                                                <td><a href="{% url 'event_detail_slug' match_entry.event.slug %}">{{ match_entry.event.name }}</a></td>
+                                                <td><a href="{% url 'match_detail' match_entry.match.pk %}">{{ match_entry.match.match_text|truncatewords:8 }}</a></td>
+                                            </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
                 <!-- Notable Rivals Section -->
                 {% if rivals %}
                 <div class="known-for-section">
@@ -253,6 +318,42 @@
                             </a>
                             {% endfor %}
                         </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Match History Section (TMDB Credits Style) -->
+                {% if matches %}
+                <div class="credits-section">
+                    <div class="credits-header">
+                        <h3>Match History</h3>
+                        <div class="credits-filters">
+                            <select class="filter-select" id="matchFilter" onchange="filterMatches()">
+                                <option value="all">All Matches</option>
+                                <option value="wins">Wins</option>
+                                <option value="losses">Losses</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="credits-list">
+                        {% for match in matches %}
+                        <div class="credit-item" data-result="{{ match.result|lower }}">
+                            <div class="credit-year">
+                                {% if match.event.date %}{{ match.event.date|date:"Y" }}{% else %}&mdash;{% endif %}
+                            </div>
+                            <div class="credit-separator">
+                                <span class="dot"></span>
+                            </div>
+                            <div class="credit-info">
+                                <a href="{% url 'match_detail' match.pk %}" class="credit-title">{{ match.match_text }}</a>
+                                <span class="credit-meta">
+                                    <a href="{% url 'event_detail_slug' match.event.slug %}">{{ match.event.name }}</a>
+                                    {% if match.result %}<span class="result-badge {{ match.result|lower }}">{{ match.result }}</span>{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
                 {% endif %}
@@ -327,41 +428,6 @@
                 </div>
                 {% endif %}
 
-                <!-- Match History Section (TMDB Credits Style) -->
-                {% if matches %}
-                <div class="credits-section">
-                    <div class="credits-header">
-                        <h3>Match History</h3>
-                        <div class="credits-filters">
-                            <select class="filter-select" id="matchFilter" onchange="filterMatches()">
-                                <option value="all">All Matches</option>
-                                <option value="wins">Wins</option>
-                                <option value="losses">Losses</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="credits-list">
-                        {% for match in matches %}
-                        <div class="credit-item" data-result="{{ match.result|lower }}">
-                            <div class="credit-year">
-                                {% if match.event.date %}{{ match.event.date|date:"Y" }}{% else %}&mdash;{% endif %}
-                            </div>
-                            <div class="credit-separator">
-                                <span class="dot"></span>
-                            </div>
-                            <div class="credit-info">
-                                <a href="{% url 'match_detail' match.pk %}" class="credit-title">{{ match.match_text }}</a>
-                                <span class="credit-meta">
-                                    <a href="{% url 'event_detail_slug' match.event.slug %}">{{ match.event.name }}</a>
-                                    {% if match.result %}<span class="result-badge {{ match.result|lower }}">{{ match.result }}</span>{% endif %}
-                                </span>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>

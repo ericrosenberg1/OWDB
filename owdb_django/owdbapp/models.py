@@ -1028,6 +1028,16 @@ class PodcastEpisode(TimeStampedModel):
         help_text="Wrestlers who appeared as guests on this episode"
     )
 
+    # Events and matches discussed in this episode
+    discussed_events = models.ManyToManyField(
+        'Event', blank=True, related_name='podcast_discussions',
+        help_text="Events discussed in this episode"
+    )
+    discussed_matches = models.ManyToManyField(
+        'Match', blank=True, related_name='podcast_discussions',
+        help_text="Matches discussed in this episode"
+    )
+
     # RSS feed tracking
     guid = models.CharField(max_length=500, unique=True, blank=True, null=True,
                            help_text="Unique ID from RSS feed for deduplication")

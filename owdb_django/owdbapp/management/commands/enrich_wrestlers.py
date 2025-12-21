@@ -84,6 +84,16 @@ class Command(BaseCommand):
             total_updated += self.enrich_more_legends()
         if batch == 0 or batch == 26:
             total_updated += self.enrich_more_modern()
+        if batch == 0 or batch == 27:
+            total_updated += self.enrich_80s_90s_stars()
+        if batch == 0 or batch == 28:
+            total_updated += self.enrich_modern_stars_2()
+        if batch == 0 or batch == 29:
+            total_updated += self.enrich_uso_bloodline()
+        if batch == 0 or batch == 30:
+            total_updated += self.enrich_managers_announcers()
+        if batch == 0 or batch == 31:
+            total_updated += self.enrich_tag_teams_factions()
 
         self.stdout.write(self.style.SUCCESS(f'\n=== ENRICHMENT COMPLETE ==='))
         self.stdout.write(f'Total wrestlers updated: {total_updated}')
@@ -2038,4 +2048,124 @@ class Command(BaseCommand):
             name = data.pop('name')
             updated += self.update_wrestler(name, **data)
         self.stdout.write(f'  Updated {updated} More modern wrestlers')
+        return updated
+
+    def enrich_80s_90s_stars(self):
+        """Enrich 80s and 90s wrestling stars."""
+        self.stdout.write('--- Enriching 80s/90s Stars ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Dino Bravo', 'real_name': 'Adolfo Bresciano', 'birth_date': '1948-08-06', 'hometown': 'Montreal, Quebec', 'nationality': 'Canadian', 'about': 'Dino Bravo was Canada\'s strongest man and a WWF tag team champion. Known for his bench press.'},
+            {'name': 'Disco Inferno', 'real_name': 'Glenn Gilbertti', 'birth_date': '1968-09-22', 'hometown': 'Brooklyn, New York', 'nationality': 'American', 'about': 'Disco Inferno was a disco-dancing WCW personality who won the TV and Cruiserweight titles.'},
+            {'name': 'Dr. Death Steve Williams', 'real_name': 'Steve Williams', 'birth_date': '1960-05-14', 'hometown': 'Lakewood, Colorado', 'nationality': 'American', 'finishers': 'Oklahoma Stampede', 'about': 'Dr. Death was an NCAA wrestling champion who became a legend in Japan and the US.'},
+            {'name': 'Dynamite Kid', 'real_name': 'Thomas Billington', 'birth_date': '1958-12-05', 'hometown': 'Golborne, England', 'nationality': 'British', 'finishers': 'Diving Headbutt', 'about': 'Dynamite Kid was half of the British Bulldogs and influenced high-flying wrestling forever.'},
+            {'name': 'Earthquake', 'real_name': 'John Tenta', 'birth_date': '1963-06-22', 'hometown': 'Surrey, British Columbia', 'nationality': 'Canadian', 'finishers': 'Earthquake Splash', 'about': 'Earthquake was a devastating WWF star who feuded with Hulk Hogan. Former sumo wrestler.'},
+            {'name': 'Ernie Ladd', 'real_name': 'Ernest Ladd', 'birth_date': '1938-11-28', 'hometown': 'Orange, Texas', 'nationality': 'American', 'about': 'Ernie Ladd was an NFL star who became a top wrestling heel. The Big Cat was a legend.'},
+            {'name': 'George Steele', 'real_name': 'William Myers', 'birth_date': '1937-04-16', 'hometown': 'Detroit, Michigan', 'nationality': 'American', 'about': 'George "The Animal" Steele ate turnbuckles and was a teacher in real life. WWE Hall of Famer.'},
+            {'name': 'Glacier', 'real_name': 'Ray Lloyd', 'birth_date': '1964-02-20', 'hometown': 'Chamblee, Georgia', 'nationality': 'American', 'about': 'Glacier was WCW\'s Sub-Zero-inspired character. His elaborate entrance was memorable.'},
+            {'name': 'Goldust', 'real_name': 'Dustin Runnels', 'birth_date': '1969-04-11', 'hometown': 'Austin, Texas', 'nationality': 'American', 'finishers': 'Curtain Call', 'about': 'Goldust was a boundary-pushing character who became a multi-time tag and IC champion.'},
+            {'name': 'Gorilla Monsoon', 'real_name': 'Robert Marella', 'birth_date': '1937-06-04', 'hometown': 'Rochester, New York', 'nationality': 'American', 'about': 'Gorilla Monsoon was a powerful wrestler who became WWE\'s iconic announcer and president.'},
+            {'name': 'Greg Valentine', 'real_name': 'Jonathan Wisniski Jr.', 'birth_date': '1950-09-02', 'hometown': 'Seattle, Washington', 'nationality': 'American', 'finishers': 'Figure Four Leglock', 'about': 'Greg "The Hammer" Valentine was a two-time IC Champion with a devastating figure four.'},
+            {'name': 'Hacksaw Jim Duggan', 'real_name': 'James Duggan', 'birth_date': '1954-01-14', 'hometown': 'Glens Falls, New York', 'nationality': 'American', 'about': 'Hacksaw Jim Duggan won the first Royal Rumble. His 2x4 and "USA!" chants were legendary.'},
+            {'name': 'Hillbilly Jim', 'real_name': 'James Morris', 'birth_date': '1952-05-05', 'hometown': 'Mudlick, Kentucky', 'nationality': 'American', 'about': 'Hillbilly Jim was a beloved WWF star who was trained by Hulk Hogan in storyline.'},
+            {'name': 'Ivan Koloff', 'real_name': 'Oreal Perras', 'birth_date': '1942-08-25', 'hometown': 'Montreal, Quebec', 'nationality': 'Canadian', 'about': 'Ivan Koloff ended Bruno Sammartino\'s legendary WWWF title reign. The Russian Bear was feared.'},
+            {'name': 'Jerry Lynn', 'real_name': 'Jerry Sigler', 'birth_date': '1963-05-23', 'hometown': 'Minneapolis, Minnesota', 'nationality': 'American', 'finishers': 'Cradle Piledriver', 'about': 'Jerry Lynn had legendary matches with RVD in ECW. A technical master who excelled everywhere.'},
+            {'name': 'Jesse Ventura', 'real_name': 'James Janos', 'birth_date': '1951-07-15', 'hometown': 'Minneapolis, Minnesota', 'nationality': 'American', 'about': 'Jesse "The Body" Ventura became a legendary commentator and Governor of Minnesota.'},
+            {'name': 'Jimmy Snuka', 'real_name': 'James Reiher', 'birth_date': '1943-05-18', 'hometown': 'Fiji', 'nationality': 'Fijian', 'finishers': 'Superfly Splash', 'about': 'Jimmy Superfly Snuka\'s cage dive onto Don Muraco is one of wrestling\'s iconic moments.'},
+            {'name': 'Jimmy Valiant', 'real_name': 'James Fanning', 'birth_date': '1942-08-05', 'hometown': 'Trenton, New Jersey', 'nationality': 'American', 'about': 'Jimmy Valiant, the Boogie Woogie Man, was a beloved babyface in the NWA territories.'},
+            {'name': 'Doink the Clown', 'real_name': 'Matt Borne', 'birth_date': '1957-06-02', 'hometown': 'Portland, Oregon', 'nationality': 'American', 'about': 'Doink the Clown was a brilliant heel who became a comedy babyface. Matt Borne was a skilled worker.'},
+            {'name': 'Doc Gallows', 'real_name': 'Drew Hankinson', 'birth_date': '1983-12-25', 'hometown': 'Washington, D.C.', 'nationality': 'American', 'aliases': 'Luke Gallows, Festus', 'about': 'Doc Gallows is a founding member of Bullet Club and The Club. Multiple time tag team champion.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} 80s/90s stars')
+        return updated
+
+    def enrich_modern_stars_2(self):
+        """Enrich more modern wrestling stars."""
+        self.stdout.write('--- Enriching Modern Stars Part 2 ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Dominik Mysterio', 'real_name': 'Dominik Gutierrez', 'birth_date': '1997-04-01', 'hometown': 'San Diego, California', 'nationality': 'American', 'about': 'Dominik Mysterio is Rey Mysterio\'s son who joined Judgment Day. Dirty Dom became a heel star.'},
+            {'name': 'EC3', 'real_name': 'Michael Hutter', 'birth_date': '1983-04-05', 'hometown': 'Pittsburgh, Pennsylvania', 'nationality': 'American', 'aliases': 'Derrick Bateman', 'about': 'EC3 was a two-time TNA World Champion. He was trouble and controlled his narrative.'},
+            {'name': 'Eddie Kingston', 'real_name': 'Edward Moore', 'birth_date': '1981-12-13', 'hometown': 'Yonkers, New York', 'nationality': 'American', 'finishers': 'Backfist, Burning Hammer', 'about': 'Eddie Kingston is the Mad King. His promos and intensity made him an AEW star.'},
+            {'name': 'Emi Sakura', 'real_name': 'Emi Sakura', 'birth_date': '1976-03-01', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'about': 'Emi Sakura trained Riho and other joshi stars. The Freddie Mercury of wrestling.'},
+            {'name': 'Eric Young', 'real_name': 'Jeremy Fritz', 'birth_date': '1979-12-15', 'hometown': 'Nashville, Tennessee', 'nationality': 'Canadian', 'about': 'Eric Young was TNA World Champion and leader of Sanity. A comedic genius who can also go.'},
+            {'name': 'Erick Rowan', 'real_name': 'Joseph Ruud', 'birth_date': '1981-10-28', 'hometown': 'Minneapolis, Minnesota', 'nationality': 'American', 'about': 'Erick Rowan was part of the Wyatt Family and Bludgeon Brothers. A big man with intelligence.'},
+            {'name': 'Evil Uno', 'real_name': 'Nicolas Dansereau', 'birth_date': '1983-03-27', 'hometown': 'Montreal, Quebec', 'nationality': 'Canadian', 'about': 'Evil Uno leads the Dark Order in AEW. His look and character are unique.'},
+            {'name': 'Finn Balor', 'real_name': 'Fergal Devitt', 'birth_date': '1981-07-25', 'hometown': 'Bray, Ireland', 'nationality': 'Irish', 'aliases': 'Prince Devitt', 'finishers': 'Coup de Grace', 'about': 'Finn Balor was the first Universal Champion and leader of Bullet Club. The Demon is iconic.'},
+            {'name': 'Fandango', 'real_name': 'Curtis Hussey', 'birth_date': '1981-10-03', 'hometown': 'San Jose, California', 'nationality': 'American', 'about': 'Fandango brought ballroom dancing to WWE and became a tag champion with Tyler Breeze.'},
+            {'name': 'El Generico', 'real_name': 'Rami Sebei', 'birth_date': '1984-05-22', 'hometown': 'Tijuana, Mexico', 'nationality': 'Canadian', 'aliases': 'Sami Zayn', 'about': 'El Generico was an indie legend before becoming Sami Zayn. His matches with Kevin Steen were legendary.'},
+            {'name': 'El Phantasmo', 'real_name': 'Michael Guigliano', 'birth_date': '1988-12-19', 'hometown': 'Burnaby, British Columbia', 'nationality': 'Canadian', 'finishers': 'CR2', 'about': 'El Phantasmo is Bullet Club\'s junior heavyweight ace. His cheating antics and ability are top tier.'},
+            {'name': 'Dragon Kid', 'real_name': 'Shuntaro Araki', 'birth_date': '1976-07-02', 'hometown': 'Hikone, Japan', 'nationality': 'Japanese', 'about': 'Dragon Kid is a Dragon Gate legend and the heart of the promotion. His hurricanrana is beautiful.'},
+            {'name': 'Desmond Wolfe', 'real_name': 'Nigel McGuinness', 'birth_date': '1976-01-09', 'hometown': 'London, England', 'nationality': 'British', 'finishers': 'Tower of London, Jawbreaker Lariat', 'about': 'Desmond Wolfe was TNA\'s British star. As Nigel McGuinness, he was ROH World Champion.'},
+            {'name': 'Great Sasuke', 'real_name': 'Masanori Murakawa', 'birth_date': '1969-07-18', 'hometown': 'Morioka, Japan', 'nationality': 'Japanese', 'about': 'Great Sasuke founded Michinoku Pro and was elected to political office while wrestling.'},
+            {'name': 'Hikaru Shida', 'real_name': 'Hikaru Shida', 'birth_date': '1988-06-08', 'hometown': 'Yokohama, Japan', 'nationality': 'Japanese', 'finishers': 'Katana', 'about': 'Hikaru Shida was AEW Women\'s Champion for 372 days. She combines joshi style with kendo.'},
+            {'name': 'Homicide', 'real_name': 'Nelson Erazo', 'birth_date': '1977-04-20', 'hometown': 'Brooklyn, New York', 'nationality': 'American', 'finishers': 'Cop Killa, Ace Crusher', 'about': 'Homicide was ROH and TNA World Champion. The Notorious 187 brought street credibility.'},
+            {'name': 'Genichiro Tenryu', 'real_name': 'Genichiro Shimada', 'birth_date': '1950-02-02', 'hometown': 'Fukui, Japan', 'nationality': 'Japanese', 'about': 'Genichiro Tenryu was a former sumo who became a wrestling legend. His feud with Jumbo Tsuruta is historic.'},
+            {'name': 'Go Shiozaki', 'real_name': 'Go Shiozaki', 'birth_date': '1982-06-07', 'hometown': 'Fukuoka, Japan', 'nationality': 'Japanese', 'finishers': 'Gowan Lariat', 'about': 'Go Shiozaki is a Pro Wrestling NOAH legend and multiple time GHC Champion. His chops are brutal.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Modern stars part 2')
+        return updated
+
+    def enrich_uso_bloodline(self):
+        """Enrich Uso family and Bloodline members."""
+        self.stdout.write('--- Enriching Bloodline/Uso ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Jey Uso', 'real_name': 'Joshua Fatu', 'birth_date': '1985-08-22', 'hometown': 'San Francisco, California', 'nationality': 'American', 'finishers': 'Uso Splash', 'about': 'Jey Uso is part of the most decorated tag team in WWE history. YEET! Main event Uso now.'},
+            {'name': 'Jimmy Uso', 'real_name': 'Jonathan Fatu', 'birth_date': '1985-08-22', 'hometown': 'San Francisco, California', 'nationality': 'American', 'finishers': 'Uso Splash', 'about': 'Jimmy Uso is part of the Usos and the Bloodline. Multiple time tag team champion.'},
+            {'name': 'Afa Anoaʻi', 'real_name': 'Afa Anoaʻi', 'birth_date': '1942-11-21', 'hometown': 'Samoa', 'nationality': 'Samoan', 'about': 'Afa was half of the Wild Samoans and patriarch of the legendary Anoaʻi wrestling family.'},
+            {'name': 'Haku', 'real_name': 'Tonga Fifita', 'birth_date': '1959-02-03', 'hometown': 'Tonga', 'nationality': 'Tongan', 'aliases': 'Meng, King Haku', 'about': 'Haku is legendary for being the toughest man in wrestling. King of the Ring and feared fighter.'},
+            {'name': 'Jacob Fatu', 'real_name': 'Jacob Fatu', 'birth_date': '1992-08-25', 'hometown': 'San Francisco, California', 'nationality': 'American', 'finishers': 'Moonsault', 'about': 'Jacob Fatu was MLW World Champion and joined the Bloodline. His agility for his size is amazing.'},
+            {'name': 'Hikuleo', 'real_name': 'Hikuleo', 'birth_date': '1991-12-23', 'hometown': 'Kissimmee, Florida', 'nationality': 'American', 'about': 'Hikuleo is a Bullet Club member in NJPW. His size and lineage make him a future star.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Bloodline/Uso members')
+        return updated
+
+    def enrich_managers_announcers(self):
+        """Enrich managers and announcers."""
+        self.stdout.write('--- Enriching Managers/Announcers ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Eric Bischoff', 'real_name': 'Eric Bischoff', 'birth_date': '1955-05-27', 'hometown': 'Detroit, Michigan', 'nationality': 'American', 'about': 'Eric Bischoff ran WCW and challenged Vince McMahon. Created the NWO and Monday Night Wars.'},
+            {'name': 'Excalibur', 'real_name': 'Marc Letzmann', 'birth_date': '1979-04-01', 'hometown': 'Los Angeles, California', 'nationality': 'American', 'about': 'Excalibur is AEW\'s masked voice. Former PWG wrestler who became the best commentator in wrestling.'},
+            {'name': 'Freddie Blassie', 'real_name': 'Fred Blassie', 'birth_date': '1918-02-08', 'hometown': 'St. Louis, Missouri', 'nationality': 'American', 'about': 'Freddie Blassie was a Hollywood Fashion Plate who managed many champions. Pencil-necked geeks!'},
+            {'name': 'Gene Okerlund', 'real_name': 'Eugene Okerlund', 'birth_date': '1942-12-19', 'hometown': 'Sisseton, South Dakota', 'nationality': 'American', 'about': 'Mean Gene Okerlund was the voice of wrestling interviews for decades. WWE Hall of Famer.'},
+            {'name': 'Gordon Solie', 'real_name': 'Jonard French', 'birth_date': '1929-01-26', 'hometown': 'Minneapolis, Minnesota', 'nationality': 'American', 'about': 'Gordon Solie was the Dean of Wrestling Announcers. His sophistication elevated the sport.'},
+            {'name': 'Gedo', 'real_name': 'Keiji Takayama', 'birth_date': '1969-11-28', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'about': 'Gedo is the booker of NJPW and manager of Kazuchika Okada. Former IWGP Junior Tag Champion.'},
+            {'name': 'Jado', 'real_name': 'Yoshihiro Takayama', 'birth_date': '1968-01-28', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'about': 'Jado is Gedo\'s longtime partner and Bullet Club associate. Multiple time tag team champion.'},
+            {'name': 'Jim Ross', 'real_name': 'James Ross', 'birth_date': '1952-01-03', 'hometown': 'Fort Bragg, California', 'nationality': 'American', 'about': 'Jim Ross is the greatest wrestling announcer ever. Bah Gawd! WWE and AEW Hall of Famer.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Managers/Announcers')
+        return updated
+
+    def enrich_tag_teams_factions(self):
+        """Enrich tag team and faction members."""
+        self.stdout.write('--- Enriching Tag Team Members ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Jay Briscoe', 'real_name': 'Jamin Pugh', 'birth_date': '1984-01-25', 'hometown': 'Sandy Fork, Delaware', 'nationality': 'American', 'finishers': 'Jay Driller', 'about': 'Jay Briscoe was half of the most decorated ROH tag team ever. Two-time ROH World Champion. RIP Dem Boys.'},
+            {'name': 'Jimmy Jacobs', 'real_name': 'James Jacobs', 'birth_date': '1984-01-02', 'hometown': 'Grand Rapids, Michigan', 'nationality': 'American', 'about': 'Jimmy Jacobs was an Age of the Fall leader in ROH and WWE writer. His promos were intense.'},
+            {'name': 'Jimmy Rave', 'real_name': 'James Guffey', 'birth_date': '1982-02-02', 'hometown': 'Atlanta, Georgia', 'nationality': 'American', 'about': 'Jimmy Rave was a Ring of Honor star and Embassy member. Overcame incredible adversity.'},
+            {'name': 'Jimmy Havoc', 'real_name': 'James Mayell', 'birth_date': '1984-02-04', 'hometown': 'Croydon, England', 'nationality': 'British', 'about': 'Jimmy Havoc was a deathmatch legend and PROGRESS Champion. Known for extreme hardcore.'},
+            {'name': 'Jack Evans', 'real_name': 'Jack Miller', 'birth_date': '1982-12-25', 'hometown': 'Parkland, Washington', 'nationality': 'American', 'about': 'Jack Evans is one of the most acrobatic wrestlers ever. AAA and Lucha Underground star.'},
+            {'name': 'Isiah Kassidy', 'real_name': 'Isaiah Kasey', 'birth_date': '1997-07-29', 'hometown': 'Lexington, Kentucky', 'nationality': 'American', 'about': 'Isiah Kassidy is half of Private Party. Young star with incredible charisma.'},
+            {'name': 'Joe Hendry', 'real_name': 'Joe Hendry', 'birth_date': '1988-01-21', 'hometown': 'Edinburgh, Scotland', 'nationality': 'Scottish', 'about': 'Joe Hendry is the Prestigious One. His entrance songs and viral moments made him a star.'},
+            {'name': 'Jimmy Garvin', 'real_name': 'James Williams', 'birth_date': '1952-09-25', 'hometown': 'Tampa, Florida', 'nationality': 'American', 'about': 'Jimmy Garvin was a Fabulous Freebird and NWA US Champion. His feud with Michael Hayes was legendary.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Tag team members')
         return updated

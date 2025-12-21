@@ -56,10 +56,14 @@ class Command(BaseCommand):
         if not wrestler:
             wrestler = Wrestler.objects.filter(name__icontains=name).first()
         if not wrestler:
-            wrestler = Wrestler.objects.create(
-                name=name,
-                slug=slugify(name)
-            )
+            # Check if slug already exists
+            slug = slugify(name)
+            wrestler = Wrestler.objects.filter(slug=slug).first()
+            if not wrestler:
+                wrestler = Wrestler.objects.create(
+                    name=name,
+                    slug=slug
+                )
         return wrestler
 
     def create_special(self, title, year, special_type, wrestler_names, about=None):

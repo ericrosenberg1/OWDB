@@ -12,7 +12,7 @@ Usage:
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.utils.text import slugify
-from owdb_django.owdbapp.models import Promotion, Title, Venue, VideoGame, Podcast, Book, Special
+from owdb_django.owdbapp.models import Promotion, Title, Venue, VideoGame, Podcast, Book, Special, Stable
 
 
 class Command(BaseCommand):
@@ -37,18 +37,26 @@ class Command(BaseCommand):
             total_updated += self.enrich_promotions()
             total_updated += self.enrich_promotions_batch_2()
             total_updated += self.enrich_promotions_batch_3()
+            total_updated += self.enrich_promotions_batch_4()
+            total_updated += self.enrich_promotions_batch_5()
+            total_updated += self.enrich_promotions_batch_6()
         if entity_type in ['all', 'championships']:
             total_updated += self.enrich_championships()
+            total_updated += self.enrich_championships_batch_2()
+            total_updated += self.enrich_championships_batch_3()
         if entity_type in ['all', 'venues']:
             total_updated += self.enrich_venues()
         if entity_type in ['all', 'games']:
             total_updated += self.enrich_video_games()
         if entity_type in ['all', 'podcasts']:
             total_updated += self.enrich_podcasts()
+            total_updated += self.enrich_podcasts_batch_2()
         if entity_type in ['all', 'books']:
             total_updated += self.enrich_books()
         if entity_type in ['all', 'documentaries']:
             total_updated += self.enrich_documentaries()
+        if entity_type in ['all', 'stables']:
+            total_updated += self.enrich_stables()
 
         self.stdout.write(self.style.SUCCESS(f'\n=== ENRICHMENT COMPLETE ==='))
         self.stdout.write(f'Total entities updated: {total_updated}')
@@ -431,4 +439,225 @@ class Command(BaseCommand):
             name = data.pop('name')
             updated += self.update_promotion(name, **data)
         self.stdout.write(f'  Updated {updated} promotions batch 3')
+        return updated
+
+    def enrich_promotions_batch_4(self):
+        """Enrich wrestling promotions batch 4 - Japanese and international."""
+        self.stdout.write('--- Enriching Promotions Batch 4 ---')
+        updated = 0
+        promotions_data = [
+            {'name': 'NJPW', 'about': 'New Japan Pro-Wrestling is Japan\'s largest promotion, founded by Antonio Inoki in 1972. Known for strong style wrestling, the G1 Climax tournament, and stars like Okada, Tanahashi, and Naito. Wrestle Kingdom is their biggest annual event.'},
+            {'name': 'All Japan Pro Wrestling', 'about': 'AJPW was founded by Giant Baba in 1972. Home of the Four Pillars of Heaven (Misawa, Kawada, Kobashi, Taue) and legendary Triple Crown Championship matches.'},
+            {'name': 'Pro Wrestling NOAH', 'about': 'NOAH was founded by Mitsuharu Misawa in 2000 after leaving AJPW. Known for the GHC Championship and carrying on the fighting spirit of King\'s Road style wrestling.'},
+            {'name': 'Dragon Gate', 'about': 'Dragon Gate was founded in 2004, evolving from Toryumon. Known for fast-paced junior heavyweight wrestling and complex faction warfare.'},
+            {'name': 'DDT Pro-Wrestling', 'about': 'DDT was founded in 1997 by Sanshiro Takagi. Known for comedy wrestling, unique stipulations, and the Ironman Heavymetalweight Championship defended anywhere.'},
+            {'name': 'Stardom', 'about': 'World Wonder Ring Stardom is Japan\'s premier women\'s promotion, founded in 2010 by Rossy Ogawa. Features top joshi talent like Mayu Iwatani and Utami Hayashishita.'},
+            {'name': 'Tokyo Joshi Pro Wrestling', 'about': 'TJPW is a DDT subsidiary founded in 2013. Known for mixing comedy with serious wrestling and developing talent like Miyu Yamashita and Yuka Sakazaki.'},
+            {'name': 'Ice Ribbon', 'about': 'Ice Ribbon was founded in 2006 as a joshi promotion. Known for developing young female talent and unique match stipulations.'},
+            {'name': 'ZERO1', 'about': 'Pro Wrestling ZERO1 was founded by Shinya Hashimoto in 2001. Known for strong style and international partnerships with NWA.'},
+            {'name': 'FREEDOMS', 'about': 'Pro Wrestling FREEDOMS was founded in 2009. Known for deathmatch wrestling and hardcore stipulations in the Japanese circuit.'},
+            {'name': 'Gatoh Move', 'about': 'Gatoh Move/ChocoPro is Emi Sakura\'s promotion known for apartment wrestling and unique presentation on YouTube.'},
+            {'name': 'WAVE', 'about': 'Pro Wrestling WAVE was founded in 2007. A joshi promotion known for competitive women\'s wrestling matches.'},
+            {'name': 'SEAdLINNNG', 'about': 'SEAdLINNNG was founded by Nanae Takahashi in 2015. A joshi promotion featuring hard-hitting women\'s wrestling.'},
+            {'name': 'WRESTLE-1', 'about': 'WRESTLE-1 operated from 2013-2020. Founded by Keiji Mutoh after leaving AJPW, it featured a mix of veterans and young talent.'},
+            {'name': 'Michinoku Pro Wrestling', 'about': 'Michinoku Pro was founded in 1993 by The Great Sasuke. Known for high-flying junior heavyweight action and producing Taka Michinoku.'},
+        ]
+        for data in promotions_data:
+            name = data.pop('name')
+            updated += self.update_promotion(name, **data)
+        self.stdout.write(f'  Updated {updated} promotions batch 4')
+        return updated
+
+    def enrich_promotions_batch_5(self):
+        """Enrich wrestling promotions batch 5 - Mexican and Latin American."""
+        self.stdout.write('--- Enriching Promotions Batch 5 ---')
+        updated = 0
+        promotions_data = [
+            {'name': 'CMLL', 'about': 'Consejo Mundial de Lucha Libre is the oldest wrestling promotion in the world, founded in 1933 in Mexico City. Home of Arena Mexico and traditional lucha libre.'},
+            {'name': 'AAA', 'about': 'Lucha Libre AAA Worldwide was founded in 1992 by Antonio Peña. Known for TripleMania and producing international stars like Rey Mysterio, Eddie Guerrero, and Pentagon Jr.'},
+            {'name': 'Lucha Underground', 'about': 'Lucha Underground was a cinematic wrestling series from 2014-2018. Featured The Temple, unique characters, and launched Pentagon Dark and Prince Puma.'},
+            {'name': 'Crash Lucha Libre', 'about': 'The Crash Lucha Libre was founded in 2014 in Tijuana. Known for mixing lucha libre with American indie style wrestling.'},
+            {'name': 'International Wrestling League', 'about': 'IWL (Liga Internacional de Lucha Libre) promoted lucha libre events in Mexico during the 1990s and 2000s.'},
+            {'name': 'IWRG', 'about': 'International Wrestling Revolution Group was founded in 1996 in Mexico. Known for hardcore lucha libre and developing young talent.'},
+            {'name': 'DTU', 'about': 'Desastre Total Ultraviolento is a Mexican promotion known for extreme matches and deathmatch wrestling.'},
+            {'name': 'Promociones Mora', 'about': 'Promociones Mora promotes lucha libre events throughout Mexico, featuring traditional lucha format.'},
+            {'name': 'International Wrestling Association', 'about': 'IWA in Puerto Rico has promoted wrestling since 1994. Known for hardcore wrestling and developing Caribbean talent.'},
+            {'name': 'WWL', 'about': 'World Wrestling League operated in Puerto Rico as an alternative to WWC with touring stars.'},
+            {'name': 'CMLL Guadalajara', 'about': 'CMLL\'s Guadalajara branch promotes lucha libre at Arena Coliseo Guadalajara.'},
+            {'name': 'ELITE AAA', 'about': 'ELITE is AAA\'s secondary promotion, featuring lucha libre throughout Mexican venues.'},
+            {'name': 'Full Latinoamericana', 'about': 'Full Latinoamericana promotes independent lucha libre events featuring Mexican talent.'},
+            {'name': 'LLUSA', 'about': 'Lucha Libre USA was a short-lived American promotion featuring lucha libre style wrestling.'},
+            {'name': 'Lucha Libre Boom', 'about': 'Lucha Libre Boom promotes independent lucha events in Mexico featuring rising talent.'},
+        ]
+        for data in promotions_data:
+            name = data.pop('name')
+            updated += self.update_promotion(name, **data)
+        self.stdout.write(f'  Updated {updated} promotions batch 5')
+        return updated
+
+    def enrich_promotions_batch_6(self):
+        """Enrich wrestling promotions batch 6 - British and European."""
+        self.stdout.write('--- Enriching Promotions Batch 6 ---')
+        updated = 0
+        promotions_data = [
+            {'name': 'PROGRESS Wrestling', 'about': 'PROGRESS was founded in 2012 in London. Known for intense storylines and launching British wrestling stars like Will Ospreay and Pete Dunne.'},
+            {'name': 'Revolution Pro Wrestling', 'about': 'RevPro was founded in 2012 in the UK. Has partnerships with NJPW and features top British and international talent.'},
+            {'name': 'ICW', 'about': 'Insane Championship Wrestling was founded in Scotland in 2006. Known for aggressive, adult-oriented wrestling and passionate crowds.'},
+            {'name': 'wXw', 'about': 'Westside Xtreme Wrestling is Germany\'s top promotion, founded in 2000. Known for the 16 Carat Gold tournament.'},
+            {'name': 'WCPW', 'about': 'What Culture Pro Wrestling operated from 2016-2018. Founded by wrestling media site WhatCulture, became Defiant Wrestling.'},
+            {'name': 'Defiant Wrestling', 'about': 'Defiant Wrestling evolved from WCPW. Featured British and international talent before closing.'},
+            {'name': 'Fight Club Pro', 'about': 'Fight Club Pro was a British promotion known for hosting international indie stars and wild matches.'},
+            {'name': 'OTT', 'about': 'Over The Top Wrestling is Ireland\'s top promotion, founded in 2014. Features Irish and international talent.'},
+            {'name': 'TNT Extreme Wrestling', 'about': 'TNT Extreme Wrestling is a British promotion known for hardcore and deathmatch wrestling.'},
+            {'name': 'Attack Pro', 'about': 'Attack! Pro Wrestling promotes events in Wales featuring British indie talent and unique presentations.'},
+            {'name': 'Preston City Wrestling', 'about': 'PCW is a British promotion based in Preston, known for quality indie wrestling shows.'},
+            {'name': 'IPW UK', 'about': 'International Pro Wrestling UK promotes events throughout Britain featuring local and touring talent.'},
+            {'name': 'World of Sport Wrestling', 'about': 'World of Sport was British TV wrestling from 1965-1988. Featured Big Daddy, Giant Haystacks, and unique British catch style.'},
+            {'name': 'Catch Wrestling World', 'about': 'Catch Wrestling World promotes traditional British catch wrestling style shows.'},
+            {'name': 'Triple W', 'about': 'WWW (World Wide Wrestling) is a French promotion founded in 2014. Features European indie talent.'},
+        ]
+        for data in promotions_data:
+            name = data.pop('name')
+            updated += self.update_promotion(name, **data)
+        self.stdout.write(f'  Updated {updated} promotions batch 6')
+        return updated
+
+    def enrich_championships_batch_2(self):
+        """Enrich wrestling championships batch 2."""
+        self.stdout.write('--- Enriching Championships Batch 2 ---')
+        updated = 0
+        titles_data = [
+            {'name': 'WWE Tag Team Championship', 'about': 'The WWE Tag Team Championship is one of wrestling\'s most prestigious tag titles. Lineage includes legendary teams like The Hart Foundation, Road Warriors, and New Day.'},
+            {'name': 'World Tag Team Championship', 'about': 'The World Tag Team Championship was the Raw brand tag title from 2002-2010. Held by The Dudley Boyz, Edge and Christian, and other legendary teams.'},
+            {'name': 'Raw Tag Team Championship', 'about': 'The Raw Tag Team Championship is the primary tag title on Raw since 2016. The New Day, Usos, and FTR have held the gold.'},
+            {'name': 'SmackDown Tag Team Championship', 'about': 'The SmackDown Tag Team Championship is the SmackDown brand tag title since 2016. Features blue straps and unique design.'},
+            {'name': 'NXT Tag Team Championship', 'about': 'The NXT Tag Team Championship was created in 2013. Held by The Ascension, American Alpha, and The Undisputed ERA.'},
+            {'name': 'AEW World Tag Team Championship', 'about': 'The AEW World Tag Team Championship was introduced in 2019. SCU were first champions. Features teams from around the world.'},
+            {'name': 'IWGP Tag Team Championship', 'about': 'The IWGP Tag Team Championship is NJPW\'s premier tag title. Held by legendary teams like Tencozy and CHAOS.'},
+            {'name': 'NEVER Openweight Championship', 'about': 'The NEVER Openweight Championship is an NJPW title emphasizing fighting spirit. Tomohiro Ishii and Katsuyori Shibata have defined the title.'},
+            {'name': 'IWGP Junior Heavyweight Championship', 'about': 'The IWGP Junior Heavyweight Championship is NJPW\'s top junior title. Legendary holders include Jushin Liger, Tiger Mask, and Hiromu Takahashi.'},
+            {'name': 'Triple Crown Heavyweight Championship', 'about': 'The Triple Crown is AJPW\'s unified world title since 1989. Combining the PWF, United National, and International titles.'},
+            {'name': 'GHC Tag Team Championship', 'about': 'The GHC Tag Team Championship is Pro Wrestling NOAH\'s tag title. Part of the Global Honored Crown title system.'},
+            {'name': 'Open the Dream Gate Championship', 'about': 'The Open the Dream Gate is Dragon Gate\'s top title. Named after the company\'s philosophy of opening the gate to dreams.'},
+            {'name': 'World Wonder Ring Stardom Championship', 'about': 'The World of Stardom Championship is Stardom\'s top title. Held by Mayu Iwatani and Giulia.'},
+            {'name': 'TNA World Heavyweight Championship', 'about': 'The TNA World Heavyweight Championship was Impact\'s top title from 2007-2017. Held by Kurt Angle and AJ Styles.'},
+            {'name': 'TNA X Division Championship', 'about': 'The X Division Championship is Impact\'s high-flying title. "It\'s not about weight limits, it\'s about no limits."'},
+        ]
+        for data in titles_data:
+            name = data.pop('name')
+            updated += self.update_title(name, **data)
+        self.stdout.write(f'  Updated {updated} championships batch 2')
+        return updated
+
+    def enrich_championships_batch_3(self):
+        """Enrich wrestling championships batch 3."""
+        self.stdout.write('--- Enriching Championships Batch 3 ---')
+        updated = 0
+        titles_data = [
+            {'name': 'WWE 24/7 Championship', 'about': 'The WWE 24/7 Championship was introduced in 2019. Can be defended anytime, anywhere. Known for comedic title changes.'},
+            {'name': 'Million Dollar Championship', 'about': 'The Million Dollar Championship was created by Ted DiBiase in 1989. A custom title that has been revived periodically.'},
+            {'name': 'Hardcore Championship', 'about': 'The WWE Hardcore Championship was defended under 24/7 rules from 1998-2002. Held by Mick Foley, Crash Holly, and many others.'},
+            {'name': 'European Championship', 'about': 'The WWE European Championship was active from 1997-2002. Shawn Michaels was first champion. Prestigious mid-card title.'},
+            {'name': 'Light Heavyweight Championship', 'about': 'The WWE Light Heavyweight Championship was for cruiserweight stars from 1981-2001. Held by Taka Michinoku and Dean Malenko.'},
+            {'name': 'Cruiserweight Championship', 'about': 'The WWE Cruiserweight Championship featured high-flyers with weight limits. Multiple versions throughout WWE history.'},
+            {'name': 'AEW International Championship', 'about': 'The AEW International Championship (formerly All-Atlantic) is AEW\'s secondary title. Orange Cassidy and Will Ospreay have held it.'},
+            {'name': 'AEW TBS Championship', 'about': 'The AEW TBS Championship is AEW\'s secondary women\'s title. Jade Cargill was dominant first champion.'},
+            {'name': 'FTW Championship', 'about': 'The FTW Championship was created by Taz in ECW. Revived in AEW as a rogue title.'},
+            {'name': 'ROH World Television Championship', 'about': 'The ROH TV Championship is Ring of Honor\'s workhorse title. Defended regularly on ROH programming.'},
+            {'name': 'ROH World Tag Team Championship', 'about': 'The ROH World Tag Team Championship is Ring of Honor\'s tag title. Teams like The Briscoes have defined it.'},
+            {'name': 'ECW World Heavyweight Championship', 'about': 'The ECW World Heavyweight Championship was ECW\'s top title from 1992-2001. Held by Shane Douglas, Sandman, and RVD.'},
+            {'name': 'ECW Television Championship', 'about': 'The ECW TV Championship was ECW\'s workhorse title. 2 Cold Scorpio and Rob Van Dam had legendary reigns.'},
+            {'name': 'ECW Tag Team Championship', 'about': 'The ECW Tag Team Championship was held by legendary teams like The Dudley Boyz, The Eliminators, and RVD/Sabu.'},
+            {'name': 'WCW World Heavyweight Championship', 'about': 'The WCW World Heavyweight Championship was WCW\'s top title. Ric Flair, Goldberg, and Booker T are legendary champions.'},
+        ]
+        for data in titles_data:
+            name = data.pop('name')
+            updated += self.update_title(name, **data)
+        self.stdout.write(f'  Updated {updated} championships batch 3')
+        return updated
+
+    def enrich_podcasts_batch_2(self):
+        """Enrich wrestling podcasts batch 2."""
+        self.stdout.write('--- Enriching Podcasts Batch 2 ---')
+        updated = 0
+        podcasts_data = [
+            {'name': 'Arn', 'about': 'The Arn Show is Arn Anderson\'s podcast with Conrad Thompson. Discusses his legendary career with the Four Horsemen, WCW, and WWE.'},
+            {'name': 'The Kurt Angle Show', 'about': 'The Kurt Angle Show features the Olympic gold medalist discussing his career in WWE, TNA, and amateur wrestling.'},
+            {'name': 'Foley Is Pod', 'about': 'Foley Is Pod features Mick Foley discussing his hardcore legend career, writing, and life beyond wrestling.'},
+            {'name': 'The Hall of Fame', 'about': 'The Hall of Fame podcast features Booker T discussing his career from Harlem Heat to WWE Champion.'},
+            {'name': 'X-Pac 12360', 'about': 'X-Pac 12360 features Sean Waltman discussing D-Generation X, nWo, and his cruiserweight career.'},
+            {'name': 'Insight with Chris Van Vliet', 'about': 'Insight with Chris Van Vliet features in-depth interviews with wrestling stars and celebrities.'},
+            {'name': 'Wrestlenomics', 'about': 'Wrestlenomics covers the business side of wrestling with Brandon Thurston. Features ratings analysis and financial news.'},
+            {'name': 'Fightful', 'about': 'Fightful podcasts feature Sean Ross Sapp with wrestling news, interviews, and analysis.'},
+            {'name': 'Going Broadway', 'about': 'Going Broadway is SRS and Carmine\'s wrestling discussion show on Fightful.'},
+            {'name': 'Busted Open Radio', 'about': 'Busted Open Radio on SiriusXM features Dave LaGreca, Mickie James, and guests discussing wrestling news.'},
+            {'name': 'The Extreme Life of Matt Hardy', 'about': 'The Extreme Life of Matt Hardy chronicles his career from the Hardy Boyz to current day.'},
+            {'name': 'The Jim Cornette Experience', 'about': 'The Jim Cornette Experience features the controversial manager\'s opinions on wrestling past and present.'},
+            {'name': 'Drive Thru', 'about': 'Jim Cornette\'s Drive-Thru features listener questions and wrestling discussion.'},
+            {'name': 'My World with Jeff Jarrett', 'about': 'My World features Jeff Jarrett discussing his career, founding TNA, and WWE Hall of Fame career.'},
+            {'name': 'Two Man Power Trip of Wrestling', 'about': 'Two Man Power Trip features interviews with wrestling legends and current stars.'},
+            {'name': 'The Sessions with Renee Paquette', 'about': 'The Sessions features Renee Paquette with candid wrestling interviews and conversations.'},
+            {'name': 'Notsam Wrestling', 'about': 'NotSam Wrestling features Sam Roberts discussing WWE and wrestling topics.'},
+            {'name': 'Cafe de Rene', 'about': 'Cafe de Rene with Rene Dupree discusses his career in WWE and Japan.'},
+            {'name': 'The Mark Henry Show', 'about': 'The Mark Henry Show features the World\'s Strongest Man discussing his WWE career.'},
+            {'name': 'The Bump', 'about': 'WWE\'s The Bump is the official WWE talk show featuring interviews with current WWE Superstars.'},
+        ]
+        for data in podcasts_data:
+            name = data.pop('name')
+            updated += self.update_podcast(name, **data)
+        self.stdout.write(f'  Updated {updated} podcasts batch 2')
+        return updated
+
+    def update_stable(self, name, **kwargs):
+        """Update a stable with enriched data."""
+        stable = Stable.objects.filter(name__iexact=name).first()
+        if not stable:
+            stable = Stable.objects.filter(name__icontains=name).first()
+        if stable:
+            updated = False
+            for field, value in kwargs.items():
+                if value and hasattr(stable, field):
+                    if not getattr(stable, field, None) or field == 'about':
+                        setattr(stable, field, value)
+                        updated = True
+            if updated:
+                stable.save()
+                return 1
+        return 0
+
+    def enrich_stables(self):
+        """Enrich wrestling stables and factions."""
+        self.stdout.write('--- Enriching Stables ---')
+        updated = 0
+        stables_data = [
+            {'name': 'nWo', 'about': 'The New World Order (nWo) was formed in 1996 when Hulk Hogan turned heel and joined Scott Hall and Kevin Nash. The nWo revolutionized wrestling and launched the Monday Night Wars. Their black and white colors and "Too Sweet" hand gesture became iconic.'},
+            {'name': 'D-Generation X', 'about': 'D-Generation X (DX) was formed in 1997 by Shawn Michaels and Triple H. Known for rebellious attitude, crotch chops, and "Suck It" catchphrase. Members included Chyna, X-Pac, Road Dogg, and Billy Gunn.'},
+            {'name': 'The Four Horsemen', 'about': 'The Four Horsemen were wrestling\'s most prestigious faction, formed by Ric Flair in 1985. Members included Arn Anderson, Tully Blanchard, and Ole Anderson. Known for limousines, fine suits, and being the dirtiest players in the game.'},
+            {'name': 'Evolution', 'about': 'Evolution was Triple H\'s faction in WWE from 2003-2005. Featured Ric Flair, Randy Orton, and Batista. Represented past, present, and future of WWE.'},
+            {'name': 'The Shield', 'about': 'The Shield debuted in 2012 with Roman Reigns, Seth Rollins, and Dean Ambrose. Their tactical gear, fist bump, and entrance through the crowd made them one of WWE\'s most dominant factions.'},
+            {'name': 'Bullet Club', 'about': 'Bullet Club was formed in 2013 by Finn Balor (Prince Devitt) in NJPW. Members included AJ Styles, Kenny Omega, and The Young Bucks. Their merchandise and influence revolutionized wrestling factions.'},
+            {'name': 'The Nexus', 'about': 'The Nexus was a faction of NXT Season 1 rookies who invaded Raw in 2010. Led by Wade Barrett, they terrorized WWE before being dismantled by John Cena.'},
+            {'name': 'The Wyatt Family', 'about': 'The Wyatt Family was Bray Wyatt\'s cult-like faction. With Luke Harper, Erick Rowan, and later Braun Strowman, they terrorized WWE with eerie promos and swamp-themed entrance.'},
+            {'name': 'The Bloodline', 'about': 'The Bloodline is Roman Reigns\' family faction. With Jimmy and Jey Uso, Solo Sikoa, and Paul Heyman, they dominated WWE for years. "Acknowledge Me" became Roman\'s signature.'},
+            {'name': 'The Elite', 'about': 'The Elite is The Young Bucks, Kenny Omega, Cody Rhodes (formerly), and Hangman Adam Page. They helped found AEW and are known for Being The Elite web series.'},
+            {'name': 'Undisputed Era', 'about': 'The Undisputed Era was Adam Cole, Kyle O\'Reilly, Bobby Fish, and Roderick Strong in NXT. They dominated NXT, holding all the gold simultaneously.'},
+            {'name': 'The Inner Circle', 'about': 'The Inner Circle was Chris Jericho\'s AEW faction with Sammy Guevara, Santana, Ortiz, Jake Hager, and later MJF. "A Little Bit of the Bubbly" was their catchphrase.'},
+            {'name': 'The Hart Foundation', 'about': 'The Hart Foundation originally was Bret Hart and Jim Neidhart. Later reformed as anti-American faction with Owen Hart, British Bulldog, and Brian Pillman.'},
+            {'name': 'The Ministry of Darkness', 'about': 'The Ministry of Darkness was The Undertaker\'s cult faction in 1999. Featured the Acolytes, Mideon, and Viscera in dark, ritualistic storylines.'},
+            {'name': 'The Dangerous Alliance', 'about': 'The Dangerous Alliance was Paul E. Dangerously\'s WCW faction featuring Steve Austin, Arn Anderson, Rick Rude, Larry Zbyszko, Bobby Eaton, and Madusa.'},
+            {'name': 'The Dungeon of Doom', 'about': 'The Dungeon of Doom was Kevin Sullivan\'s WCW faction created to destroy Hulk Hogan. Featured The Giant, Meng, and Taskmaster Sullivan himself.'},
+            {'name': 'The Corporation', 'about': 'The Corporation was Vince McMahon\'s heel faction in 1998-1999. Featured The Rock, Shane McMahon, Big Boss Man, and others opposing Stone Cold Steve Austin.'},
+            {'name': 'Right to Censor', 'about': 'Right to Censor was Steven Richards\' faction parodying censorship groups. Featured Bull Buchanan, The Goodfather, Ivory, and Val Venis.'},
+            {'name': 'Los Ingobernables de Japon', 'about': 'Los Ingobernables de Japon (LIJ) was formed by Tetsuya Naito in NJPW. Features EVIL, SANADA, Hiromu Takahashi, and BUSHI with tranquilo attitude.'},
+            {'name': 'Chaos', 'about': 'CHAOS is NJPW\'s largest faction, formed by Shinsuke Nakamura in 2009. Later led by Kazuchika Okada. Features Hirooki Goto, Tomohiro Ishii, and others.'},
+            {'name': 'Suzuki-gun', 'about': 'Suzuki-gun is Minoru Suzuki\'s heel faction in NJPW. Known for aggressive, rule-breaking style and Suzuki\'s terrifying presence.'},
+            {'name': 'The Judgment Day', 'about': 'The Judgment Day was originally Edge\'s faction, but became Finn Balor, Damian Priest, Rhea Ripley, and Dominik Mysterio. Gothic-themed heel faction.'},
+            {'name': 'Imperium', 'about': 'Imperium is WALTER (Gunther)\'s faction featuring European wrestling excellence. Marcel Barthel and Fabian Aichner enforce mat-based, hard-hitting style.'},
+            {'name': 'The Straight Edge Society', 'about': 'The Straight Edge Society was CM Punk\'s cult faction in 2010. Members Luke Gallows, Serena, and Joey Mercury followed Punk\'s straight edge lifestyle.'},
+            {'name': 'Legacy', 'about': 'Legacy was Randy Orton\'s faction with Ted DiBiase Jr. and Cody Rhodes. Second-generation superstars who targeted WWE legends.'},
+        ]
+        for data in stables_data:
+            name = data.pop('name')
+            updated += self.update_stable(name, **data)
+        self.stdout.write(f'  Updated {updated} stables')
         return updated

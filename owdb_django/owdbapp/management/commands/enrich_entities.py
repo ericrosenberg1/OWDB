@@ -35,6 +35,8 @@ class Command(BaseCommand):
 
         if entity_type in ['all', 'promotions']:
             total_updated += self.enrich_promotions()
+            total_updated += self.enrich_promotions_batch_2()
+            total_updated += self.enrich_promotions_batch_3()
         if entity_type in ['all', 'championships']:
             total_updated += self.enrich_championships()
         if entity_type in ['all', 'venues']:
@@ -375,4 +377,58 @@ class Command(BaseCommand):
             title = data.pop('name')
             updated += self.update_documentary(title, **data)
         self.stdout.write(f'  Updated {updated} documentaries')
+        return updated
+
+    def enrich_promotions_batch_2(self):
+        """Enrich wrestling promotions batch 2."""
+        self.stdout.write('--- Enriching Promotions Batch 2 ---')
+        updated = 0
+        promotions_data = [
+            {'name': 'AWA', 'about': 'The American Wrestling Association was founded by Verne Gagne in 1960. Based in Minneapolis, it was one of the big three territories alongside WWF and NWA. Produced stars like Hulk Hogan, Curt Hennig, and the Road Warriors.'},
+            {'name': 'Extreme Championship Wrestling', 'about': 'ECW revolutionized professional wrestling from 1992-2001. Paul Heyman created an alternative to mainstream wrestling with hardcore matches, adult content, and launching careers of Steve Austin, Mick Foley, and Rey Mysterio.'},
+            {'name': 'Championship Wrestling from Florida', 'about': 'CWF was one of the most influential NWA territories, operating from 1961-1987. Promoted by Eddie Graham, it produced Dusty Rhodes, Jack Brisco, and countless legends.'},
+            {'name': 'Continental Wrestling Association', 'about': 'The CWA was the Memphis territory operated by Jerry Jarrett and Jerry Lawler. Known for wild angles and some of the best promos in wrestling history.'},
+            {'name': 'Big Japan Pro Wrestling', 'about': 'BJW was founded in 1995 and is known for deathmatch wrestling. Features both strong style and extreme stipulation matches. Home of the Deathmatch King title.'},
+            {'name': 'Combat Zone Wrestling', 'about': 'CZW was founded in 1999 in New Jersey. Known for ultraviolent deathmatches and the annual Tournament of Death. Launched careers of many hardcore stars.'},
+            {'name': 'Chikara', 'about': 'Chikara was a Philadelphia-based promotion founded in 2002. Known for comic book style wrestling and unique characters. Season-based storytelling format.'},
+            {'name': 'Evolve', 'about': 'Evolve Wrestling operated from 2010-2020. Run by Gabe Sapolsky, it served as an unofficial WWE developmental territory. Produced stars like Matt Riddle.'},
+            {'name': 'Florida Championship Wrestling', 'about': 'FCW was WWE\'s developmental territory from 2007-2012 before becoming NXT. Based in Tampa, it trained future stars like Roman Reigns and Seth Rollins.'},
+            {'name': 'Frontier Martial-Arts Wrestling', 'about': 'FMW was founded by Atsushi Onita in 1989. Pioneered exploding barbed wire matches and extreme wrestling in Japan. Influenced ECW.'},
+            {'name': 'Gaea Japan', 'about': 'Gaea Japan was a women\'s wrestling promotion founded by Chigusa Nagayo in 1995. Known for serious athletic women\'s wrestling until closing in 2005.'},
+            {'name': 'Gorgeous Ladies of Wrestling', 'about': 'GLOW operated from 1986-1990. Featured women wrestlers in a syndicated TV format. Recently depicted in Netflix series. Launched careers of Madusa and others.'},
+            {'name': 'Global Force Wrestling', 'about': 'GFW was founded by Jeff Jarrett in 2014. Briefly merged with Impact Wrestling before Jarrett returned to WWE as a Hall of Famer.'},
+            {'name': 'House of Hardcore', 'about': 'House of Hardcore was founded by Tommy Dreamer in 2012. Celebrates the legacy of ECW with hardcore wrestling shows.'},
+            {'name': 'IWA Mid-South', 'about': 'IWA Mid-South was founded in 1996 in Indiana. Known for the King of the Deathmatch tournament. Produced CM Punk and many hardcore stars.'},
+        ]
+        for data in promotions_data:
+            name = data.pop('name')
+            updated += self.update_promotion(name, **data)
+        self.stdout.write(f'  Updated {updated} promotions batch 2')
+        return updated
+
+    def enrich_promotions_batch_3(self):
+        """Enrich wrestling promotions batch 3."""
+        self.stdout.write('--- Enriching Promotions Batch 3 ---')
+        updated = 0
+        promotions_data = [
+            {'name': 'World Championship Wrestling', 'about': 'WCW operated from 1988-2001 under Ted Turner\'s ownership. Home of the nWo, Monday Nitro, and the Monday Night Wars. Purchased by WWE in 2001 for $4.2 million.'},
+            {'name': 'World Wrestling Federation', 'about': 'The WWF was the dominant American promotion from 1979-2002. Created WrestleMania, the Attitude Era, and global wrestling stars. Changed name to WWE due to legal issues.'},
+            {'name': 'Smoky Mountain Wrestling', 'about': 'SMW was founded by Jim Cornette in 1991. Operated in Tennessee and Kentucky with old-school NWA style. Closed in 1995 but influential in developing talent.'},
+            {'name': 'Ohio Valley Wrestling', 'about': 'OVW was WWE\'s developmental territory from 2000-2008. Based in Louisville, Kentucky, it trained John Cena, Brock Lesnar, and Randy Orton.'},
+            {'name': 'Deep South Wrestling', 'about': 'DSW was WWE\'s developmental territory from 2005-2007. Based in Georgia, it briefly trained WWE prospects before closing.'},
+            {'name': 'Frontier Wrestling Alliance', 'about': 'FWA was a British promotion from 1993-2007. Known for developing UK talent like Jonny Storm and helped establish British wrestling scene.'},
+            {'name': 'International Championship Wrestling', 'about': 'ICW was founded in Scotland in 2006. Known for aggressive, adult-oriented wrestling. Helped launch the British wrestling boom.'},
+            {'name': 'What Culture Pro Wrestling', 'about': 'WCPW operated from 2016-2018. Founded by wrestling media site WhatCulture. Became Defiant Wrestling before closing.'},
+            {'name': 'Lucha Underground', 'about': 'Lucha Underground operated from 2014-2018. Cinematic wrestling series on El Rey Network. Featured unique characters like Pentagon Jr. and Prince Puma.'},
+            {'name': 'World of Sport Wrestling', 'about': 'World of Sport was British TV wrestling from 1965-1988. Produced Big Daddy, Giant Haystacks, and unique British style. Briefly revived in 2018.'},
+            {'name': "All Japan Women's Pro-Wrestling", 'about': 'AJW operated from 1968-2005. The premier women\'s wrestling promotion, producing legends like Jaguar Yokota, Dump Matsumoto, and the Crush Gals.'},
+            {'name': 'Stampede Wrestling', 'about': 'Stampede Wrestling was the Hart family promotion in Calgary from 1948-1989. Stu Hart trained legendary wrestlers including his sons Bret and Owen.'},
+            {'name': 'Mid-South Wrestling', 'about': 'Mid-South Wrestling was Bill Watts\' promotion from 1979-1987. Based in Louisiana, it was known for realistic, hard-hitting wrestling.'},
+            {'name': 'World Class Championship Wrestling', 'about': 'WCCW was the Von Erich family promotion in Dallas from 1966-1988. Produced legendary feuds and the tragic Von Erich story.'},
+            {'name': 'Puerto Rico World Wrestling Council', 'about': 'WWC has operated in Puerto Rico since 1973. Founded by Carlos Colon, it has been home to legendary bloodfeuds and Caribbean wrestling.'},
+        ]
+        for data in promotions_data:
+            name = data.pop('name')
+            updated += self.update_promotion(name, **data)
+        self.stdout.write(f'  Updated {updated} promotions batch 3')
         return updated

@@ -115,7 +115,6 @@ class Command(BaseCommand):
             slug=slug,
             date=event_date,
             promotion=promotion,
-            event_type='TV',
             about=f"{show_name} Episode #{episode_num}"
         )
         return event

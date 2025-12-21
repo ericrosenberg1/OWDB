@@ -67,7 +67,6 @@ class Command(BaseCommand):
             slug=slug,
             date=event_date,
             promotion=promotion,
-            event_type='PPV',
             about=about or f"{name}"
         )
         return event

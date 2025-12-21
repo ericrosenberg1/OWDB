@@ -80,6 +80,10 @@ class Command(BaseCommand):
             total_updated += self.enrich_additional_mexico()
         if batch == 0 or batch == 24:
             total_updated += self.enrich_remaining_wrestlers()
+        if batch == 0 or batch == 25:
+            total_updated += self.enrich_more_legends()
+        if batch == 0 or batch == 26:
+            total_updated += self.enrich_more_modern()
 
         self.stdout.write(self.style.SUCCESS(f'\n=== ENRICHMENT COMPLETE ==='))
         self.stdout.write(f'Total wrestlers updated: {total_updated}')
@@ -1965,4 +1969,73 @@ class Command(BaseCommand):
             name = data.pop('name')
             updated += self.update_wrestler(name, **data)
         self.stdout.write(f'  Updated {updated} Remaining wrestlers')
+        return updated
+
+    def enrich_more_legends(self):
+        """Enrich more legendary wrestlers."""
+        self.stdout.write('--- Enriching More Legends ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': '1-2-3 Kid', 'real_name': 'Sean Waltman', 'birth_date': '1972-07-13', 'hometown': 'Minneapolis, Minnesota', 'nationality': 'American', 'aliases': 'X-Pac, Syxx', 'finishers': 'X-Factor, Bronco Buster', 'about': '1-2-3 Kid shocked the world by pinning Razor Ramon. As X-Pac became a founding DX member.'},
+            {'name': '2 Cold Scorpio', 'real_name': 'Charles Scaggs', 'birth_date': '1966-11-25', 'hometown': 'Denver, Colorado', 'nationality': 'American', 'finishers': '450 Splash', 'about': '2 Cold Scorpio was ahead of his time with high-flying moves. ECW and WCW tag team champion.'},
+            {'name': 'Abyss', 'real_name': 'Christopher Parks', 'birth_date': '1973-10-04', 'hometown': 'Washington, D.C.', 'nationality': 'American', 'finishers': 'Black Hole Slam', 'about': 'Abyss was TNA\'s monster, a multi-time NWA/TNA World Champion with a hardcore style.'},
+            {'name': 'Adam Bomb', 'real_name': 'Bryan Clark', 'birth_date': '1964-08-03', 'hometown': 'Harrisburg, Pennsylvania', 'nationality': 'American', 'aliases': 'Wrath', 'about': 'Adam Bomb had a nuclear gimmick in WWF. Later became Wrath in WCW with a dominant streak.'},
+            {'name': 'Adam Page', 'real_name': 'Stephen Woltz', 'birth_date': '1991-07-27', 'hometown': 'Halifax, Virginia', 'nationality': 'American', 'aliases': 'Hangman Adam Page', 'finishers': 'Buckshot Lariat, Deadeye', 'about': 'Hangman Adam Page was the fourth AEW World Champion. His anxiety storyline was groundbreaking.'},
+            {'name': 'Adrian Adonis', 'real_name': 'Keith Franke', 'birth_date': '1953-09-15', 'hometown': 'Buffalo, New York', 'nationality': 'American', 'about': 'Adrian Adonis was a three-time WWF Tag Champion. His Adorable Adrian character was memorable.'},
+            {'name': 'Ahmed Johnson', 'real_name': 'Tony Norris', 'birth_date': '1963-03-21', 'hometown': 'Pearl River, Louisiana', 'nationality': 'American', 'finishers': 'Pearl River Plunge', 'about': 'Ahmed Johnson was the first African American Intercontinental Champion in WWE history.'},
+            {'name': 'Akira Taue', 'real_name': 'Akira Taue', 'birth_date': '1961-05-08', 'hometown': 'Chichibu, Saitama, Japan', 'nationality': 'Japanese', 'finishers': 'Ore ga Taue', 'about': 'Akira Taue was one of AJPW\'s Four Pillars of Heaven. Triple Crown Champion with epic matches.'},
+            {'name': 'Akira Tozawa', 'real_name': 'Akira Tozawa', 'birth_date': '1985-07-22', 'hometown': 'Kobe, Japan', 'nationality': 'Japanese', 'finishers': 'Senton Bomb', 'about': 'Akira Tozawa is a former WWE Cruiserweight Champion known for his energetic style.'},
+            {'name': 'Antonio Inoki', 'real_name': 'Kanji Inoki', 'birth_date': '1943-02-20', 'hometown': 'Yokohama, Japan', 'nationality': 'Japanese', 'finishers': 'Enzuigiri', 'about': 'Antonio Inoki founded NJPW and fought Muhammad Ali. A legendary pioneer of Japanese wrestling.'},
+            {'name': 'Athena', 'real_name': 'Adrienne Reese', 'birth_date': '1991-01-07', 'hometown': 'Denton, Texas', 'nationality': 'American', 'aliases': 'Ember Moon', 'finishers': 'Eclipse', 'about': 'Athena was NXT Women\'s Champion as Ember Moon. Now ROH Women\'s Champion with a dominant reign.'},
+            {'name': 'Austin Theory', 'real_name': 'Austin White', 'birth_date': '1997-08-02', 'hometown': 'Atlanta, Georgia', 'nationality': 'American', 'finishers': 'A-Town Down', 'about': 'Austin Theory is a young WWE star who cashed in MITB. United States Champion multiple times.'},
+            {'name': 'Bad News Barrett', 'real_name': 'Stuart Bennett', 'birth_date': '1980-08-10', 'hometown': 'Preston, England', 'nationality': 'British', 'aliases': 'Wade Barrett', 'finishers': 'Bull Hammer Elbow', 'about': 'Bad News Barrett led Nexus and won the King of the Ring. I\'m afraid I\'ve got some bad news.'},
+            {'name': 'Bad News Brown', 'real_name': 'Allen Coage', 'birth_date': '1943-09-05', 'hometown': 'New York City, New York', 'nationality': 'American', 'about': 'Bad News Brown was an Olympic judo bronze medalist who became a feared WWF heel.'},
+            {'name': 'Baron Corbin', 'real_name': 'Thomas Pestock', 'birth_date': '1984-09-13', 'hometown': 'Kansas City, Kansas', 'nationality': 'American', 'finishers': 'End of Days', 'about': 'Baron Corbin is a former US Champion and King of the Ring. Former NFL player turned wrestler.'},
+            {'name': 'Barry Windham', 'real_name': 'Barry Clinton Windham', 'birth_date': '1960-07-04', 'hometown': 'Sweetwater, Texas', 'nationality': 'American', 'finishers': 'Superplex', 'about': 'Barry Windham was a Four Horseman and NWA World Champion. His match with Ric Flair is legendary.'},
+            {'name': 'Big Boss Man', 'real_name': 'Ray Traylor', 'birth_date': '1962-05-02', 'hometown': 'Cobb County, Georgia', 'nationality': 'American', 'finishers': 'Boss Man Slam', 'about': 'Big Boss Man was a prison guard character who became a WWF Tag Champion and Hardcore Champion.'},
+            {'name': 'Big John Studd', 'real_name': 'John Minton', 'birth_date': '1948-02-19', 'hometown': 'Butler, Pennsylvania', 'nationality': 'American', 'about': 'Big John Studd was a giant who won the 1989 Royal Rumble. His feud with Andre is legendary.'},
+            {'name': 'Big Show', 'real_name': 'Paul Wight', 'birth_date': '1972-02-08', 'hometown': 'Aiken, South Carolina', 'nationality': 'American', 'finishers': 'Chokeslam, WMD', 'about': 'Big Show is a seven-time world champion and the largest athlete in sports entertainment history.'},
+            {'name': 'Big Van Vader', 'real_name': 'Leon White', 'birth_date': '1955-05-14', 'hometown': 'Lynwood, California', 'nationality': 'American', 'finishers': 'Vader Bomb, Vader Moonsault', 'about': 'Vader was a three-time WCW World Champion and IWGP Champion. It\'s time, it\'s Vader time!'},
+            {'name': 'Billy Gunn', 'real_name': 'Monty Sopp', 'birth_date': '1963-11-01', 'hometown': 'Austin, Texas', 'nationality': 'American', 'finishers': 'Famouser', 'about': 'Billy Gunn was half of the New Age Outlaws and one of the most decorated tag team wrestlers ever.'},
+            {'name': 'Blackjack Mulligan', 'real_name': 'Robert Windham', 'birth_date': '1942-11-25', 'hometown': 'Sweetwater, Texas', 'nationality': 'American', 'about': 'Blackjack Mulligan was a cowboy heel legend. Father of Barry Windham and Kendall Windham.'},
+            {'name': 'Brian Pillman', 'real_name': 'Brian Pillman', 'birth_date': '1962-05-22', 'hometown': 'Cincinnati, Ohio', 'nationality': 'American', 'finishers': 'Air Pillman', 'about': 'Brian Pillman was the Loose Cannon. His innovative promos broke the fourth wall. Hollywood Blonds tag champion.'},
+            {'name': 'Bronson Reed', 'real_name': 'Jermaine Haley', 'birth_date': '1988-03-04', 'hometown': 'Melbourne, Australia', 'nationality': 'Australian', 'finishers': 'Tsunami', 'about': 'Bronson Reed was NXT North American Champion. His size and agility make him a unique competitor.'},
+            {'name': 'Brodie Lee', 'real_name': 'Jonathan Huber', 'birth_date': '1979-12-16', 'hometown': 'Rochester, New York', 'nationality': 'American', 'aliases': 'Luke Harper', 'finishers': 'Discus Lariat', 'about': 'Brodie Lee was the leader of the Dark Order in AEW and a beloved WWE star. Gone too soon. -1 is forever.'},
+            {'name': 'Buddy Matthews', 'real_name': 'Matthew Adams', 'birth_date': '1989-01-16', 'hometown': 'Melbourne, Australia', 'nationality': 'Australian', 'aliases': 'Buddy Murphy', 'finishers': 'Murphy\'s Law', 'about': 'Buddy Matthews was WWE Cruiserweight Champion. Now part of House of Black in AEW.'},
+            {'name': 'Buddy Rogers', 'real_name': 'Herman Rohde Jr.', 'birth_date': '1921-02-20', 'hometown': 'Camden, New Jersey', 'nationality': 'American', 'about': 'Buddy Rogers was the first WWWF Champion and the original Nature Boy. Ric Flair\'s inspiration.'},
+            {'name': 'Captain Lou Albano', 'real_name': 'Louis Albano', 'birth_date': '1933-07-29', 'hometown': 'Mount Vernon, New York', 'nationality': 'American', 'about': 'Captain Lou Albano managed 15 WWF Tag Team Champions. WWE Hall of Famer and pop culture icon.'},
+            {'name': 'Carlito', 'real_name': 'Carlos Colon Jr.', 'birth_date': '1979-01-21', 'hometown': 'San Juan, Puerto Rico', 'nationality': 'Puerto Rican', 'about': 'Carlito spits in the face of people who don\'t want to be cool. Two-time IC Champion from wrestling royalty.'},
+            {'name': 'Brian Christopher', 'real_name': 'Brian Lawler', 'birth_date': '1972-01-10', 'hometown': 'Memphis, Tennessee', 'nationality': 'American', 'aliases': 'Grand Master Sexay', 'about': 'Brian Christopher was Too Much and Too Cool with Scotty 2 Hotty. Son of Jerry Lawler.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} More legends')
+        return updated
+
+    def enrich_more_modern(self):
+        """Enrich more modern wrestlers."""
+        self.stdout.write('--- Enriching More Modern ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Anna Jay', 'real_name': 'Anna Jay', 'birth_date': '1998-08-15', 'hometown': 'Brunswick, Georgia', 'nationality': 'American', 'finishers': 'Queen Slayer', 'about': 'Anna Jay is the Star of the Show. Dark Order member and rising star in AEW.'},
+            {'name': 'Anthony Bowens', 'real_name': 'Anthony Baber', 'birth_date': '1990-10-01', 'hometown': 'Nutley, New Jersey', 'nationality': 'American', 'about': 'Anthony Bowens is half of the Acclaimed. Everyone loves the Acclaimed! Scissor me, Daddy Ass!'},
+            {'name': 'Bad Luck Fale', 'real_name': 'Sione Finau', 'birth_date': '1981-09-12', 'hometown': 'Tonga', 'nationality': 'Tongan', 'finishers': 'Bad Luck Fall', 'about': 'Bad Luck Fale is the Underboss of Bullet Club. A massive enforcer in NJPW.'},
+            {'name': 'Bobby Fish', 'real_name': 'Robert Fish', 'birth_date': '1977-03-27', 'hometown': 'Albany, New York', 'nationality': 'American', 'finishers': 'Fish Hook', 'about': 'Bobby Fish was part of Undisputed Era in NXT. A martial arts-based wrestler with technical skill.'},
+            {'name': 'Brandi Rhodes', 'real_name': 'Brandi Alexis Runnels', 'birth_date': '1983-06-23', 'hometown': 'Dearborn, Michigan', 'nationality': 'American', 'about': 'Brandi Rhodes was AEW Chief Brand Officer and in-ring performer.'},
+            {'name': 'Angelina Love', 'real_name': 'Lauren Williams', 'birth_date': '1981-09-13', 'hometown': 'Toronto, Ontario', 'nationality': 'Canadian', 'about': 'Angelina Love was a six-time TNA Knockouts Champion. Part of the Beautiful People.'},
+            {'name': 'Awesome Kong', 'real_name': 'Kia Stevens', 'birth_date': '1977-09-04', 'hometown': 'Carson, California', 'nationality': 'American', 'aliases': 'Kharma', 'finishers': 'Implant Buster', 'about': 'Awesome Kong was a dominant Knockouts Champion. Her matches with Gail Kim were legendary.'},
+            {'name': 'Angelico', 'real_name': 'Michael Paris', 'birth_date': '1987-01-17', 'hometown': 'Johannesburg, South Africa', 'nationality': 'South African', 'about': 'Angelico is known for his high-flying and creative offense. Lucha Underground star.'},
+            {'name': 'Ariya Daivari', 'real_name': 'Ariya Daivari', 'birth_date': '1989-08-28', 'hometown': 'Minneapolis, Minnesota', 'nationality': 'American', 'about': 'Ariya Daivari was a 205 Live staple. His brother Shawn was also a WWE wrestler.'},
+            {'name': 'BUSHI', 'real_name': 'Unknown', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'finishers': 'MX', 'about': 'BUSHI is a junior heavyweight member of Los Ingobernables de Japon. Known for his mist attack.'},
+            {'name': 'Ben-K', 'real_name': 'Kenji Matsuda', 'birth_date': '1989-10-02', 'hometown': 'Osaka, Japan', 'nationality': 'Japanese', 'about': 'Ben-K is a Dragon Gate powerhouse. Open the Dream Gate Champion with incredible strength.'},
+            {'name': 'CIMA', 'real_name': 'Nobuhiko Oshima', 'birth_date': '1977-03-22', 'hometown': 'Fukuoka, Japan', 'nationality': 'Japanese', 'about': 'CIMA is the founder of Dragon Gate. A legendary high-flyer who influenced generations.'},
+            {'name': 'Blake Christian', 'real_name': 'Christian Hubble', 'birth_date': '1997-04-20', 'hometown': 'St. Louis, Missouri', 'nationality': 'American', 'about': 'Blake Christian is a high-flying indie star who has competed in NJPW, GCW, and Impact.'},
+            {'name': 'BxB Hulk', 'real_name': 'Tsubasa Hasegawa', 'birth_date': '1981-10-18', 'hometown': 'Kanagawa, Japan', 'nationality': 'Japanese', 'about': 'BxB Hulk is a Dragon Gate star known for his dancing and flashy style.'},
+            {'name': 'Averno', 'real_name': 'Juan Jose Gonzalez', 'birth_date': '1975-01-05', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'about': 'Averno is a CMLL legend and multiple time tag team champion. A rudo with decades of experience.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} More modern wrestlers')
         return updated

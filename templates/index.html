@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load humanize %}
 
 {% block content %}
 <!-- Hero/Welcome Section - TMDB Style -->
@@ -57,11 +58,11 @@
     </div>
 </section>
 
-<!-- Latest Events Section -->
+<!-- Recent Events Section -->
 <section class="content-section">
     <div class="container">
         <div class="section-header">
-            <h3><a href="{% url 'events' %}" class="section-title-link">Latest Events</a></h3>
+            <h3><a href="{% url 'events' %}" class="section-title-link">Recent Events</a></h3>
             <div class="section-tabs">
                 <button class="tab-btn active" data-tab="all-events" onclick="showEventsTab('all-events')">All</button>
                 <button class="tab-btn" data-tab="wwe-events" onclick="showEventsTab('wwe-events')">WWE</button>
@@ -91,7 +92,7 @@
                 </div>
                 {% empty %}
                 <div class="empty-scroller">
-                    <p>No events yet.</p>
+                    <p>No recent events.</p>
                 </div>
                 {% endfor %}
             </div>
@@ -154,6 +155,41 @@
         </div>
     </div>
 </section>
+
+<!-- Upcoming Events Section -->
+{% if upcoming_events %}
+<section class="content-section">
+    <div class="container">
+        <div class="section-header">
+            <h3><a href="{% url 'events' %}" class="section-title-link">Upcoming Events</a></h3>
+            <a href="{% url 'events' %}" class="section-link">View All</a>
+        </div>
+        <div class="scroller-wrap">
+            <div class="scroller">
+                {% for event in upcoming_events %}
+                <div class="card-item">
+                    <a href="{% url 'event_detail' event.pk %}">
+                        <div class="card-poster event-poster upcoming-event">
+                            {% if event.image_url %}
+                            <img src="{{ event.image_url }}" alt="{{ event.name }}">
+                            {% else %}
+                            <div class="poster-placeholder event-placeholder">
+                                <span>{{ event.name|slice:":2" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-content">
+                            <h4>{{ event.name|truncatechars:25 }}</h4>
+                            <p>{{ event.date|date:"M j, Y" }} · {{ event.promotion.name }}</p>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
 
 <!-- Newest Additions Section -->
 <section class="content-section">
@@ -261,51 +297,51 @@
         </div>
         <div class="stats-grid stats-grid-full">
             <a href="{% url 'wrestlers' %}" class="stat-item stat-link">
-                <span class="stat-value">{{ stats.wrestlers|default:0 }}</span>
+                <span class="stat-value">{{ stats.wrestlers|default:0|intcomma }}</span>
                 <span class="stat-name">Wrestlers</span>
             </a>
             <a href="{% url 'promotions' %}" class="stat-item stat-link">
-                <span class="stat-value">{{ stats.promotions|default:0 }}</span>
+                <span class="stat-value">{{ stats.promotions|default:0|intcomma }}</span>
                 <span class="stat-name">Promotions</span>
             </a>
             <a href="{% url 'events' %}" class="stat-item stat-link">
-                <span class="stat-value">{{ stats.events|default:0 }}</span>
+                <span class="stat-value">{{ stats.events|default:0|intcomma }}</span>
                 <span class="stat-name">Events</span>
             </a>
             <a href="{% url 'matches' %}" class="stat-item stat-link">
-                <span class="stat-value">{{ stats.matches|default:0 }}</span>
+                <span class="stat-value">{{ stats.matches|default:0|intcomma }}</span>
                 <span class="stat-name">Matches</span>
             </a>
             <a href="{% url 'titles' %}" class="stat-item stat-link">
-                <span class="stat-value">{{ stats.titles|default:0 }}</span>
+                <span class="stat-value">{{ stats.titles|default:0|intcomma }}</span>
                 <span class="stat-name">Championships</span>
             </a>
             <a href="{% url 'venues' %}" class="stat-item stat-link">
-                <span class="stat-value">{{ stats.venues|default:0 }}</span>
+                <span class="stat-value">{{ stats.venues|default:0|intcomma }}</span>
                 <span class="stat-name">Venues</span>
             </a>
             <a href="{% url 'stables' %}" class="stat-item stat-link">
-                <span class="stat-value">{{ stats.stables|default:0 }}</span>
+                <span class="stat-value">{{ stats.stables|default:0|intcomma }}</span>
                 <span class="stat-name">Stables</span>
             </a>
             <a href="{% url 'games' %}" class="stat-item stat-link">
-                <span class="stat-value">{{ stats.video_games|default:0 }}</span>
+                <span class="stat-value">{{ stats.video_games|default:0|intcomma }}</span>
                 <span class="stat-name">Video Games</span>
             </a>
             <a href="{% url 'podcasts' %}" class="stat-item stat-link">
-                <span class="stat-value">{{ stats.podcasts|default:0 }}</span>
+                <span class="stat-value">{{ stats.podcasts|default:0|intcomma }}</span>
                 <span class="stat-name">Podcasts</span>
             </a>
             <a href="{% url 'books' %}" class="stat-item stat-link">
-                <span class="stat-value">{{ stats.books|default:0 }}</span>
+                <span class="stat-value">{{ stats.books|default:0|intcomma }}</span>
                 <span class="stat-name">Books</span>
             </a>
             <a href="{% url 'specials' %}" class="stat-item stat-link">
-                <span class="stat-value">{{ stats.specials|default:0 }}</span>
+                <span class="stat-value">{{ stats.specials|default:0|intcomma }}</span>
                 <span class="stat-name">Documentaries</span>
             </a>
             <div class="stat-item stat-total">
-                <span class="stat-value">{{ stats.total|default:0 }}</span>
+                <span class="stat-value">{{ stats.total|default:0|intcomma }}</span>
                 <span class="stat-name">Total Entries</span>
             </div>
         </div>

@@ -150,13 +150,26 @@ class IndexView(TemplateView):
         context['latest_promotions'] = Promotion.objects.order_by('-created_at')[:10]
         context['latest_titles'] = Title.objects.select_related('promotion').order_by('-created_at')[:10]
 
-        # Get recent events by date (newest first), with promotion filter options
-        context['recent_events'] = Event.objects.select_related('promotion').order_by('-date')[:10]
+        # Get recent and upcoming events
+        from datetime import date
+        today = date.today()
+
+        # Recent events (past events, newest first)
+        context['recent_events'] = Event.objects.select_related('promotion').filter(
+            date__lte=today
+        ).order_by('-date')[:10]
+
+        # Upcoming events (future events, soonest first)
+        context['upcoming_events'] = Event.objects.select_related('promotion').filter(
+            date__gt=today
+        ).order_by('date')[:10]
+
+        # Promotion-specific events (past only)
         context['wwe_events'] = Event.objects.select_related('promotion').filter(
-            promotion__name__icontains='WWE'
+            promotion__name__icontains='WWE', date__lte=today
         ).order_by('-date')[:10]
         context['aew_events'] = Event.objects.select_related('promotion').filter(
-            promotion__name__icontains='AEW'
+            promotion__name__icontains='AEW', date__lte=today
         ).order_by('-date')[:10]
 
         # Get Hot 100 for homepage

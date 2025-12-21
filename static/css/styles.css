@@ -585,7 +585,14 @@ a:hover {
 
 /* Join & API Section */
 .join-api-section .row {
+    display: flex;
+    flex-wrap: wrap;
     gap: 1.5rem;
+}
+
+.join-api-section .col-lg-6 {
+    flex: 1 1 calc(50% - 0.75rem);
+    min-width: 300px;
 }
 
 .join-card, .api-card {
@@ -1557,6 +1564,7 @@ a:hover {
     }
 
     .join-api-section .col-lg-6 {
+        flex: 1 1 100%;
         margin-bottom: 1rem;
     }
 

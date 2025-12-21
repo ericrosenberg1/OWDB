@@ -9,8 +9,7 @@ Usage:
 """
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
-from django.utils import timezone
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import random
 from owdb_django.owdbapp.models import (
     Podcast, PodcastEpisode, Wrestler, Event, Match, Promotion

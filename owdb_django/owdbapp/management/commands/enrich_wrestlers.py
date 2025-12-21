@@ -126,6 +126,26 @@ class Command(BaseCommand):
             total_updated += self.enrich_90s_stars()
         if batch == 0 or batch == 47:
             total_updated += self.enrich_international_stars()
+        if batch == 0 or batch == 48:
+            total_updated += self.enrich_ecw_originals()
+        if batch == 0 or batch == 49:
+            total_updated += self.enrich_undercard_wrestlers()
+        if batch == 0 or batch == 50:
+            total_updated += self.enrich_aew_dark_roster()
+        if batch == 0 or batch == 51:
+            total_updated += self.enrich_nxt_uk_roster()
+        if batch == 0 or batch == 52:
+            total_updated += self.enrich_classic_80s()
+        if batch == 0 or batch == 53:
+            total_updated += self.enrich_managers_announcers_2()
+        if batch == 0 or batch == 54:
+            total_updated += self.enrich_dragon_gate_wrestlers()
+        if batch == 0 or batch == 55:
+            total_updated += self.enrich_stardom_wrestlers()
+        if batch == 0 or batch == 56:
+            total_updated += self.enrich_cmll_wrestlers()
+        if batch == 0 or batch == 57:
+            total_updated += self.enrich_aaa_wrestlers()
 
         self.stdout.write(self.style.SUCCESS(f'\n=== ENRICHMENT COMPLETE ==='))
         self.stdout.write(f'Total wrestlers updated: {total_updated}')
@@ -2511,4 +2531,204 @@ class Command(BaseCommand):
             name = data.pop('name')
             updated += self.update_wrestler(name, **data)
         self.stdout.write(f'  Updated {updated} International stars')
+        return updated
+
+    def enrich_ecw_originals(self):
+        """Enrich ECW original wrestlers."""
+        self.stdout.write('--- Enriching ECW Originals ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Chris Candido', 'real_name': 'Christopher Candito', 'birth_date': '1972-03-21', 'hometown': 'Spring Lake, New Jersey', 'nationality': 'American', 'about': 'Chris Candido was Skip in WWF and ECW star. Tagged with bodyguard Tammy Sytch. Tragically passed in 2005.'},
+            {'name': 'CW Anderson', 'real_name': 'Charles Anderson', 'birth_date': '1970-04-16', 'hometown': 'Moncks Corner, South Carolina', 'nationality': 'American', 'about': 'CW Anderson was an ECW and NWA wrestler claiming Arn Anderson lineage. Left-arm spinebuster specialist.'},
+            {'name': 'Spike Dudley', 'real_name': 'Matt Hyson', 'birth_date': '1970-08-13', 'hometown': 'New York City, New York', 'nationality': 'American', 'about': 'Spike Dudley was the Acid Drop specialist. Little Spike Dudley was the Giant Killer in ECW and WWE.'},
+            {'name': 'Rhino', 'real_name': 'Terry Gerin', 'birth_date': '1975-10-07', 'hometown': 'Detroit, Michigan', 'nationality': 'American', 'finishers': 'Gore', 'about': 'Rhino was the Man Beast. ECW Champion with devastating Gore. TNA and WWE veteran. War Machine!'},
+            {'name': 'Abyss', 'real_name': 'Chris Parks', 'birth_date': '1973-10-04', 'hometown': 'Washington, D.C.', 'nationality': 'American', 'finishers': 'Black Hole Slam', 'about': 'Abyss is TNA\'s monster. Also Joseph Park. Multiple TNA Champion. Hardcore icon with barbed wire and thumbtacks.'},
+            {'name': 'Cactus Jack', 'real_name': 'Mick Foley', 'birth_date': '1965-06-07', 'hometown': 'Long Island, New York', 'nationality': 'American', 'about': 'Cactus Jack was Mick Foley\'s hardcore persona. ECW, WCW, and WWF legend. Bang bang!'},
+            {'name': 'ACH', 'real_name': 'Albert Hardie Jr.', 'birth_date': '1988-10-20', 'hometown': 'Houston, Texas', 'nationality': 'American', 'about': 'ACH is a high-flying talent from ROH and NJPW. Best of the Super Juniors competitor. Incredible athleticism.'},
+            {'name': 'Alex Wright', 'real_name': 'Alex Wright', 'birth_date': '1975-05-17', 'hometown': 'Nuremberg, Germany', 'nationality': 'German', 'about': 'Alex Wright was Das Wunderkind in WCW. Young German prodigy. Became Berlyn heel character.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} ECW originals')
+        return updated
+
+    def enrich_undercard_wrestlers(self):
+        """Enrich undercard and utility wrestlers."""
+        self.stdout.write('--- Enriching Undercard Wrestlers ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Al Snow', 'real_name': 'Allen Sarven', 'birth_date': '1963-07-18', 'hometown': 'Lima, Ohio', 'nationality': 'American', 'about': 'Al Snow carried Head around. ECW and WWF Hardcore Champion. Avatar and Leif Cassidy. What does everybody want?'},
+            {'name': 'Austin Idol', 'real_name': 'Dennis McCord', 'birth_date': '1949-11-27', 'hometown': 'Tampa, Florida', 'nationality': 'American', 'about': 'Austin Idol was Universal Heartthrob in Memphis and Texas. Feuded with Jerry Lawler. Las Vegas Leglock.'},
+            {'name': 'Bart Gunn', 'real_name': 'Mike Polchlopek', 'birth_date': '1963-04-04', 'hometown': 'Austin, Texas', 'nationality': 'American', 'about': 'Bart Gunn won the Brawl for All but lost to Butterbean at WrestleMania. Smoking Gunn tag team.'},
+            {'name': 'Bob Orton', 'real_name': 'Robert Orton Jr.', 'birth_date': '1950-11-10', 'hometown': 'Kansas City, Missouri', 'nationality': 'American', 'about': 'Cowboy Bob Orton wore arm cast for years. Randy Orton\'s father. Roddy Piper\'s bodyguard.'},
+            {'name': 'Bill Watts', 'real_name': 'William Watts', 'birth_date': '1939-05-05', 'hometown': 'Oklahoma City, Oklahoma', 'nationality': 'American', 'about': 'Bill Watts was Cowboy Bill Watts wrestler and Mid-South promoter. WCW President. Father of Erik Watts.'},
+            {'name': 'Blackjack Lanza', 'real_name': 'Jack Lanza', 'birth_date': '1935-11-14', 'hometown': 'Minneapolis, Minnesota', 'nationality': 'American', 'about': 'Blackjack Lanza was half of The Blackjacks with Mulligan. AWA and WWF Tag Champion. Hall of Famer.'},
+            {'name': 'Austin Gunn', 'real_name': 'Austin Gunn', 'birth_date': '1997-10-16', 'hometown': 'Orlando, Florida', 'nationality': 'American', 'about': 'Austin Gunn is Billy Gunn\'s son. Half of The Gunns in AEW. Ass Boys!'},
+            {'name': 'Colten Gunn', 'real_name': 'Colten Gunn', 'birth_date': '1999-10-20', 'hometown': 'Orlando, Florida', 'nationality': 'American', 'about': 'Colten Gunn is Billy Gunn\'s son. Half of The Gunns in AEW. Ass Boys!'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Undercard wrestlers')
+        return updated
+
+    def enrich_aew_dark_roster(self):
+        """Enrich AEW Dark and elevation roster."""
+        self.stdout.write('--- Enriching AEW Dark Roster ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Angelo Parker', 'real_name': 'Matthew Schneider', 'birth_date': '1985-03-20', 'hometown': 'Queens, New York', 'nationality': 'American', 'about': 'Angelo Parker is half of 2point0 (Cool Hand Ang). Jericho Appreciation Society member. Daddy Magic.'},
+            {'name': 'Big Bill', 'real_name': 'William Morrissey', 'birth_date': '1989-07-19', 'hometown': 'Queens, New York', 'nationality': 'American', 'about': 'Big Bill was Big Cass in WWE. 7-footer teaming with Chris Jericho in AEW. The Learning Tree member.'},
+            {'name': 'John Silver', 'real_name': 'John David Cilli', 'birth_date': '1989-10-24', 'hometown': 'New York', 'nationality': 'American', 'about': 'John Silver is Meat Man of the Dark Order. -1\'s protector. Incredibly jacked for his size.'},
+            {'name': 'Matt Menard', 'real_name': 'Matt Menard', 'birth_date': '1984-06-14', 'hometown': 'Montreal, Quebec', 'nationality': 'Canadian', 'about': 'Matt Menard is Daddy Magic from 2point0. Jericho Appreciation Society member. Angelo Parker\'s partner.'},
+            {'name': 'Lee Johnson', 'real_name': 'Lee Johnson', 'birth_date': '1997-08-05', 'hometown': 'Charlotte, North Carolina', 'nationality': 'American', 'about': 'Lee Johnson is Big Shotty trained by QT Marshall. Dark Order and Nightmare Family member.'},
+            {'name': 'Skye Blue', 'real_name': 'Sky Blue', 'birth_date': '2000-02-18', 'hometown': 'Chicago, Illinois', 'nationality': 'American', 'about': 'Skye Blue is AEW\'s rising women\'s star. Known for her blue aesthetics and improving skillset.'},
+            {'name': 'Serpentico', 'real_name': 'Demetrios Antzoulatos', 'birth_date': '1985-03-21', 'hometown': 'Long Island, New York', 'nationality': 'American', 'about': 'Serpentico is the masked partner of Luther. Gets thrown around a lot. Chaos Project member.'},
+            {'name': 'Peter Avalon', 'real_name': 'Peter Bogucki', 'birth_date': '1987-06-13', 'hometown': 'Hollywood, California', 'nationality': 'American', 'about': 'Peter Avalon is the Pretty Peter Avalon. Librarian gimmick. Wing Men member. AEW undercard veteran.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} AEW Dark roster')
+        return updated
+
+    def enrich_nxt_uk_roster(self):
+        """Enrich NXT UK and European wrestlers."""
+        self.stdout.write('--- Enriching NXT UK Roster ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Aaron Henare', 'real_name': 'Aaron Henare', 'birth_date': '1990-02-28', 'hometown': 'Auckland, New Zealand', 'nationality': 'New Zealander', 'about': 'Aaron Henare is a former NJPW and NXT UK star. Great O-Khan\'s partner in United Empire.'},
+            {'name': 'Damian Priest', 'real_name': 'Luis Martinez', 'birth_date': '1982-09-26', 'hometown': 'New York City, New York', 'nationality': 'American', 'about': 'Damian Priest is Judgment Day member. World Heavyweight Champion. The Archer of Infamy. Bad Bunny tag partner.'},
+            {'name': 'Fit Finlay', 'real_name': 'David Finlay', 'birth_date': '1958-10-31', 'hometown': 'Carrickfergus, Northern Ireland', 'nationality': 'Irish', 'about': 'Fit Finlay is a WWE producer and former US Champion. My name is Finlay and I love to fight! Father of David Finlay.'},
+            {'name': 'JD McDonagh', 'real_name': 'Jordan Devlin', 'birth_date': '1990-07-08', 'hometown': 'Bray, Ireland', 'nationality': 'Irish', 'about': 'JD McDonagh was Jordan Devlin. NXT UK Cruiserweight Champion. Judgment Day member with Finn Balor.'},
+            {'name': 'Iyo Sky', 'real_name': 'Masako Nozaki', 'birth_date': '1990-02-12', 'hometown': 'Tokushima, Japan', 'nationality': 'Japanese', 'about': 'Iyo Sky was Io Shirai. NXT Women\'s Champion. Damage CTRL member. Incredible high-flyer from Stardom.'},
+            {'name': 'Solo Sikoa', 'real_name': 'Joseph Fatu', 'birth_date': '1993-03-18', 'hometown': 'San Francisco, California', 'nationality': 'American', 'about': 'Solo Sikoa is the Street Champion. Bloodline enforcer. NXT North American Champion. Uce!'},
+            {'name': 'Taya Valkyrie', 'real_name': 'Kira Forster', 'birth_date': '1983-10-22', 'hometown': 'Victoria, British Columbia', 'nationality': 'Canadian', 'about': 'Taya Valkyrie is a former Impact Knockouts Champion. Wera Loca in Lucha Underground. NXT roster member.'},
+            {'name': 'Billie Starkz', 'real_name': 'Avery Martin', 'birth_date': '2003-09-23', 'hometown': 'St. Louis, Missouri', 'nationality': 'American', 'about': 'Billie Starkz is a teenage prodigy. ROH and AEW star. Training since age 9. Future star.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} NXT UK roster')
+        return updated
+
+    def enrich_classic_80s(self):
+        """Enrich classic 80s wrestlers."""
+        self.stdout.write('--- Enriching Classic 80s ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Bushwhacker Butch', 'real_name': 'Robert Miller', 'birth_date': '1954-08-22', 'hometown': 'Auckland, New Zealand', 'nationality': 'New Zealander', 'about': 'Bushwhacker Butch was half of the Bushwhackers. The Sheepherders in NWA. WWF Hall of Famers. Licking fans heads.'},
+            {'name': 'Bushwhacker Luke', 'real_name': 'Luke Williams', 'birth_date': '1947-11-25', 'hometown': 'Auckland, New Zealand', 'nationality': 'New Zealander', 'about': 'Bushwhacker Luke was half of the Bushwhackers. The Sheepherders in NWA. WWF Hall of Famers. Arm-swinging legends.'},
+            {'name': 'Baby Doll', 'real_name': 'Nickla Roberts', 'birth_date': '1962-08-14', 'hometown': 'Lubbock, Texas', 'nationality': 'American', 'about': 'Baby Doll was Dusty Rhodes\' manager in NWA. Blonde bombshell. Feuded with Jim Cornette.'},
+            {'name': 'Beulah McGillicutty', 'real_name': 'Trisa Laughlin', 'birth_date': '1971-12-30', 'hometown': 'Gainesville, Florida', 'nationality': 'American', 'about': 'Beulah McGillicutty was Tommy Dreamer\'s valet in ECW. Married to Dreamer in real life. ECW original.'},
+            {'name': 'Brute Bernard', 'real_name': 'James Prudhomme', 'birth_date': '1921-06-21', 'hometown': 'Montreal, Quebec', 'nationality': 'Canadian', 'about': 'Brute Bernard was a 1960s-70s territorial star. Wild man tag team specialist. Canadian wrestling icon.'},
+            {'name': 'Gorgeous George', 'real_name': 'George Wagner', 'birth_date': '1915-03-24', 'hometown': 'Seward, Nebraska', 'nationality': 'American', 'about': 'Gorgeous George invented the flamboyant heel. Platinum blonde hair, robes, valets. The Human Orchid pioneer.'},
+            {'name': 'Terry Gordy', 'real_name': 'Terry Gordy', 'birth_date': '1961-04-23', 'hometown': 'Chattanooga, Tennessee', 'nationality': 'American', 'about': 'Terry Gordy was Fabulous Freebirds powerhouse. AJPW star. Bam Bam. One of the greatest big men ever.'},
+            {'name': 'Michael Hayes', 'real_name': 'Michael Seitz', 'birth_date': '1959-03-29', 'hometown': 'Pensacola, Florida', 'nationality': 'American', 'about': 'Michael Hayes is the Fabulous Freebirds leader. PS, WWE Hall of Famer. Badstreet USA! Now a WWE producer.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Classic 80s')
+        return updated
+
+    def enrich_managers_announcers_2(self):
+        """Enrich managers and announcers part 2."""
+        self.stdout.write('--- Enriching Managers Announcers 2 ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Aubrey Edwards', 'real_name': 'Brittany Aubert', 'birth_date': '1986-03-12', 'hometown': 'Pittsburgh, Pennsylvania', 'nationality': 'American', 'about': 'Aubrey Edwards is AEW\'s senior referee. Fan favorite for expressive officiating. Also works with talent relations.'},
+            {'name': 'Carlos Cabrera', 'real_name': 'Carlos Cabrera', 'birth_date': '1954-06-09', 'hometown': 'Puerto Rico', 'nationality': 'Puerto Rican', 'about': 'Carlos Cabrera was WWE\'s Spanish announcer for decades. Hall of Famer. Called action with Hugo Savinovich.'},
+            {'name': 'Lou Albano', 'real_name': 'Louis Albano', 'birth_date': '1933-07-29', 'hometown': 'New York City, New York', 'nationality': 'American', 'about': 'Captain Lou Albano managed dozens of champions. Rubber bands in beard. Cyndi Lauper\'s dad in Girls video. Hall of Famer.'},
+            {'name': 'Tony Khan', 'real_name': 'Anthony Khan', 'birth_date': '1982-10-10', 'hometown': 'Champaign, Illinois', 'nationality': 'American', 'about': 'Tony Khan is AEW\'s founder and CEO. Also owns Fulham FC and Jacksonville Jaguars. Wrestling superfan owner.'},
+            {'name': 'Theodore Long', 'real_name': 'Theodore Long', 'birth_date': '1947-01-12', 'hometown': 'Atlanta, Georgia', 'nationality': 'American', 'about': 'Theodore Long was SmackDown GM. Tag team match, playa! Managed JBL, Rodney Mack. Hall of Famer.'},
+            {'name': 'Justin Roberts', 'real_name': 'Justin Roberts', 'birth_date': '1979-06-19', 'hometown': 'Chicago, Illinois', 'nationality': 'American', 'about': 'Justin Roberts is AEW\'s ring announcer. Former WWE announcer. "It\'s Weeeeednesday night!"'},
+            {'name': 'Prince Nana', 'real_name': 'Prince Nana', 'birth_date': '1978-11-07', 'hometown': 'Ghana', 'nationality': 'Ghanaian-American', 'about': 'Prince Nana is Swerve Strickland\'s manager. ROH legend. Embassy faction leader. Dance moves specialist.'},
+            {'name': 'Gerald Brisco', 'real_name': 'Gerald Brisco', 'birth_date': '1946-09-10', 'hometown': 'Oklahoma City, Oklahoma', 'nationality': 'American', 'about': 'Gerald Brisco is a former NWA Tag Champion. WWF stooge with Patterson. Producer and Hall of Famer.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Managers announcers 2')
+        return updated
+
+    def enrich_dragon_gate_wrestlers(self):
+        """Enrich Dragon Gate wrestlers."""
+        self.stdout.write('--- Enriching Dragon Gate ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'DOUKI', 'real_name': 'Kosei Masuda', 'birth_date': '1991-08-28', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'about': 'DOUKI is a NJPW junior heavyweight. Suzuki-gun member. Trained in Mexico. Daybreak finisher.'},
+            {'name': 'Eita', 'real_name': 'Eita Kobayashi', 'birth_date': '1992-03-02', 'hometown': 'Kyoto, Japan', 'nationality': 'Japanese', 'about': 'Eita is a Dragon Gate star. OWE and former Open the Brave Gate Champion. High-flying junior.'},
+            {'name': 'Shun Skywalker', 'real_name': 'Shun Watanabe', 'birth_date': '1994-04-17', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'about': 'Shun Skywalker is a Dragon Gate star. High Flyers unit member. Incredible aerial ability.'},
+            {'name': 'Yamato', 'real_name': 'Takashi Ikeda', 'birth_date': '1980-10-25', 'hometown': 'Yamaguchi, Japan', 'nationality': 'Japanese', 'about': 'Yamato is a Dragon Gate legend. Multiple Open the Dream Gate Champion. One of the promotion\'s aces.'},
+            {'name': 'Kzy', 'real_name': 'Kazuki Maeda', 'birth_date': '1981-04-28', 'hometown': 'Hyogo, Japan', 'nationality': 'Japanese', 'about': 'Kzy is a Dragon Gate veteran. Multiple Open the Brave Gate Champion. Natural Vibes unit.'},
+            {'name': 'Don Fujii', 'real_name': 'Akira Fujii', 'birth_date': '1970-04-10', 'hometown': 'Ishikawa, Japan', 'nationality': 'Japanese', 'about': 'Don Fujii is a Dragon Gate veteran. Original Toryumon star. Known for wild brawling style.'},
+            {'name': 'Genki Horiguchi', 'real_name': 'Genki Horiguchi', 'birth_date': '1978-08-21', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'about': 'Genki Horiguchi is a Dragon Gate original. Bald after mask loss. Multiple title holder.'},
+            {'name': 'Susumu Yokosuka', 'real_name': 'Susumu Yokosuka', 'birth_date': '1976-08-08', 'hometown': 'Kanagawa, Japan', 'nationality': 'Japanese', 'about': 'Susumu Yokosuka is a Dragon Gate veteran. Jumbo no Kachi finisher. Over 20 years in promotion.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Dragon Gate')
+        return updated
+
+    def enrich_stardom_wrestlers(self):
+        """Enrich Stardom wrestlers."""
+        self.stdout.write('--- Enriching Stardom ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Yuka Sakazaki', 'real_name': 'Yuka Sakazaki', 'birth_date': '1997-03-29', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'about': 'Yuka Sakazaki is the Magical Girl. TJPW star in AEW. Cute and deadly combination. Ayayayayaya!'},
+            {'name': 'Riho', 'real_name': 'Riho Sumitani', 'birth_date': '1997-07-13', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'about': 'Riho was the first AEW Women\'s Champion. Trained since childhood. Incredible underdog babyface.'},
+            {'name': 'Saraya', 'real_name': 'Saraya-Jade Bevis', 'birth_date': '1992-08-17', 'hometown': 'Norwich, England', 'nationality': 'British', 'about': 'Saraya was Paige in WWE. First NXT Women\'s and Divas Champion. AEW wrestler. This is MY house!'},
+            {'name': 'Tay Conti', 'real_name': 'Taynara Melo', 'birth_date': '1995-01-21', 'hometown': 'Rio de Janeiro, Brazil', 'nationality': 'Brazilian', 'about': 'Tay Conti is a judo champion in AEW. Sammy Guevara\'s wife. TayJay tag team with Anna Jay.'},
+            {'name': 'Ruby Soho', 'real_name': 'Dori Prange', 'birth_date': '1991-01-08', 'hometown': 'Lafayette, Indiana', 'nationality': 'American', 'about': 'Ruby Soho was Ruby Riott in WWE. Riott Squad leader. AEW TBS Champion contender.'},
+            {'name': 'Tasha Steelz', 'real_name': 'Latasha Booker', 'birth_date': '1995-02-12', 'hometown': 'Rochester, New York', 'nationality': 'American', 'about': 'Tasha Steelz is a former Impact Knockouts Champion. Kiera Hogan tag partner. Athletic powerhouse.'},
+            {'name': 'Kamille', 'real_name': 'Amanda Feroz', 'birth_date': '1993-04-19', 'hometown': 'Lubbock, Texas', 'nationality': 'American', 'about': 'Kamille is the longest-reigning NWA Women\'s Champion. The Brickhouse. Powerhouse bodybuilder physique.'},
+            {'name': 'Harley Cameron', 'real_name': 'Harley Cameron', 'birth_date': '1998-02-03', 'hometown': 'Melbourne, Australia', 'nationality': 'Australian', 'about': 'Harley Cameron is AEW\'s chaotic star. Australian colorful character. Saraya\'s sidekick.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Stardom')
+        return updated
+
+    def enrich_cmll_wrestlers(self):
+        """Enrich CMLL wrestlers."""
+        self.stdout.write('--- Enriching CMLL ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Ultimo Guerrero', 'real_name': 'Omar Garcia', 'birth_date': '1971-07-25', 'hometown': 'Gómez Palacio, Mexico', 'nationality': 'Mexican', 'about': 'Ultimo Guerrero is a CMLL legend. Los Guerreros del Infierno leader. Multiple time champion. Guerrero Special finisher.'},
+            {'name': 'Gran Guerrero', 'real_name': 'Alan Saldaña', 'birth_date': '1989-09-13', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'about': 'Gran Guerrero is the son of Dr. Wagner Jr. Los Guerreros del Infierno. CMLL World Heavyweight Champion.'},
+            {'name': 'Templario', 'real_name': 'Freddie Palacio', 'birth_date': '1992-04-21', 'hometown': 'Nezahualcóyotl, Mexico', 'nationality': 'Mexican', 'about': 'Templario is CMLL\'s rising star. Technical and powerful luchador. NJPW crossover appearances.'},
+            {'name': 'Titan', 'real_name': 'José Luis Rodríguez', 'birth_date': '1988-11-15', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'about': 'Titan is a CMLL high-flyer. Incredible agility. NJPW crossover appearances with aerial style.'},
+            {'name': 'Valiente', 'real_name': 'Carlos García', 'birth_date': '1980-08-06', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'about': 'Valiente is a CMLL veteran. Spectacular diving moves. Master of the Valiente Special.'},
+            {'name': 'Soberano Jr', 'real_name': 'Emmanuel Alejandro Rodríguez Guzmán', 'birth_date': '1994-06-03', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'about': 'Soberano Jr is CMLL\'s most spectacular flyer. Tornillo specialist. Rising star in Mexico.'},
+            {'name': 'Star Jr', 'real_name': 'Dilan Aldrett', 'birth_date': '1995-05-15', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'about': 'Star Jr is a CMLL high-flyer. Incredible dives. Young lucha libre star rising through ranks.'},
+            {'name': 'Euforia', 'real_name': 'Ramón Ochoa Díaz', 'birth_date': '1978-05-02', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'about': 'Euforia is a CMLL veteran. Los Guerreros del Infierno member. Power-based style.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} CMLL')
+        return updated
+
+    def enrich_aaa_wrestlers(self):
+        """Enrich AAA wrestlers."""
+        self.stdout.write('--- Enriching AAA ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Drago', 'real_name': 'César González', 'birth_date': '1984-06-15', 'hometown': 'Monterrey, Mexico', 'nationality': 'Mexican', 'about': 'Drago is a reptilian luchador from AAA. Lucha Underground star. Dragon-themed character.'},
+            {'name': 'Aerostar', 'real_name': 'Esaú Villalpando', 'birth_date': '1987-02-15', 'hometown': 'Monterrey, Mexico', 'nationality': 'Mexican', 'about': 'Aerostar is AAA\'s time-traveling luchador. Insane high-flying moves. Lucha Underground star.'},
+            {'name': 'Laredo Kid', 'real_name': 'Luciano Diaz', 'birth_date': '1989-05-02', 'hometown': 'Nuevo Laredo, Mexico', 'nationality': 'Mexican', 'about': 'Laredo Kid is AAA Mega Champion. Incredible high-flyer. Impact Wrestling crossover star.'},
+            {'name': 'Flamita', 'real_name': 'Alan Navarro', 'birth_date': '1990-11-25', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'about': 'Flamita is a ROH and AAA star. One of Mexico\'s best high-flyers. 619 specialist.'},
+            {'name': 'Pagano', 'real_name': 'Eduardo Alanis', 'birth_date': '1987-02-23', 'hometown': 'Monterrey, Mexico', 'nationality': 'Mexican', 'about': 'Pagano is AAA\'s hardcore king. Extreme matches specialist. Deathmatch luchador.'},
+            {'name': 'Cibernetico', 'real_name': 'Juan Manuel Ramos', 'birth_date': '1971-10-06', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'about': 'Cibernetico is an AAA legend. La Secta leader. Mega Champion. Cybernetic wrestler character.'},
+            {'name': 'Electroshock', 'real_name': 'Jesús Montes', 'birth_date': '1982-12-15', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'about': 'Electroshock is an AAA veteran. Former Mega Champion. Power wrestler in lucha libre.'},
+            {'name': 'Chessman', 'real_name': 'Ángel Porfirio Mendoza Ruiz', 'birth_date': '1976-04-27', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'about': 'Chessman is an AAA veteran. Los Hell Brothers. Gothic character. Hardcore specialist.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} AAA')
         return updated

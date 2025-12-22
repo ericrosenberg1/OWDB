@@ -292,6 +292,46 @@ class Command(BaseCommand):
             total_updated += self.enrich_misc_batch_14()
         if batch == 0 or batch == 130:
             total_updated += self.enrich_misc_batch_15()
+        if batch == 0 or batch == 131:
+            total_updated += self.enrich_wwe_roster_7()
+        if batch == 0 or batch == 132:
+            total_updated += self.enrich_aew_roster_7()
+        if batch == 0 or batch == 133:
+            total_updated += self.enrich_nxt_roster_4()
+        if batch == 0 or batch == 134:
+            total_updated += self.enrich_njpw_roster_5()
+        if batch == 0 or batch == 135:
+            total_updated += self.enrich_legends_batch_7()
+        if batch == 0 or batch == 136:
+            total_updated += self.enrich_women_batch_5()
+        if batch == 0 or batch == 137:
+            total_updated += self.enrich_indie_batch_3()
+        if batch == 0 or batch == 138:
+            total_updated += self.enrich_international_batch_5()
+        if batch == 0 or batch == 139:
+            total_updated += self.enrich_misc_batch_16()
+        if batch == 0 or batch == 140:
+            total_updated += self.enrich_misc_batch_17()
+        if batch == 0 or batch == 141:
+            total_updated += self.enrich_wwe_roster_8()
+        if batch == 0 or batch == 142:
+            total_updated += self.enrich_aew_roster_8()
+        if batch == 0 or batch == 143:
+            total_updated += self.enrich_legends_batch_8()
+        if batch == 0 or batch == 144:
+            total_updated += self.enrich_women_batch_6()
+        if batch == 0 or batch == 145:
+            total_updated += self.enrich_misc_batch_18()
+        if batch == 0 or batch == 146:
+            total_updated += self.enrich_misc_batch_19()
+        if batch == 0 or batch == 147:
+            total_updated += self.enrich_misc_batch_20()
+        if batch == 0 or batch == 148:
+            total_updated += self.enrich_misc_batch_21()
+        if batch == 0 or batch == 149:
+            total_updated += self.enrich_misc_batch_22()
+        if batch == 0 or batch == 150:
+            total_updated += self.enrich_misc_batch_23()
 
         self.stdout.write(self.style.SUCCESS(f'\n=== ENRICHMENT COMPLETE ==='))
         self.stdout.write(f'Total wrestlers updated: {total_updated}')
@@ -4966,4 +5006,324 @@ class Command(BaseCommand):
             name = data.pop('name')
             updated += self.update_wrestler(name, **data)
         self.stdout.write(f'  Updated {updated} Misc Batch 15')
+        return updated
+
+    def enrich_wwe_roster_7(self):
+        """Enrich WWE roster batch 7."""
+        self.stdout.write('--- Enriching WWE Roster 7 ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Isla Dawn', 'real_name': 'Unknown', 'birth_date': '1995-01-01', 'hometown': 'Scotland', 'nationality': 'Scottish', 'about': 'Isla Dawn is NXT UK star. Supernatural gimmick.'},
+            {'name': 'Meiko Satomura', 'real_name': 'Meiko Satomura', 'birth_date': '1979-11-17', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'about': 'Meiko Satomura is NXT UK Champion. Joshi legend.'},
+            {'name': 'Tiffany Stratton', 'real_name': 'Unknown', 'birth_date': '1999-07-09', 'hometown': 'USA', 'nationality': 'American', 'about': 'Tiffany Stratton is NXT star. Gymnast background.'},
+            {'name': 'Nikkita Lyons', 'real_name': 'Unknown', 'birth_date': '1997-01-01', 'hometown': 'Las Vegas, Nevada', 'nationality': 'American', 'about': 'Nikkita Lyons is NXT powerhouse.'},
+            {'name': 'Zoey Stark', 'real_name': 'Unknown', 'birth_date': '1992-01-01', 'hometown': 'USA', 'nationality': 'American', 'about': 'Zoey Stark is NXT star.'},
+            {'name': 'Sol Ruca', 'real_name': 'Unknown', 'birth_date': '1997-01-01', 'hometown': 'California', 'nationality': 'American', 'about': 'Sol Ruca is NXT rising star. Surfer gimmick.'},
+            {'name': 'Fallon Henley', 'real_name': 'Unknown', 'birth_date': '1993-01-01', 'hometown': 'Kentucky', 'nationality': 'American', 'about': 'Fallon Henley is NXT Women\'s Tag Champion.'},
+            {'name': 'Kiana James', 'real_name': 'Unknown', 'birth_date': '1994-01-01', 'hometown': 'Chicago, Illinois', 'nationality': 'American', 'about': 'Kiana James is NXT businesswoman gimmick.'},
+            {'name': 'Indi Hartwell', 'real_name': 'Unknown', 'birth_date': '1996-06-23', 'hometown': 'Melbourne, Australia', 'nationality': 'Australian', 'about': 'Indi Hartwell is NXT star. The Way member.'},
+            {'name': 'Ivy Nile', 'real_name': 'Unknown', 'birth_date': '1996-01-01', 'hometown': 'USA', 'nationality': 'American', 'about': 'Ivy Nile is Diamond Mine. Martial arts.'},
+            {'name': 'Tatum Paxley', 'real_name': 'Unknown', 'birth_date': '1996-01-01', 'hometown': 'USA', 'nationality': 'American', 'about': 'Tatum Paxley is NXT star. Quirky character.'},
+            {'name': 'Lyra Valkyria', 'real_name': 'Unknown', 'birth_date': '1996-01-01', 'hometown': 'Dublin, Ireland', 'nationality': 'Irish', 'about': 'Lyra Valkyria is NXT Women\'s Champion.'},
+            {'name': 'Thea Hail', 'real_name': 'Unknown', 'birth_date': '2004-01-01', 'hometown': 'USA', 'nationality': 'American', 'about': 'Thea Hail is Chase U. Young star.'},
+            {'name': 'Andre Chase', 'real_name': 'Unknown', 'birth_date': '1990-01-01', 'hometown': 'USA', 'nationality': 'American', 'about': 'Andre Chase is Chase U founder. NXT educator.'},
+            {'name': 'Duke Hudson', 'real_name': 'Unknown', 'birth_date': '1991-11-01', 'hometown': 'Australia', 'nationality': 'Australian', 'about': 'Duke Hudson is Chase U.'},
+            {'name': 'Odyssey Jones', 'real_name': 'Unknown', 'birth_date': '1996-01-01', 'hometown': 'USA', 'nationality': 'American', 'about': 'Odyssey Jones is NXT powerhouse.'},
+            {'name': 'Ilja Dragunov', 'real_name': 'Ilja Dragunov', 'birth_date': '1993-05-08', 'hometown': 'Moscow, Russia', 'nationality': 'Russian-German', 'about': 'Ilja Dragunov is NXT Champion. Unbesiegbar.'},
+            {'name': 'Tyler Bate', 'real_name': 'Tyler Bate', 'birth_date': '1997-03-07', 'hometown': 'Dudley, England', 'nationality': 'British', 'about': 'Tyler Bate is First NXT UK Champion.'},
+            {'name': 'Pete Dunne', 'real_name': 'Peter England', 'birth_date': '1993-11-09', 'hometown': 'Birmingham, England', 'nationality': 'British', 'about': 'Pete Dunne is Bruiserweight. NXT UK Champion.'},
+            {'name': 'Noam Dar', 'real_name': 'Noam Dar', 'birth_date': '1993-06-06', 'hometown': 'Ayr, Scotland', 'nationality': 'Scottish', 'about': 'Noam Dar is Heritage Cup. Supernova 11.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} WWE Roster 7')
+        return updated
+
+    def enrich_aew_roster_7(self):
+        """Enrich AEW roster batch 7."""
+        self.stdout.write('--- Enriching AEW Roster 7 ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Ruby Soho', 'real_name': 'Dori Prange', 'birth_date': '1991-01-27', 'hometown': 'Lafayette, Indiana', 'nationality': 'American', 'about': 'Ruby Soho is Ruby Riott. No Future.'},
+            {'name': 'Saraya', 'real_name': 'Saraya-Jade Bevis', 'birth_date': '1992-08-17', 'hometown': 'Norwich, England', 'nationality': 'British', 'about': 'Saraya is Paige. Outcasts leader.'},
+            {'name': 'Mercedes Mone', 'real_name': 'Mercedes Varnado', 'birth_date': '1992-01-26', 'hometown': 'Boston, Massachusetts', 'nationality': 'American', 'about': 'Mercedes Mone is Sasha Banks. TBS Champion.'},
+            {'name': 'Mariah May', 'real_name': 'Unknown', 'birth_date': '1997-01-01', 'hometown': 'UK', 'nationality': 'British', 'about': 'Mariah May is AEW Women\'s Champion.'},
+            {'name': 'Riho', 'real_name': 'Riho', 'birth_date': '1997-06-08', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'about': 'Riho is first AEW Women\'s Champion.'},
+            {'name': 'Yuka Sakazaki', 'real_name': 'Yuka Sakazaki', 'birth_date': '1992-09-24', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'about': 'Yuka Sakazaki is Magical Girl. TJPW.'},
+            {'name': 'Serena Deeb', 'real_name': 'Serena Deeb', 'birth_date': '1986-04-23', 'hometown': 'Virginia', 'nationality': 'American', 'about': 'Serena Deeb is NWA Women\'s Champion.'},
+            {'name': 'Thunder Rosa', 'real_name': 'Melissa Cervantes', 'birth_date': '1986-07-22', 'hometown': 'Tijuana, Mexico', 'nationality': 'Mexican', 'about': 'Thunder Rosa is AEW Women\'s Champion.'},
+            {'name': 'Hikaru Shida', 'real_name': 'Hikaru Shida', 'birth_date': '1988-06-07', 'hometown': 'Yokohama, Japan', 'nationality': 'Japanese', 'about': 'Hikaru Shida is AEW Women\'s Champion.'},
+            {'name': 'Nyla Rose', 'real_name': 'Unknown', 'birth_date': '1982-06-26', 'hometown': 'Washington D.C.', 'nationality': 'American', 'about': 'Nyla Rose is AEW Women\'s Champion.'},
+            {'name': 'Nick Wayne', 'real_name': 'Nicholas Wayne', 'birth_date': '2005-08-08', 'hometown': 'Everett, Washington', 'nationality': 'American', 'about': 'Nick Wayne is teenage prodigy. Patriarchy.'},
+            {'name': 'Konosuke Takeshita', 'real_name': 'Konosuke Takeshita', 'birth_date': '1996-06-02', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'about': 'Konosuke Takeshita is DDT ace. AEW star.'},
+            {'name': 'Kazuchika Okada', 'real_name': 'Kazuchika Okada', 'birth_date': '1987-11-08', 'hometown': 'Anjo, Japan', 'nationality': 'Japanese', 'about': 'Kazuchika Okada is Rainmaker. 5x IWGP Champion.'},
+            {'name': 'Will Ospreay', 'real_name': 'Will Ospreay', 'birth_date': '1993-05-01', 'hometown': 'Essex, England', 'nationality': 'British', 'about': 'Will Ospreay is AEW International Champion.'},
+            {'name': 'Kyle Fletcher', 'real_name': 'Kyle Fletcher', 'birth_date': '1997-06-05', 'hometown': 'Melbourne, Australia', 'nationality': 'Australian', 'about': 'Kyle Fletcher is Aussie Open. Don Callis Family.'},
+            {'name': 'Mark Davis', 'real_name': 'Mark Davis', 'birth_date': '1990-01-01', 'hometown': 'Australia', 'nationality': 'Australian', 'about': 'Mark Davis is Aussie Open. Dunkzilla.'},
+            {'name': 'Jeff Cobb', 'real_name': 'Jeff Cobb', 'birth_date': '1982-06-15', 'hometown': 'Honolulu, Hawaii', 'nationality': 'American', 'about': 'Jeff Cobb is Olympic Olympian. United Empire.'},
+            {'name': 'Great-O-Khan', 'real_name': 'Tomoyuki Oka', 'birth_date': '1991-01-30', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'about': 'Great-O-Khan is United Empire.'},
+            {'name': 'Kota Ibushi', 'real_name': 'Kota Ibushi', 'birth_date': '1982-05-21', 'hometown': 'Kagoshima, Japan', 'nationality': 'Japanese', 'about': 'Kota Ibushi is Golden Star. IWGP Champion.'},
+            {'name': 'Jay White', 'real_name': 'Jay White', 'birth_date': '1992-07-31', 'hometown': 'Auckland, New Zealand', 'nationality': 'New Zealander', 'about': 'Jay White is Switchblade. Bullet Club leader.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} AEW Roster 7')
+        return updated
+
+    def enrich_nxt_roster_4(self):
+        """Enrich NXT roster batch 4."""
+        self.stdout.write('--- Enriching NXT Roster 4 ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Je\'Von Evans', 'real_name': 'Unknown', 'birth_date': '2004-01-01', 'hometown': 'USA', 'nationality': 'American', 'about': 'Je\'Von Evans is NXT young star.'},
+            {'name': 'Shawn Spears', 'real_name': 'Ronnie Arneill', 'birth_date': '1981-04-19', 'hometown': 'Niagara Falls, Ontario', 'nationality': 'Canadian', 'about': 'Shawn Spears is Perfect 10. Chair shot.'},
+            {'name': 'Ethan Page', 'real_name': 'Julian Micevski', 'birth_date': '1989-07-22', 'hometown': 'Hamilton, Ontario', 'nationality': 'Canadian', 'about': 'Ethan Page is All Ego. NXT Champion.'},
+            {'name': 'Oba Femi', 'real_name': 'Unknown', 'birth_date': '1999-01-01', 'hometown': 'Nigeria', 'nationality': 'Nigerian', 'about': 'Oba Femi is NXT North American Champion.'},
+            {'name': 'Lexis King', 'real_name': 'Brian Pillman Jr.', 'birth_date': '1996-05-04', 'hometown': 'Cincinnati, Ohio', 'nationality': 'American', 'about': 'Lexis King is Brian Pillman Jr. repackaged.'},
+            {'name': 'Charlie Dempsey', 'real_name': 'Unknown', 'birth_date': '1998-01-01', 'hometown': 'Blackpool, England', 'nationality': 'British', 'about': 'Charlie Dempsey is William Regal\'s son.'},
+            {'name': 'Axiom', 'real_name': 'A-Kid', 'birth_date': '1997-10-24', 'hometown': 'Madrid, Spain', 'nationality': 'Spanish', 'about': 'Axiom is NXT Tag Champion. Technical.'},
+            {'name': 'Nathan Frazer', 'real_name': 'Ben Carter', 'birth_date': '1997-03-14', 'hometown': 'Sheffield, England', 'nationality': 'British', 'about': 'Nathan Frazer is NXT Tag Champion. High-flyer.'},
+            {'name': 'Dante Chen', 'real_name': 'Unknown', 'birth_date': '1995-01-01', 'hometown': 'Singapore', 'nationality': 'Singaporean', 'about': 'Dante Chen is NXT star. Singapore\'s first.'},
+            {'name': 'Hank Walker', 'real_name': 'Unknown', 'birth_date': '1995-01-01', 'hometown': 'USA', 'nationality': 'American', 'about': 'Hank Walker is NXT Tank Ledger partner.'},
+            {'name': 'Tank Ledger', 'real_name': 'Unknown', 'birth_date': '1995-01-01', 'hometown': 'USA', 'nationality': 'American', 'about': 'Tank Ledger is NXT Hank Walker partner.'},
+            {'name': 'Malik Blade', 'real_name': 'Unknown', 'birth_date': '1995-01-01', 'hometown': 'USA', 'nationality': 'American', 'about': 'Malik Blade is NXT tag team star.'},
+            {'name': 'Edris Enofe', 'real_name': 'Unknown', 'birth_date': '1995-01-01', 'hometown': 'USA', 'nationality': 'American', 'about': 'Edris Enofe is NXT tag team star.'},
+            {'name': 'Drew Gulak', 'real_name': 'Drew Gulak', 'birth_date': '1987-02-01', 'hometown': 'Philadelphia, PA', 'nationality': 'American', 'about': 'Drew Gulak is Cruiserweight Champion.'},
+            {'name': 'Josh Briggs', 'real_name': 'Unknown', 'birth_date': '1994-01-01', 'hometown': 'USA', 'nationality': 'American', 'about': 'Josh Briggs is NXT Tag Champion.'},
+            {'name': 'Brooks Jensen', 'real_name': 'Unknown', 'birth_date': '1998-01-01', 'hometown': 'USA', 'nationality': 'American', 'about': 'Brooks Jensen is NXT tag team star.'},
+            {'name': 'Oro Mensah', 'real_name': 'Unknown', 'birth_date': '1996-01-01', 'hometown': 'Ghana', 'nationality': 'Ghanaian', 'about': 'Oro Mensah is Meta-Four. High-flyer.'},
+            {'name': 'Lash Legend', 'real_name': 'Unknown', 'birth_date': '1996-01-01', 'hometown': 'USA', 'nationality': 'American', 'about': 'Lash Legend is Meta-Four. Basketball star.'},
+            {'name': 'Jakara Jackson', 'real_name': 'Unknown', 'birth_date': '1996-01-01', 'hometown': 'USA', 'nationality': 'American', 'about': 'Jakara Jackson is Meta-Four.'},
+            {'name': 'Noam Dar', 'real_name': 'Noam Dar', 'birth_date': '1993-06-06', 'hometown': 'Ayr, Scotland', 'nationality': 'Scottish', 'about': 'Noam Dar is Heritage Cup. Meta-Four leader.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} NXT Roster 4')
+        return updated
+
+    def enrich_njpw_roster_5(self):
+        """Enrich NJPW roster batch 5."""
+        self.stdout.write('--- Enriching NJPW Roster 5 ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Hiroshi Tanahashi', 'real_name': 'Hiroshi Tanahashi', 'birth_date': '1976-11-13', 'hometown': 'Gifu, Japan', 'nationality': 'Japanese', 'about': 'Hiroshi Tanahashi is Ace of NJPW. 8x IWGP Champion.'},
+            {'name': 'Tetsuya Naito', 'real_name': 'Tetsuya Naito', 'birth_date': '1982-06-22', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'about': 'Tetsuya Naito is LIJ leader. 2x IWGP Champion.'},
+            {'name': 'Tomohiro Ishii', 'real_name': 'Tomohiro Ishii', 'birth_date': '1975-12-10', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'about': 'Tomohiro Ishii is Stone Pitbull. NEVER Champion.'},
+            {'name': 'Hirooki Goto', 'real_name': 'Hirooki Goto', 'birth_date': '1979-06-25', 'hometown': 'Mie, Japan', 'nationality': 'Japanese', 'about': 'Hirooki Goto is NEVER Champion. CHAOS member.'},
+            {'name': 'David Finlay', 'real_name': 'David Finlay Jr.', 'birth_date': '1993-04-02', 'hometown': 'Belfast', 'nationality': 'Irish', 'about': 'David Finlay is Bullet Club War Dogs.'},
+            {'name': 'Gabe Kidd', 'real_name': 'Gabriel Sheridan', 'birth_date': '1996-01-01', 'hometown': 'Liverpool, England', 'nationality': 'British', 'about': 'Gabe Kidd is Bullet Club. War Dogs.'},
+            {'name': 'Clark Connors', 'real_name': 'Clark Connors', 'birth_date': '1995-01-01', 'hometown': 'USA', 'nationality': 'American', 'about': 'Clark Connors is Bullet Club. Wild Rhino.'},
+            {'name': 'Juice Robinson', 'real_name': 'Joseph Robinson', 'birth_date': '1989-04-01', 'hometown': 'Joliet, Illinois', 'nationality': 'American', 'about': 'Juice Robinson is IWGP US Champion.'},
+            {'name': 'EVIL', 'real_name': 'Takaaki Watanabe', 'birth_date': '1987-05-28', 'hometown': 'Hokkaido, Japan', 'nationality': 'Japanese', 'about': 'EVIL is House of Torture. IWGP Champion.'},
+            {'name': 'KENTA', 'real_name': 'Kenta Kobayashi', 'birth_date': '1981-03-12', 'hometown': 'Saitama, Japan', 'nationality': 'Japanese', 'about': 'KENTA is Go 2 Sleep originator.'},
+            {'name': 'Taiji Ishimori', 'real_name': 'Taiji Ishimori', 'birth_date': '1983-10-10', 'hometown': 'Saitama, Japan', 'nationality': 'Japanese', 'about': 'Taiji Ishimori is Bone Soldier. Jr. Champion.'},
+            {'name': 'Chase Owens', 'real_name': 'Andrew Owens', 'birth_date': '1990-01-01', 'hometown': 'Kentucky', 'nationality': 'American', 'about': 'Chase Owens is Bullet Club. Crown Jewel.'},
+            {'name': 'Karl Anderson', 'real_name': 'Chad Allegra', 'birth_date': '1980-01-20', 'hometown': 'Asheville, NC', 'nationality': 'American', 'about': 'Karl Anderson is Machine Gun. Good Brothers.'},
+            {'name': 'Doc Gallows', 'real_name': 'Drew Hankinson', 'birth_date': '1983-09-25', 'hometown': 'Jacksonville, Florida', 'nationality': 'American', 'about': 'Doc Gallows is Good Brothers. Festus.'},
+            {'name': 'Yujiro Takahashi', 'real_name': 'Yujiro Takahashi', 'birth_date': '1981-06-28', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'about': 'Yujiro Takahashi is Bullet Club. Tokyo Pimp.'},
+            {'name': 'Bad Luck Fale', 'real_name': 'Sione Finau', 'birth_date': '1982-02-06', 'hometown': 'Tonga', 'nationality': 'Tongan', 'about': 'Bad Luck Fale is Bullet Club. Underboss.'},
+            {'name': 'Tama Tonga', 'real_name': 'Alipate Fifita', 'birth_date': '1983-02-22', 'hometown': 'Tampa, Florida', 'nationality': 'American', 'about': 'Tama Tonga is Bullet Club. Firing Squad.'},
+            {'name': 'Tanga Loa', 'real_name': 'Tevita Fifita', 'birth_date': '1983-06-15', 'hometown': 'Tampa, Florida', 'nationality': 'American', 'about': 'Tanga Loa is Guerrillas of Destiny.'},
+            {'name': 'El Phantasmo', 'real_name': 'Unknown', 'birth_date': '1988-01-01', 'hometown': 'Vancouver', 'nationality': 'Canadian', 'about': 'El Phantasmo is Bullet Club. Jr. Champion.'},
+            {'name': 'Gedo', 'real_name': 'Keiji Takayama', 'birth_date': '1969-11-28', 'hometown': 'Tokyo, Japan', 'nationality': 'Japanese', 'about': 'Gedo is Okada\'s manager. NJPW booker.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} NJPW Roster 5')
+        return updated
+
+    def enrich_legends_batch_7(self):
+        """Enrich legends batch 7."""
+        self.stdout.write('--- Enriching Legends Batch 7 ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Lou Thesz', 'real_name': 'Aloysius Thesz', 'birth_date': '1916-04-24', 'hometown': 'St. Louis, Missouri', 'nationality': 'American', 'about': 'Lou Thesz is 6x NWA Champion. Thesz Press.'},
+            {'name': 'Verne Gagne', 'real_name': 'Laverne Gagne', 'birth_date': '1926-02-26', 'hometown': 'Corcoran, Minnesota', 'nationality': 'American', 'about': 'Verne Gagne is AWA founder. 10x Champion.'},
+            {'name': 'Bruno Sammartino', 'real_name': 'Bruno Sammartino', 'birth_date': '1935-10-06', 'hometown': 'Abruzzi, Italy', 'nationality': 'Italian-American', 'about': 'Bruno Sammartino is Living Legend. Longest WWWF reign.'},
+            {'name': 'Buddy Rogers', 'real_name': 'Herman Rohde', 'birth_date': '1921-02-20', 'hometown': 'Camden, NJ', 'nationality': 'American', 'about': 'Buddy Rogers is Nature Boy original. First WWWF Champion.'},
+            {'name': 'Pat Patterson', 'real_name': 'Pierre Clermont', 'birth_date': '1941-01-19', 'hometown': 'Montreal, Quebec', 'nationality': 'Canadian', 'about': 'Pat Patterson is first IC Champion. WWE legend.'},
+            {'name': 'Gorilla Monsoon', 'real_name': 'Robert Marella', 'birth_date': '1937-06-04', 'hometown': 'Rochester, NY', 'nationality': 'American', 'about': 'Gorilla Monsoon is announcer legend. Former wrestler.'},
+            {'name': 'Chief Jay Strongbow', 'real_name': 'Joe Scarpa', 'birth_date': '1928-10-04', 'hometown': 'Philadelphia, PA', 'nationality': 'American', 'about': 'Chief Jay Strongbow is WWF Tag Champion.'},
+            {'name': 'Billy Graham', 'real_name': 'Eldridge Coleman', 'birth_date': '1943-09-10', 'hometown': 'Phoenix, Arizona', 'nationality': 'American', 'about': 'Billy Graham is WWF Champion. Prototype for Hogan.'},
+            {'name': 'Antonio Inoki', 'real_name': 'Kanji Inoki', 'birth_date': '1943-02-20', 'hometown': 'Yokohama, Japan', 'nationality': 'Japanese', 'about': 'Antonio Inoki is NJPW founder. Muhammad Ali match.'},
+            {'name': 'Giant Baba', 'real_name': 'Shohei Baba', 'birth_date': '1938-01-23', 'hometown': 'Niigata, Japan', 'nationality': 'Japanese', 'about': 'Giant Baba is AJPW founder. Japanese legend.'},
+            {'name': 'Jumbo Tsuruta', 'real_name': 'Tomomi Tsuruta', 'birth_date': '1951-03-25', 'hometown': 'Yamanashi, Japan', 'nationality': 'Japanese', 'about': 'Jumbo Tsuruta is AJPW ace. Triple Crown Champion.'},
+            {'name': 'Mitsuharu Misawa', 'real_name': 'Mitsuharu Misawa', 'birth_date': '1962-06-18', 'hometown': 'Saitama, Japan', 'nationality': 'Japanese', 'about': 'Mitsuharu Misawa is NOAH founder. Emerald Flowsion.'},
+            {'name': 'Kenta Kobashi', 'real_name': 'Kenta Kobashi', 'birth_date': '1967-03-27', 'hometown': 'Fukuchiyama, Japan', 'nationality': 'Japanese', 'about': 'Kenta Kobashi is Burning Hammer. AJPW legend.'},
+            {'name': 'Toshiaki Kawada', 'real_name': 'Toshiaki Kawada', 'birth_date': '1963-12-08', 'hometown': 'Tochigi, Japan', 'nationality': 'Japanese', 'about': 'Toshiaki Kawada is Dangerous K. Triple Crown Champion.'},
+            {'name': 'Akira Taue', 'real_name': 'Akira Taue', 'birth_date': '1961-05-08', 'hometown': 'Chichibu, Japan', 'nationality': 'Japanese', 'about': 'Akira Taue is Four Pillars of Heaven. Chokeslam.'},
+            {'name': 'Mil Mascaras', 'real_name': 'Aaron Rodríguez', 'birth_date': '1942-07-15', 'hometown': 'San Luis Potosí, Mexico', 'nationality': 'Mexican', 'about': 'Mil Mascaras is Man of 1000 Masks. Lucha legend.'},
+            {'name': 'El Santo', 'real_name': 'Rodolfo Guzmán Huerta', 'birth_date': '1917-09-23', 'hometown': 'Tulancingo, Mexico', 'nationality': 'Mexican', 'about': 'El Santo is greatest luchador ever. Cultural icon.'},
+            {'name': 'Blue Demon', 'real_name': 'Alejandro Muñoz Moreno', 'birth_date': '1922-04-24', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'about': 'Blue Demon is El Santo rival. Lucha legend.'},
+            {'name': 'Huracán Ramírez', 'real_name': 'Daniel García Arteaga', 'birth_date': '1926-04-09', 'hometown': 'Mexico City, Mexico', 'nationality': 'Mexican', 'about': 'Huracán Ramírez invented the Hurracanrana.'},
+            {'name': 'El Canek', 'real_name': 'Felipe Estrada', 'birth_date': '1952-01-23', 'hometown': 'Mexico', 'nationality': 'Mexican', 'about': 'El Canek is UWA Champion. Hulk Hogan rival in Mexico.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Legends Batch 7')
+        return updated
+
+    def enrich_women_batch_5(self):
+        """Enrich women's wrestlers batch 5."""
+        self.stdout.write('--- Enriching Women Batch 5 ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Fabulous Moolah', 'real_name': 'Lillian Ellison', 'birth_date': '1923-07-22', 'hometown': 'Columbia, SC', 'nationality': 'American', 'about': 'Fabulous Moolah is Women\'s Champion. Legendary reign.'},
+            {'name': 'Mae Young', 'real_name': 'Johnnie Mae Young', 'birth_date': '1923-03-12', 'hometown': 'Sand Springs, Oklahoma', 'nationality': 'American', 'about': 'Mae Young is pioneer. Attitude Era icon.'},
+            {'name': 'Wendi Richter', 'real_name': 'Wendi Richter', 'birth_date': '1961-09-06', 'hometown': 'Dallas, Texas', 'nationality': 'American', 'about': 'Wendi Richter is Rock n Wrestling. Women\'s Champion.'},
+            {'name': 'Sensational Sherri', 'real_name': 'Sherri Martel', 'birth_date': '1958-02-08', 'hometown': 'Birmingham, Alabama', 'nationality': 'American', 'about': 'Sensational Sherri is Women\'s Champion. Manager legend.'},
+            {'name': 'Miss Elizabeth', 'real_name': 'Elizabeth Hulette', 'birth_date': '1960-11-19', 'hometown': 'Frankfort, Kentucky', 'nationality': 'American', 'about': 'Miss Elizabeth is Macho Man\'s manager. First Lady.'},
+            {'name': 'Luna Vachon', 'real_name': 'Gertrude Vachon', 'birth_date': '1962-01-12', 'hometown': 'Atlanta, Georgia', 'nationality': 'American', 'about': 'Luna Vachon is hardcore woman. Unique look.'},
+            {'name': 'Bull Nakano', 'real_name': 'Keiko Nakano', 'birth_date': '1968-01-08', 'hometown': 'Kawaguchi, Japan', 'nationality': 'Japanese', 'about': 'Bull Nakano is WWF Women\'s Champion. Joshi star.'},
+            {'name': 'Alundra Blayze', 'real_name': 'Debra Miceli', 'birth_date': '1959-02-09', 'hometown': 'Tampa, Florida', 'nationality': 'American', 'about': 'Alundra Blayze is 3x Women\'s Champion. Madusa.'},
+            {'name': 'Chyna', 'real_name': 'Joanie Laurer', 'birth_date': '1969-12-27', 'hometown': 'Rochester, NY', 'nationality': 'American', 'about': 'Chyna is 9th Wonder. IC Champion. DX.'},
+            {'name': 'Sable', 'real_name': 'Rena Mero', 'birth_date': '1967-08-08', 'hometown': 'Jacksonville, Florida', 'nationality': 'American', 'about': 'Sable is Women\'s Champion. Attitude Era icon.'},
+            {'name': 'Sunny', 'real_name': 'Tammy Sytch', 'birth_date': '1972-12-07', 'hometown': 'Matawan, NJ', 'nationality': 'American', 'about': 'Sunny is first Diva. Original manager.'},
+            {'name': 'Terri Runnels', 'real_name': 'Terri Runnels', 'birth_date': '1966-10-05', 'hometown': 'Gainesville, Florida', 'nationality': 'American', 'about': 'Terri Runnels is Goldust manager. Marlena.'},
+            {'name': 'Awesome Kong', 'real_name': 'Kia Stevens', 'birth_date': '1977-09-04', 'hometown': 'Carson, California', 'nationality': 'American', 'about': 'Awesome Kong is Kharma. Knockouts Champion.'},
+            {'name': 'ODB', 'real_name': 'Jessica Kresa', 'birth_date': '1978-04-20', 'hometown': 'Minneapolis, Minnesota', 'nationality': 'American', 'about': 'ODB is Knockouts Champion. Flask gimmick.'},
+            {'name': 'Angelina Love', 'real_name': 'Lauren Williams', 'birth_date': '1981-09-13', 'hometown': 'Toronto, Ontario', 'nationality': 'Canadian', 'about': 'Angelina Love is 6x Knockouts Champion. Beautiful People.'},
+            {'name': 'Velvet Sky', 'real_name': 'Jamie Szantyr', 'birth_date': '1981-04-12', 'hometown': 'Waterford, Connecticut', 'nationality': 'American', 'about': 'Velvet Sky is Beautiful People. Knockouts Champion.'},
+            {'name': 'Brooke Tessmacher', 'real_name': 'Brooke Adams', 'birth_date': '1985-02-04', 'hometown': 'St. Louis, Missouri', 'nationality': 'American', 'about': 'Brooke Tessmacher is Knockouts Champion.'},
+            {'name': 'Taryn Terrell', 'real_name': 'Taryn Terrell', 'birth_date': '1985-12-28', 'hometown': 'New Orleans, Louisiana', 'nationality': 'American', 'about': 'Taryn Terrell is Knockouts Champion. Tiffany.'},
+            {'name': 'Rosemary', 'real_name': 'Holly Letkeman', 'birth_date': '1983-04-28', 'hometown': 'Winnipeg, Manitoba', 'nationality': 'Canadian', 'about': 'Rosemary is Knockouts Champion. Demon Assassin.'},
+            {'name': 'Su Yung', 'real_name': 'Vannarah Riggs', 'birth_date': '1990-06-11', 'hometown': 'Manila, Philippines', 'nationality': 'American', 'about': 'Su Yung is Knockouts Champion. Undead Bride.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Women Batch 5')
+        return updated
+
+    def enrich_indie_batch_3(self):
+        """Enrich indie wrestlers batch 3."""
+        self.stdout.write('--- Enriching Indie Batch 3 ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Mike Bailey', 'real_name': 'Mike Bailey', 'birth_date': '1991-03-26', 'hometown': 'Montreal, Quebec', 'nationality': 'Canadian', 'about': 'Mike Bailey is Speedball. X-Division Champion.'},
+            {'name': 'Jonathan Gresham', 'real_name': 'Jonathan Gresham', 'birth_date': '1988-08-02', 'hometown': 'Atlanta, Georgia', 'nationality': 'American', 'about': 'Jonathan Gresham is ROH Champion. Octopus.'},
+            {'name': 'Josh Alexander', 'real_name': 'Josh Alexander', 'birth_date': '1987-11-27', 'hometown': 'Etobicoke, Ontario', 'nationality': 'Canadian', 'about': 'Josh Alexander is Impact Champion. Walking Weapon.'},
+            {'name': 'Moose', 'real_name': 'Quinn Ojinnaka', 'birth_date': '1983-03-13', 'hometown': 'Decatur, Georgia', 'nationality': 'American', 'about': 'Moose is Impact Champion. Former NFL player.'},
+            {'name': 'Eddie Edwards', 'real_name': 'Eddie Edwards', 'birth_date': '1984-12-30', 'hometown': 'Boston, Massachusetts', 'nationality': 'American', 'about': 'Eddie Edwards is Impact Champion. Wolves.'},
+            {'name': 'Rich Swann', 'real_name': 'Richard Swann', 'birth_date': '1991-02-05', 'hometown': 'Baltimore, Maryland', 'nationality': 'American', 'about': 'Rich Swann is Impact Champion. 205 Live star.'},
+            {'name': 'Trey Miguel', 'real_name': 'Unknown', 'birth_date': '1997-01-01', 'hometown': 'Virginia', 'nationality': 'American', 'about': 'Trey Miguel is X-Division Champion. Rascalz.'},
+            {'name': 'Zachary Wentz', 'real_name': 'Unknown', 'birth_date': '1997-01-01', 'hometown': 'Ohio', 'nationality': 'American', 'about': 'Zachary Wentz is Nash Carter. Rascalz.'},
+            {'name': 'Chris Bey', 'real_name': 'Unknown', 'birth_date': '1994-01-01', 'hometown': 'Lanham, Maryland', 'nationality': 'American', 'about': 'Chris Bey is X-Division Champion. Bullet Club.'},
+            {'name': 'Ace Austin', 'real_name': 'Unknown', 'birth_date': '1997-01-01', 'hometown': 'Fairfax, Virginia', 'nationality': 'American', 'about': 'Ace Austin is X-Division Champion. Card trick.'},
+            {'name': 'Steve Maclin', 'real_name': 'Steve Cutler', 'birth_date': '1987-02-04', 'hometown': 'Fairfax, Virginia', 'nationality': 'American', 'about': 'Steve Maclin is Impact Champion. Forgotten Sons.'},
+            {'name': 'Nic Nemeth', 'real_name': 'Nicholas Nemeth', 'birth_date': '1980-07-27', 'hometown': 'Hollywood, Florida', 'nationality': 'American', 'about': 'Nic Nemeth is Dolph Ziggler. TNA Champion.'},
+            {'name': 'Mike Santana', 'real_name': 'Mike Draztik', 'birth_date': '1989-01-15', 'hometown': 'Brooklyn, New York', 'nationality': 'American', 'about': 'Mike Santana is LAX. Proud and Powerful.'},
+            {'name': 'Ortiz', 'real_name': 'Angel Ortiz', 'birth_date': '1987-05-20', 'hometown': 'New York', 'nationality': 'American', 'about': 'Ortiz is LAX. Proud and Powerful.'},
+            {'name': 'Matt Cardona', 'real_name': 'Matthew Cardona', 'birth_date': '1985-08-17', 'hometown': 'Long Island, New York', 'nationality': 'American', 'about': 'Matt Cardona is Zack Ryder. GCW Champion.'},
+            {'name': 'Brian Myers', 'real_name': 'Brian Myers', 'birth_date': '1985-04-03', 'hometown': 'Long Island, New York', 'nationality': 'American', 'about': 'Brian Myers is Curt Hawkins. Impact star.'},
+            {'name': 'Chelsea Green', 'real_name': 'Chelsea Green', 'birth_date': '1991-04-04', 'hometown': 'Victoria, BC', 'nationality': 'Canadian', 'about': 'Chelsea Green is Knockouts Champion. Hot Mess.'},
+            {'name': 'Deonna Purrazzo', 'real_name': 'Deonna Purrazzo', 'birth_date': '1994-06-27', 'hometown': 'Livingston, NJ', 'nationality': 'American', 'about': 'Deonna Purrazzo is Virtuosa. Knockouts Champion.'},
+            {'name': 'Jordynne Grace', 'real_name': 'Patricia Parker', 'birth_date': '1996-01-03', 'hometown': 'Austin, Texas', 'nationality': 'American', 'about': 'Jordynne Grace is Knockouts Champion. Thicc Mama Pump.'},
+            {'name': 'Mickie James', 'real_name': 'Mickie James', 'birth_date': '1979-08-31', 'hometown': 'Richmond, Virginia', 'nationality': 'American', 'about': 'Mickie James is Knockouts Champion. WWE legend.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Indie Batch 3')
+        return updated
+
+    def enrich_international_batch_5(self):
+        """Enrich international wrestlers batch 5."""
+        self.stdout.write('--- Enriching International Batch 5 ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'WALTER', 'real_name': 'Walter Hahn', 'birth_date': '1987-09-12', 'hometown': 'Vienna, Austria', 'nationality': 'Austrian', 'about': 'WALTER is Ring General. GUNTHER. NXT UK Champion.'},
+            {'name': 'Ilja Dragunov', 'real_name': 'Ilja Dragunov', 'birth_date': '1993-05-08', 'hometown': 'Moscow', 'nationality': 'Russian-German', 'about': 'Ilja Dragunov is NXT UK Champion. Unbesiegbar.'},
+            {'name': 'Pete Dunne', 'real_name': 'Peter England', 'birth_date': '1993-11-09', 'hometown': 'Birmingham, England', 'nationality': 'British', 'about': 'Pete Dunne is Bruiserweight. NXT UK Champion.'},
+            {'name': 'Tyler Bate', 'real_name': 'Tyler Bate', 'birth_date': '1997-03-07', 'hometown': 'Dudley, England', 'nationality': 'British', 'about': 'Tyler Bate is first NXT UK Champion. Big Strong Boi.'},
+            {'name': 'Trent Seven', 'real_name': 'Benjamin Webb', 'birth_date': '1984-11-10', 'hometown': 'Wolverhampton, England', 'nationality': 'British', 'about': 'Trent Seven is Moustache Mountain. British Strong Style.'},
+            {'name': 'Mark Andrews', 'real_name': 'Mark Andrews', 'birth_date': '1992-01-22', 'hometown': 'Cardiff, Wales', 'nationality': 'Welsh', 'about': 'Mark Andrews is NXT UK Tag Champion. Airborne.'},
+            {'name': 'Flash Morgan Webster', 'real_name': 'Unknown', 'birth_date': '1990-01-01', 'hometown': 'Wales', 'nationality': 'Welsh', 'about': 'Flash Morgan Webster is NXT UK star. Modfather.'},
+            {'name': 'Joe Coffey', 'real_name': 'Joe Coffey', 'birth_date': '1989-09-19', 'hometown': 'Glasgow, Scotland', 'nationality': 'Scottish', 'about': 'Joe Coffey is Iron King. Gallus leader.'},
+            {'name': 'Wolfgang', 'real_name': 'Alan Brien', 'birth_date': '1989-01-30', 'hometown': 'Edinburgh, Scotland', 'nationality': 'Scottish', 'about': 'Wolfgang is Gallus. ICW star.'},
+            {'name': 'Jinny', 'real_name': 'Unknown', 'birth_date': '1989-01-01', 'hometown': 'London, England', 'nationality': 'British', 'about': 'Jinny is NXT UK star. The Fashionista.'},
+            {'name': 'Kay Lee Ray', 'real_name': 'Kayleigh Sherlock', 'birth_date': '1992-08-29', 'hometown': 'Glasgow, Scotland', 'nationality': 'Scottish', 'about': 'Kay Lee Ray is NXT UK Women\'s Champion. Alba Fyre.'},
+            {'name': 'Toni Storm', 'real_name': 'Toni Storm', 'birth_date': '1995-10-19', 'hometown': 'Gold Coast, Australia', 'nationality': 'Australian', 'about': 'Toni Storm is NXT UK Champion. AEW star.'},
+            {'name': 'Rhea Ripley', 'real_name': 'Demi Bennett', 'birth_date': '1996-10-11', 'hometown': 'Adelaide, Australia', 'nationality': 'Australian', 'about': 'Rhea Ripley is NXT UK Champion. Judgement Day.'},
+            {'name': 'Xia Brookside', 'real_name': 'Xia Sheridan', 'birth_date': '1996-07-24', 'hometown': 'Blackpool, England', 'nationality': 'British', 'about': 'Xia Brookside is NXT UK star. Robbie\'s daughter.'},
+            {'name': 'Killer Kelly', 'real_name': 'Kelly Maccata', 'birth_date': '1994-08-05', 'hometown': 'Lisbon, Portugal', 'nationality': 'Portuguese', 'about': 'Killer Kelly is NXT UK star. Lucha Underground.'},
+            {'name': 'Jordan Devlin', 'real_name': 'Jack Sheridan', 'birth_date': '1990-09-17', 'hometown': 'Dublin, Ireland', 'nationality': 'Irish', 'about': 'Jordan Devlin is NXT Cruiserweight Champion.'},
+            {'name': 'Finn Balor', 'real_name': 'Fergal Devitt', 'birth_date': '1981-07-25', 'hometown': 'Bray, Ireland', 'nationality': 'Irish', 'about': 'Finn Balor is Universal Champion. Judgement Day.'},
+            {'name': 'Sheamus', 'real_name': 'Stephen Farrelly', 'birth_date': '1978-01-28', 'hometown': 'Dublin, Ireland', 'nationality': 'Irish', 'about': 'Sheamus is WWE Champion. Celtic Warrior.'},
+            {'name': 'Becky Lynch', 'real_name': 'Rebecca Quin', 'birth_date': '1987-01-30', 'hometown': 'Dublin, Ireland', 'nationality': 'Irish', 'about': 'Becky Lynch is The Man. Raw Women\'s Champion.'},
+            {'name': 'Drew McIntyre', 'real_name': 'Andrew Galloway', 'birth_date': '1985-06-06', 'hometown': 'Ayr, Scotland', 'nationality': 'Scottish', 'about': 'Drew McIntyre is 2x WWE Champion. Scottish Warrior.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} International Batch 5')
+        return updated
+
+    def enrich_misc_batch_16(self):
+        """Enrich miscellaneous wrestlers batch 16."""
+        self.stdout.write('--- Enriching Misc Batch 16 ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Chris Jericho', 'real_name': 'Christopher Irvine', 'birth_date': '1970-11-09', 'hometown': 'Manhasset, New York', 'nationality': 'American-Canadian', 'about': 'Chris Jericho is first Undisputed Champion. AEW legend.'},
+            {'name': 'Jon Moxley', 'real_name': 'Jonathan Good', 'birth_date': '1985-12-07', 'hometown': 'Cincinnati, Ohio', 'nationality': 'American', 'about': 'Jon Moxley is AEW Champion. Dean Ambrose.'},
+            {'name': 'CM Punk', 'real_name': 'Phillip Brooks', 'birth_date': '1978-10-26', 'hometown': 'Chicago, Illinois', 'nationality': 'American', 'about': 'CM Punk is 2x WWE Champion. Best in the World.'},
+            {'name': 'Daniel Bryan', 'real_name': 'Bryan Danielson', 'birth_date': '1981-05-22', 'hometown': 'Aberdeen, Washington', 'nationality': 'American', 'about': 'Daniel Bryan is 5x World Champion. Yes Movement.'},
+            {'name': 'AJ Styles', 'real_name': 'Allen Jones', 'birth_date': '1977-06-02', 'hometown': 'Gainesville, Georgia', 'nationality': 'American', 'about': 'AJ Styles is Phenomenal. 2x WWE Champion.'},
+            {'name': 'Samoa Joe', 'real_name': 'Nuufolau Seanoa', 'birth_date': '1979-03-17', 'hometown': 'Orange County, California', 'nationality': 'American', 'about': 'Samoa Joe is NXT Champion. Submission specialist.'},
+            {'name': 'Kevin Owens', 'real_name': 'Kevin Steen', 'birth_date': '1984-05-07', 'hometown': 'Marieville, Quebec', 'nationality': 'Canadian', 'about': 'Kevin Owens is Universal Champion. Prize Fighter.'},
+            {'name': 'Sami Zayn', 'real_name': 'Rami Sebei', 'birth_date': '1984-07-12', 'hometown': 'Montreal, Quebec', 'nationality': 'Canadian', 'about': 'Sami Zayn is IC Champion. Honorary Uce.'},
+            {'name': 'Seth Rollins', 'real_name': 'Colby Lopez', 'birth_date': '1986-05-28', 'hometown': 'Davenport, Iowa', 'nationality': 'American', 'about': 'Seth Rollins is World Heavyweight Champion. Visionary.'},
+            {'name': 'Roman Reigns', 'real_name': 'Leati Anoa\'i', 'birth_date': '1985-05-25', 'hometown': 'Pensacola, Florida', 'nationality': 'American', 'about': 'Roman Reigns is Tribal Chief. Longest Universal reign.'},
+            {'name': 'Dean Ambrose', 'real_name': 'Jonathan Good', 'birth_date': '1985-12-07', 'hometown': 'Cincinnati, Ohio', 'nationality': 'American', 'about': 'Dean Ambrose is Shield. WWE Champion. Lunatic Fringe.'},
+            {'name': 'Brock Lesnar', 'real_name': 'Brock Lesnar', 'birth_date': '1977-07-12', 'hometown': 'Webster, South Dakota', 'nationality': 'American', 'about': 'Brock Lesnar is Beast Incarnate. 5x WWE Champion.'},
+            {'name': 'Randy Orton', 'real_name': 'Randal Orton', 'birth_date': '1980-04-01', 'hometown': 'St. Louis, Missouri', 'nationality': 'American', 'about': 'Randy Orton is Viper. 14x World Champion.'},
+            {'name': 'John Cena', 'real_name': 'John Cena', 'birth_date': '1977-04-23', 'hometown': 'West Newbury, Massachusetts', 'nationality': 'American', 'about': 'John Cena is 16x World Champion. Hustle Loyalty Respect.'},
+            {'name': 'The Undertaker', 'real_name': 'Mark Calaway', 'birth_date': '1965-03-24', 'hometown': 'Houston, Texas', 'nationality': 'American', 'about': 'The Undertaker is Deadman. WrestleMania streak.'},
+            {'name': 'Edge', 'real_name': 'Adam Copeland', 'birth_date': '1973-10-30', 'hometown': 'Orangeville, Ontario', 'nationality': 'Canadian', 'about': 'Edge is Rated R Superstar. 11x World Champion.'},
+            {'name': 'Christian', 'real_name': 'William Reso', 'birth_date': '1973-11-30', 'hometown': 'Toronto, Ontario', 'nationality': 'Canadian', 'about': 'Christian is Captain Charisma. Impact Champion.'},
+            {'name': 'Batista', 'real_name': 'Dave Bautista', 'birth_date': '1969-01-18', 'hometown': 'Washington D.C.', 'nationality': 'American', 'about': 'Batista is Animal. 6x World Champion. Hollywood star.'},
+            {'name': 'Rey Mysterio', 'real_name': 'Óscar Gutiérrez', 'birth_date': '1974-12-11', 'hometown': 'San Diego, California', 'nationality': 'American', 'about': 'Rey Mysterio is 619. World Heavyweight Champion.'},
+            {'name': 'Eddie Guerrero', 'real_name': 'Eduardo Guerrero', 'birth_date': '1967-10-09', 'hometown': 'El Paso, Texas', 'nationality': 'American', 'about': 'Eddie Guerrero is Latino Heat. WWE Champion.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Misc Batch 16')
+        return updated
+
+    def enrich_misc_batch_17(self):
+        """Enrich miscellaneous wrestlers batch 17."""
+        self.stdout.write('--- Enriching Misc Batch 17 ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Jeff Hardy', 'real_name': 'Jeffrey Hardy', 'birth_date': '1977-08-31', 'hometown': 'Cameron, NC', 'nationality': 'American', 'about': 'Jeff Hardy is Charismatic Enigma. WWE Champion.'},
+            {'name': 'Matt Hardy', 'real_name': 'Matthew Hardy', 'birth_date': '1974-09-23', 'hometown': 'Cameron, NC', 'nationality': 'American', 'about': 'Matt Hardy is Broken. Hardy Boyz legend.'},
+            {'name': 'Chris Benoit', 'real_name': 'Christopher Benoit', 'birth_date': '1967-05-21', 'hometown': 'Montreal, Quebec', 'nationality': 'Canadian', 'about': 'Chris Benoit was World Heavyweight Champion. Technical master.'},
+            {'name': 'William Regal', 'real_name': 'Darren Matthews', 'birth_date': '1968-05-10', 'hometown': 'Blackpool, England', 'nationality': 'British', 'about': 'William Regal is BCC manager. British royalty gimmick.'},
+            {'name': 'Raven', 'real_name': 'Scott Levy', 'birth_date': '1964-09-08', 'hometown': 'Philadelphia, PA', 'nationality': 'American', 'about': 'Raven is Quote the Raven. ECW Champion.'},
+            {'name': 'RVD', 'real_name': 'Robert Szatkowski', 'birth_date': '1970-12-18', 'hometown': 'Battle Creek, Michigan', 'nationality': 'American', 'about': 'Rob Van Dam is Mr. Monday Night. WWE Champion.'},
+            {'name': 'Rob Van Dam', 'real_name': 'Robert Szatkowski', 'birth_date': '1970-12-18', 'hometown': 'Battle Creek, Michigan', 'nationality': 'American', 'about': 'Rob Van Dam is Whole Dam Show. ECW legend.'},
+            {'name': 'Sabu', 'real_name': 'Terry Brunk', 'birth_date': '1964-12-12', 'hometown': 'Lansing, Michigan', 'nationality': 'American', 'about': 'Sabu is Homicidal Suicidal. ECW icon.'},
+            {'name': 'The Sandman', 'real_name': 'James Fullington', 'birth_date': '1963-06-11', 'hometown': 'Philadelphia, PA', 'nationality': 'American', 'about': 'The Sandman is ECW Champion. Singapore cane.'},
+            {'name': 'Tommy Dreamer', 'real_name': 'Thomas Laughlin', 'birth_date': '1971-02-14', 'hometown': 'Yonkers, NY', 'nationality': 'American', 'about': 'Tommy Dreamer is ECW icon. Innovator of Violence.'},
+            {'name': 'Taz', 'real_name': 'Peter Senerchia', 'birth_date': '1967-10-11', 'hometown': 'Brooklyn, NY', 'nationality': 'American', 'about': 'Taz is Human Suplex Machine. ECW Champion.'},
+            {'name': 'Jerry Lawler', 'real_name': 'Jerry Lawler', 'birth_date': '1949-11-29', 'hometown': 'Memphis, Tennessee', 'nationality': 'American', 'about': 'Jerry Lawler is The King. USWA legend.'},
+            {'name': 'Jimmy Hart', 'real_name': 'James Hart', 'birth_date': '1944-01-01', 'hometown': 'Jackson, Mississippi', 'nationality': 'American', 'about': 'Jimmy Hart is Mouth of the South. Manager legend.'},
+            {'name': 'Bobby Heenan', 'real_name': 'Raymond Heenan', 'birth_date': '1944-11-01', 'hometown': 'Chicago, Illinois', 'nationality': 'American', 'about': 'Bobby Heenan is Brain. Greatest manager ever.'},
+            {'name': 'Paul Bearer', 'real_name': 'William Moody', 'birth_date': '1954-04-10', 'hometown': 'Mobile, Alabama', 'nationality': 'American', 'about': 'Paul Bearer is Undertaker\'s manager. Oh yes!'},
+            {'name': 'Jim Cornette', 'real_name': 'James Cornette', 'birth_date': '1961-09-17', 'hometown': 'Louisville, Kentucky', 'nationality': 'American', 'about': 'Jim Cornette is Midnight Express manager. Tennis racket.'},
+            {'name': 'Paul Heyman', 'real_name': 'Paul Heyman', 'birth_date': '1965-09-11', 'hometown': 'Bronx, NY', 'nationality': 'American', 'about': 'Paul Heyman is ECW founder. Advocate.'},
+            {'name': 'Vince McMahon', 'real_name': 'Vincent McMahon', 'birth_date': '1945-08-24', 'hometown': 'Pinehurst, NC', 'nationality': 'American', 'about': 'Vince McMahon is WWE Chairman. Mr. McMahon.'},
+            {'name': 'Shane McMahon', 'real_name': 'Shane McMahon', 'birth_date': '1970-01-15', 'hometown': 'Gaithersburg, Maryland', 'nationality': 'American', 'about': 'Shane McMahon is Shane O\'Mac. Coast to Coast.'},
+            {'name': 'Stephanie McMahon', 'real_name': 'Stephanie McMahon', 'birth_date': '1976-09-24', 'hometown': 'Hartford, Connecticut', 'nationality': 'American', 'about': 'Stephanie McMahon is Billion Dollar Princess. Authority.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Misc Batch 17')
         return updated

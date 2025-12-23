@@ -48,18 +48,15 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'\n=== ENRICHMENT COMPLETE ==='))
         self.stdout.write(f'Total events updated: {total_updated}')
 
-    def get_or_create_venue(self, name, city=None, state=None, country=None, capacity=None, about=None):
+    def get_or_create_venue(self, name, location=None, capacity=None):
         """Get or create a venue."""
         venue = Venue.objects.filter(name__iexact=name).first()
         if not venue:
             venue = Venue.objects.create(
                 name=name,
                 slug=slugify(name),
-                city=city or '',
-                state=state or '',
-                country=country or 'USA',
-                capacity=capacity,
-                about=about or f'{name} is a venue that has hosted professional wrestling events.'
+                location=location or '',
+                capacity=capacity
             )
             self.stdout.write(f'  Created venue: {name}')
         return venue
@@ -71,50 +68,50 @@ class Command(BaseCommand):
 
         venues_data = [
             # WrestleMania Venues
-            {'name': 'Madison Square Garden', 'city': 'New York City', 'state': 'New York', 'country': 'USA', 'capacity': 20789, 'about': 'Madison Square Garden is the world\'s most famous arena. The mecca of wrestling.'},
-            {'name': 'Pontiac Silverdome', 'city': 'Pontiac', 'state': 'Michigan', 'country': 'USA', 'capacity': 93173, 'about': 'Pontiac Silverdome hosted WrestleMania III with 93,173 fans.'},
-            {'name': 'Trump Plaza', 'city': 'Atlantic City', 'state': 'New Jersey', 'country': 'USA', 'capacity': 18000, 'about': 'Trump Plaza hosted WrestleMania IV and V.'},
-            {'name': 'SkyDome', 'city': 'Toronto', 'state': 'Ontario', 'country': 'Canada', 'capacity': 67000, 'about': 'SkyDome (Rogers Centre) hosted WrestleMania VI and X8.'},
-            {'name': 'Los Angeles Memorial Sports Arena', 'city': 'Los Angeles', 'state': 'California', 'country': 'USA', 'capacity': 16161, 'about': 'LA Sports Arena hosted WrestleMania VII.'},
-            {'name': 'Hoosier Dome', 'city': 'Indianapolis', 'state': 'Indiana', 'country': 'USA', 'capacity': 62418, 'about': 'Hoosier Dome hosted WrestleMania VIII.'},
-            {'name': 'Caesars Palace', 'city': 'Las Vegas', 'state': 'Nevada', 'country': 'USA', 'capacity': 16891, 'about': 'Caesars Palace outdoor venue hosted WrestleMania IX.'},
-            {'name': 'Hartford Civic Center', 'city': 'Hartford', 'state': 'Connecticut', 'country': 'USA', 'capacity': 16294, 'about': 'Hartford Civic Center hosted WrestleMania XI.'},
-            {'name': 'Arrowhead Pond', 'city': 'Anaheim', 'state': 'California', 'country': 'USA', 'capacity': 18336, 'about': 'Arrowhead Pond (Honda Center) hosted WrestleMania XII.'},
-            {'name': 'Rosemont Horizon', 'city': 'Rosemont', 'state': 'Illinois', 'country': 'USA', 'capacity': 18500, 'about': 'Rosemont Horizon (Allstate Arena) hosted WrestleMania 13.'},
-            {'name': 'FleetCenter', 'city': 'Boston', 'state': 'Massachusetts', 'country': 'USA', 'capacity': 19580, 'about': 'FleetCenter (TD Garden) hosted WrestleMania 14.'},
-            {'name': 'First Union Center', 'city': 'Philadelphia', 'state': 'Pennsylvania', 'country': 'USA', 'capacity': 21600, 'about': 'First Union Center (Wells Fargo) hosted WrestleMania XV.'},
-            {'name': 'Arrowhead Pond of Anaheim', 'city': 'Anaheim', 'state': 'California', 'country': 'USA', 'capacity': 18336, 'about': 'Arrowhead Pond hosted WrestleMania 2000.'},
-            {'name': 'Reliant Astrodome', 'city': 'Houston', 'state': 'Texas', 'country': 'USA', 'capacity': 67925, 'about': 'Reliant Astrodome hosted WrestleMania X-Seven.'},
-            {'name': 'Rogers Centre', 'city': 'Toronto', 'state': 'Ontario', 'country': 'Canada', 'capacity': 67000, 'about': 'Rogers Centre (formerly SkyDome) hosted WrestleMania X8.'},
-            {'name': 'Safeco Field', 'city': 'Seattle', 'state': 'Washington', 'country': 'USA', 'capacity': 54097, 'about': 'Safeco Field hosted WrestleMania XIX.'},
-            {'name': 'Staples Center', 'city': 'Los Angeles', 'state': 'California', 'country': 'USA', 'capacity': 21000, 'about': 'Staples Center (Crypto.com Arena) hosted WrestleMania 21.'},
-            {'name': 'Allstate Arena', 'city': 'Rosemont', 'state': 'Illinois', 'country': 'USA', 'capacity': 18500, 'about': 'Allstate Arena hosted WrestleMania 22.'},
-            {'name': 'Ford Field', 'city': 'Detroit', 'state': 'Michigan', 'country': 'USA', 'capacity': 80311, 'about': 'Ford Field hosted WrestleMania 23.'},
-            {'name': 'Citrus Bowl', 'city': 'Orlando', 'state': 'Florida', 'country': 'USA', 'capacity': 74916, 'about': 'Citrus Bowl hosted WrestleMania XXIV.'},
-            {'name': 'Reliant Stadium', 'city': 'Houston', 'state': 'Texas', 'country': 'USA', 'capacity': 72220, 'about': 'Reliant Stadium (NRG Stadium) hosted WrestleMania XXV.'},
-            {'name': 'University of Phoenix Stadium', 'city': 'Glendale', 'state': 'Arizona', 'country': 'USA', 'capacity': 72800, 'about': 'University of Phoenix Stadium hosted WrestleMania XXVI.'},
-            {'name': 'Georgia Dome', 'city': 'Atlanta', 'state': 'Georgia', 'country': 'USA', 'capacity': 71228, 'about': 'Georgia Dome hosted WrestleMania XXVII.'},
-            {'name': 'Sun Life Stadium', 'city': 'Miami Gardens', 'state': 'Florida', 'country': 'USA', 'capacity': 75540, 'about': 'Sun Life Stadium hosted WrestleMania XXVIII.'},
-            {'name': 'MetLife Stadium', 'city': 'East Rutherford', 'state': 'New Jersey', 'country': 'USA', 'capacity': 82500, 'about': 'MetLife Stadium hosted WrestleMania 29 and 35.'},
-            {'name': 'Mercedes-Benz Superdome', 'city': 'New Orleans', 'state': 'Louisiana', 'country': 'USA', 'capacity': 73208, 'about': 'Mercedes-Benz Superdome hosted WrestleMania XXX and 34.'},
-            {'name': 'Levi\'s Stadium', 'city': 'Santa Clara', 'state': 'California', 'country': 'USA', 'capacity': 75000, 'about': 'Levi\'s Stadium hosted WrestleMania 31.'},
-            {'name': 'AT&T Stadium', 'city': 'Arlington', 'state': 'Texas', 'country': 'USA', 'capacity': 100000, 'about': 'AT&T Stadium hosted WrestleMania 32 and 38.'},
-            {'name': 'Camping World Stadium', 'city': 'Orlando', 'state': 'Florida', 'country': 'USA', 'capacity': 65000, 'about': 'Camping World Stadium hosted WrestleMania 33.'},
-            {'name': 'Raymond James Stadium', 'city': 'Tampa', 'state': 'Florida', 'country': 'USA', 'capacity': 75000, 'about': 'Raymond James Stadium hosted WrestleMania 36 and 37.'},
-            {'name': 'SoFi Stadium', 'city': 'Inglewood', 'state': 'California', 'country': 'USA', 'capacity': 100240, 'about': 'SoFi Stadium hosted WrestleMania 39.'},
-            {'name': 'Lincoln Financial Field', 'city': 'Philadelphia', 'state': 'Pennsylvania', 'country': 'USA', 'capacity': 69596, 'about': 'Lincoln Financial Field hosted WrestleMania 40.'},
-            {'name': 'Allegiant Stadium', 'city': 'Las Vegas', 'state': 'Nevada', 'country': 'USA', 'capacity': 71835, 'about': 'Allegiant Stadium will host WrestleMania 41.'},
+            {'name': 'Madison Square Garden', 'location': 'New York City, New York', 'capacity': 20789},
+            {'name': 'Pontiac Silverdome', 'location': 'Pontiac, Michigan', 'capacity': 93173},
+            {'name': 'Trump Plaza', 'location': 'Atlantic City, New Jersey', 'capacity': 18000},
+            {'name': 'SkyDome', 'location': 'Toronto, Ontario, Canada', 'capacity': 67000},
+            {'name': 'Los Angeles Memorial Sports Arena', 'location': 'Los Angeles, California', 'capacity': 16161},
+            {'name': 'Hoosier Dome', 'location': 'Indianapolis, Indiana', 'capacity': 62418},
+            {'name': 'Caesars Palace', 'location': 'Las Vegas, Nevada', 'capacity': 16891},
+            {'name': 'Hartford Civic Center', 'location': 'Hartford, Connecticut', 'capacity': 16294},
+            {'name': 'Arrowhead Pond', 'location': 'Anaheim, California', 'capacity': 18336},
+            {'name': 'Rosemont Horizon', 'location': 'Rosemont, Illinois', 'capacity': 18500},
+            {'name': 'FleetCenter', 'location': 'Boston, Massachusetts', 'capacity': 19580},
+            {'name': 'First Union Center', 'location': 'Philadelphia, Pennsylvania', 'capacity': 21600},
+            {'name': 'Arrowhead Pond of Anaheim', 'location': 'Anaheim, California', 'capacity': 18336},
+            {'name': 'Reliant Astrodome', 'location': 'Houston, Texas', 'capacity': 67925},
+            {'name': 'Rogers Centre', 'location': 'Toronto, Ontario, Canada', 'capacity': 67000},
+            {'name': 'Safeco Field', 'location': 'Seattle, Washington', 'capacity': 54097},
+            {'name': 'Staples Center', 'location': 'Los Angeles, California', 'capacity': 21000},
+            {'name': 'Allstate Arena', 'location': 'Rosemont, Illinois', 'capacity': 18500},
+            {'name': 'Ford Field', 'location': 'Detroit, Michigan', 'capacity': 80311},
+            {'name': 'Citrus Bowl', 'location': 'Orlando, Florida', 'capacity': 74916},
+            {'name': 'Reliant Stadium', 'location': 'Houston, Texas', 'capacity': 72220},
+            {'name': 'University of Phoenix Stadium', 'location': 'Glendale, Arizona', 'capacity': 72800},
+            {'name': 'Georgia Dome', 'location': 'Atlanta, Georgia', 'capacity': 71228},
+            {'name': 'Sun Life Stadium', 'location': 'Miami Gardens, Florida', 'capacity': 75540},
+            {'name': 'MetLife Stadium', 'location': 'East Rutherford, New Jersey', 'capacity': 82500},
+            {'name': 'Mercedes-Benz Superdome', 'location': 'New Orleans, Louisiana', 'capacity': 73208},
+            {'name': 'Levi\'s Stadium', 'location': 'Santa Clara, California', 'capacity': 75000},
+            {'name': 'AT&T Stadium', 'location': 'Arlington, Texas', 'capacity': 100000},
+            {'name': 'Camping World Stadium', 'location': 'Orlando, Florida', 'capacity': 65000},
+            {'name': 'Raymond James Stadium', 'location': 'Tampa, Florida', 'capacity': 75000},
+            {'name': 'SoFi Stadium', 'location': 'Inglewood, California', 'capacity': 100240},
+            {'name': 'Lincoln Financial Field', 'location': 'Philadelphia, Pennsylvania', 'capacity': 69596},
+            {'name': 'Allegiant Stadium', 'location': 'Las Vegas, Nevada', 'capacity': 71835},
             # Royal Rumble Venues
-            {'name': 'Copps Coliseum', 'city': 'Hamilton', 'state': 'Ontario', 'country': 'Canada', 'capacity': 17383, 'about': 'Copps Coliseum hosted the first Royal Rumble.'},
-            {'name': 'The Summit', 'city': 'Houston', 'state': 'Texas', 'country': 'USA', 'capacity': 17000, 'about': 'The Summit hosted Royal Rumble 1989.'},
-            {'name': 'Orlando Arena', 'city': 'Orlando', 'state': 'Florida', 'country': 'USA', 'capacity': 17519, 'about': 'Orlando Arena (Amway Arena) hosted Royal Rumble 1990.'},
-            {'name': 'Miami Arena', 'city': 'Miami', 'state': 'Florida', 'country': 'USA', 'capacity': 16640, 'about': 'Miami Arena hosted Royal Rumble 1991.'},
-            {'name': 'Knickerbocker Arena', 'city': 'Albany', 'state': 'New York', 'country': 'USA', 'capacity': 17500, 'about': 'Knickerbocker Arena hosted Royal Rumble 1992.'},
-            {'name': 'ARCO Arena', 'city': 'Sacramento', 'state': 'California', 'country': 'USA', 'capacity': 17317, 'about': 'ARCO Arena hosted Royal Rumble 1993.'},
-            {'name': 'Providence Civic Center', 'city': 'Providence', 'state': 'Rhode Island', 'country': 'USA', 'capacity': 14700, 'about': 'Providence Civic Center hosted Royal Rumble 1994.'},
-            {'name': 'USF Sun Dome', 'city': 'Tampa', 'state': 'Florida', 'country': 'USA', 'capacity': 10411, 'about': 'USF Sun Dome hosted Royal Rumble 1995.'},
-            {'name': 'Selland Arena', 'city': 'Fresno', 'state': 'California', 'country': 'USA', 'capacity': 10232, 'about': 'Selland Arena hosted Royal Rumble 1996.'},
-            {'name': 'Alamodome', 'city': 'San Antonio', 'state': 'Texas', 'country': 'USA', 'capacity': 72000, 'about': 'Alamodome hosted Royal Rumble 1997 and 2017.'},
+            {'name': 'Copps Coliseum', 'location': 'Hamilton, Ontario, Canada', 'capacity': 17383},
+            {'name': 'The Summit', 'location': 'Houston, Texas', 'capacity': 17000},
+            {'name': 'Orlando Arena', 'location': 'Orlando, Florida', 'capacity': 17519},
+            {'name': 'Miami Arena', 'location': 'Miami, Florida', 'capacity': 16640},
+            {'name': 'Knickerbocker Arena', 'location': 'Albany, New York', 'capacity': 17500},
+            {'name': 'ARCO Arena', 'location': 'Sacramento, California', 'capacity': 17317},
+            {'name': 'Providence Civic Center', 'location': 'Providence, Rhode Island', 'capacity': 14700},
+            {'name': 'USF Sun Dome', 'location': 'Tampa, Florida', 'capacity': 10411},
+            {'name': 'Selland Arena', 'location': 'Fresno, California', 'capacity': 10232},
+            {'name': 'Alamodome', 'location': 'San Antonio, Texas', 'capacity': 72000},
         ]
 
         for vdata in venues_data:
@@ -124,7 +121,7 @@ class Command(BaseCommand):
                 venue = Venue.objects.create(name=name, slug=slugify(name), **vdata)
                 created += 1
                 self.stdout.write(f'  Created: {name}')
-            elif not venue.about or venue.about == '':
+            elif not venue.location or venue.location == '':
                 for field, value in vdata.items():
                     if value:
                         setattr(venue, field, value)

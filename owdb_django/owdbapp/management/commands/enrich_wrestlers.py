@@ -362,6 +362,10 @@ class Command(BaseCommand):
             total_updated += self.enrich_factions_batch_1()
         if batch == 0 or batch == 165:
             total_updated += self.enrich_factions_batch_2()
+        if batch == 0 or batch == 166:
+            total_updated += self.enrich_misc_entries_batch_1()
+        if batch == 0 or batch == 167:
+            total_updated += self.enrich_misc_entries_batch_2()
 
         self.stdout.write(self.style.SUCCESS(f'\n=== ENRICHMENT COMPLETE ==='))
         self.stdout.write(f'Total wrestlers updated: {total_updated}')
@@ -6151,4 +6155,85 @@ class Command(BaseCommand):
             name = data.pop('name')
             updated += self.update_wrestler(name, **data)
         self.stdout.write(f'  Updated {updated} Factions Batch 2')
+        return updated
+
+    def enrich_misc_entries_batch_1(self):
+        """Enrich misc match-type and roster entries batch 1."""
+        self.stdout.write('--- Enriching Misc Entries Batch 1 ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'AEW Roster', 'about': 'AEW Roster refers to the active All Elite Wrestling talent.'},
+            {'name': 'All Japan Roster', 'about': 'All Japan Roster refers to AJPW active talent.'},
+            {'name': 'NJPW Roster', 'about': 'NJPW Roster refers to New Japan Pro-Wrestling talent.'},
+            {'name': 'NOAH Roster', 'about': 'NOAH Roster refers to Pro Wrestling NOAH talent.'},
+            {'name': 'Andre the Giant Memorial Battle Royal participants', 'about': 'WrestleMania battle royal participants competing for Andre trophy.'},
+            {'name': 'Casino Battle Royal participants', 'about': 'AEW Casino Battle Royal participants for title shot.'},
+            {'name': 'Cruiserweight Battle Royal participants', 'about': 'Cruiserweight Battle Royal for 205 Live title opportunities.'},
+            {'name': 'Gimmick Battle Royal participants', 'about': 'WrestleMania X-Seven battle royal of classic gimmicks.'},
+            {'name': 'DQ', 'about': 'DQ represents match result by disqualification.'},
+            {'name': 'Draw', 'about': 'Draw represents match result ending in no winner.'},
+            {'name': 'No Contest', 'about': 'No Contest represents match result thrown out.'},
+            {'name': 'The Ultimate Solution', 'about': 'The Ultimate Solution was a wrestling storyline concept.'},
+            {'name': 'José Aarón Alvarado Nieves', 'about': 'José Aarón Alvarado Nieves is luchador Sin Cara\'s real name.'},
+            {'name': 'Adam Cole - AEW World Championship', 'about': 'Adam Cole challenged for AEW World Championship.'},
+            {'name': 'Asuka - WWE Raw Women\'s Championship', 'about': 'Asuka held WWE Raw Women\'s Championship.'},
+            {'name': 'Becky Lynch - WWE Women\'s World Championship', 'about': 'Becky Lynch is former WWE Women\'s Champion.'},
+            {'name': 'Britt Baker - AEW TBS Championship', 'about': 'Britt Baker challenged for AEW TBS Championship.'},
+            {'name': 'Bryan Danielson - AEW International Championship', 'about': 'Bryan Danielson held AEW International Championship.'},
+            {'name': 'Bryan Danielson - AEW World Championship', 'about': 'Bryan Danielson challenged for AEW World title.'},
+            {'name': 'Cody Rhodes - WWE Undisputed Championship', 'about': 'Cody Rhodes is WWE Undisputed Champion.'},
+            {'name': 'Damian Priest - WWE World Heavyweight Championship', 'about': 'Damian Priest held WWE World Heavyweight title.'},
+            {'name': 'Darby Allin - AEW TNT Championship', 'about': 'Darby Allin is former AEW TNT Champion.'},
+            {'name': 'Drew McIntyre - WWE Intercontinental Championship', 'about': 'Drew McIntyre held WWE Intercontinental title.'},
+            {'name': 'Eddie Kingston - ROH World Championship', 'about': 'Eddie Kingston held ROH World Championship.'},
+            {'name': 'Finn Balor - WWE World Heavyweight Championship', 'about': 'Finn Balor challenged for WWE World Heavyweight title.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Misc Entries Batch 1')
+        return updated
+
+    def enrich_misc_entries_batch_2(self):
+        """Enrich misc match-type and roster entries batch 2."""
+        self.stdout.write('--- Enriching Misc Entries Batch 2 ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Iyo Sky - WWE Women\'s Championship', 'about': 'Iyo Sky held WWE Women\'s Championship.'},
+            {'name': 'Jay White - IWGP World Heavyweight Championship', 'about': 'Jay White held IWGP World Heavyweight Championship.'},
+            {'name': 'Jey Uso - WWE Undisputed Championship', 'about': 'Jey Uso challenged for WWE Undisputed Championship.'},
+            {'name': 'John Cena - WWE United States Championship', 'about': 'John Cena held WWE United States Championship.'},
+            {'name': 'Kevin Owens - WWE Undisputed Championship', 'about': 'Kevin Owens challenged for WWE Undisputed title.'},
+            {'name': 'Kevin Owens - WWE Undisputed Tag Team Championship', 'about': 'Kevin Owens held WWE Undisputed Tag Team title.'},
+            {'name': 'LA Knight - WWE United States Championship', 'about': 'LA Knight holds WWE United States Championship.'},
+            {'name': 'Liv Morgan - WWE Women\'s World Championship', 'about': 'Liv Morgan held WWE Women\'s World title.'},
+            {'name': 'MJF - AEW International Championship', 'about': 'MJF held AEW International Championship.'},
+            {'name': 'Nia Jax - WWE Women\'s Championship', 'about': 'Nia Jax held WWE Women\'s Championship.'},
+            {'name': 'Rhea Ripley - WWE SmackDown Women\'s Championship', 'about': 'Rhea Ripley held WWE SmackDown Women\'s title.'},
+            {'name': 'Rhea Ripley - WWE Women\'s World Championship', 'about': 'Rhea Ripley held WWE Women\'s World title.'},
+            {'name': 'Roman Reigns - WWE Championship', 'about': 'Roman Reigns held WWE Championship.'},
+            {'name': 'Roman Reigns - WWE Undisputed Championship', 'about': 'Roman Reigns held WWE Undisputed Championship 1316 days.'},
+            {'name': 'Sami Zayn - WWE Intercontinental Championship', 'about': 'Sami Zayn held WWE Intercontinental Championship.'},
+            {'name': 'Samoa Joe - AEW World Championship', 'about': 'Samoa Joe held AEW World Championship.'},
+            {'name': 'Seth Rollins - WWE World Heavyweight Championship', 'about': 'Seth Rollins held WWE World Heavyweight title.'},
+            {'name': 'Shota Umino - IWGP World Heavyweight Championship', 'about': 'Shota Umino challenged for IWGP World title.'},
+            {'name': 'Solo Sikoa - WWE Undisputed Championship', 'about': 'Solo Sikoa challenged for WWE Undisputed title.'},
+            {'name': 'Tetsuya Naito - IWGP World Heavyweight Championship', 'about': 'Tetsuya Naito held IWGP World Heavyweight title.'},
+            {'name': 'Thunder Rosa - AEW Women\'s Championship', 'about': 'Thunder Rosa held AEW Women\'s Championship.'},
+            {'name': 'Toni Storm - AEW Women\'s Championship', 'about': 'Toni Storm holds AEW Women\'s Championship.'},
+            {'name': 'Chance - WWE Women\'s Tag Team Championship', 'about': 'Chance challenged for WWE Women\'s Tag Team title.'},
+            {'name': 'The Young Bucks - AEW Tag Team Championship', 'about': 'Young Bucks held AEW Tag Team Championship multiple times.'},
+            {'name': 'Eights', 'about': 'Eights was part of Aces and Eights faction.'},
+            {'name': 'R', 'about': 'R is truncated data entry in system.'},
+            {'name': 'The S', 'about': 'The S is truncated data entry in system.'},
+            {'name': 'er', 'about': 'er is truncated data entry in system.'},
+            {'name': 'ido', 'about': 'ido is truncated data entry in system.'},
+            {'name': 'man', 'about': 'man is truncated data entry in system.'},
+            {'name': 'y Orton', 'about': 'y Orton is truncated entry for Randy Orton.'},
+            {'name': 'y Savage', 'about': 'y Savage is truncated entry for Randy Savage.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Misc Entries Batch 2')
         return updated

@@ -118,7 +118,13 @@ class Command(BaseCommand):
 
     def update_title(self, name, **kwargs):
         """Update a championship with enriched data."""
-        title = Title.objects.filter(name__iexact=name).first()
+        from django.db.models import Q
+        # First try exact match, preferring unenriched titles
+        title = Title.objects.filter(name__iexact=name).filter(Q(about__isnull=True) | Q(about='')).first()
+        if not title:
+            title = Title.objects.filter(name__iexact=name).first()
+        if not title:
+            title = Title.objects.filter(name__icontains=name).filter(Q(about__isnull=True) | Q(about='')).first()
         if not title:
             title = Title.objects.filter(name__icontains=name).first()
         if title:

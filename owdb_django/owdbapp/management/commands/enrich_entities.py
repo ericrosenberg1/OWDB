@@ -49,6 +49,14 @@ class Command(BaseCommand):
             total_updated += self.enrich_promotions_batch_13()
             total_updated += self.enrich_promotions_batch_14()
             total_updated += self.enrich_promotions_batch_15()
+            total_updated += self.enrich_promotions_batch_16()
+            total_updated += self.enrich_promotions_batch_17()
+            total_updated += self.enrich_promotions_batch_18()
+            total_updated += self.enrich_promotions_batch_19()
+            total_updated += self.enrich_promotions_batch_20()
+            total_updated += self.enrich_promotions_batch_21()
+            total_updated += self.enrich_promotions_batch_22()
+            total_updated += self.enrich_promotions_batch_23()
         if entity_type in ['all', 'championships']:
             total_updated += self.enrich_championships()
             total_updated += self.enrich_championships_batch_2()
@@ -56,24 +64,34 @@ class Command(BaseCommand):
             total_updated += self.enrich_championships_batch_4()
             total_updated += self.enrich_championships_batch_5()
             total_updated += self.enrich_championships_batch_6()
+            total_updated += self.enrich_championships_batch_7()
+            total_updated += self.enrich_championships_batch_8()
+            total_updated += self.enrich_championships_batch_9()
+            total_updated += self.enrich_championships_batch_10()
+            total_updated += self.enrich_championships_batch_11()
+            total_updated += self.enrich_championships_batch_12()
         if entity_type in ['all', 'venues']:
             total_updated += self.enrich_venues()
         if entity_type in ['all', 'games']:
             total_updated += self.enrich_video_games()
             total_updated += self.enrich_video_games_batch_2()
             total_updated += self.enrich_video_games_batch_3()
+            total_updated += self.enrich_video_games_batch_4()
         if entity_type in ['all', 'podcasts']:
             total_updated += self.enrich_podcasts()
             total_updated += self.enrich_podcasts_batch_2()
             total_updated += self.enrich_podcasts_batch_3()
+            total_updated += self.enrich_podcasts_batch_4()
         if entity_type in ['all', 'books']:
             total_updated += self.enrich_books()
             total_updated += self.enrich_books_batch_2()
+            total_updated += self.enrich_books_batch_3()
         if entity_type in ['all', 'documentaries']:
             total_updated += self.enrich_documentaries()
         if entity_type in ['all', 'stables']:
             total_updated += self.enrich_stables()
             total_updated += self.enrich_stables_batch_2()
+            total_updated += self.enrich_stables_batch_3()
 
         self.stdout.write(self.style.SUCCESS(f'\n=== ENRICHMENT COMPLETE ==='))
         self.stdout.write(f'Total entities updated: {total_updated}')
@@ -1183,4 +1201,572 @@ class Command(BaseCommand):
             name = data.pop('name')
             updated += self.update_title(name, **data)
         self.stdout.write(f'  Updated {updated} championships batch 6')
+        return updated
+
+    def enrich_promotions_batch_16(self):
+        """Enrich wrestling promotions batch 16."""
+        self.stdout.write('--- Enriching Promotions Batch 16 ---')
+        updated = 0
+        promotions_data = [
+            {'name': '50th State Big Time Wrestling', 'about': '50th State Big Time Wrestling was a Hawaiian promotion.'},
+            {'name': 'Actwres girl\'Z', 'about': 'Actwres girl\'Z is a Japanese women\'s promotion. Joshi puroresu.'},
+            {'name': 'Africa Wrestling Alliance', 'about': 'Africa Wrestling Alliance promotes wrestling in Africa.'},
+            {'name': 'All Wrestling Organization', 'about': 'All Wrestling Organization was an indie promotion.'},
+            {'name': 'American Wrestling Association', 'about': 'AWA was Verne Gagne\'s legendary promotion. Minneapolis-based.'},
+            {'name': 'Apache Pro-Wrestling Army', 'about': 'Apache Pro-Wrestling Army is a Japanese promotion.'},
+            {'name': 'Asia-Pacific Federation of Wrestling', 'about': 'Asia-Pacific Federation governed wrestling in the region.'},
+            {'name': 'Assault Championship Wrestling', 'about': 'Assault Championship Wrestling was an indie promotion.'},
+            {'name': 'Atlantic Athletic Commission', 'about': 'Atlantic Athletic Commission was a regional promotion.'},
+            {'name': 'Australian wrestling', 'about': 'Australian wrestling has a long history dating back decades.'},
+            {'name': 'BSE Pro', 'about': 'BSE Pro is an indie wrestling promotion.'},
+            {'name': 'Big Time Wrestling (Boston)', 'about': 'Big Time Wrestling Boston was a New England territory.'},
+            {'name': 'Big Time Wrestling (Detroit)', 'about': 'Big Time Wrestling Detroit was The Sheik\'s territory.'},
+            {'name': 'Big Time Wrestling (San Francisco)', 'about': 'Big Time Wrestling SF was a West Coast territory.'},
+            {'name': 'Brazilian Wrestling Federation', 'about': 'Brazilian Wrestling Federation promotes wrestling in Brazil.'},
+            {'name': 'British Kingdom Pro-Wrestling', 'about': 'British Kingdom Pro-Wrestling is a UK indie promotion.'},
+            {'name': 'Century Wrestling Alliance', 'about': 'Century Wrestling Alliance was an indie promotion.'},
+            {'name': 'ChickFight', 'about': 'ChickFight was a women\'s wrestling tournament series.'},
+            {'name': 'CyberFight', 'about': 'CyberFight is the parent company of DDT, NOAH, and TJPW.'},
+            {'name': 'Diamond Ring (professional wrestling)', 'about': 'Diamond Ring was Katsuhiko Nakajima\'s promotion.'},
+        ]
+        for data in promotions_data:
+            name = data.pop('name')
+            updated += self.update_promotion(name, **data)
+        self.stdout.write(f'  Updated {updated} promotions batch 16')
+        return updated
+
+    def enrich_promotions_batch_17(self):
+        """Enrich wrestling promotions batch 17."""
+        self.stdout.write('--- Enriching Promotions Batch 17 ---')
+        updated = 0
+        promotions_data = [
+            {'name': 'Dominion Wrestling Union', 'about': 'Dominion Wrestling Union was a Canadian promotion.'},
+            {'name': 'Dradition', 'about': 'Dradition is Keiji Mutoh\'s Japanese promotion.'},
+            {'name': 'Extreme Rising', 'about': 'Extreme Rising was an attempted ECW reunion promotion.'},
+            {'name': 'Fighting of World Japan Pro Wrestling', 'about': 'FoW Japan was a short-lived Japanese promotion.'},
+            {'name': 'Fédération Française de Catch Professionnel', 'about': 'FFCP governs professional wrestling in France.'},
+            {'name': 'Global Professional Wrestling Alliance', 'about': 'GPWA was an alliance of indie promotions.'},
+            {'name': 'Grand Pro Wrestling', 'about': 'Grand Pro Wrestling was a Japanese promotion.'},
+            {'name': 'Great Canadian Wrestling', 'about': 'Great Canadian Wrestling was a Canadian indie promotion.'},
+            {'name': 'Heart of America Sports Attractions', 'about': 'Heart of America was a Midwestern territory.'},
+            {'name': 'High Impact Wrestling', 'about': 'High Impact Wrestling is a Canadian indie promotion.'},
+            {'name': 'Hustle (professional wrestling)', 'about': 'Hustle was a sports entertainment promotion in Japan.'},
+            {'name': 'I-Generation Superstars of Wrestling', 'about': 'I-Generation was a Florida indie promotion.'},
+            {'name': 'IWF Promotions', 'about': 'IWF Promotions was an indie wrestling company.'},
+            {'name': 'Incredibly Strange Wrestling', 'about': 'ISW combined wrestling with punk rock culture.'},
+            {'name': 'Independent Professional Wrestling Alliance', 'about': 'IPWA was an indie wrestling alliance.'},
+            {'name': 'Independent circuit', 'about': 'The indie circuit refers to non-major promotion wrestling.'},
+            {'name': 'International Pro Wrestling: United Kingdom', 'about': 'IPW:UK was a British indie promotion.'},
+            {'name': 'International World Class Championship Wrestling', 'about': 'IWCCW was an offshoot of WCCW.'},
+            {'name': 'International Wrestling Alliance', 'about': 'IWA was an international wrestling alliance.'},
+            {'name': 'International Wrestling Association of Japan', 'about': 'IWA Japan was a deathmatch promotion.'},
+        ]
+        for data in promotions_data:
+            name = data.pop('name')
+            updated += self.update_promotion(name, **data)
+        self.stdout.write(f'  Updated {updated} promotions batch 17')
+        return updated
+
+    def enrich_promotions_batch_18(self):
+        """Enrich wrestling promotions batch 18."""
+        self.stdout.write('--- Enriching Promotions Batch 18 ---')
+        updated = 0
+        promotions_data = [
+            {'name': 'Japan Pro-Wrestling', 'about': 'Japan Pro-Wrestling was an early Japanese promotion.'},
+            {'name': 'Kingdom Professional Wrestling', 'about': 'Kingdom Pro Wrestling was an indie promotion.'},
+            {'name': 'Kyushu Pro-Wrestling', 'about': 'Kyushu Pro-Wrestling is based in southern Japan.'},
+            {'name': 'Ladies Major League Wrestling', 'about': 'Ladies Major League was a women\'s wrestling promotion.'},
+            {'name': 'Ladies Professional Wrestling Association', 'about': 'LPWA was an 80s-90s women\'s promotion.'},
+            {'name': 'Lucha Britannia', 'about': 'Lucha Britannia was a UK lucha libre promotion.'},
+            {'name': 'Lucha Libre AAA Worldwide', 'about': 'AAA is Mexico\'s largest lucha libre promotion.'},
+            {'name': 'Lucha Libre Elite', 'about': 'Lucha Libre Elite was an AAA spinoff promotion.'},
+            {'name': 'Lucha Libre Femenil', 'about': 'Lucha Libre Femenil is women\'s lucha libre wrestling.'},
+            {'name': 'Lucha Libre USA', 'about': 'Lucha Libre USA was MTV\'s lucha libre show.'},
+            {'name': 'Lutte Internationale', 'about': 'Lutte Internationale was a French Canadian promotion.'},
+            {'name': 'Manila Wrestling Federation', 'about': 'Manila Wrestling Federation is based in the Philippines.'},
+            {'name': 'Maple Leaf Pro Wrestling', 'about': 'Maple Leaf Pro Wrestling is a Canadian promotion.'},
+            {'name': 'Maximum Pro Wrestling', 'about': 'Maximum Pro Wrestling was an indie promotion.'},
+            {'name': 'Melbourne City Wrestling', 'about': 'Melbourne City Wrestling is an Australian promotion.'},
+            {'name': 'Memphis Wrestling', 'about': 'Memphis Wrestling was the legendary Lawler territory.'},
+            {'name': 'Metro Pro Wrestling', 'about': 'Metro Pro Wrestling is a Kansas City indie.'},
+            {'name': 'Mid-Eastern Wrestling Federation', 'about': 'MEWF was a Mid-Atlantic indie promotion.'},
+            {'name': 'NEO Japan Ladies Pro-Wrestling', 'about': 'NEO was a Japanese women\'s promotion from 2000s.'},
+            {'name': 'NOVA Pro Wrestling', 'about': 'NOVA Pro Wrestling is a Virginia indie promotion.'},
+        ]
+        for data in promotions_data:
+            name = data.pop('name')
+            updated += self.update_promotion(name, **data)
+        self.stdout.write(f'  Updated {updated} promotions batch 18')
+        return updated
+
+    def enrich_promotions_batch_19(self):
+        """Enrich wrestling promotions batch 19."""
+        self.stdout.write('--- Enriching Promotions Batch 19 ---')
+        updated = 0
+        promotions_data = [
+            {'name': 'NWA All-Star Wrestling', 'about': 'NWA All-Star was a Pacific Northwest territory.'},
+            {'name': 'NWA Hollywood Wrestling', 'about': 'NWA Hollywood was a California territory.'},
+            {'name': 'NWA Mid-America', 'about': 'NWA Mid-America was a Tennessee/Kentucky territory.'},
+            {'name': 'NWA San Francisco', 'about': 'NWA San Francisco was a Bay Area territory.'},
+            {'name': 'NWA Shockwave', 'about': 'NWA Shockwave is a modern NWA affiliate.'},
+            {'name': 'NWA Wildside', 'about': 'NWA Wildside was a Georgia indie promotion.'},
+            {'name': 'NXT', 'about': 'NXT is WWE\'s developmental brand. Triple H vision.'},
+            {'name': 'NXT UK (WWE brand)', 'about': 'NXT UK was WWE\'s British brand until 2022.'},
+            {'name': 'Nación Lucha Libre', 'about': 'Nación Lucha Libre is a Mexican promotion.'},
+            {'name': 'Naked Women\'s Wrestling League', 'about': 'NWWL was an adult wrestling promotion.'},
+            {'name': 'National Wrestling Association', 'about': 'NWA was the original alliance formed in 1948.'},
+            {'name': 'National Wrestling Conference', 'about': 'NWC was a regional wrestling conference.'},
+            {'name': 'National Wrestling Federation', 'about': 'NWF was a regional wrestling promotion.'},
+            {'name': 'New Generation Wrestling', 'about': 'New Generation Wrestling was an indie promotion.'},
+            {'name': 'Northern Championship Wrestling', 'about': 'Northern Championship Wrestling is a UK promotion.'},
+            {'name': 'Off the Ropes', 'about': 'Off the Ropes was an indie wrestling promotion.'},
+            {'name': 'On the Mat', 'about': 'On the Mat was a wrestling production.'},
+            {'name': 'One Pro Wrestling', 'about': 'One Pro Wrestling was a UK indie promotion.'},
+            {'name': 'Oriental Wrestling Entertainment', 'about': 'OWE is a Chinese wrestling promotion.'},
+            {'name': 'Pancrase', 'about': 'Pancrase is a Japanese MMA/shoot wrestling promotion.'},
+        ]
+        for data in promotions_data:
+            name = data.pop('name')
+            updated += self.update_promotion(name, **data)
+        self.stdout.write(f'  Updated {updated} promotions batch 19')
+        return updated
+
+    def enrich_promotions_batch_20(self):
+        """Enrich wrestling promotions batch 20."""
+        self.stdout.write('--- Enriching Promotions Batch 20 ---')
+        updated = 0
+        promotions_data = [
+            {'name': 'Perros del Mal (promotion)', 'about': 'Perros del Mal was a Mexican promotion. Hardcore style.'},
+            {'name': 'Philippine Wrestling Revolution', 'about': 'PWR is the top Philippine wrestling promotion.'},
+            {'name': 'Phoenix Championship Wrestling', 'about': 'Phoenix Championship Wrestling was an Arizona indie.'},
+            {'name': 'Powerful Women of Wrestling', 'about': 'POWW was a women\'s wrestling promotion.'},
+            {'name': 'Prairie Wrestling Alliance', 'about': 'Prairie Wrestling Alliance is a Canadian indie.'},
+            {'name': 'Pro Championship Wrestling', 'about': 'Pro Championship Wrestling was an indie promotion.'},
+            {'name': 'Pro Wrestling Elite', 'about': 'Pro Wrestling Elite was an indie promotion.'},
+            {'name': 'Pro Wrestling Federation', 'about': 'Pro Wrestling Federation was a regional promotion.'},
+            {'name': 'Pro Wrestling Freedoms', 'about': 'Pro Wrestling Freedoms is a Japanese deathmatch promotion.'},
+            {'name': 'Pro Wrestling Fujiwara Gumi', 'about': 'PWFG was a shoot-style promotion. Yoshiaki Fujiwara.'},
+            {'name': 'Pro Wrestling Land\'s End', 'about': 'Pro Wrestling Land\'s End was a Japanese promotion.'},
+            {'name': 'Pro Wrestling Noah', 'about': 'Pro Wrestling NOAH was founded by Mitsuharu Misawa in 2000.'},
+            {'name': 'Pro Wrestling Pride', 'about': 'Pro Wrestling Pride was an indie promotion.'},
+            {'name': 'Pro Wrestling USA', 'about': 'Pro Wrestling USA was an 80s alliance of AWA, NWA, WCCW.'},
+            {'name': 'Pro-Pain Pro Wrestling', 'about': 'Pro-Pain Pro Wrestling was a hardcore indie.'},
+            {'name': 'Pro-Wrestling Basara', 'about': 'Pro-Wrestling Basara is a Japanese indie promotion.'},
+            {'name': 'Pro-Wrestling Shi-En', 'about': 'Pro-Wrestling Shi-En is a Japanese promotion.'},
+            {'name': 'Pro-Wrestling: EVE', 'about': 'EVE is a British women\'s wrestling promotion.'},
+            {'name': 'Professional Wrestling Just Tap Out', 'about': 'JTO is a Japanese promotion founded in 2018.'},
+            {'name': 'Promo Azteca', 'about': 'Promo Azteca is a Mexican lucha libre promotion.'},
+        ]
+        for data in promotions_data:
+            name = data.pop('name')
+            updated += self.update_promotion(name, **data)
+        self.stdout.write(f'  Updated {updated} promotions batch 20')
+        return updated
+
+    def enrich_promotions_batch_21(self):
+        """Enrich wrestling promotions batch 21."""
+        self.stdout.write('--- Enriching Promotions Batch 21 ---')
+        updated = 0
+        promotions_data = [
+            {'name': 'Resistance Pro Wrestling', 'about': 'Resistance Pro was a Chicago indie promotion.'},
+            {'name': 'Ring Ka King', 'about': 'Ring Ka King was TNA\'s Indian wrestling show.'},
+            {'name': 'Ring Warriors', 'about': 'Ring Warriors is a Florida-based wrestling promotion.'},
+            {'name': 'Ring of Honor Wrestling', 'about': 'ROH is now owned by Tony Khan and AEW.'},
+            {'name': 'Riot City Wrestling', 'about': 'Riot City Wrestling is an Australian promotion.'},
+            {'name': 'Shimmer Women Athletes', 'about': 'Shimmer is a women\'s wrestling promotion. Dave Prazak.'},
+            {'name': 'Singapore Pro Wrestling', 'about': 'Singapore Pro Wrestling promotes in Southeast Asia.'},
+            {'name': 'Smash', 'about': 'Smash was a Japanese promotion from 2010-2012.'},
+            {'name': 'Soft Ground Wrestling', 'about': 'Soft Ground Wrestling was an indie promotion.'},
+            {'name': 'South Atlantic Pro Wrestling', 'about': 'South Atlantic Pro Wrestling was a regional promotion.'},
+            {'name': 'Southern Championship Wrestling (Georgia)', 'about': 'SCW Georgia was a Southern territory.'},
+            {'name': 'St. Louis Wrestling Club', 'about': 'St. Louis Wrestling Club was Sam Muchnick\'s legendary territory.'},
+            {'name': 'Strong Style Pro-Wrestling', 'about': 'Strong Style Pro-Wrestling was a Japanese promotion.'},
+            {'name': 'Super World of Sports', 'about': 'SWS was a short-lived Japanese promotion in 1990s.'},
+            {'name': 'Superstars of Wrestling (Canadian TV series)', 'about': 'Superstars of Wrestling was a Canadian wrestling show.'},
+            {'name': 'Tenryu Project', 'about': 'Tenryu Project was Genichiro Tenryu\'s promotion.'},
+            {'name': 'The Crash Lucha Libre', 'about': 'The Crash is a Tijuana-based lucha libre promotion.'},
+            {'name': 'Tokyo Pro Wrestling', 'about': 'Tokyo Pro Wrestling was an early Japanese promotion.'},
+            {'name': 'Toryumon (Último Dragón)', 'about': 'Toryumon was Ultimo Dragon\'s developmental system.'},
+            {'name': 'Total Nonstop Action Wrestling', 'about': 'TNA Wrestling was founded in 2002. Jeff Jarrett.'},
+        ]
+        for data in promotions_data:
+            name = data.pop('name')
+            updated += self.update_promotion(name, **data)
+        self.stdout.write(f'  Updated {updated} promotions batch 21')
+        return updated
+
+    def enrich_promotions_batch_22(self):
+        """Enrich wrestling promotions batch 22."""
+        self.stdout.write('--- Enriching Promotions Batch 22 ---')
+        updated = 0
+        promotions_data = [
+            {'name': 'Turnbuckle Championship Wrestling', 'about': 'TCW was an indie wrestling promotion.'},
+            {'name': 'U-Kei (martial arts)', 'about': 'U-Kei was a martial arts organization.'},
+            {'name': 'UWF International', 'about': 'UWFI was a shoot-style wrestling promotion.'},
+            {'name': 'United Japan Pro-Wrestling', 'about': 'United Japan Pro-Wrestling was formed in 1953.'},
+            {'name': 'United States Wrestling Association', 'about': 'USWA was the Memphis/Dallas merger. Jerry Lawler.'},
+            {'name': 'United Wrestling Network', 'about': 'UWN is a modern indie wrestling network.'},
+            {'name': 'Universal Lucha Libre', 'about': 'Universal Lucha Libre is a Mexican promotion.'},
+            {'name': 'Universal Wrestling Corporation', 'about': 'UWC was a wrestling promotion.'},
+            {'name': 'Universal Wrestling Federation (Herb Abrams)', 'about': 'UWF was Herb Abrams\' ill-fated promotion.'},
+            {'name': 'Universal Wrestling Federation (Japan)', 'about': 'UWF Japan was a shoot-style pioneer.'},
+            {'name': 'Verband der Berufsringer', 'about': 'Verband der Berufsringer is a German wrestling association.'},
+            {'name': 'WAR (wrestling promotion)', 'about': 'WAR was Tenryu\'s promotion after leaving AJPW.'},
+            {'name': 'WWNLive', 'about': 'WWNLive was Gabe Sapolsky\'s streaming platform.'},
+            {'name': 'World Association of Wrestling', 'about': 'WAW is a British promotion. Knight family.'},
+            {'name': 'World Championship Wrestling (Australia)', 'about': 'WCW Australia was an Australian promotion.'},
+            {'name': 'World Series Wrestling', 'about': 'World Series Wrestling was an Australian show.'},
+            {'name': 'World Women\'s Wrestling', 'about': 'World Women\'s Wrestling was a women\'s promotion.'},
+            {'name': 'World Wrestling Alliance (Massachusetts)', 'about': 'WWA Massachusetts was a New England indie.'},
+            {'name': 'World Wrestling Association', 'about': 'WWA was a Midwest territory. Indianapolis.'},
+            {'name': 'World Wrestling Association (Indianapolis)', 'about': 'WWA Indianapolis was Dick the Bruiser\'s territory.'},
+        ]
+        for data in promotions_data:
+            name = data.pop('name')
+            updated += self.update_promotion(name, **data)
+        self.stdout.write(f'  Updated {updated} promotions batch 22')
+        return updated
+
+    def enrich_promotions_batch_23(self):
+        """Enrich wrestling promotions batch 23."""
+        self.stdout.write('--- Enriching Promotions Batch 23 ---')
+        updated = 0
+        promotions_data = [
+            {'name': 'World Wrestling Network', 'about': 'World Wrestling Network was a wrestling organization.'},
+            {'name': 'WrestleReunion', 'about': 'WrestleReunion is a wrestling fan convention.'},
+            {'name': 'Wrestlicious', 'about': 'Wrestlicious was a women\'s wrestling show with comedy.'},
+            {'name': 'Wrestling New Classic', 'about': 'WNC was a Japanese women\'s promotion.'},
+            {'name': 'Wrestling Retribution Project', 'about': 'WRP was an indie wrestling project.'},
+            {'name': 'Wrestling Superstars Live', 'about': 'WSL was a touring wrestling show.'},
+            {'name': 'Wrestling of Darkness 666', 'about': 'Wrestling of Darkness 666 is a horror-themed promotion.'},
+            {'name': 'XWA', 'about': 'XWA is a wrestling promotion.'},
+            {'name': 'Xcitement Wrestling Federation', 'about': 'XWF was an early 2000s promotion. Jimmy Hart.'},
+            {'name': 'Xtreme Latin American Wrestling', 'about': 'XLAW is a Latin American wrestling promotion.'},
+        ]
+        for data in promotions_data:
+            name = data.pop('name')
+            updated += self.update_promotion(name, **data)
+        self.stdout.write(f'  Updated {updated} promotions batch 23')
+        return updated
+
+    def enrich_championships_batch_7(self):
+        """Enrich wrestling championships batch 7."""
+        self.stdout.write('--- Enriching Championships Batch 7 ---')
+        updated = 0
+        titles_data = [
+            {'name': '1PW Tag Team Championship', 'about': '1PW Tag Team Championship was One Pro Wrestling\'s tag title.'},
+            {'name': '1PW Women\'s World Championship', 'about': '1PW Women\'s title was One Pro Wrestling\'s women\'s title.'},
+            {'name': '2AW Tag Team Championship', 'about': '2AW Tag Team Championship is a Japanese tag title.'},
+            {'name': 'AAA Latin American Championship', 'about': 'AAA Latin American Championship is a regional AAA title.'},
+            {'name': 'AAA Mascot Tag Team Championship', 'about': 'AAA Mascot Tag Team title for mini-estrella teams.'},
+            {'name': 'AAA Mega Championship', 'about': 'AAA Mega Championship is AAA\'s top title.'},
+            {'name': 'AAA Northern Tag Team Championship', 'about': 'AAA Northern Tag Team is a regional AAA tag title.'},
+            {'name': 'AAA Reina de Reinas Championship', 'about': 'Reina de Reinas is AAA\'s top women\'s championship.'},
+            {'name': 'AAA World Cruiserweight Championship', 'about': 'AAA World Cruiserweight is for lighter wrestlers.'},
+            {'name': 'AAA World Mixed Tag Team Championship', 'about': 'AAA Mixed Tag Team is for intergender teams.'},
+            {'name': 'AAA World Tag Team Championship', 'about': 'AAA World Tag Team Championship is AAA\'s top tag title.'},
+            {'name': 'AAA World Trios Championship', 'about': 'AAA World Trios is for three-person teams.'},
+            {'name': 'AAAW Single Championship', 'about': 'AAAW Single Championship is a Japanese women\'s title.'},
+            {'name': 'AAW Tag Team Championship', 'about': 'AAW Tag Team Championship is AAW\'s tag team title.'},
+            {'name': 'AAW Women\'s Championship', 'about': 'AAW Women\'s Championship is AAW\'s women\'s title.'},
+            {'name': 'ACW Tag Team Championship', 'about': 'ACW Tag Team Championship is Anarchy Championship Wrestling\'s tag title.'},
+            {'name': 'AEW All-Atlantic Championship', 'about': 'AEW All-Atlantic was renamed Continental Championship.'},
+            {'name': 'AEW Tag Team Championship', 'about': 'AEW World Tag Team Championship is AEW\'s top tag title.'},
+            {'name': 'AEW Women\'s Championship', 'about': 'AEW Women\'s World Championship is AEW\'s top women\'s title.'},
+            {'name': 'AEW Women\'s World Tag Team Championship', 'about': 'AEW Women\'s Tag Team Championship is for women\'s teams.'},
+        ]
+        for data in titles_data:
+            name = data.pop('name')
+            updated += self.update_title(name, **data)
+        self.stdout.write(f'  Updated {updated} championships batch 7')
+        return updated
+
+    def enrich_championships_batch_8(self):
+        """Enrich wrestling championships batch 8."""
+        self.stdout.write('--- Enriching Championships Batch 8 ---')
+        updated = 0
+        titles_data = [
+            {'name': 'AJPW All Asia Tag Team Championship', 'about': 'AJPW All Asia Tag Team is a prestigious tag title.'},
+            {'name': 'AJPW World Junior Heavyweight Championship', 'about': 'AJPW World Junior title is for lighter weight wrestlers.'},
+            {'name': 'AJPW World Tag Team Championship', 'about': 'AJPW World Tag Team is All Japan\'s top tag title.'},
+            {'name': 'AJW Championship', 'about': 'AJW Championship was All Japan Women\'s top title.'},
+            {'name': 'AJW Junior Championship', 'about': 'AJW Junior Championship was for younger AJW wrestlers.'},
+            {'name': 'APW Tag Team Championship', 'about': 'APW Tag Team Championship is APW\'s tag team title.'},
+            {'name': 'AWA Southern Tag Team Championship', 'about': 'AWA Southern Tag Team was a regional AWA title.'},
+            {'name': 'AWA World Women\'s Championship', 'about': 'AWA World Women\'s was the AWA\'s women\'s title.'},
+            {'name': 'AWF Tag Team Championship', 'about': 'AWF Tag Team Championship is AWF\'s tag team title.'},
+            {'name': 'AWG Single Championship', 'about': 'AWG Single Championship is a joshi wrestling title.'},
+            {'name': 'Alberta Tag Team Championship', 'about': 'Alberta Tag Team Championship is a Canadian tag title.'},
+            {'name': 'All Asia Tag Team Championship', 'about': 'All Asia Tag Team is a prestigious Japanese tag title.'},
+            {'name': 'All Pacific Championship', 'about': 'All Pacific Championship is for Pacific region wrestlers.'},
+            {'name': 'Asia Dream Tag Team Championship', 'about': 'Asia Dream Tag Team is a Japanese women\'s tag title.'},
+            {'name': 'Asia Tag Team Championship', 'about': 'Asia Tag Team Championship is a regional Asian tag title.'},
+            {'name': 'Atlantic Athletic Commission World Heavyweight Championship', 'about': 'AAC World Heavyweight was a regional heavyweight title.'},
+            {'name': 'Australian Tag Team Championship', 'about': 'Australian Tag Team Championship is Australia\'s tag title.'},
+            {'name': 'BJW Women\'s Championship', 'about': 'BJW Women\'s Championship is Big Japan\'s women\'s title.'},
+            {'name': 'BJW World Strong Heavyweight Championship', 'about': 'BJW World Strong Heavyweight is Big Japan\'s strong style title.'},
+            {'name': 'Beyond the Sea Single Championship', 'about': 'Beyond the Sea Single is a joshi wrestling title.'},
+        ]
+        for data in titles_data:
+            name = data.pop('name')
+            updated += self.update_title(name, **data)
+        self.stdout.write(f'  Updated {updated} championships batch 8')
+        return updated
+
+    def enrich_championships_batch_9(self):
+        """Enrich wrestling championships batch 9."""
+        self.stdout.write('--- Enriching Championships Batch 9 ---')
+        updated = 0
+        titles_data = [
+            {'name': 'Blast Queen Championship', 'about': 'Blast Queen Championship is a Japanese women\'s title.'},
+            {'name': 'CMLL World Heavyweight Championship', 'about': 'CMLL World Heavyweight is CMLL\'s top heavyweight title.'},
+            {'name': 'CMLL World Light Heavyweight Championship', 'about': 'CMLL World Light Heavyweight is for lighter heavyweights.'},
+            {'name': 'CMLL World Lightweight Championship', 'about': 'CMLL World Lightweight is for lightweight luchadores.'},
+            {'name': 'CMLL World Middleweight Championship', 'about': 'CMLL World Middleweight is for middleweight luchadores.'},
+            {'name': 'CMLL World Mini-Estrella Championship', 'about': 'CMLL Mini-Estrella is for mini wrestlers.'},
+            {'name': 'CMLL World Super Lightweight Championship', 'about': 'CMLL Super Lightweight is for super lightweights.'},
+            {'name': 'CMLL World Tag Team Championship', 'about': 'CMLL World Tag Team is CMLL\'s top tag title.'},
+            {'name': 'CMLL World Trios Championship', 'about': 'CMLL World Trios is for three-person lucha teams.'},
+            {'name': 'CMLL World Welterweight Championship', 'about': 'CMLL World Welterweight is for welterweight luchadores.'},
+            {'name': 'CMLL World Womens Championship', 'about': 'CMLL World Women\'s Championship is CMLL\'s women\'s title.'},
+            {'name': 'CWA World Heavyweight Championship', 'about': 'CWA World Heavyweight was Continental Wrestling\'s top title.'},
+            {'name': 'CWA World Heavyweight Championship (Memphis)', 'about': 'CWA Memphis World Heavyweight was Jerry Lawler\'s title.'},
+            {'name': 'Chaotic Wrestling Pan Optic Championship', 'about': 'Chaotic Wrestling Pan Optic is a New England indie title.'},
+            {'name': 'DEFY World Championship', 'about': 'DEFY World Championship is Seattle\'s DEFY Wrestling title.'},
+            {'name': 'FIP World Heavyweight Championship', 'about': 'FIP World Heavyweight is Full Impact Pro\'s top title.'},
+            {'name': 'FMW Brass Knuckles Heavyweight Championship', 'about': 'FMW Brass Knuckles was a hardcore title.'},
+            {'name': 'FMW Independent Heavyweight Championship', 'about': 'FMW Independent Heavyweight was FMW\'s secondary title.'},
+            {'name': 'G1 Climax Trophy', 'about': 'G1 Climax Trophy is awarded to the G1 Climax winner.'},
+            {'name': 'GHC Junior Heavyweight Championship', 'about': 'GHC Junior Heavyweight is NOAH\'s junior title.'},
+        ]
+        for data in titles_data:
+            name = data.pop('name')
+            updated += self.update_title(name, **data)
+        self.stdout.write(f'  Updated {updated} championships batch 9')
+        return updated
+
+    def enrich_championships_batch_10(self):
+        """Enrich wrestling championships batch 10."""
+        self.stdout.write('--- Enriching Championships Batch 10 ---')
+        updated = 0
+        titles_data = [
+            {'name': 'GHC Junior Heavyweight Tag Team Championship', 'about': 'GHC Junior Tag Team is NOAH\'s junior tag title.'},
+            {'name': 'IWGP Heavyweight Championship', 'about': 'IWGP Heavyweight was NJPW\'s top title until 2021 unification.'},
+            {'name': 'IWGP Intercontinental Championship', 'about': 'IWGP Intercontinental was NJPW\'s secondary title until unification.'},
+            {'name': 'IWGP Junior Heavyweight Tag Team Championship', 'about': 'IWGP Junior Tag Team is for junior heavyweight teams.'},
+            {'name': 'IWGP Tag Team Championship', 'about': 'IWGP Tag Team Championship is NJPW\'s top tag title.'},
+            {'name': 'IWGP United States Heavyweight Championship', 'about': 'IWGP US Heavyweight is NJPW\'s American title.'},
+            {'name': 'IWGP World Heavyweight Championship', 'about': 'IWGP World Heavyweight is the unified NJPW top title.'},
+            {'name': 'Impact Digital Media Championship', 'about': 'Impact Digital Media Championship is defended online.'},
+            {'name': 'Impact Knockouts Championship', 'about': 'Impact Knockouts Championship is Impact\'s women\'s title.'},
+            {'name': 'Impact X Division Championship', 'about': 'Impact X Division is for high-flying wrestlers.'},
+            {'name': 'King of JTO Championship', 'about': 'King of JTO is Just Tap Out\'s top title.'},
+            {'name': 'King of Pro-Wrestling', 'about': 'King of Pro-Wrestling is an NJPW tournament prize.'},
+            {'name': 'Legend Championship', 'about': 'Legend Championship is a wrestling title.'},
+            {'name': 'Mexican National Heavyweight Championship', 'about': 'Mexican National Heavyweight is Mexico\'s national title.'},
+            {'name': 'Mexican National Light Heavyweight Championship', 'about': 'Mexican National Light Heavyweight is a national title.'},
+            {'name': 'Mexican National Trios Championship', 'about': 'Mexican National Trios is for three-person teams.'},
+            {'name': 'Mexican National Welterweight Championship', 'about': 'Mexican National Welterweight is a national title.'},
+            {'name': 'NEVER Openweight 6-Man Tag Team Championship', 'about': 'NEVER 6-Man Tag Team is for six-man teams in NJPW.'},
+            {'name': 'NEVER Openweight Championship', 'about': 'NEVER Openweight is NJPW\'s fighting spirit title.'},
+            {'name': 'NWA United States Television Championship', 'about': 'NWA US Television is NWA\'s TV title.'},
+        ]
+        for data in titles_data:
+            name = data.pop('name')
+            updated += self.update_title(name, **data)
+        self.stdout.write(f'  Updated {updated} championships batch 10')
+        return updated
+
+    def enrich_championships_batch_11(self):
+        """Enrich wrestling championships batch 11."""
+        self.stdout.write('--- Enriching Championships Batch 11 ---')
+        updated = 0
+        titles_data = [
+            {'name': 'NWA World Women\'s Championship', 'about': 'NWA World Women\'s Championship is NWA\'s women\'s title.'},
+            {'name': 'NXT Cruiserweight Championship', 'about': 'NXT Cruiserweight was for lighter wrestlers in NXT.'},
+            {'name': 'OVW Rush Division Championship', 'about': 'OVW Rush Division is Ohio Valley Wrestling\'s title.'},
+            {'name': 'Open The Owarai Gate Championship', 'about': 'Open The Owarai Gate is Dragon Gate\'s comedy title.'},
+            {'name': 'Open The Triangle Gate Championship', 'about': 'Open The Triangle Gate is Dragon Gate\'s trios title.'},
+            {'name': 'Open The Twin Gate Championship', 'about': 'Open The Twin Gate is Dragon Gate\'s tag title.'},
+            {'name': 'ROH Pure Championship', 'about': 'ROH Pure Championship has strict technical wrestling rules.'},
+            {'name': 'ROH Womens World Championship', 'about': 'ROH Women\'s World Championship is ROH\'s women\'s title.'},
+            {'name': 'ROH World Six-Man Tag Team Championship', 'about': 'ROH World Six-Man Tag is for six-man teams.'},
+            {'name': 'ROH World Tag Team Championship', 'about': 'ROH World Tag Team Championship is ROH\'s tag title.'},
+            {'name': 'ROH World Television Championship', 'about': 'ROH World Television Championship is ROH\'s TV title.'},
+            {'name': 'TNA Digital Media Championship', 'about': 'TNA Digital Media is defended on digital platforms.'},
+            {'name': 'TNA Knockouts Championship', 'about': 'TNA Knockouts Championship is TNA\'s women\'s title.'},
+            {'name': 'TNA Knockouts World Championship', 'about': 'TNA Knockouts World is TNA\'s top women\'s title.'},
+            {'name': 'TNA Tag Team Championship', 'about': 'TNA Tag Team Championship is TNA\'s tag title.'},
+            {'name': 'TNA Television Championship', 'about': 'TNA Television Championship is TNA\'s TV title.'},
+            {'name': 'TNA World Championship', 'about': 'TNA World Championship is TNA\'s top title.'},
+            {'name': 'TNA World Heavyweight Championship', 'about': 'TNA World Heavyweight is TNA\'s world title.'},
+            {'name': 'TNA World Tag Team Championship', 'about': 'TNA World Tag Team is TNA\'s top tag title.'},
+            {'name': 'Undisputed WWE Championship', 'about': 'Undisputed WWE Championship is WWE\'s top title.'},
+        ]
+        for data in titles_data:
+            name = data.pop('name')
+            updated += self.update_title(name, **data)
+        self.stdout.write(f'  Updated {updated} championships batch 11')
+        return updated
+
+    def enrich_championships_batch_12(self):
+        """Enrich wrestling championships batch 12."""
+        self.stdout.write('--- Enriching Championships Batch 12 ---')
+        updated = 0
+        titles_data = [
+            {'name': 'WCW Hardcore Championship', 'about': 'WCW Hardcore Championship was WCW\'s hardcore title.'},
+            {'name': 'WWE European Championship', 'about': 'WWE European Championship was a secondary WWE title.'},
+            {'name': 'WWE Evolve Championship', 'about': 'WWE Evolve Championship was from acquired EVOLVE.'},
+            {'name': 'WWE Hardcore Championship', 'about': 'WWE Hardcore Championship had 24/7 rules.'},
+            {'name': 'WWE ID Championship', 'about': 'WWE ID Championship is for WWE ID program.'},
+            {'name': 'WWE Intercontinental Championship', 'about': 'WWE Intercontinental is WWE\'s prestigious secondary title.'},
+            {'name': 'WWE Undisputed Championship', 'about': 'WWE Undisputed was the unified WWF/WCW title.'},
+            {'name': 'WWE United States Championship', 'about': 'WWE United States Championship is a secondary title.'},
+            {'name': 'WWE World Championship', 'about': 'WWE World Championship is WWE\'s world title.'},
+            {'name': 'WWE World Heavyweight Championship', 'about': 'WWE World Heavyweight is SmackDown\'s world title.'},
+            {'name': 'WWF Canadian Championship', 'about': 'WWF Canadian Championship was a regional WWF title.'},
+            {'name': 'WWF Championship', 'about': 'WWF Championship was WWF\'s top title until name change.'},
+            {'name': 'WWF European Championship', 'about': 'WWF European Championship was introduced in 1997.'},
+            {'name': 'WWF Intercontinental Championship', 'about': 'WWF Intercontinental is WWF\'s prestigious secondary title.'},
+            {'name': 'WWF International Heavyweight Championship', 'about': 'WWF International Heavyweight was a regional title.'},
+            {'name': 'WWF Tag Team Championship', 'about': 'WWF Tag Team Championship was WWF\'s tag title.'},
+            {'name': 'WWF Women\'s Championship', 'about': 'WWF Women\'s Championship was WWF\'s women\'s title.'},
+            {'name': 'World Heavyweight Championship (WWE)', 'about': 'World Heavyweight was WWE\'s secondary world title.'},
+            {'name': 'World Heavyweight Championship (WWE, 2002–2013)', 'about': 'World Heavyweight (2002-2013) was Raw\'s world title.'},
+        ]
+        for data in titles_data:
+            name = data.pop('name')
+            updated += self.update_title(name, **data)
+        self.stdout.write(f'  Updated {updated} championships batch 12')
+        return updated
+
+    def enrich_video_games_batch_4(self):
+        """Enrich wrestling video games batch 4."""
+        self.stdout.write('--- Enriching Video Games Batch 4 ---')
+        updated = 0
+        games_data = [
+            {'name': 'WWE SmackDown vs. Raw Online', 'about': 'WWE SmackDown vs Raw Online was a mobile wrestling game.'},
+            {'name': 'WWE SuperCard', 'about': 'WWE SuperCard is a mobile card battle game. Collect superstars.'},
+            {'name': 'WWE Survivor Series (video game)', 'about': 'WWE Survivor Series was an arcade wrestling game.'},
+            {'name': 'WWE WrestleMania 21 (video game)', 'about': 'WrestleMania 21 was an Xbox exclusive with career mode.'},
+            {'name': 'WWE WrestleMania X8 (video game)', 'about': 'WrestleMania X8 was for GameCube. THQ developed.'},
+            {'name': 'WWE WrestleMania XIX (video game)', 'about': 'WrestleMania XIX was a GameCube exclusive. Revenge mode.'},
+            {'name': 'WWF Betrayal', 'about': 'WWF Betrayal was a Game Boy Color beat-em-up.'},
+            {'name': 'WWF European Rampage Tour', 'about': 'WWF European Rampage Tour was an Amiga/DOS game.'},
+            {'name': 'WWF King of the Ring (video game)', 'about': 'WWF King of the Ring was an NES/Game Boy game.'},
+            {'name': 'WWF No Mercy (video game)', 'about': 'WWF No Mercy is considered one of the best wrestling games.'},
+            {'name': 'WWF Rage in the Cage', 'about': 'WWF Rage in the Cage was for Sega CD and 32X.'},
+            {'name': 'WWF Raw (1994 video game)', 'about': 'WWF Raw 1994 was for SNES, Genesis, 32X, Game Boy.'},
+            {'name': 'WWF Raw (2002 video game)', 'about': 'WWF Raw 2002 was an Xbox exclusive by Anchor.'},
+            {'name': 'WWF Road to WrestleMania', 'about': 'WWF Road to WrestleMania was a Game Boy Advance game.'},
+            {'name': 'WWF Royal Rumble (1993 video game)', 'about': 'WWF Royal Rumble 1993 was for SNES and Genesis.'},
+            {'name': 'WWF Royal Rumble (2000 video game)', 'about': 'WWF Royal Rumble 2000 was for Dreamcast and arcade.'},
+            {'name': 'WWF Superstars', 'about': 'WWF Superstars was an arcade game by Technos Japan.'},
+            {'name': 'WWF Superstars (handheld video game)', 'about': 'WWF Superstars handheld was a Tiger Electronics game.'},
+            {'name': 'WWF War Zone', 'about': 'WWF War Zone was Acclaim\'s first 3D WWF game.'},
+            {'name': 'WWF WrestleMania (1991 video game)', 'about': 'WWF WrestleMania 1991 was for NES and Game Boy.'},
+            {'name': 'WWF WrestleMania Challenge', 'about': 'WWF WrestleMania Challenge was an NES sequel.'},
+            {'name': 'WWF WrestleMania: Steel Cage Challenge', 'about': 'Steel Cage Challenge was for NES, Master System, Game Gear.'},
+            {'name': 'WWF WrestleMania: The Arcade Game', 'about': 'WrestleMania Arcade Game was an over-the-top arcade game.'},
+            {'name': 'With Authority!', 'about': 'With Authority! was a wrestling game.'},
+        ]
+        for data in games_data:
+            name = data.pop('name')
+            updated += self.update_game(name, **data)
+        self.stdout.write(f'  Updated {updated} video games batch 4')
+        return updated
+
+    def enrich_podcasts_batch_4(self):
+        """Enrich wrestling podcasts batch 4."""
+        self.stdout.write('--- Enriching Podcasts Batch 4 ---')
+        updated = 0
+        podcasts_data = [
+            {'name': 'Beyond The Matt - WWE Podcast', 'about': 'Beyond The Matt is a WWE-focused fan podcast.'},
+            {'name': 'Bushwhacked WWE Podcast', 'about': 'Bushwhacked is a WWE fan podcast.'},
+            {'name': 'Dark Side of the Ring: Unheard', 'about': 'Dark Side of the Ring: Unheard is the podcast companion.'},
+            {'name': 'E&C\'s Pod of Awesomeness', 'about': 'E&C\'s Pod of Awesomeness was Edge and Christian\'s podcast.'},
+            {'name': 'Jim Cornette Experience', 'about': 'Jim Cornette Experience is Jim Cornette\'s main podcast.'},
+            {'name': 'Jim Cornette\'s Drive-Thru', 'about': 'Jim Cornette\'s Drive-Thru is his fan Q&A podcast.'},
+            {'name': 'Kliq This: The Kevin Nash Podcast', 'about': 'Kliq This is Kevin Nash\'s wrestling podcast.'},
+            {'name': 'No-Contest Wrestling', 'about': 'No-Contest Wrestling is a wrestling discussion podcast.'},
+            {'name': 'Raw Recap with Sam Roberts and Megan Morant', 'about': 'Raw Recap is WWE\'s official Raw recap show.'},
+            {'name': 'Six Feet Under with Mark Calaway', 'about': 'Six Feet Under is The Undertaker\'s podcast.'},
+            {'name': 'Six Feet Under with The Undertaker', 'about': 'Six Feet Under features Undertaker discussing his career.'},
+            {'name': 'Slam Session - The 100% Unofficial WWE Podcast', 'about': 'Slam Session is an unofficial WWE podcast.'},
+            {'name': 'Story Time with Dutch Mantell', 'about': 'Story Time with Dutch Mantell features wrestling stories.'},
+            {'name': 'The Attitude Era Podcast', 'about': 'Attitude Era Podcast covers late 90s wrestling.'},
+            {'name': 'The Jobbers WWE Podcast', 'about': 'The Jobbers is a WWE fan podcast.'},
+            {'name': 'The Ringer Wrestling Show', 'about': 'Ringer Wrestling Show is The Ringer\'s wrestling coverage.'},
+            {'name': 'The Steve Austin Show', 'about': 'The Steve Austin Show is Stone Cold\'s podcast.'},
+            {'name': 'The Stevie Richards Show', 'about': 'The Stevie Richards Show features the ECW legend.'},
+            {'name': 'The WWE Podcast', 'about': 'The WWE Podcast is a WWE-focused show.'},
+            {'name': 'WWE Podcast With Aiden', 'about': 'WWE Podcast With Aiden is a fan podcast.'},
+            {'name': 'Wade Keller Pro Wrestling Podcast', 'about': 'Wade Keller Pro Wrestling Podcast is from PWTorch.'},
+            {'name': 'What Do You Wanna Talk About? with Cody Rhodes', 'about': 'Cody Rhodes\' podcast features wrestling discussions.'},
+            {'name': 'What\'s Wrong with Wrestling? WWE Recap Show', 'about': 'What\'s Wrong with Wrestling recaps WWE shows.'},
+            {'name': 'What\'s Your Story? with Steph McMahon', 'about': 'What\'s Your Story features Stephanie McMahon interviews.'},
+            {'name': 'WhatCulture Wrestling', 'about': 'WhatCulture Wrestling covers wrestling news and reviews.'},
+        ]
+        for data in podcasts_data:
+            name = data.pop('name')
+            updated += self.update_podcast(name, **data)
+        self.stdout.write(f'  Updated {updated} podcasts batch 4')
+        return updated
+
+    def enrich_books_batch_3(self):
+        """Enrich wrestling books batch 3."""
+        self.stdout.write('--- Enriching Books Batch 3 ---')
+        updated = 0
+        books_data = [
+            {'name': 'A Goffmanian analysis of professional wrestling', 'about': 'A Goffmanian analysis examines wrestling through sociology.'},
+            {'name': 'Big Apple Take Down', 'about': 'Big Apple Take Down is a wrestling fiction book.'},
+            {'name': 'Hart Strings', 'about': 'Hart Strings covers the Hart wrestling family.'},
+            {'name': 'Journey into Darkness: An Unauthorized History of Kane', 'about': 'Journey into Darkness is an unauthorized Kane biography.'},
+            {'name': 'WWE Encyclopedia', 'about': 'WWE Encyclopedia is the official WWE reference book.'},
+            {'name': 'Professional Wrestling and the Law', 'about': 'Professional Wrestling and the Law examines legal aspects.'},
+            {'name': 'Official Professional Wrestling Rulebook', 'about': 'Official Rulebook covers wrestling rules and regulations.'},
+            {'name': 'Professional Wrestling in Mississippi', 'about': 'Professional Wrestling in Mississippi covers regional history.'},
+            {'name': 'Unscripting Professional Wrestling', 'about': 'Unscripting examines behind-the-scenes wrestling.'},
+            {'name': 'WWE Book Of Rules (And How To Make Them)', 'about': 'WWE Book of Rules covers official WWE rules.'},
+            {'name': 'WWE Hardcover Ruled Journal', 'about': 'WWE Hardcover Ruled Journal is official WWE merchandise.'},
+            {'name': 'Performance and Professional Wrestling', 'about': 'Performance and Professional Wrestling is academic.'},
+            {'name': 'WWE : the Ultimate Poster Collection', 'about': 'WWE Ultimate Poster Collection is a poster book.'},
+            {'name': 'Ultimate WWE!', 'about': 'Ultimate WWE! is a WWE reference book.'},
+            {'name': 'WWE 50', 'about': 'WWE 50 celebrates 50 years of WWE history.'},
+            {'name': 'The Hardcore Truth: The Bob Holly Story', 'about': 'The Hardcore Truth is Bob Holly\'s autobiography.'},
+            {'name': 'The Squared Circle: Life, Death, and Professional Wrestling', 'about': 'The Squared Circle by David Shoemaker examines wrestling deaths.'},
+            {'name': 'Undisputed: How to Become the World Champion in 1,372 Easy Steps', 'about': 'Undisputed is Chris Jericho\'s first autobiography.'},
+            {'name': 'WWE Confidential (WWE)', 'about': 'WWE Confidential was a behind-the-scenes WWE book.'},
+            {'name': 'A Lion\'s Tale: Around the World in Spandex', 'about': 'A Lion\'s Tale is Chris Jericho\'s second book.'},
+            {'name': 'WWE legends', 'about': 'WWE Legends covers legendary WWE superstars.'},
+            {'name': 'The encyclopedia of professional wrestling', 'about': 'Encyclopedia of Professional Wrestling is a reference.'},
+            {'name': 'Bobby the Brain: Wrestling\'s Bad Boy Tells All', 'about': 'Bobby the Brain is Bobby Heenan\'s autobiography.'},
+            {'name': 'It\'s Good to Be the King...Sometimes', 'about': 'It\'s Good to Be the King is Jerry Lawler\'s autobiography.'},
+            {'name': 'Sex, Lies, and Headlocks', 'about': 'Sex, Lies, and Headlocks chronicles WWE\'s rise.'},
+            {'name': 'The buzz on professional wrestling', 'about': 'The Buzz on Professional Wrestling examines the industry.'},
+            {'name': 'Professional Wrestling Collectibles', 'about': 'Professional Wrestling Collectibles covers memorabilia.'},
+        ]
+        for data in books_data:
+            name = data.pop('name')
+            updated += self.update_book(name, **data)
+        self.stdout.write(f'  Updated {updated} books batch 3')
+        return updated
+
+    def enrich_stables_batch_3(self):
+        """Enrich wrestling stables batch 3."""
+        self.stdout.write('--- Enriching Stables Batch 3 ---')
+        updated = 0
+        stables_data = [
+            {'name': 'House of Torture', 'about': 'House of Torture is an NJPW heel faction. EVIL leads.'},
+            {'name': 'Los Hell Brothers', 'about': 'Los Hell Brothers is a lucha libre tag team/faction.'},
+            {'name': 'Los Jinetes del Aire', 'about': 'Los Jinetes del Aire is a high-flying lucha faction.'},
+            {'name': 'Los Mercenarios', 'about': 'Los Mercenarios is a rudo faction in Mexico.'},
+            {'name': 'Los Vipers', 'about': 'Los Vipers is a Mexican wrestling faction.'},
+            {'name': 'TMDK', 'about': 'TMDK is The Mighty Don\'t Kneel. Shane Haste and Mikey Nicholls.'},
+            {'name': 'United Empire', 'about': 'United Empire is Will Ospreay\'s NJPW faction.'},
+        ]
+        for data in stables_data:
+            name = data.pop('name')
+            updated += self.update_stable(name, **data)
+        self.stdout.write(f'  Updated {updated} stables batch 3')
         return updated

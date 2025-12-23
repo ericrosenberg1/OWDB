@@ -57,6 +57,7 @@ class Command(BaseCommand):
             total_updated += self.enrich_promotions_batch_21()
             total_updated += self.enrich_promotions_batch_22()
             total_updated += self.enrich_promotions_batch_23()
+            total_updated += self.enrich_promotions_batch_24()
         if entity_type in ['all', 'championships']:
             total_updated += self.enrich_championships()
             total_updated += self.enrich_championships_batch_2()
@@ -70,6 +71,7 @@ class Command(BaseCommand):
             total_updated += self.enrich_championships_batch_10()
             total_updated += self.enrich_championships_batch_11()
             total_updated += self.enrich_championships_batch_12()
+            total_updated += self.enrich_championships_batch_13()
         if entity_type in ['all', 'venues']:
             total_updated += self.enrich_venues()
         if entity_type in ['all', 'games']:
@@ -82,6 +84,7 @@ class Command(BaseCommand):
             total_updated += self.enrich_podcasts_batch_2()
             total_updated += self.enrich_podcasts_batch_3()
             total_updated += self.enrich_podcasts_batch_4()
+            total_updated += self.enrich_podcasts_batch_5()
         if entity_type in ['all', 'books']:
             total_updated += self.enrich_books()
             total_updated += self.enrich_books_batch_2()
@@ -1769,4 +1772,72 @@ class Command(BaseCommand):
             name = data.pop('name')
             updated += self.update_stable(name, **data)
         self.stdout.write(f'  Updated {updated} stables batch 3')
+        return updated
+
+    def enrich_promotions_batch_24(self):
+        """Enrich wrestling promotions batch 24."""
+        self.stdout.write('--- Enriching Promotions Batch 24 ---')
+        updated = 0
+        promotions_data = [
+            {'name': 'American Wrestling Association (AWA)', 'about': 'AWA was Verne Gagne\'s legendary Minneapolis promotion.'},
+            {'name': 'American Wrestling Association (Boston)', 'about': 'AWA Boston was a New England wrestling territory.'},
+            {'name': 'Atholl Oakeley', 'about': 'Atholl Oakeley was a British wrestling promoter and wrestler.'},
+            {'name': 'Pro Wrestling Noah', 'about': 'Pro Wrestling NOAH was founded by Mitsuharu Misawa in 2000.'},
+            {'name': 'Total Nonstop Action Wrestling', 'about': 'TNA Wrestling was founded by Jeff Jarrett in 2002.'},
+            {'name': 'WWF/WWE', 'about': 'WWE (formerly WWF) is the largest wrestling promotion in the world.'},
+        ]
+        for data in promotions_data:
+            name = data.pop('name')
+            updated += self.update_promotion(name, **data)
+        self.stdout.write(f'  Updated {updated} promotions batch 24')
+        return updated
+
+    def enrich_championships_batch_13(self):
+        """Enrich wrestling championships batch 13."""
+        self.stdout.write('--- Enriching Championships Batch 13 ---')
+        updated = 0
+        titles_data = [
+            {'name': 'AAA Mega Championship', 'about': 'AAA Mega Championship is AAA\'s top heavyweight title.'},
+            {'name': 'AAA Reina de Reinas Championship', 'about': 'Reina de Reinas is AAA\'s top women\'s championship.'},
+            {'name': 'AAA World Mixed Tag Team Championship', 'about': 'AAA Mixed Tag Team is for intergender teams.'},
+            {'name': 'AAA World Tag Team Championship', 'about': 'AAA World Tag Team Championship is AAA\'s tag title.'},
+            {'name': 'CMLL World Heavyweight Championship', 'about': 'CMLL World Heavyweight is CMLL\'s top heavyweight title.'},
+            {'name': 'IWGP Heavyweight Championship', 'about': 'IWGP Heavyweight was NJPW\'s top title until 2021.'},
+            {'name': 'IWGP Intercontinental Championship', 'about': 'IWGP Intercontinental was NJPW\'s secondary singles title.'},
+            {'name': 'IWGP Tag Team Championship', 'about': 'IWGP Tag Team Championship is NJPW\'s top tag title.'},
+            {'name': 'IWGP United States Heavyweight Championship', 'about': 'IWGP US Heavyweight is NJPW\'s American title.'},
+            {'name': 'IWGP World Heavyweight Championship', 'about': 'IWGP World Heavyweight is the unified NJPW top title.'},
+            {'name': 'Impact Knockouts Championship', 'about': 'Impact Knockouts Championship is Impact\'s women\'s title.'},
+            {'name': 'NEVER Openweight Championship', 'about': 'NEVER Openweight is NJPW\'s fighting spirit title.'},
+            {'name': 'ROH Pure Championship', 'about': 'ROH Pure Championship has strict technical wrestling rules.'},
+            {'name': 'ROH World Six-Man Tag Team Championship', 'about': 'ROH World Six-Man Tag is for six-man teams.'},
+            {'name': 'ROH World Tag Team Championship', 'about': 'ROH World Tag Team Championship is ROH\'s tag title.'},
+            {'name': 'ROH World Television Championship', 'about': 'ROH World Television Championship is ROH\'s TV title.'},
+            {'name': 'TNA Knockouts Championship', 'about': 'TNA Knockouts Championship is TNA\'s women\'s title.'},
+            {'name': 'TNA Television Championship', 'about': 'TNA Television Championship is TNA\'s TV title.'},
+            {'name': 'TNA World Heavyweight Championship', 'about': 'TNA World Heavyweight is TNA\'s world title.'},
+            {'name': 'TNA World Tag Team Championship', 'about': 'TNA World Tag Team is TNA\'s top tag title.'},
+            {'name': 'TNA/Impact World Championship', 'about': 'TNA/Impact World Championship is the promotion\'s top title.'},
+        ]
+        for data in titles_data:
+            name = data.pop('name')
+            updated += self.update_title(name, **data)
+        self.stdout.write(f'  Updated {updated} championships batch 13')
+        return updated
+
+    def enrich_podcasts_batch_5(self):
+        """Enrich wrestling podcasts batch 5."""
+        self.stdout.write('--- Enriching Podcasts Batch 5 ---')
+        updated = 0
+        podcasts_data = [
+            {'name': 'Jim Cornette\'s Drive-Thru', 'about': 'Jim Cornette\'s Drive-Thru is his fan Q&A podcast.'},
+            {'name': 'Spazio WWE Podcast', 'about': 'Spazio WWE Podcast is an Italian WWE fan podcast.'},
+            {'name': 'THE CRAZY GREEK WWE PODCAST', 'about': 'The Crazy Greek WWE Podcast is a fan wrestling show.'},
+            {'name': 'WWE', 'about': 'WWE produces various official podcasts for fans.'},
+            {'name': 'Wwe Podcast', 'about': 'WWE Podcast is a fan-run wrestling discussion show.'},
+        ]
+        for data in podcasts_data:
+            name = data.pop('name')
+            updated += self.update_podcast(name, **data)
+        self.stdout.write(f'  Updated {updated} podcasts batch 5')
         return updated

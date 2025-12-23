@@ -1894,6 +1894,6 @@ class Command(BaseCommand):
         ]
         for data in docs_data:
             name = data.pop('name')
-            updated += self.update_special(name, **data)
+            updated += self.update_documentary(name, **data)
         self.stdout.write(f'  Updated {updated} documentaries final')
         return updated

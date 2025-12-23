@@ -55,8 +55,23 @@ class Command(BaseCommand):
         fixed = 0
 
         # Patterns to delete (garbage data)
-        garbage_names = ['er', 'ido', 'man', 'The S', 'R', 'Eights', 'DQ', 'Draw', 'No Contest']
+        garbage_names = ['er', 'ido', 'man', 'The S', 'R', 'Eights', 'DQ', 'Draw', 'No Contest',
+                         'Tommy Dreamer vs S', 'Ric Flair (sub for Benoit)']
         truncated_patterns = ['y Orton', 'y Savage', 'y Orton vs']
+
+        # Match entries that should be deleted
+        match_entries = [
+            'A-Train vs Big Show', 'Damage CTRL vs Carter', 'Darby Allin vs Young Bucks',
+            'Diamond Dallas Page vs Jeff Jarrett', 'Hangman Adam Page vs Young Bucks',
+            'Hirooki Goto vs Katsuyori Shibata', 'Jazz vs Victoria', 'Kurt Angle vs Chris Jericho',
+            'Lex Luger vs Konnan', 'Lucha Brothers vs Private Party', 'New Age Outlaws vs Kane',
+            'Raven vs Big Show', 'Roman Reigns vs Seth Rollins', 'Sabu vs Eliminators',
+            'Samoa Joe vs Christopher Daniels', 'Seth Rollins vs Roman Reigns',
+            'Shane McMahon vs Vince McMahon', 'Tajiri vs Little Guido', 'Tiger Mask vs Bullet Club',
+            'Triple H vs John Cena', 'Triple H vs Mankind', 'Triple H vs Shawn Michaels',
+            'Young Bucks vs reDRagon'
+        ]
+        garbage_names.extend(match_entries)
 
         # Find and delete garbage entries
         for name in garbage_names:
@@ -138,6 +153,26 @@ class Command(BaseCommand):
 
         deleted = 0
         fixed = 0
+
+        # Specific malformed promotion names
+        malformed_names = [
+            'Lucha Libre AAA Worldwide (AAA) (2007-present)WWE (2025–present)',
+            'Lucha Libre AAA Worldwide (AAA)WWE',
+            'Lucha Libre AAA WorldwideWWE',
+            'Marvelous That\'s Women Pro WrestlingGaea Japan',
+            'NWA Mid-America (1945–1977)Continental Wrestling Association (1977–1988)',
+            'Pro Wrestling Zero1Super Fireworks Pro Wrestling',
+            'WWEIndependent circuit',
+        ]
+
+        for name in malformed_names:
+            promotions = Promotion.objects.filter(name=name)
+            count = promotions.count()
+            if count > 0:
+                self.stdout.write(f'  Deleting malformed promotion: {name}')
+                if not dry_run:
+                    promotions.delete()
+                deleted += count
 
         # Find promotions with concatenated names (multiple promotions in one entry)
         promotions = Promotion.objects.all()

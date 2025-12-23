@@ -352,6 +352,16 @@ class Command(BaseCommand):
             total_updated += self.enrich_unenriched_batch_9()
         if batch == 0 or batch == 160:
             total_updated += self.enrich_unenriched_batch_10()
+        if batch == 0 or batch == 161:
+            total_updated += self.enrich_tag_teams_batch_1()
+        if batch == 0 or batch == 162:
+            total_updated += self.enrich_tag_teams_batch_2()
+        if batch == 0 or batch == 163:
+            total_updated += self.enrich_tag_teams_batch_3()
+        if batch == 0 or batch == 164:
+            total_updated += self.enrich_factions_batch_1()
+        if batch == 0 or batch == 165:
+            total_updated += self.enrich_factions_batch_2()
 
         self.stdout.write(self.style.SUCCESS(f'\n=== ENRICHMENT COMPLETE ==='))
         self.stdout.write(f'Total wrestlers updated: {total_updated}')
@@ -5986,4 +5996,159 @@ class Command(BaseCommand):
             name = data.pop('name')
             updated += self.update_wrestler(name, **data)
         self.stdout.write(f'  Updated {updated} Unenriched Batch 10')
+        return updated
+
+    def enrich_tag_teams_batch_1(self):
+        """Enrich tag teams batch 1."""
+        self.stdout.write('--- Enriching Tag Teams Batch 1 ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'The Hardy Boyz', 'about': 'The Hardy Boyz are Matt and Jeff Hardy. TLC legends. Multiple tag champions.'},
+            {'name': 'The Hardys', 'about': 'The Hardys are Matt and Jeff Hardy. Iconic tag team. TLC innovators.'},
+            {'name': 'The Young Bucks', 'about': 'The Young Bucks are Matt and Nick Jackson. AEW EVPs. Superkick Party.'},
+            {'name': 'Young Bucks', 'about': 'Young Bucks are The Elite members. Multiple tag champions worldwide.'},
+            {'name': 'The Usos', 'about': 'The Usos are Jimmy and Jey Uso. Bloodline. Longest tag reign in WWE.'},
+            {'name': 'The Outsiders', 'about': 'The Outsiders are Kevin Nash and Scott Hall. nWo founding members.'},
+            {'name': 'Outsiders', 'about': 'Outsiders are Nash and Hall. WCW Tag Champions. New World Order.'},
+            {'name': 'New Age Outlaws', 'about': 'New Age Outlaws are Road Dogg and Billy Gunn. DX members. Tag legends.'},
+            {'name': 'Legion of Doom', 'about': 'Legion of Doom are Hawk and Animal. Road Warriors. Most decorated team.'},
+            {'name': 'The Briscoe Brothers', 'about': 'The Briscoes are Jay and Mark Briscoe. ROH legends. Tag team icons.'},
+            {'name': 'Lucha Brothers', 'about': 'Lucha Brothers are Penta and Rey Fenix. AEW Tag Champions. Lucha style.'},
+            {'name': 'The Lucha Brothers', 'about': 'The Lucha Brothers are high-flying brothers. Death Triangle members.'},
+            {'name': 'Motor City Machine Guns', 'about': 'MCMG are Chris Sabin and Alex Shelley. TNA/Impact legends.'},
+            {'name': 'The Gunns', 'about': 'The Gunns are Austin and Colten Gunn. Billy Gunn sons. AEW tag team.'},
+            {'name': 'Team 3D', 'about': 'Team 3D are Brother Ray and Brother Devon. Dudley Boyz in TNA.'},
+            {'name': 'The Bushwhackers', 'about': 'The Bushwhackers are Butch and Luke. Sheepherders. Licking champions.'},
+            {'name': 'The Steiner Brothers', 'about': 'Steiner Brothers are Rick and Scott Steiner. NCAA and pro champions.'},
+            {'name': 'Steiner Brothers', 'about': 'Steiner Brothers dominated 90s tag wrestling. Suplexes.'},
+            {'name': 'Strike Force', 'about': 'Strike Force are Tito Santana and Rick Martel. WWF Tag Champions.'},
+            {'name': 'The Natural Disasters', 'about': 'Natural Disasters are Earthquake and Typhoon. WWF Tag Champions.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Tag Teams Batch 1')
+        return updated
+
+    def enrich_tag_teams_batch_2(self):
+        """Enrich tag teams batch 2."""
+        self.stdout.write('--- Enriching Tag Teams Batch 2 ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'The Good Brothers', 'about': 'Good Brothers are Karl Anderson and Doc Gallows. Bullet Club. Impact.'},
+            {'name': 'Gallows and Anderson', 'about': 'Gallows and Anderson are former Bullet Club. WWE Raw Tag Champions.'},
+            {'name': 'The Public Enemy', 'about': 'Public Enemy are Rocco Rock and Johnny Grunge. ECW Tag legends.'},
+            {'name': 'The Gangstas', 'about': 'The Gangstas are New Jack and Mustafa. ECW hardcore tag team.'},
+            {'name': 'The Blackjacks', 'about': 'Blackjacks are Blackjack Mulligan and Blackjack Lanza. 70s legends.'},
+            {'name': 'Twin Towers', 'about': 'Twin Towers are Akeem and Big Boss Man. Late 80s WWF tag team.'},
+            {'name': 'Dream Team', 'about': 'Dream Team are Brutus Beefcake and Greg Valentine. WWF Tag Champions.'},
+            {'name': 'Los Guerreros', 'about': 'Los Guerreros are Eddie and Chavo Guerrero. WWE Tag Champions.'},
+            {'name': 'Time Splitters', 'about': 'Time Splitters are KUSHIDA and Alex Shelley. NJPW Junior Tag Champions.'},
+            {'name': 'Roppongi Vice', 'about': 'Roppongi Vice are Rocky Romero and Trent Beretta. NJPW/AEW.'},
+            {'name': 'FinJuice', 'about': 'FinJuice are Juice Robinson and David Finlay. NJPW Tag Champions.'},
+            {'name': 'reDRagon', 'about': 'reDRagon are Kyle O\'Reilly and Bobby Fish. ROH Tag Champions.'},
+            {'name': 'SCU', 'about': 'SCU is Christopher Daniels, Frankie Kazarian, Scorpio Sky. SoCal Uncensored.'},
+            {'name': 'So Cal Uncensored', 'about': 'So Cal Uncensored are Daniels, Kaz, and Sky. ROH/AEW faction.'},
+            {'name': 'Swerve in Our Glory', 'about': 'Swerve in Our Glory are Swerve Strickland and Keith Lee. AEW Tag Champions.'},
+            {'name': 'The Outrunners', 'about': 'The Outrunners are Turbo Floyd and Truth Magnum. 80s throwback team.'},
+            {'name': 'Too Cool', 'about': 'Too Cool are Scotty 2 Hotty and Grandmaster Sexay. Rikishi dance partners.'},
+            {'name': 'J&J Security', 'about': 'J&J Security are Jamie Noble and Joey Mercury. Seth Rollins bodyguards.'},
+            {'name': 'Sheamus and Cesaro', 'about': 'Sheamus and Cesaro are The Bar. Multiple WWE Raw Tag Champions.'},
+            {'name': 'The Bollywood Boyz', 'about': 'Bollywood Boyz are Sunil and Samir Singh. WWE enhancement team.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Tag Teams Batch 2')
+        return updated
+
+    def enrich_tag_teams_batch_3(self):
+        """Enrich tag teams batch 3."""
+        self.stdout.write('--- Enriching Tag Teams Batch 3 ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Mega Powers', 'about': 'Mega Powers are Hulk Hogan and Randy Savage. WrestleMania V explosion.'},
+            {'name': 'The Bruise Brothers', 'about': 'Bruise Brothers are Ron and Don Harris. WCW/ECW big men team.'},
+            {'name': 'Varsity Club', 'about': 'Varsity Club are Mike Rotunda and Steve Williams. NWA faction.'},
+            {'name': 'Smokin\' Aces', 'about': 'Smokin\' Aces are Nick Aldis and Chris Adonis. NWA tag team.'},
+            {'name': 'Strong Hearts', 'about': 'Strong Hearts are CIMA-led Dragon Gate faction. International group.'},
+            {'name': 'Steenerico', 'about': 'Steenerico are Kevin Steen and El Generico. ROH tag legends.'},
+            {'name': 'Shane Taylor Promotions', 'about': 'Shane Taylor Promotions are Shane Taylor-led ROH stable.'},
+            {'name': 'Marshall and Ross Von Erich', 'about': 'Marshall and Ross are Von Erich legacy. MLW Tag Champions.'},
+            {'name': 'Kenny Omega and Hangman Page', 'about': 'Kenny and Hangman were AEW Tag Champions. Elite members.'},
+            {'name': 'Sting and Darby Allin', 'about': 'Sting and Darby are AEW alliance. Painted face partners.'},
+            {'name': 'Kevin Owens vs Sami Zayn', 'about': 'Owens and Zayn are longtime rivals and partners. Bloodline saga.'},
+            {'name': 'Jushin Liger and Tiger Mask', 'about': 'Liger and Tiger Mask are junior heavyweight legends. NJPW icons.'},
+            {'name': 'RVD and Sabu', 'about': 'RVD and Sabu are ECW originals. Extreme tag team partners.'},
+            {'name': 'Tommy Dreamer and Sandman', 'about': 'Dreamer and Sandman are ECW icons. Hardcore partners.'},
+            {'name': 'Bugsy McGraw and Rufus R. Jones', 'about': 'Bugsy and Rufus were 80s WWF tag team.'},
+            {'name': 'Beaver Boys', 'about': 'Beaver Boys are John Silver and Alex Reynolds. Dark Order members.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Tag Teams Batch 3')
+        return updated
+
+    def enrich_factions_batch_1(self):
+        """Enrich factions batch 1."""
+        self.stdout.write('--- Enriching Factions Batch 1 ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'The Bloodline', 'about': 'The Bloodline is Roman Reigns-led Samoan faction. WWE dominance.'},
+            {'name': 'OG Bloodline', 'about': 'OG Bloodline is original Usos and Roman. Pre-Solo Sikoa era.'},
+            {'name': 'The Elite', 'about': 'The Elite are Kenny Omega and Young Bucks. AEW founders.'},
+            {'name': 'Inner Circle', 'about': 'Inner Circle is Chris Jericho-led AEW faction. Le Champion.'},
+            {'name': 'The Pinnacle', 'about': 'The Pinnacle is MJF-led faction. Inner Circle rivals.'},
+            {'name': 'The Blackpool Combat Club', 'about': 'BCC is Bryan Danielson, Moxley, Claudio. Technical wrestling.'},
+            {'name': 'Evolution', 'about': 'Evolution is HHH, Flair, Orton, Batista. 2003-2005 dominance.'},
+            {'name': 'The Shield', 'about': 'The Shield are Rollins, Reigns, Ambrose. Special ops faction.'},
+            {'name': 'nWo', 'about': 'nWo is New World Order. Hogan, Hall, Nash. Changed wrestling.'},
+            {'name': 'nWo Wolfpac', 'about': 'nWo Wolfpac is Nash-led red nWo split. Sting joined.'},
+            {'name': 'Aces and Eights', 'about': 'Aces and Eights is biker faction in TNA. Bully Ray reveal.'},
+            {'name': 'Main Event Mafia', 'about': 'Main Event Mafia are TNA legends faction. Kurt Angle led.'},
+            {'name': 'TNA Frontline', 'about': 'TNA Frontline were babyfaces vs Main Event Mafia.'},
+            {'name': 'Immortal', 'about': 'Immortal is Hulk Hogan-led TNA heel faction.'},
+            {'name': 'Los Ingobernables de Japon', 'about': 'LIJ is Tetsuya Naito-led NJPW faction. Tranquilo.'},
+            {'name': 'Decay', 'about': 'Decay is Rosemary, Abyss, Crazzy Steve. Impact horror faction.'},
+            {'name': 'Fabulous Freebirds', 'about': 'Freebirds are Michael Hayes, Terry Gordy, Buddy Roberts. Legends.'},
+            {'name': 'BWO', 'about': 'BWO is Blue World Order. ECW parody faction. Stevie Richards.'},
+            {'name': 'Right to Censor', 'about': 'Right to Censor is Steven Richards censorship faction.'},
+            {'name': 'Spirit Squad', 'about': 'Spirit Squad are male cheerleaders. Kenny Dykstra. DX rivalry.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Factions Batch 1')
+        return updated
+
+    def enrich_factions_batch_2(self):
+        """Enrich factions batch 2."""
+        self.stdout.write('--- Enriching Factions Batch 2 ---')
+        updated = 0
+        wrestlers_data = [
+            {'name': 'Insane Clown Posse', 'about': 'ICP are Violent J and Shaggy 2 Dope. Rap/wrestling crossover.'},
+            {'name': 'Team Angle', 'about': 'Team Angle are Charlie Haas and Shelton Benjamin. Kurt protégés.'},
+            {'name': 'Team Cage', 'about': 'Team Cage is Christian Cage-led heel group.'},
+            {'name': 'Team Johnny', 'about': 'Team Johnny is John Laurinaitis team at WrestleMania.'},
+            {'name': 'Team Tomko', 'about': 'Team Tomko involved Tyson Tomko in TNA.'},
+            {'name': 'Team WCW', 'about': 'Team WCW represented WCW in Invasion storyline.'},
+            {'name': 'Team nWo', 'about': 'Team nWo represented nWo in various match formats.'},
+            {'name': 'Casas wrestling family', 'about': 'Casas family are Negro Casas and relatives. Lucha dynasty.'},
+            {'name': 'Hip-hop Artists', 'about': 'Hip-hop artists appeared in WWE/wrestling crossovers.'},
+            {'name': 'Independent Wrestlers', 'about': 'Independent wrestlers work indie circuit worldwide.'},
+            {'name': 'Custom Wrestlers', 'about': 'Custom wrestlers are video game created characters.'},
+            {'name': 'Generic Roster', 'about': 'Generic roster refers to unnamed enhancement talent.'},
+            {'name': 'Female Wrestling Cast', 'about': 'Female Wrestling Cast are women wrestlers as a group.'},
+            {'name': 'Various', 'about': 'Various refers to multiple participants in matches.'},
+            {'name': 'Various WWE Legends', 'about': 'Various WWE Legends include Hall of Famers.'},
+            {'name': 'Various WWE Superstars', 'about': 'Various WWE Superstars are active roster members.'},
+            {'name': 'Total Divas team', 'about': 'Total Divas team are cast from E! reality show.'},
+            {'name': 'Stadium Stampede', 'about': 'Stadium Stampede is AEW cinematic match format.'},
+            {'name': 'Bloodline WarGames', 'about': 'Bloodline WarGames is Survivor Series 2022 main event format.'},
+        ]
+        for data in wrestlers_data:
+            name = data.pop('name')
+            updated += self.update_wrestler(name, **data)
+        self.stdout.write(f'  Updated {updated} Factions Batch 2')
         return updated

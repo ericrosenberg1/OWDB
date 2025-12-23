@@ -85,12 +85,15 @@ class Command(BaseCommand):
             total_updated += self.enrich_podcasts_batch_3()
             total_updated += self.enrich_podcasts_batch_4()
             total_updated += self.enrich_podcasts_batch_5()
+            total_updated += self.enrich_podcasts_final()
         if entity_type in ['all', 'books']:
             total_updated += self.enrich_books()
             total_updated += self.enrich_books_batch_2()
             total_updated += self.enrich_books_batch_3()
+            total_updated += self.enrich_books_final()
         if entity_type in ['all', 'documentaries']:
             total_updated += self.enrich_documentaries()
+            total_updated += self.enrich_documentaries_final()
         if entity_type in ['all', 'stables']:
             total_updated += self.enrich_stables()
             total_updated += self.enrich_stables_batch_2()
@@ -1846,4 +1849,51 @@ class Command(BaseCommand):
             name = data.pop('name')
             updated += self.update_podcast(name, **data)
         self.stdout.write(f'  Updated {updated} podcasts batch 5')
+        return updated
+
+    def enrich_podcasts_final(self):
+        """Enrich remaining podcasts."""
+        self.stdout.write('--- Enriching Podcasts Final ---')
+        updated = 0
+        podcasts_data = [
+            {'name': "Jim Cornette's Drive-Thru", 'about': "Jim Cornette's Drive-Thru is his fan Q&A wrestling podcast."},
+        ]
+        for data in podcasts_data:
+            name = data.pop('name')
+            updated += self.update_podcast(name, **data)
+        self.stdout.write(f'  Updated {updated} podcasts final')
+        return updated
+
+    def enrich_books_final(self):
+        """Enrich remaining books."""
+        self.stdout.write('--- Enriching Books Final ---')
+        updated = 0
+        books_data = [
+            {'name': 'Professional Wrestling Promotion : How Can Wrestling Promote Itself Better?', 'about': 'Book examines wrestling promotion strategies and marketing.'},
+            {'name': 'Wwe Wrestlemania-36 : WWE', 'about': 'WrestleMania 36 event book from WWE.'},
+            {'name': 'WWE', 'about': 'WWE general reference book.'},
+            {'name': 'WWE legends', 'about': 'WWE Legends covers legendary WWE superstars and their stories.'},
+        ]
+        for data in books_data:
+            name = data.pop('name')
+            updated += self.update_book(name, **data)
+        self.stdout.write(f'  Updated {updated} books final')
+        return updated
+
+    def enrich_documentaries_final(self):
+        """Enrich remaining documentaries/specials."""
+        self.stdout.write('--- Enriching Documentaries Final ---')
+        updated = 0
+        docs_data = [
+            {'name': 'Holy Grail: The Search for WWE\'s Most Infamous Lost Match', 'about': 'Documentary about the search for the lost Bruno vs Antonio Inoki match.'},
+            {'name': 'Surviving the Dungeon: The Legacy of Stu Hart', 'about': 'Documentary about Stu Hart\'s legendary wrestling dungeon training.'},
+            {'name': 'The Rise and Fall of ECW', 'about': 'WWE documentary chronicling ECW\'s history from birth to bankruptcy.'},
+            {'name': 'The Self-Destruction of the Ultimate Warrior', 'about': 'Controversial WWE documentary on Ultimate Warrior\'s career controversies.'},
+            {'name': 'Vampiro: Angel, Devil, Hero', 'about': 'Documentary about lucha libre star Vampiro\'s life and career.'},
+            {'name': 'Wrestling (1961 film)', 'about': 'Classic 1961 documentary film about professional wrestling.'},
+        ]
+        for data in docs_data:
+            name = data.pop('name')
+            updated += self.update_special(name, **data)
+        self.stdout.write(f'  Updated {updated} documentaries final')
         return updated

@@ -49,8 +49,21 @@ if not DEBUG:
     X_FRAME_OPTIONS = 'DENY'
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    # Prevent session hijacking
+    SESSION_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    # Redirect HTTP to HTTPS
+    SECURE_SSL_REDIRECT = True
+
+# Session security (applies to both dev and prod)
+SESSION_COOKIE_AGE = 86400 * 14  # 14 days
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_SAVE_EVERY_REQUEST = True  # Refresh session on activity
 
 # =============================================================================
 # Application Definition

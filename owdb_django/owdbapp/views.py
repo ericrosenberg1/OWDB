@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.contrib.auth.models import User
@@ -97,7 +97,10 @@ class PaginatedListView(ListView):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        query = self.request.GET.get('q')
+        query = self.request.GET.get('q', '').strip()
+        # Security: Limit query length to prevent abuse
+        if query and len(query) > 200:
+            query = query[:200]
         if query and self.search_fields:
             q_objects = Q()
             for field in self.search_fields:
@@ -658,10 +661,61 @@ class PodcastEpisodeDetailView(DetailView):
 # Authentication Views
 # =============================================================================
 
+def get_client_ip(request):
+    """Get the client IP address, handling proxies."""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        # Take the first IP in the chain (client IP)
+        return x_forwarded_for.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', '127.0.0.1')
+
+
+def check_rate_limit(request, action: str, limit: int = 5, window: int = 300):
+    """
+    Check if request is within rate limit.
+
+    Args:
+        request: The HTTP request
+        action: Action name (e.g., 'login', 'signup')
+        limit: Max attempts allowed
+        window: Time window in seconds (default 5 minutes)
+
+    Returns:
+        (is_allowed, attempts_remaining)
+    """
+    ip = get_client_ip(request)
+    cache_key = f"rate_limit:{action}:{ip}"
+    attempts = cache.get(cache_key, 0)
+
+    if attempts >= limit:
+        return False, 0
+
+    return True, limit - attempts
+
+
+def increment_rate_limit(request, action: str, window: int = 300):
+    """Increment the rate limit counter for an action."""
+    ip = get_client_ip(request)
+    cache_key = f"rate_limit:{action}:{ip}"
+    attempts = cache.get(cache_key, 0)
+    cache.set(cache_key, attempts + 1, timeout=window)
+
+
 def signup(request):
     if request.user.is_authenticated:
         return redirect('index')
+
+    # Rate limit signup attempts: 5 per 10 minutes
+    allowed, remaining = check_rate_limit(request, 'signup', limit=5, window=600)
+    if not allowed:
+        messages.error(request, 'Too many signup attempts. Please try again later.')
+        return render(request, 'signup.html', {
+            'form': SignupForm(),
+            'page_title': 'Sign Up'
+        })
+
     if request.method == 'POST':
+        increment_rate_limit(request, 'signup', window=600)
         form = SignupForm(request.POST)
         if form.is_valid():
             # Create user
@@ -813,7 +867,18 @@ def login_view(request):
 
     if request.user.is_authenticated:
         return redirect('index')
+
+    # Rate limit login attempts: 10 per 5 minutes
+    allowed, remaining = check_rate_limit(request, 'login', limit=10, window=300)
+    if not allowed:
+        messages.error(request, 'Too many login attempts. Please try again in a few minutes.')
+        return render(request, 'login.html', {
+            'form': AuthenticationForm(),
+            'page_title': 'Login'
+        })
+
     if request.method == 'POST':
+        increment_rate_limit(request, 'login', window=300)
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
             login(request, form.get_user())
@@ -833,7 +898,9 @@ def login_view(request):
     })
 
 
+@require_http_methods(["POST"])
 def logout_view(request):
+    """Logout requires POST to prevent CSRF attacks via GET links."""
     logout(request)
     messages.info(request, 'You have been logged out.')
     return redirect('index')

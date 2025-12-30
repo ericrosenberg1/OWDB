@@ -8,117 +8,17 @@ import random
 import re
 import time
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta
 from functools import wraps
 from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
 
 import requests
 from django.core.cache import cache
-from django.utils import timezone
+
+from .api_client import RateLimiter
 
 logger = logging.getLogger(__name__)
-
-
-class RateLimiter:
-    """
-    Rate limiter using token bucket algorithm with Redis-backed state.
-    Ensures we respect API limits across all workers.
-    """
-
-    def __init__(
-        self,
-        name: str,
-        requests_per_minute: int = 10,
-        requests_per_hour: int = 100,
-        requests_per_day: int = 1000,
-    ):
-        self.name = name
-        self.rpm = requests_per_minute
-        self.rph = requests_per_hour
-        self.rpd = requests_per_day
-        self.cache_prefix = f"scraper_ratelimit_{name}"
-
-    def _get_counts(self) -> Tuple[int, int, int]:
-        """Get current request counts from cache."""
-        minute_key = f"{self.cache_prefix}_minute_{int(time.time() // 60)}"
-        hour_key = f"{self.cache_prefix}_hour_{int(time.time() // 3600)}"
-        day_key = f"{self.cache_prefix}_day_{int(time.time() // 86400)}"
-
-        return (
-            cache.get(minute_key, 0),
-            cache.get(hour_key, 0),
-            cache.get(day_key, 0),
-        )
-
-    def _increment(self):
-        """Increment request counts."""
-        now = int(time.time())
-        minute_key = f"{self.cache_prefix}_minute_{now // 60}"
-        hour_key = f"{self.cache_prefix}_hour_{now // 3600}"
-        day_key = f"{self.cache_prefix}_day_{now // 86400}"
-
-        # Increment with appropriate TTLs
-        for key, ttl in [(minute_key, 120), (hour_key, 7200), (day_key, 172800)]:
-            current = cache.get(key, 0)
-            cache.set(key, current + 1, timeout=ttl)
-
-    def can_request(self) -> Tuple[bool, Optional[int]]:
-        """
-        Check if a request can be made.
-        Returns (can_request, wait_seconds) tuple.
-        """
-        minute_count, hour_count, day_count = self._get_counts()
-
-        if day_count >= self.rpd:
-            # Wait until next day
-            seconds_until_midnight = 86400 - (int(time.time()) % 86400)
-            return False, seconds_until_midnight
-
-        if hour_count >= self.rph:
-            # Wait until next hour
-            seconds_until_hour = 3600 - (int(time.time()) % 3600)
-            return False, seconds_until_hour
-
-        if minute_count >= self.rpm:
-            # Wait until next minute
-            seconds_until_minute = 60 - (int(time.time()) % 60)
-            return False, seconds_until_minute
-
-        return True, None
-
-    def acquire(self, timeout: int = 300) -> bool:
-        """
-        Acquire permission to make a request, waiting if necessary.
-        Returns True if acquired, False if timeout exceeded.
-        """
-        start_time = time.time()
-
-        while True:
-            can_req, wait_time = self.can_request()
-
-            if can_req:
-                self._increment()
-                return True
-
-            if time.time() - start_time + (wait_time or 0) > timeout:
-                return False
-
-            # Wait with jitter to avoid thundering herd
-            sleep_time = min(wait_time or 60, timeout - (time.time() - start_time))
-            if sleep_time > 0:
-                time.sleep(sleep_time + random.uniform(0, 1))
-
-    def get_stats(self) -> Dict[str, Any]:
-        """Get current rate limit statistics."""
-        minute_count, hour_count, day_count = self._get_counts()
-        return {
-            "name": self.name,
-            "minute": {"current": minute_count, "limit": self.rpm},
-            "hour": {"current": hour_count, "limit": self.rph},
-            "day": {"current": day_count, "limit": self.rpd},
-        }
 
 
 class RobotsChecker:

@@ -26,33 +26,23 @@ class EntityDiscovery:
     """
 
     def __init__(self):
-        self._coordinator = None
-        self._wikipedia_scraper = None
-        self._cagematch_scraper = None
+        from . import ScraperProvider
+        self._scrapers = ScraperProvider()
 
     @property
     def coordinator(self):
-        """Lazy load scraper coordinator."""
-        if self._coordinator is None:
-            from ..scrapers.coordinator import ScraperCoordinator
-            self._coordinator = ScraperCoordinator()
-        return self._coordinator
+        """Get scraper coordinator from shared provider."""
+        return self._scrapers.coordinator
 
     @property
     def wikipedia_scraper(self):
-        """Lazy load Wikipedia scraper."""
-        if self._wikipedia_scraper is None:
-            from ..scrapers.wikipedia import WikipediaScraper
-            self._wikipedia_scraper = WikipediaScraper()
-        return self._wikipedia_scraper
+        """Get Wikipedia scraper from shared provider."""
+        return self._scrapers.wikipedia_scraper
 
     @property
     def cagematch_scraper(self):
-        """Lazy load Cagematch scraper."""
-        if self._cagematch_scraper is None:
-            from ..scrapers.cagematch import CagematchScraper
-            self._cagematch_scraper = CagematchScraper()
-        return self._cagematch_scraper
+        """Get Cagematch scraper from shared provider."""
+        return self._scrapers.cagematch_scraper
 
     def discover_wrestlers_from_matches(self, limit: int = 10) -> List[Dict[str, Any]]:
         """

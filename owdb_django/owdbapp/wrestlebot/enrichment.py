@@ -28,35 +28,25 @@ class EntityEnrichment:
     """
 
     def __init__(self):
+        from . import ScraperProvider
         self.scorer = CompletenessScorer()
-        self._wikipedia_scraper = None
-        self._wikimedia_client = None
-        self._cagematch_scraper = None
+        self._scrapers = ScraperProvider()
         self._ai_enhancer = None
 
     @property
     def wikipedia_scraper(self):
-        """Lazy load Wikipedia scraper."""
-        if self._wikipedia_scraper is None:
-            from ..scrapers.wikipedia import WikipediaScraper
-            self._wikipedia_scraper = WikipediaScraper()
-        return self._wikipedia_scraper
+        """Get Wikipedia scraper from shared provider."""
+        return self._scrapers.wikipedia_scraper
 
     @property
     def wikimedia_client(self):
-        """Lazy load Wikimedia Commons client."""
-        if self._wikimedia_client is None:
-            from ..scrapers.wikimedia_commons import WikimediaCommonsClient
-            self._wikimedia_client = WikimediaCommonsClient()
-        return self._wikimedia_client
+        """Get Wikimedia Commons client from shared provider."""
+        return self._scrapers.wikimedia_client
 
     @property
     def cagematch_scraper(self):
-        """Lazy load Cagematch scraper."""
-        if self._cagematch_scraper is None:
-            from ..scrapers.cagematch import CagematchScraper
-            self._cagematch_scraper = CagematchScraper()
-        return self._cagematch_scraper
+        """Get Cagematch scraper from shared provider."""
+        return self._scrapers.cagematch_scraper
 
     @property
     def ai_enhancer(self):

@@ -17,13 +17,13 @@ We do NOT extract:
 
 import logging
 import re
-from datetime import datetime
 from typing import Any, Dict, List, Optional
-from urllib.parse import quote, urljoin
+from urllib.parse import quote
 
 from bs4 import BeautifulSoup
 
 from .base import BaseScraper, retry_on_failure
+from .utils import clean_text, parse_date, parse_year
 
 logger = logging.getLogger(__name__)
 
@@ -158,51 +158,12 @@ class WikipediaScraper(BaseScraper):
             value = row.find("td")
 
             if header and value:
-                key = self._clean_text(header.get_text())
-                val = self._clean_text(value.get_text())
+                key = clean_text(header.get_text())
+                val = clean_text(value.get_text())
                 if key and val:
                     data[key.lower().replace(" ", "_")] = val
 
         return data
-
-    def _clean_text(self, text: str) -> str:
-        """Clean extracted text."""
-        # Remove reference markers like [1], [2], etc.
-        text = re.sub(r"\[\d+\]", "", text)
-        # Remove extra whitespace
-        text = " ".join(text.split())
-        return text.strip()
-
-    def _parse_year(self, text: str) -> Optional[int]:
-        """Extract a year from text."""
-        match = re.search(r"\b(19|20)\d{2}\b", text)
-        if match:
-            return int(match.group())
-        return None
-
-    def _parse_date(self, text: str) -> Optional[str]:
-        """Try to parse a date string."""
-        # Common date patterns
-        patterns = [
-            r"(\w+ \d{1,2}, \d{4})",  # January 1, 2020
-            r"(\d{1,2} \w+ \d{4})",  # 1 January 2020
-            r"(\d{4}-\d{2}-\d{2})",  # 2020-01-01
-        ]
-
-        for pattern in patterns:
-            match = re.search(pattern, text)
-            if match:
-                date_str = match.group(1)
-                try:
-                    for fmt in ["%B %d, %Y", "%d %B %Y", "%Y-%m-%d"]:
-                        try:
-                            dt = datetime.strptime(date_str, fmt)
-                            return dt.strftime("%Y-%m-%d")
-                        except ValueError:
-                            continue
-                except Exception:
-                    pass
-        return None
 
     @retry_on_failure(max_retries=3)
     def parse_wrestler_page(self, title: str) -> Optional[Dict[str, Any]]:
@@ -236,7 +197,7 @@ class WikipediaScraper(BaseScraper):
                 value = infobox[wiki_field]
 
                 if our_field in ("debut_year", "retirement_year"):
-                    year = self._parse_year(value)
+                    year = parse_year(value)
                     if year:
                         wrestler[our_field] = year
                 else:
@@ -269,13 +230,13 @@ class WikipediaScraper(BaseScraper):
             promotion["abbreviation"] = infobox["short_name"]
 
         if "founded" in infobox:
-            year = self._parse_year(infobox["founded"])
+            year = parse_year(infobox["founded"])
             if year:
                 promotion["founded_year"] = year
 
         if "defunct" in infobox or "closed" in infobox:
             defunct = infobox.get("defunct") or infobox.get("closed", "")
-            year = self._parse_year(defunct)
+            year = parse_year(defunct)
             if year:
                 promotion["closed_year"] = year
 
@@ -303,7 +264,7 @@ class WikipediaScraper(BaseScraper):
         # Map infobox fields
         if "date" in infobox or "dates" in infobox:
             date_text = infobox.get("date") or infobox.get("dates", "")
-            date = self._parse_date(date_text)
+            date = parse_date(date_text)
             if date:
                 event["date"] = date
 

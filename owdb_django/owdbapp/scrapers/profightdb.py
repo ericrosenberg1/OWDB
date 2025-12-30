@@ -12,13 +12,13 @@ We respect their robots.txt and rate limits.
 
 import logging
 import re
-from datetime import datetime
 from typing import Any, Dict, List, Optional
-from urllib.parse import quote, urljoin, parse_qs, urlparse
+from urllib.parse import quote, urljoin
 
 from bs4 import BeautifulSoup
 
 from .base import BaseScraper, retry_on_failure
+from .utils import clean_text, parse_date, parse_year
 
 logger = logging.getLogger(__name__)
 
@@ -46,50 +46,6 @@ class ProFightDBScraper(BaseScraper):
         session.verify = self.VERIFY_SSL
         return session
 
-    def _clean_text(self, text: str) -> str:
-        """Clean extracted text."""
-        if not text:
-            return ""
-        text = " ".join(text.split())
-        return text.strip()
-
-    def _parse_date(self, text: str) -> Optional[str]:
-        """Parse a date string."""
-        if not text:
-            return None
-
-        patterns = [
-            (r"(\d{4})-(\d{2})-(\d{2})", "%Y-%m-%d"),
-            (r"(\w+) (\d{1,2}), (\d{4})", "%B %d, %Y"),
-            (r"(\d{1,2})/(\d{1,2})/(\d{4})", "%m/%d/%Y"),
-        ]
-
-        for pattern, date_format in patterns:
-            match = re.search(pattern, text)
-            if match:
-                try:
-                    if "-" in pattern:
-                        date_str = f"{match.group(1)}-{match.group(2)}-{match.group(3)}"
-                    elif "/" in pattern:
-                        date_str = f"{match.group(1)}/{match.group(2)}/{match.group(3)}"
-                    else:
-                        date_str = f"{match.group(1)} {match.group(2)}, {match.group(3)}"
-                    dt = datetime.strptime(date_str, date_format)
-                    return dt.strftime("%Y-%m-%d")
-                except ValueError:
-                    continue
-
-        return None
-
-    def _parse_year(self, text: str) -> Optional[int]:
-        """Extract a year from text."""
-        if not text:
-            return None
-        match = re.search(r"\b(19|20)\d{2}\b", text)
-        if match:
-            return int(match.group())
-        return None
-
     def search_wrestlers(self, query: str, limit: int = 20) -> List[Dict[str, Any]]:
         """Search for wrestlers by name."""
         url = f"{self.BASE_URL}/search?q={quote(query)}"
@@ -112,7 +68,7 @@ class ProFightDBScraper(BaseScraper):
                 if len(results) >= limit:
                     break
 
-                name = self._clean_text(link.get_text())
+                name = clean_text(link.get_text())
                 href = link.get("href", "")
 
                 if name and href:
@@ -127,7 +83,7 @@ class ProFightDBScraper(BaseScraper):
                 if len(results) >= limit:
                     break
 
-                name = self._clean_text(link.get_text())
+                name = clean_text(link.get_text())
                 href = link.get("href", "")
 
                 if name and href:
@@ -158,7 +114,7 @@ class ProFightDBScraper(BaseScraper):
         # Get wrestler name
         title = soup.find("h1") or soup.find("title")
         if title:
-            name = self._clean_text(title.get_text())
+            name = clean_text(title.get_text())
             # Remove site name from title
             name = re.sub(r"\s*[-|]\s*ProFightDB.*$", "", name, flags=re.IGNORECASE)
             wrestler["name"] = name
@@ -172,8 +128,8 @@ class ProFightDBScraper(BaseScraper):
             for row in info_table.find_all("tr"):
                 cells = row.find_all(["th", "td"])
                 if len(cells) >= 2:
-                    label = self._clean_text(cells[0].get_text()).lower()
-                    value = self._clean_text(cells[1].get_text())
+                    label = clean_text(cells[0].get_text()).lower()
+                    value = clean_text(cells[1].get_text())
 
                     if "real name" in label or "birth name" in label:
                         wrestler["real_name"] = value
@@ -184,11 +140,11 @@ class ProFightDBScraper(BaseScraper):
                     elif "nationality" in label:
                         wrestler["nationality"] = value
                     elif "debut" in label:
-                        year = self._parse_year(value)
+                        year = parse_year(value)
                         if year:
                             wrestler["debut_year"] = year
                     elif "retired" in label:
-                        year = self._parse_year(value)
+                        year = parse_year(value)
                         if year:
                             wrestler["retirement_year"] = year
                     elif "finish" in label:
@@ -214,7 +170,7 @@ class ProFightDBScraper(BaseScraper):
         # Get event name
         title = soup.find("h1")
         if title:
-            event["name"] = self._clean_text(title.get_text())
+            event["name"] = clean_text(title.get_text())
 
         # Look for event info
         info_section = soup.find("div", class_="event-info") or soup.find(
@@ -225,7 +181,7 @@ class ProFightDBScraper(BaseScraper):
             text = info_section.get_text()
 
             # Try to extract date
-            date = self._parse_date(text)
+            date = parse_date(text)
             if date:
                 event["date"] = date
 
@@ -234,7 +190,7 @@ class ProFightDBScraper(BaseScraper):
                 r"(?:venue|arena|location):\s*([^,\n]+)", text, re.IGNORECASE
             )
             if venue_match:
-                event["venue_name"] = self._clean_text(venue_match.group(1))
+                event["venue_name"] = clean_text(venue_match.group(1))
 
             # Try to extract attendance
             attendance_match = re.search(r"attendance:\s*([\d,]+)", text, re.IGNORECASE)
@@ -273,7 +229,7 @@ class ProFightDBScraper(BaseScraper):
         # Look for participants
         participants = []
         for link in row.find_all("a", href=re.compile(r"/wrestlers/")):
-            name = self._clean_text(link.get_text())
+            name = clean_text(link.get_text())
             if name:
                 participants.append(name)
 
@@ -282,9 +238,9 @@ class ProFightDBScraper(BaseScraper):
 
         # Look for result/winner
         for cell in cells:
-            text = self._clean_text(cell.get_text()).lower()
+            text = clean_text(cell.get_text()).lower()
             if "def" in text or "defeat" in text or "win" in text:
-                match["result"] = self._clean_text(cell.get_text())
+                match["result"] = clean_text(cell.get_text())
                 break
 
         # Look for match type
@@ -326,7 +282,7 @@ class ProFightDBScraper(BaseScraper):
             if len(events) >= limit:
                 break
 
-            name = self._clean_text(link.get_text())
+            name = clean_text(link.get_text())
             href = link.get("href", "")
 
             if name and href and name.lower() not in ["events", "more"]:
@@ -354,7 +310,7 @@ class ProFightDBScraper(BaseScraper):
             if len(wrestlers) >= limit:
                 break
 
-            name = self._clean_text(link.get_text())
+            name = clean_text(link.get_text())
             href = link.get("href", "")
 
             if name and href:
@@ -409,7 +365,7 @@ class ProFightDBScraper(BaseScraper):
             if len(promotions) >= limit:
                 break
 
-            name = self._clean_text(link.get_text())
+            name = clean_text(link.get_text())
             href = link.get("href", "")
 
             if name and href:

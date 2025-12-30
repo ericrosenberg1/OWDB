@@ -126,9 +126,9 @@ class EntityEnrichment:
         logger.info(f"Enriching wrestler {wrestler.name} (score: {breakdown.percentage}%, missing: {missing})")
 
         # Try Wikipedia for missing text fields
-        if any(f in missing for f in ['real_name', 'hometown', 'nationality', 'bio', 'debut_year', 'finishers']):
+        if any(f in missing for f in ['real_name', 'hometown', 'nationality', 'about', 'debut_year', 'finishers']):
             try:
-                wiki_data = self.wikipedia_scraper.search_wrestler(wrestler.name)
+                wiki_data = self.wikipedia_scraper.scrape_wrestler_by_name(wrestler.name)
                 if wiki_data:
                     sources_used.append('wikipedia')
 
@@ -151,10 +151,6 @@ class EntityEnrichment:
                     if 'finishers' in missing and wiki_data.get('finishers'):
                         wrestler.finishers = wiki_data['finishers'][:1000]
                         updated_fields['finishers'] = wiki_data['finishers']
-
-                    if 'bio' in missing and wiki_data.get('bio'):
-                        wrestler.bio = wiki_data['bio'][:5000]
-                        updated_fields['bio'] = wiki_data['bio'][:100] + '...'
 
             except Exception as e:
                 logger.warning(f"Wikipedia enrichment failed for {wrestler.name}: {e}")
@@ -213,19 +209,13 @@ class EntityEnrichment:
 
         logger.info(f"Enriching promotion {promotion.name} (score: {breakdown.percentage}%, missing: {missing})")
 
-        # Try Wikipedia
+        # Try Wikipedia using parse_promotion_page
         if any(f in missing for f in ['about', 'founded_year', 'abbreviation', 'headquarters', 'website']):
             try:
-                wiki_data = self.wikipedia_scraper.search_promotion(
-                    promotion.name,
-                    promotion.abbreviation
-                )
+                # Use parse_promotion_page with the promotion name as the Wikipedia title
+                wiki_data = self.wikipedia_scraper.parse_promotion_page(promotion.name)
                 if wiki_data:
                     sources_used.append('wikipedia')
-
-                    if 'about' in missing and wiki_data.get('about'):
-                        promotion.about = wiki_data['about'][:5000]
-                        updated_fields['about'] = wiki_data['about'][:100] + '...'
 
                     if 'founded_year' in missing and wiki_data.get('founded_year'):
                         promotion.founded_year = wiki_data['founded_year']
@@ -294,14 +284,10 @@ class EntityEnrichment:
 
         logger.info(f"Enriching event {event.name} (score: {breakdown.percentage}%, missing: {missing})")
 
-        # Try Wikipedia for event details
+        # Try Wikipedia for event details using parse_event_page
         if any(f in missing for f in ['venue', 'attendance', 'about']):
             try:
-                wiki_data = self.wikipedia_scraper.search_event(
-                    event.name,
-                    event.promotion.name if event.promotion else None,
-                    event.date.year if event.date else None
-                )
+                wiki_data = self.wikipedia_scraper.parse_event_page(event.name)
                 if wiki_data:
                     sources_used.append('wikipedia')
 
@@ -380,20 +366,33 @@ class EntityEnrichment:
 
         logger.info(f"Enriching venue {venue.name} (score: {breakdown.percentage}%, missing: {missing})")
 
-        # Try Wikipedia for venue details
+        # Try Wikipedia for venue details using get_infobox_data
         if any(f in missing for f in ['location', 'capacity', 'about']):
             try:
-                wiki_data = self.wikipedia_scraper.search_venue(venue.name)
+                wiki_data = self.wikipedia_scraper.get_infobox_data(venue.name)
                 if wiki_data:
                     sources_used.append('wikipedia')
 
-                    if 'location' in missing and wiki_data.get('location'):
-                        venue.location = wiki_data['location'][:255]
-                        updated_fields['location'] = wiki_data['location']
+                    if 'location' in missing:
+                        # Try various location field names from Wikipedia infoboxes
+                        location = (wiki_data.get('location') or wiki_data.get('city') or
+                                   wiki_data.get('address'))
+                        if location:
+                            venue.location = location[:255]
+                            updated_fields['location'] = location
 
-                    if 'capacity' in missing and wiki_data.get('capacity'):
-                        venue.capacity = wiki_data['capacity']
-                        updated_fields['capacity'] = wiki_data['capacity']
+                    if 'capacity' in missing:
+                        capacity_str = wiki_data.get('capacity') or wiki_data.get('seating_capacity')
+                        if capacity_str:
+                            # Try to extract number from capacity string
+                            import re
+                            numbers = re.findall(r'[\d,]+', capacity_str.replace(',', ''))
+                            if numbers:
+                                try:
+                                    venue.capacity = int(numbers[0])
+                                    updated_fields['capacity'] = venue.capacity
+                                except ValueError:
+                                    pass
 
             except Exception as e:
                 logger.warning(f"Wikipedia enrichment failed for {venue.name}: {e}")
@@ -525,14 +524,14 @@ class EntityEnrichment:
 
         try:
             if entity_type == 'wrestler':
-                # Generate bio if missing
+                # Generate about (bio) if missing
                 breakdown = self.scorer.score_wrestler(entity)
-                if 'bio' in breakdown.missing_fields:
+                if 'about' in breakdown.missing_fields:
                     bio = self.ai_enhancer.generate_wrestler_bio(entity)
                     if bio:
-                        entity.bio = bio[:5000]
-                        entity.save(update_fields=['bio', 'updated_at'])
-                        updated_fields['bio'] = bio[:100] + '...'
+                        entity.about = bio[:5000]
+                        entity.save(update_fields=['about', 'updated_at'])
+                        updated_fields['about'] = bio[:100] + '...'
 
             duration_ms = int((time.time() - start_time) * 1000)
 

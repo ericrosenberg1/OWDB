@@ -94,8 +94,8 @@ class EntityDiscovery:
         # Verify and add new wrestlers
         for name in list(potential_names)[:limit]:
             try:
-                # Try to find on Wikipedia
-                wrestler_data = self.wikipedia_scraper.search_wrestler(name)
+                # Try to find on Wikipedia using scrape_wrestler_by_name
+                wrestler_data = self.wikipedia_scraper.scrape_wrestler_by_name(name)
                 if wrestler_data:
                     discovered.append({
                         'name': name,
@@ -194,7 +194,7 @@ class EntityDiscovery:
         """
         Discover events for promotions that have few events.
 
-        Finds promotions with low event counts and searches for their events.
+        Scrapes Wikipedia event categories and filters by promotion.
         """
         from ..models import Promotion, Event
 
@@ -207,41 +207,59 @@ class EntityDiscovery:
             event_count__lt=10
         ).order_by('event_count')[:5]
 
-        for promotion in promotions_needing_events:
-            try:
-                # Search Wikipedia for events
-                events = self.wikipedia_scraper.search_promotion_events(
-                    promotion.name,
-                    promotion.abbreviation,
-                    limit=limit
-                )
+        # Get promotion names/abbreviations for matching
+        promo_names = {
+            p.name.lower(): p.name for p in promotions_needing_events
+        }
+        promo_abbrevs = {
+            p.abbreviation.lower(): p.name
+            for p in promotions_needing_events
+            if p.abbreviation
+        }
 
-                for event_data in events:
-                    # Check if event already exists
-                    event_name = event_data.get('name', '')
-                    event_date = event_data.get('date', '')
+        try:
+            # Scrape events from Wikipedia categories
+            events = self.wikipedia_scraper.scrape_events(limit=limit * 3)
 
-                    exists = Event.objects.filter(
-                        name__iexact=event_name,
-                        date=event_date
-                    ).exists()
+            for event_data in events:
+                event_name = event_data.get('name', '')
+                event_date = event_data.get('date', '')
+                promo_name = event_data.get('promotion_name', '')
 
-                    if not exists:
-                        event_data['promotion_name'] = promotion.name
-                        discovered.append({
-                            'name': event_name,
-                            'data': event_data,
-                            'source': 'wikipedia',
-                        })
-
-                        if len(discovered) >= limit:
+                # Try to match to one of our promotions needing events
+                matched_promo = None
+                if promo_name:
+                    matched_promo = promo_names.get(promo_name.lower()) or promo_abbrevs.get(promo_name.lower())
+                else:
+                    # Check if event name contains promotion name/abbrev
+                    event_lower = event_name.lower()
+                    for abbrev, full_name in promo_abbrevs.items():
+                        if abbrev in event_lower:
+                            matched_promo = full_name
                             break
 
-            except Exception as e:
-                logger.warning(f"Failed to discover events for {promotion.name}: {e}")
+                if not matched_promo:
+                    continue
 
-            if len(discovered) >= limit:
-                break
+                # Check if event already exists
+                exists = Event.objects.filter(
+                    name__iexact=event_name,
+                    date=event_date
+                ).exists() if event_date else Event.objects.filter(name__iexact=event_name).exists()
+
+                if not exists:
+                    event_data['promotion_name'] = matched_promo
+                    discovered.append({
+                        'name': event_name,
+                        'data': event_data,
+                        'source': 'wikipedia',
+                    })
+
+                    if len(discovered) >= limit:
+                        break
+
+        except Exception as e:
+            logger.warning(f"Failed to discover events from Wikipedia: {e}")
 
         logger.info(f"Discovered {len(discovered)} events from promotions")
         return discovered
@@ -273,26 +291,34 @@ class EntityDiscovery:
             'FCW', 'NXT', 'WWF', 'AWA', 'WCCW', 'SMW', 'USWA', 'GAEA',
         }
 
-        # Get wrestlers with bios
+        # Get wrestlers with about (bio) text
         wrestlers = Wrestler.objects.exclude(
-            bio=''
+            about=''
         ).exclude(
-            bio__isnull=True
+            about__isnull=True
         )[:200]
 
         potential_promos: Set[str] = set()
 
         for wrestler in wrestlers:
-            if wrestler.bio:
-                # Look for promotion names in bio
+            if wrestler.about:
+                # Look for promotion names in about text
                 for promo in known_promotions:
-                    if promo in wrestler.bio and promo.lower() not in existing_promos_lower:
+                    if promo in wrestler.about and promo.lower() not in existing_promos_lower:
                         potential_promos.add(promo)
 
-        # Try to get more info on discovered promotions
-        for promo_name in list(potential_promos)[:limit]:
-            try:
-                promo_data = self.wikipedia_scraper.search_promotion(promo_name)
+        # Scrape promotions from Wikipedia and check if any match
+        try:
+            wiki_promos = self.wikipedia_scraper.scrape_promotions(limit=50)
+            promo_by_name = {p.get('name', '').lower(): p for p in wiki_promos}
+            promo_by_abbrev = {
+                p.get('abbreviation', '').lower(): p
+                for p in wiki_promos
+                if p.get('abbreviation')
+            }
+
+            for promo_name in list(potential_promos)[:limit]:
+                promo_data = promo_by_name.get(promo_name.lower()) or promo_by_abbrev.get(promo_name.lower())
                 if promo_data:
                     discovered.append({
                         'name': promo_name,
@@ -300,8 +326,9 @@ class EntityDiscovery:
                         'source': 'wikipedia',
                     })
                     logger.info(f"Discovered promotion from wrestler bio: {promo_name}")
-            except Exception as e:
-                logger.warning(f"Failed to verify promotion {promo_name}: {e}")
+
+        except Exception as e:
+            logger.warning(f"Failed to verify promotions: {e}")
 
         return discovered[:limit]
 

@@ -41,7 +41,7 @@ class CompletenessScorer:
         'nationality': 5,
         'debut_year': 10,
         'retirement_year': 5,  # Only for retired wrestlers
-        'bio': 15,
+        'about': 15,          # Model uses 'about' not 'bio'
         'image_url': 15,
         'aliases': 5,
         'finishers': 5,
@@ -146,16 +146,16 @@ class CompletenessScorer:
             # Not retired, don't count this field
             del weights['retirement_year']
 
-        # Bio
-        if wrestler.bio and len(wrestler.bio) > 50:
-            field_scores['bio'] = (weights['bio'], weights['bio'])
-        elif wrestler.bio:
+        # About (biography)
+        if wrestler.about and len(wrestler.about) > 50:
+            field_scores['about'] = (weights['about'], weights['about'])
+        elif wrestler.about:
             # Partial credit for short bio
-            field_scores['bio'] = (weights['bio'] // 2, weights['bio'])
+            field_scores['about'] = (weights['about'] // 2, weights['about'])
             suggestions.append('Expand biography with more details')
         else:
-            field_scores['bio'] = (0, weights['bio'])
-            missing_fields.append('bio')
+            field_scores['about'] = (0, weights['about'])
+            missing_fields.append('about')
             suggestions.append('Generate biography from available data')
 
         # Image

@@ -5,6 +5,28 @@ from django.utils.text import slugify
 import secrets
 
 
+def generate_unique_slug(model_class, base_slug, instance_pk=None):
+    """
+    Generate a unique slug for a model instance.
+
+    If the base slug already exists, appends -2, -3, etc. until unique.
+
+    Args:
+        model_class: The Django model class to check against
+        base_slug: The initial slug to try
+        instance_pk: The PK of the current instance (to exclude from check)
+
+    Returns:
+        A unique slug string
+    """
+    slug = base_slug
+    counter = 1
+    while model_class.objects.filter(slug=slug).exclude(pk=instance_pk).exists():
+        counter += 1
+        slug = f"{base_slug}-{counter}"
+    return slug
+
+
 class TimeStampedModel(models.Model):
     """Abstract base model with created/updated timestamps."""
     created_at = models.DateTimeField(auto_now_add=True)
@@ -176,7 +198,8 @@ class Venue(ImageMixin, TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            self.slug = generate_unique_slug(Venue, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -247,7 +270,8 @@ class Promotion(ImageMixin, TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            self.slug = generate_unique_slug(Promotion, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -348,7 +372,8 @@ class Stable(ImageMixin, TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            self.slug = generate_unique_slug(Stable, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -413,7 +438,8 @@ class Wrestler(ImageMixin, TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            self.slug = generate_unique_slug(Wrestler, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -805,7 +831,8 @@ class Event(ImageMixin, TimeStampedModel):
     def save(self, *args, **kwargs):
         if not self.slug:
             date_str = self.date.strftime('%Y') if self.date else ''
-            self.slug = slugify(f"{self.name}-{date_str}")
+            base_slug = slugify(f"{self.name}-{date_str}")
+            self.slug = generate_unique_slug(Event, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -843,7 +870,8 @@ class Title(ImageMixin, TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            self.slug = generate_unique_slug(Title, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -940,7 +968,8 @@ class VideoGame(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            self.slug = generate_unique_slug(VideoGame, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -976,7 +1005,8 @@ class Podcast(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            self.slug = generate_unique_slug(Podcast, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -1055,7 +1085,8 @@ class PodcastEpisode(TimeStampedModel):
         if not self.slug:
             base_slug = slugify(self.title[:200])
             date_str = self.published_date.strftime('%Y%m%d') if self.published_date else ''
-            self.slug = f"{base_slug}-{date_str}" if date_str else base_slug
+            base_slug = f"{base_slug}-{date_str}" if date_str else base_slug
+            self.slug = generate_unique_slug(PodcastEpisode, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -1142,7 +1173,8 @@ class Book(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.title)
+            base_slug = slugify(self.title)
+            self.slug = generate_unique_slug(Book, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -1174,7 +1206,8 @@ class Special(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.title)
+            base_slug = slugify(self.title)
+            self.slug = generate_unique_slug(Special, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):

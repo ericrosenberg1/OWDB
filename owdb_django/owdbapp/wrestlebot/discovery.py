@@ -99,15 +99,19 @@ class EntityDiscovery:
         return discovered[:limit]
 
     def _extract_names_from_match(self, match_text: str) -> List[str]:
-        """Extract potential wrestler names from match text."""
+        """
+        Extract potential wrestler names from match text.
+
+        Common patterns:
+        - "John Cena defeated Randy Orton"
+        - "The Rock vs Stone Cold Steve Austin"
+        - "Triple H (c) vs Shawn Michaels"
+        - "Team Alpha (Wrestler A, Wrestler B) vs Team Beta"
+        - "Wrestler A & Wrestler B defeated Wrestler C & Wrestler D"
+        """
         names = []
 
-        # Common patterns in match text:
-        # "John Cena defeated Randy Orton"
-        # "The Rock vs Stone Cold Steve Austin"
-        # "Triple H (c) vs Shawn Michaels"
-
-        # Remove common non-name words
+        # Common non-name words to filter out
         stop_words = {
             'defeated', 'def', 'beat', 'pinned', 'submitted', 'won', 'lost',
             'drew', 'retained', 'captured', 'defended', 'vacant', 'vacated',
@@ -116,29 +120,60 @@ class EntityDiscovery:
             'disqualification', 'dq', 'countout', 'count', 'out', 'pinfall',
             'submission', 'referee', 'stoppage', 'no', 'contest', 'draw',
             'table', 'ladder', 'cage', 'cell', 'steel', 'falls', 'anywhere',
+            'team', 'vs', 'over', 'in', 'at', 'to', 'from', 'into',
         }
 
-        # Split by common separators
-        parts = re.split(r'\s+vs\.?\s+|\s+def\.?\s+|\s+defeated\s+|\s+beat\s+|\s+&\s+|\s+and\s+', match_text, flags=re.IGNORECASE)
+        # First, clean the text
+        text = match_text
+
+        # Remove parenthetical content like (c) for champion, (2:15) for time
+        text = re.sub(r'\([^)]*\)', ' ', text)
+        # Remove bracket content
+        text = re.sub(r'\[[^\]]*\]', ' ', text)
+
+        # Split by all common separators to get individual names
+        # This includes: vs, vs., defeated, def., beat, &, and, comma
+        parts = re.split(
+            r'\s+vs\.?\s+|\s+def\.?\s+|\s+defeated\s+|\s+beat\s+'
+            r'|\s+&\s+|\s+and\s+|\s*,\s*|\s+over\s+',
+            text,
+            flags=re.IGNORECASE
+        )
 
         for part in parts:
-            # Clean up the part
-            part = re.sub(r'\([^)]*\)', '', part)  # Remove parentheses content
-            part = re.sub(r'\[[^\]]*\]', '', part)  # Remove bracket content
             part = part.strip()
+            if not part:
+                continue
 
-            # Check if it looks like a name (2-4 capitalized words)
+            # Skip if it's too short or too long
             words = part.split()
-            if 1 <= len(words) <= 4:
-                # Check if words are mostly capitalized and not stop words
-                valid_words = [
-                    w for w in words
-                    if w[0].isupper() and w.lower() not in stop_words
-                ]
-                if len(valid_words) >= len(words) * 0.5:
-                    name = ' '.join(words)
-                    if len(name) >= 3:  # Minimum name length
-                        names.append(name)
+            if not (1 <= len(words) <= 5):
+                continue
+
+            # Skip if it's mostly stop words
+            non_stop_words = [
+                w for w in words
+                if w.lower() not in stop_words and len(w) > 1
+            ]
+            if len(non_stop_words) < len(words) * 0.5:
+                continue
+
+            # Check if it looks like a name (starts with capital, reasonable length)
+            # Allow "The Rock", "Stone Cold Steve Austin", etc.
+            first_word = words[0]
+            if not first_word[0].isupper():
+                continue
+
+            # Build the potential name
+            name = ' '.join(words)
+
+            # Validate the name
+            if len(name) >= 3 and len(name) <= 50:  # Reasonable name length
+                # Skip common non-wrestler terms that might slip through
+                lower_name = name.lower()
+                if lower_name in {'world', 'heavyweight', 'champion', 'title match'}:
+                    continue
+                names.append(name)
 
         return names
 
@@ -475,10 +510,10 @@ class EntityDiscovery:
         if not name:
             return None
 
+        # The Venue.save() method now handles unique slug generation
         venue, created = Venue.objects.get_or_create(
             name=name,
             defaults={
-                'slug': slugify(name),
                 'location': data.get('location', ''),
                 'capacity': data.get('capacity'),
             }

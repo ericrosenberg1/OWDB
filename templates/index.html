@@ -225,7 +225,7 @@
                 </div>
                 {% empty %}
                 <div class="empty-scroller">
-                    <p>No wrestlers yet. WrestleBot is working on it!</p>
+                    <p>No wrestlers yet. Check back soon!</p>
                 </div>
                 {% endfor %}
             </div>
@@ -367,7 +367,7 @@
                         <li>Free tier: 100 requests/hour</li>
                         <li>Complete wrestler, event, match, and stable data</li>
                         <li>Aggregated from many authoritative sources</li>
-                        <li>Real-time updates via WrestleBot AI</li>
+                        <li>Regularly updated database</li>
                     </ul>
                     {% if user.is_authenticated %}
                     <a href="{% url 'account' %}" class="btn btn-primary">Manage API Keys</a>

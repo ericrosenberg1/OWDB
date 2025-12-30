@@ -1,7 +1,7 @@
 """
 Wrestling news aggregator scraper.
 
-Scrapes from multiple wrestling news sources to keep WrestleBot informed
+Scrapes from multiple wrestling news sources to keep the database informed
 about current events, breaking news, and industry developments.
 
 Sources:

@@ -15,7 +15,6 @@ An open, fan-curated wrestling database and platform — inspired by TMDB and IM
 
 - **Django 5.2+** web application with PostgreSQL
 - **Redis** caching and **Celery** background tasks
-- **WrestleBot** - Autonomous data collection service
 - **REST API** with JWT authentication and rate limiting
 - **Dark mode** responsive interface
 - **Docker Compose** for easy deployment
@@ -30,7 +29,6 @@ An open, fan-curated wrestling database and platform — inspired by TMDB and IM
 | Database | PostgreSQL 15+ |
 | Cache | Redis 7+ |
 | Task Queue | Celery 5.5+ with Beat scheduler |
-| AI/ML | Ollama (self-hosted LLM) |
 | Web Server | Gunicorn + Traefik |
 | Containerization | Docker & Docker Compose |
 
@@ -84,35 +82,6 @@ curl https://wrestlingdb.org/api/wrestlers/ \
 
 ---
 
-## WrestleBot
-
-WrestleBot is an autonomous data collection service that runs independently to gather wrestling information from multiple sources.
-
-- Uses Wikipedia's official API (not scraping)
-- Extracts only factual, non-copyrightable data
-- Circuit breaker pattern for fault tolerance
-- Runs as a systemd service on production
-
-### Running WrestleBot
-
-```bash
-# Set up API user
-python manage.py setup_wrestlebot_user
-
-# Start the service
-cd wrestlebot
-python main.py
-```
-
-### Ollama Setup (Docker)
-
-```bash
-docker compose up -d ollama
-docker compose exec ollama ollama pull llama3.2
-```
-
----
-
 ## Deployment
 
 ### Server Requirements
@@ -131,21 +100,20 @@ git pull origin main
 ./venv/bin/python -m pip install -r requirements.txt
 ./venv/bin/python manage.py migrate
 ./venv/bin/python manage.py collectstatic --noinput
-sudo systemctl restart wrestlingdb wrestlebot
+sudo systemctl restart wrestlingdb
 ```
 
 ### Service Management
 
 ```bash
 # Check status
-sudo systemctl status wrestlingdb wrestlebot
+sudo systemctl status wrestlingdb
 
 # View logs
 sudo journalctl -u wrestlingdb -f
-sudo journalctl -u wrestlebot -f
 
 # Restart
-sudo systemctl restart wrestlingdb wrestlebot
+sudo systemctl restart wrestlingdb
 ```
 
 ---

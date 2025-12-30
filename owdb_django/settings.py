@@ -71,7 +71,6 @@ INSTALLED_APPS = [
     'storages',  # Cloud storage (Cloudflare R2)
     # Local
     'owdb_django.owdbapp',
-    'wrestlebot_api',
 ]
 
 MIDDLEWARE = [
@@ -245,39 +244,6 @@ CELERY_BEAT_SCHEDULE = {
         'args': (30,),
     },
     # ==========================================================================
-    # WrestleBot AI tasks - 4X FREQUENCY for faster database building
-    # ==========================================================================
-    'wrestlebot-discovery-cycle': {
-        'task': 'owdb_django.owdbapp.tasks.wrestlebot_discovery_cycle',
-        'schedule': 60.0,  # Every minute for continuous improvement
-        'args': (10,),  # Tighter batches to finish quickly
-    },
-    'wrestlebot-cleanup-logs': {
-        'task': 'owdb_django.owdbapp.tasks.wrestlebot_cleanup_old_logs',
-        'schedule': 604800.0,  # Every 7 days
-    },
-    'wrestlebot-reset-limits': {
-        'task': 'owdb_django.owdbapp.tasks.wrestlebot_reset_daily_limits',
-        'schedule': 86400.0,  # Every 24 hours
-    },
-    'wrestlebot-get-stats': {
-        'task': 'owdb_django.owdbapp.tasks.wrestlebot_get_stats',
-        'schedule': 600.0,  # Every 10 minutes for fresher dashboards
-    },
-    'wrestlebot-health-check': {
-        'task': 'owdb_django.owdbapp.tasks.wrestlebot_health_check',
-        'schedule': 120.0,  # Every 2 minutes to catch freezes fast
-    },
-    'wrestlebot-restart-stale': {
-        'task': 'owdb_django.owdbapp.tasks.restart_stale_bot_tasks',
-        'schedule': 300.0,  # Every 5 minutes
-    },
-    # Bulk discovery task (replaces standalone wrestlebot container)
-    'wrestlebot-bulk-discovery': {
-        'task': 'owdb_django.owdbapp.tasks.wrestlebot_bulk_discovery',
-        'schedule': 1800.0,  # Every 30 minutes
-    },
-    # ==========================================================================
     # Image Fetch Tasks (Wikimedia Commons CC Images)
     # ==========================================================================
     'fetch-wrestler-images': {
@@ -350,17 +316,6 @@ GOOGLE_BOOKS_API_KEY = os.getenv('GOOGLE_BOOKS_API_KEY')
 PODCAST_INDEX_API_KEY = os.getenv('PODCAST_INDEX_API_KEY')
 PODCAST_INDEX_API_SECRET = os.getenv('PODCAST_INDEX_API_SECRET')
 LISTEN_NOTES_API_KEY = os.getenv('LISTEN_NOTES_API_KEY')
-
-# =============================================================================
-# WrestleBot AI Configuration
-# =============================================================================
-
-# Ollama settings (self-hosted AI)
-OLLAMA_URL = os.getenv('OLLAMA_URL', 'http://localhost:11434')
-WRESTLEBOT_AI_MODEL = os.getenv('WRESTLEBOT_AI_MODEL', os.getenv('OLLAMA_MODEL', 'llama3.2'))
-
-# WrestleBot is enabled by default but can be disabled via env var
-WRESTLEBOT_ENABLED = os.getenv('WRESTLEBOT_ENABLED', 'true').lower() == 'true'
 
 # =============================================================================
 # Password Validation
@@ -563,9 +518,6 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/hour',
-        'user': '10000/hour',  # High limit for WrestleBot
+        'user': '10000/hour',  # High limit for authenticated users
     },
 }
-
-# WrestleBot API Token (set via environment variable)
-WRESTLEBOT_API_TOKEN = os.getenv('WRESTLEBOT_API_TOKEN', '')

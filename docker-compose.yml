@@ -6,8 +6,7 @@
 #   - db: PostgreSQL 17 database
 #   - redis: Redis 7 for caching and Celery broker
 #   - web: Django application with Gunicorn
-#   - celery_worker: Background task processor
-#   - celery_beat: Scheduled task scheduler
+#   - celery: Background task processor with embedded beat scheduler
 #
 # Usage:
 #   Development: docker-compose up
@@ -53,25 +52,6 @@ services:
       retries: 5
 
   # ---------------------------------------------------------------------------
-  # Ollama - Local LLM for WrestleBot AI verification
-  # ---------------------------------------------------------------------------
-  ollama:
-    image: ollama/ollama:latest
-    restart: unless-stopped
-    environment:
-      - OLLAMA_HOST=0.0.0.0
-    volumes:
-      - ollama_data:/root/.ollama
-    ports:
-      - "11434:11434"
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-
-  # ---------------------------------------------------------------------------
   # Django Web Application
   # ---------------------------------------------------------------------------
   web:
@@ -88,13 +68,10 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
-      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
     depends_on:
       db:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      ollama:
         condition: service_healthy
     ports:
       - "8000:8000"
@@ -119,14 +96,11 @@ services:
       start_period: 40s
 
   # ---------------------------------------------------------------------------
-  # Celery All-in-One: Worker + Beat + WrestleBot
+  # Celery Worker + Beat Scheduler
   # ---------------------------------------------------------------------------
-  # This single container runs:
+  # This container runs:
   #   - Celery worker (background task processing)
   #   - Celery beat (scheduled task scheduler, embedded with -B flag)
-  #   - WrestleBot (now runs as a Celery periodic task instead of standalone)
-  #
-  # This consolidation saves ~260MB RAM and reduces container complexity.
   # ---------------------------------------------------------------------------
   celery:
     build: .
@@ -142,16 +116,10 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
-      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
-      # WrestleBot environment (now used by Celery task)
-      WRESTLEBOT_API_TOKEN: ${WRESTLEBOT_API_TOKEN}
-      WRESTLEBOT_LOG_LEVEL: ${WRESTLEBOT_LOG_LEVEL:-INFO}
     depends_on:
       db:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      ollama:
         condition: service_healthy
     # Run worker with embedded beat scheduler (-B flag)
     # Uses DatabaseScheduler for persistent schedules across restarts
@@ -181,6 +149,4 @@ volumes:
   static_files:
     driver: local
   celery_beat_schedule:
-    driver: local
-  ollama_data:
     driver: local

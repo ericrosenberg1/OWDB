@@ -91,10 +91,4 @@ urlpatterns = [
 
     # Health check for Docker/load balancers
     path('health/', views.health_check, name='health'),
-
-    # WrestleBot UI
-    path('wrestlebot/', views.WrestleBotView.as_view(), name='wrestlebot'),
-
-    # WrestleBot REST API (for standalone service)
-    path('api/wrestlebot/', include('wrestlebot_api.urls')),
 ]

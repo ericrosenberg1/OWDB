@@ -381,6 +381,119 @@ class WrestleBot:
         results['duration_ms'] = int((time.time() - start_time) * 1000)
         return results
 
+    def run_cleanup_cycle(self, dry_run: bool = False) -> Dict[str, Any]:
+        """
+        Run a data cleanup cycle to fix/remove errors.
+
+        This cycle:
+        1. Runs quality checks on all entity types
+        2. Auto-fixes fixable issues (whitespace, invalid values)
+        3. Splits multi-name entries
+        4. Removes clearly invalid entries (placeholders, no relationships)
+        5. Reports potential duplicates
+
+        Args:
+            dry_run: If True, report what would be done without making changes
+
+        Returns:
+            Dict with cleanup results
+        """
+        from .models import WrestleBotConfig, WrestleBotStats
+        from .quality import DataCleaner
+
+        if not self.is_enabled():
+            logger.info("WrestleBot is disabled, skipping cleanup")
+            return {'status': 'disabled'}
+
+        start_time = time.time()
+
+        results = {
+            'status': 'completed',
+            'dry_run': dry_run,
+        }
+
+        try:
+            cleaner = DataCleaner()
+            cleanup_results = cleaner.run_cleanup_cycle(
+                entity_types=['wrestler', 'event', 'promotion', 'venue'],
+                dry_run=dry_run
+            )
+
+            results.update(cleanup_results)
+
+            # Update daily stats if not dry run
+            if not dry_run:
+                stats = WrestleBotStats.get_or_create_today()
+                # Log cleanup as verifications
+                total_fixed = cleanup_results.get('auto_fixed', 0) + cleanup_results.get('multi_name_split', 0)
+                if total_fixed > 0:
+                    stats.increment('verifications', total_fixed)
+
+            logger.info(f"Cleanup cycle complete: {cleanup_results}")
+
+        except Exception as e:
+            logger.error(f"Cleanup cycle failed: {e}")
+            results['status'] = 'error'
+            results['error'] = str(e)
+
+        results['duration_ms'] = int((time.time() - start_time) * 1000)
+        return results
+
+    def run_verification_cycle(self, batch_size: int = None) -> Dict[str, Any]:
+        """
+        Run a verification cycle to cross-check data accuracy.
+
+        This cycle:
+        1. Gets entities with incomplete data
+        2. Cross-references with Wikipedia and Cagematch
+        3. Applies verified corrections for missing fields
+        4. Reports discrepancies for manual review
+
+        Args:
+            batch_size: Number of entities to verify (default 10)
+
+        Returns:
+            Dict with verification results
+        """
+        from .models import WrestleBotConfig, WrestleBotStats
+
+        if not self.is_enabled():
+            logger.info("WrestleBot is disabled, skipping verification")
+            return {'status': 'disabled'}
+
+        if batch_size is None:
+            batch_size = 10
+
+        start_time = time.time()
+
+        results = {
+            'status': 'completed',
+        }
+
+        try:
+            verification_results = self.enrichment.run_verification_cycle(
+                entity_type='wrestler',
+                limit=batch_size,
+                apply_corrections=True
+            )
+
+            results.update(verification_results)
+
+            # Update daily stats
+            stats = WrestleBotStats.get_or_create_today()
+            if verification_results.get('corrections_applied', 0) > 0:
+                stats.increment('verifications', verification_results['corrections_applied'])
+
+            logger.info(f"Verification cycle complete: {verification_results}")
+
+        except Exception as e:
+            logger.error(f"Verification cycle failed: {e}")
+            results['status'] = 'error'
+            results['error'] = str(e)
+
+        results['duration_ms'] = int((time.time() - start_time) * 1000)
+        return results
+
     def get_status(self) -> Dict[str, Any]:
         """
         Get current WrestleBot status and statistics.
@@ -397,6 +510,7 @@ class WrestleBot:
                 'discoveries': today_stats.discoveries,
                 'enrichments': today_stats.enrichments,
                 'images_added': today_stats.images_added,
+                'verifications': today_stats.verifications,
                 'errors': today_stats.errors,
             }
         except Exception:

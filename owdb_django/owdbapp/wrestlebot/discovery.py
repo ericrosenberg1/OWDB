@@ -15,6 +15,160 @@ from django.utils.text import slugify
 logger = logging.getLogger(__name__)
 
 
+class NameValidator:
+    """
+    Validates entity names before import to ensure data quality.
+
+    Filters out:
+    - Placeholder names (unknown, tbd, etc.)
+    - Match text fragments (contains 'vs', 'defeated', etc.)
+    - Multiple names concatenated together
+    - Names with invalid characters
+    """
+
+    # Names that are clearly invalid
+    INVALID_NAMES = {
+        'unknown', 'tbd', 'vacant', 'n/a', 'none', 'test', 'wrestler',
+        'champion', 'title', 'match', 'winner', 'loser', 'referee',
+        'manager', 'valet', 'announcer', 'commentator', 'guest',
+        'special', 'event', 'show', 'episode', 'segment', 'promo',
+    }
+
+    # Patterns that indicate this is not a valid name
+    INVALID_PATTERNS = [
+        r'\bvs\.?\b',  # Contains "vs" or "vs."
+        r'\bdef\.?\b',  # Contains "def" or "def."
+        r'\bdefeated\b',
+        r'\bbeat\b',
+        r'\bpinned\b',
+        r'\bsubmitted\b',
+        r'\bover\b',
+        r'\(\d+:\d+\)',  # Match time like (10:32)
+        r'\[c\]',  # Champion marker
+        r'^#\d+',  # Starts with ranking
+        r'\d{4}$',  # Ends with 4-digit year
+        r'^the\s+\w+\s+championship',  # Title name
+        r'^\d+\s+man\b',  # "10 man battle royal"
+    ]
+
+    # Minimum and maximum reasonable name lengths
+    MIN_NAME_LENGTH = 2
+    MAX_NAME_LENGTH = 100
+
+    @classmethod
+    def is_valid_wrestler_name(cls, name: str) -> Tuple[bool, Optional[str]]:
+        """
+        Check if a name is a valid wrestler name.
+
+        Returns:
+            Tuple of (is_valid, reason_if_invalid)
+        """
+        if not name:
+            return False, "Empty name"
+
+        name = name.strip()
+
+        # Length checks
+        if len(name) < cls.MIN_NAME_LENGTH:
+            return False, f"Name too short: {len(name)} chars"
+        if len(name) > cls.MAX_NAME_LENGTH:
+            return False, f"Name too long: {len(name)} chars"
+
+        # Check for invalid placeholder names
+        name_lower = name.lower()
+        if name_lower in cls.INVALID_NAMES:
+            return False, f"Invalid placeholder name: {name}"
+
+        # Check for multiple names (comma-separated)
+        if ',' in name:
+            parts = [p.strip() for p in name.split(',')]
+            # If multiple parts look like names, it's probably concatenated
+            name_like_parts = [p for p in parts if len(p) >= 3 and p[0].isupper()]
+            if len(name_like_parts) > 1:
+                return False, f"Multiple names concatenated: {name}"
+
+        # Check for invalid patterns
+        for pattern in cls.INVALID_PATTERNS:
+            if re.search(pattern, name, re.IGNORECASE):
+                return False, f"Contains invalid pattern '{pattern}': {name}"
+
+        # Check for suspicious characters
+        if re.search(r'[<>{}|\[\]\\]', name):
+            return False, f"Contains invalid characters: {name}"
+
+        # Name should start with uppercase or be all uppercase
+        words = name.split()
+        if words and not words[0][0].isupper():
+            return False, f"Name doesn't start with capital letter: {name}"
+
+        return True, None
+
+    @classmethod
+    def is_valid_promotion_name(cls, name: str) -> Tuple[bool, Optional[str]]:
+        """Check if a name is a valid promotion name."""
+        if not name:
+            return False, "Empty name"
+
+        name = name.strip()
+
+        if len(name) < cls.MIN_NAME_LENGTH:
+            return False, f"Name too short: {len(name)} chars"
+        if len(name) > cls.MAX_NAME_LENGTH:
+            return False, f"Name too long: {len(name)} chars"
+
+        # Promotions can have lowercase words, but should be mostly proper nouns
+        invalid_promo = {'unknown', 'tbd', 'n/a', 'none', 'test'}
+        if name.lower() in invalid_promo:
+            return False, f"Invalid placeholder name: {name}"
+
+        return True, None
+
+    @classmethod
+    def is_valid_event_name(cls, name: str) -> Tuple[bool, Optional[str]]:
+        """Check if a name is a valid event name."""
+        if not name:
+            return False, "Empty name"
+
+        name = name.strip()
+
+        if len(name) < cls.MIN_NAME_LENGTH:
+            return False, f"Name too short: {len(name)} chars"
+        if len(name) > 200:  # Events can have longer names
+            return False, f"Name too long: {len(name)} chars"
+
+        invalid_event = {'unknown', 'tbd', 'n/a', 'none', 'test'}
+        if name.lower() in invalid_event:
+            return False, f"Invalid placeholder name: {name}"
+
+        return True, None
+
+    @classmethod
+    def clean_wrestler_name(cls, name: str) -> Optional[str]:
+        """
+        Clean and validate a wrestler name.
+
+        Returns cleaned name or None if invalid.
+        """
+        if not name:
+            return None
+
+        # Strip whitespace
+        name = name.strip()
+
+        # Remove common suffixes
+        name = re.sub(r'\s*\(c\)\s*$', '', name)  # Champion marker
+        name = re.sub(r'\s*\[\d+\]\s*$', '', name)  # Reference markers
+        name = re.sub(r'\s+', ' ', name)  # Multiple spaces
+
+        # Validate
+        is_valid, reason = cls.is_valid_wrestler_name(name)
+        if not is_valid:
+            logger.debug(f"Invalid name rejected: {reason}")
+            return None
+
+        return name
+
+
 class EntityDiscovery:
     """
     Discovers new entities from external sources.
@@ -448,22 +602,52 @@ class EntityDiscovery:
         """
         Import discovered entities into the database.
 
+        Validates all entities before import to ensure data quality.
+
         Returns count of successfully imported entities per type.
         """
         from .models import WrestleBotActivity
 
         imported = {}
+        rejected = {}
 
         for entity_type, entities in discoveries.items():
             count = 0
+            reject_count = 0
 
             for discovery in entities:
+                name = discovery.get('name', '')
+
+                # Validate name before importing
+                if entity_type == 'wrestler':
+                    is_valid, reason = NameValidator.is_valid_wrestler_name(name)
+                    if not is_valid:
+                        logger.debug(f"Rejected wrestler name: {reason}")
+                        reject_count += 1
+                        continue
+                elif entity_type == 'promotion':
+                    is_valid, reason = NameValidator.is_valid_promotion_name(name)
+                    if not is_valid:
+                        logger.debug(f"Rejected promotion name: {reason}")
+                        reject_count += 1
+                        continue
+                elif entity_type == 'event':
+                    is_valid, reason = NameValidator.is_valid_event_name(name)
+                    if not is_valid:
+                        logger.debug(f"Rejected event name: {reason}")
+                        reject_count += 1
+                        continue
+
                 try:
                     start_time = time.time()
                     entity_id = None
 
                     if entity_type == 'wrestler':
-                        entity_id = self.coordinator.import_wrestler(discovery['data'])
+                        # Clean name before import
+                        cleaned_name = NameValidator.clean_wrestler_name(name)
+                        if cleaned_name:
+                            discovery['data']['name'] = cleaned_name
+                            entity_id = self.coordinator.import_wrestler(discovery['data'])
                     elif entity_type == 'event':
                         entity_id = self.coordinator.import_event(discovery['data'])
                     elif entity_type == 'promotion':
@@ -499,6 +683,9 @@ class EntityDiscovery:
                     )
 
             imported[entity_type] = count
+            if reject_count > 0:
+                rejected[entity_type] = reject_count
+                logger.info(f"Rejected {reject_count} invalid {entity_type} names")
 
         return imported
 

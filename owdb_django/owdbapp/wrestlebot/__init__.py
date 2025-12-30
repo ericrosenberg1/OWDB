@@ -17,8 +17,9 @@ Components:
 
 from .bot import WrestleBot
 from .scoring import CompletenessScorer
-from .discovery import EntityDiscovery
+from .discovery import EntityDiscovery, NameValidator
 from .enrichment import EntityEnrichment
+from .quality import DataQualityChecker, DataCleaner, QualityIssue, QualityReport
 
 
 class ScraperProvider:
@@ -78,5 +79,10 @@ __all__ = [
     'CompletenessScorer',
     'EntityDiscovery',
     'EntityEnrichment',
+    'NameValidator',
+    'DataQualityChecker',
+    'DataCleaner',
+    'QualityIssue',
+    'QualityReport',
     'ScraperProvider',
 ]

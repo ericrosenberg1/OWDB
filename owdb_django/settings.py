@@ -271,6 +271,28 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': 43200.0,  # Every 12 hours
         'args': (15,),
     },
+    # ==========================================================================
+    # WrestleBot 2.0 - Autonomous Data Enhancement
+    # ==========================================================================
+    'wrestlebot-master': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_master',
+        'schedule': 1800.0,  # Every 30 minutes
+    },
+    'wrestlebot-discovery': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_discovery_cycle',
+        'schedule': 7200.0,  # Every 2 hours
+        'args': (5,),  # batch size
+    },
+    'wrestlebot-enrichment': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_enrichment_cycle',
+        'schedule': 3600.0,  # Every hour
+        'args': (10,),  # batch size
+    },
+    'wrestlebot-images': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_image_cycle',
+        'schedule': 14400.0,  # Every 4 hours
+        'args': (10,),  # batch size
+    },
 }
 
 # =============================================================================
@@ -520,4 +542,37 @@ REST_FRAMEWORK = {
         'anon': '100/hour',
         'user': '10000/hour',  # High limit for authenticated users
     },
+}
+
+
+# =============================================================================
+# WrestleBot 2.0 Configuration
+# =============================================================================
+# Autonomous data enhancement service settings.
+# Most settings can be changed at runtime via the admin panel.
+
+WRESTLEBOT = {
+    # Master switch - can be toggled via admin
+    'ENABLED': True,
+
+    # Rate limiting
+    'MAX_OPERATIONS_PER_HOUR': 50,
+
+    # AI Enhancement (requires ANTHROPIC_API_KEY)
+    'AI_ENABLED': bool(os.environ.get('ANTHROPIC_API_KEY')),
+    'AI_MAX_CALLS_PER_DAY': 100,
+
+    # Priority entities (in order of importance)
+    'PRIORITY_ENTITIES': ['wrestler', 'event', 'promotion'],
+
+    # Completeness threshold - entities below this score get enriched
+    'MIN_COMPLETENESS_SCORE': 40,
+
+    # Batch sizes for each operation type
+    'DISCOVERY_BATCH_SIZE': 5,
+    'ENRICHMENT_BATCH_SIZE': 10,
+    'IMAGE_BATCH_SIZE': 10,
+
+    # Pause between operations (milliseconds)
+    'PAUSE_BETWEEN_OPERATIONS_MS': 500,
 }

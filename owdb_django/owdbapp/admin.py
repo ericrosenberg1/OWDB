@@ -175,3 +175,53 @@ class EmailVerificationTokenAdmin(admin.ModelAdmin):
     def token_display(self, obj):
         return f'{obj.token[:8]}...'
     token_display.short_description = 'Token'
+
+
+# =============================================================================
+# WrestleBot 2.0 Admin
+# =============================================================================
+
+from .wrestlebot.models import WrestleBotActivity, WrestleBotConfig, WrestleBotStats
+
+
+@admin.register(WrestleBotActivity)
+class WrestleBotActivityAdmin(admin.ModelAdmin):
+    list_display = ['created_at', 'action_type', 'entity_type', 'entity_name', 'source', 'success', 'ai_assisted']
+    list_filter = ['action_type', 'entity_type', 'source', 'success', 'ai_assisted', 'created_at']
+    search_fields = ['entity_name', 'source', 'error_message']
+    readonly_fields = ['created_at', 'action_type', 'entity_type', 'entity_id', 'entity_name',
+                       'source', 'details', 'ai_assisted', 'success', 'error_message', 'duration_ms']
+    date_hierarchy = 'created_at'
+    ordering = ['-created_at']
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(WrestleBotConfig)
+class WrestleBotConfigAdmin(admin.ModelAdmin):
+    list_display = ['key', 'value', 'description', 'updated_at']
+    search_fields = ['key', 'description']
+    readonly_fields = ['updated_at']
+    ordering = ['key']
+
+
+@admin.register(WrestleBotStats)
+class WrestleBotStatsAdmin(admin.ModelAdmin):
+    list_display = ['date', 'discoveries', 'enrichments', 'images_added', 'errors', 'claude_api_calls']
+    list_filter = ['date']
+    readonly_fields = ['date', 'discoveries', 'enrichments', 'images_added', 'verifications',
+                       'errors', 'wikipedia_calls', 'cagematch_calls', 'wikimedia_calls',
+                       'claude_api_calls', 'total_duration_ms', 'average_score_improvement',
+                       'created_at', 'updated_at']
+    date_hierarchy = 'date'
+    ordering = ['-date']
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

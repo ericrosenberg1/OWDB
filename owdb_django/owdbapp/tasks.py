@@ -1172,3 +1172,184 @@ def generate_hot100_ranking(self, year: int = None, month: int = None, publish: 
     except Exception as e:
         logger.error(f"Failed to generate Hot 100 ranking: {e}", exc_info=True)
         raise self.retry(exc=e, max_retries=2)
+
+
+# =============================================================================
+# WrestleBot 2.0 Tasks - Autonomous Data Enhancement
+# =============================================================================
+
+WRESTLEBOT_SOFT_LIMIT = 10 * 60  # 10 minutes
+WRESTLEBOT_HARD_LIMIT = 12 * 60  # 12 minutes
+
+
+@shared_task(
+    bind=True,
+    soft_time_limit=WRESTLEBOT_SOFT_LIMIT,
+    time_limit=WRESTLEBOT_HARD_LIMIT,
+)
+def wrestlebot_master(self):
+    """
+    Master orchestrator task - analyzes what work needs to be done.
+
+    This is a lightweight task that runs every 30 minutes to check
+    database state and log what the bot is planning to do.
+    """
+    lock_key = "wrestlebot_master_lock"
+    lock_timeout = WRESTLEBOT_HARD_LIMIT + 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("WrestleBot master skipped: previous run still active")
+        return {"status": "skipped_lock"}
+
+    try:
+        from .wrestlebot import WrestleBot
+        bot = WrestleBot()
+        result = bot.run_master_cycle()
+        logger.info(f"WrestleBot master cycle: {result}")
+        return result
+
+    except Exception as e:
+        logger.error(f"WrestleBot master failed: {e}")
+        return {"status": "error", "error": str(e)}
+
+    finally:
+        cache.delete(lock_key)
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    default_retry_delay=600,
+    soft_time_limit=WRESTLEBOT_SOFT_LIMIT,
+    time_limit=WRESTLEBOT_HARD_LIMIT,
+)
+def wrestlebot_discovery_cycle(self, batch_size: int = 5):
+    """
+    Run a discovery cycle - find and add new entries.
+
+    Runs every 2 hours via Celery Beat.
+    Discovers new wrestlers, events, promotions from various sources.
+    """
+    lock_key = "wrestlebot_discovery_lock"
+    lock_timeout = WRESTLEBOT_HARD_LIMIT + 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("WrestleBot discovery skipped: previous run still active")
+        return {"status": "skipped_lock"}
+
+    try:
+        from .wrestlebot import WrestleBot
+        bot = WrestleBot()
+
+        if not bot.is_enabled():
+            return {"status": "disabled"}
+
+        result = bot.run_discovery_cycle(batch_size=batch_size)
+        logger.info(f"WrestleBot discovery cycle: {result}")
+        return result
+
+    except Exception as e:
+        logger.error(f"WrestleBot discovery failed: {e}")
+        raise self.retry(exc=e)
+
+    finally:
+        cache.delete(lock_key)
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    default_retry_delay=600,
+    soft_time_limit=WRESTLEBOT_SOFT_LIMIT,
+    time_limit=WRESTLEBOT_HARD_LIMIT,
+)
+def wrestlebot_enrichment_cycle(self, batch_size: int = 10):
+    """
+    Run an enrichment cycle - improve existing entries.
+
+    Runs every hour via Celery Beat.
+    Adds missing data (bios, dates, etc.) to incomplete entries.
+    """
+    lock_key = "wrestlebot_enrichment_lock"
+    lock_timeout = WRESTLEBOT_HARD_LIMIT + 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("WrestleBot enrichment skipped: previous run still active")
+        return {"status": "skipped_lock"}
+
+    try:
+        from .wrestlebot import WrestleBot
+        bot = WrestleBot()
+
+        if not bot.is_enabled():
+            return {"status": "disabled"}
+
+        result = bot.run_enrichment_cycle(batch_size=batch_size)
+        logger.info(f"WrestleBot enrichment cycle: {result}")
+        return result
+
+    except Exception as e:
+        logger.error(f"WrestleBot enrichment failed: {e}")
+        raise self.retry(exc=e)
+
+    finally:
+        cache.delete(lock_key)
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    default_retry_delay=600,
+    soft_time_limit=WRESTLEBOT_SOFT_LIMIT,
+    time_limit=WRESTLEBOT_HARD_LIMIT,
+)
+def wrestlebot_image_cycle(self, batch_size: int = 10):
+    """
+    Run an image fetching cycle - add CC-licensed images.
+
+    Runs every 4 hours via Celery Beat.
+    Fetches images from Wikimedia Commons for entities without images.
+    """
+    lock_key = "wrestlebot_image_lock"
+    lock_timeout = WRESTLEBOT_HARD_LIMIT + 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("WrestleBot image cycle skipped: previous run still active")
+        return {"status": "skipped_lock"}
+
+    try:
+        from .wrestlebot import WrestleBot
+        bot = WrestleBot()
+
+        if not bot.is_enabled():
+            return {"status": "disabled"}
+
+        result = bot.run_image_cycle(batch_size=batch_size)
+        logger.info(f"WrestleBot image cycle: {result}")
+        return result
+
+    except Exception as e:
+        logger.error(f"WrestleBot image cycle failed: {e}")
+        raise self.retry(exc=e)
+
+    finally:
+        cache.delete(lock_key)
+
+
+@shared_task
+def wrestlebot_get_status():
+    """
+    Get current WrestleBot status and statistics.
+
+    Can be called manually to check bot status.
+    """
+    try:
+        from .wrestlebot import WrestleBot
+        bot = WrestleBot()
+        status = bot.get_status()
+        cache.set("wrestlebot_status", status, timeout=300)
+        return status
+
+    except Exception as e:
+        logger.error(f"Failed to get WrestleBot status: {e}")
+        return {"status": "error", "error": str(e)}

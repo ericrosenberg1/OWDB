@@ -15,7 +15,7 @@ Components:
 - models.py: Activity tracking
 """
 
-from .bot import WrestleBot
+from .bot import WrestleBot, get_wrestlebot
 from .scoring import CompletenessScorer
 from .discovery import EntityDiscovery, NameValidator
 from .enrichment import EntityEnrichment
@@ -76,6 +76,7 @@ class ScraperProvider:
 
 __all__ = [
     'WrestleBot',
+    'get_wrestlebot',
     'CompletenessScorer',
     'EntityDiscovery',
     'EntityEnrichment',

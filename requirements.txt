@@ -1,5 +1,5 @@
 # Django and core - using LTS for stability
-Django>=5.2,<5.3
+Django>=5.2,<6.1
 gunicorn>=23.0
 
 # Database

@@ -32,6 +32,11 @@ class WikipediaScraper(BaseScraper):
     """
     Scraper for Wikipedia wrestling data.
     Uses the Wikipedia API where possible for structured data.
+
+    Category Rotation:
+    To stay within rate limits, the scraper rotates through categories
+    instead of hitting all categories in a single run. Use get_next_category()
+    or pass category_index to scrape methods for controlled iteration.
     """
 
     SOURCE_NAME = "wikipedia"
@@ -39,6 +44,7 @@ class WikipediaScraper(BaseScraper):
     API_URL = "https://en.wikipedia.org/w/api.php"
 
     # Conservative rate limits for Wikipedia
+    # Note: Hourly limit is the key constraint with frequent task runs
     REQUESTS_PER_MINUTE = 30  # Wikipedia allows higher, but we're respectful
     REQUESTS_PER_HOUR = 500
     REQUESTS_PER_DAY = 5000
@@ -72,6 +78,43 @@ class WikipediaScraper(BaseScraper):
         "Category:New_Japan_Pro-Wrestling_events",
         "Category:Professional_wrestling_annual_events",
     ]
+
+    # Cache keys for category rotation
+    _CATEGORY_INDEX_CACHE_PREFIX = "wikipedia_category_index_"
+
+    def get_next_category_index(self, category_type: str) -> int:
+        """
+        Get the next category index for rotation.
+        Stores state in cache to persist across runs.
+
+        Args:
+            category_type: 'wrestler', 'promotion', or 'event'
+
+        Returns:
+            Index of the category to scrape next
+        """
+        from django.core.cache import cache
+
+        categories = self._get_categories_for_type(category_type)
+        cache_key = f"{self._CATEGORY_INDEX_CACHE_PREFIX}{category_type}"
+
+        # Get current index, increment, and wrap around
+        current_index = cache.get(cache_key, 0)
+        next_index = (current_index + 1) % len(categories)
+        cache.set(cache_key, next_index, timeout=86400 * 7)  # 7 day TTL
+
+        return current_index
+
+    def _get_categories_for_type(self, category_type: str) -> list:
+        """Get the category list for a given type."""
+        if category_type == 'wrestler':
+            return self.WRESTLER_CATEGORIES
+        elif category_type == 'promotion':
+            return self.PROMOTION_CATEGORIES
+        elif category_type == 'event':
+            return self.EVENT_CATEGORIES
+        else:
+            raise ValueError(f"Unknown category type: {category_type}")
 
     def _api_request(self, params: Dict[str, Any]) -> Optional[Dict]:
         """Make a request to the Wikipedia API."""
@@ -290,12 +333,43 @@ class WikipediaScraper(BaseScraper):
 
         return event
 
-    def scrape_wrestlers(self, limit: int = 100) -> List[Dict[str, Any]]:
-        """Scrape wrestler data from Wikipedia."""
+    def scrape_wrestlers(
+        self,
+        limit: int = 100,
+        category_index: int = None,
+        rotate_category: bool = False
+    ) -> List[Dict[str, Any]]:
+        """
+        Scrape wrestler data from Wikipedia.
+
+        Args:
+            limit: Maximum number of wrestlers to scrape
+            category_index: If provided, only scrape this specific category index.
+                           Use this for rate-limit-friendly single-category runs.
+            rotate_category: If True and category_index is None, automatically
+                            get the next category in rotation (rate-limit friendly).
+                            If False and category_index is None, scrape all categories.
+
+        Returns:
+            List of wrestler data dictionaries
+        """
         wrestlers = []
         seen_titles = set()
 
-        for category in self.WRESTLER_CATEGORIES:
+        # Determine which categories to scrape
+        if category_index is not None:
+            # Explicit category index - scrape just that one
+            categories = [self.WRESTLER_CATEGORIES[category_index % len(self.WRESTLER_CATEGORIES)]]
+        elif rotate_category:
+            # Auto-rotation mode - get next category and scrape just that one
+            idx = self.get_next_category_index('wrestler')
+            categories = [self.WRESTLER_CATEGORIES[idx]]
+            logger.info(f"Rotating to wrestler category {idx}: {categories[0]}")
+        else:
+            # Legacy mode - scrape all categories (use with caution due to rate limits)
+            categories = self.WRESTLER_CATEGORIES
+
+        for category in categories:
             if len(wrestlers) >= limit:
                 break
 
@@ -325,12 +399,38 @@ class WikipediaScraper(BaseScraper):
         logger.info(f"Scraped {len(wrestlers)} wrestlers from Wikipedia")
         return wrestlers
 
-    def scrape_promotions(self, limit: int = 50) -> List[Dict[str, Any]]:
-        """Scrape promotion data from Wikipedia."""
+    def scrape_promotions(
+        self,
+        limit: int = 50,
+        category_index: int = None,
+        rotate_category: bool = False
+    ) -> List[Dict[str, Any]]:
+        """
+        Scrape promotion data from Wikipedia.
+
+        Args:
+            limit: Maximum number of promotions to scrape
+            category_index: If provided, only scrape this specific category index.
+            rotate_category: If True and category_index is None, automatically
+                            get the next category in rotation.
+
+        Returns:
+            List of promotion data dictionaries
+        """
         promotions = []
         seen_titles = set()
 
-        for category in self.PROMOTION_CATEGORIES:
+        # Determine which categories to scrape
+        if category_index is not None:
+            categories = [self.PROMOTION_CATEGORIES[category_index % len(self.PROMOTION_CATEGORIES)]]
+        elif rotate_category:
+            idx = self.get_next_category_index('promotion')
+            categories = [self.PROMOTION_CATEGORIES[idx]]
+            logger.info(f"Rotating to promotion category {idx}: {categories[0]}")
+        else:
+            categories = self.PROMOTION_CATEGORIES
+
+        for category in categories:
             if len(promotions) >= limit:
                 break
 
@@ -360,12 +460,38 @@ class WikipediaScraper(BaseScraper):
         logger.info(f"Scraped {len(promotions)} promotions from Wikipedia")
         return promotions
 
-    def scrape_events(self, limit: int = 100) -> List[Dict[str, Any]]:
-        """Scrape event data from Wikipedia."""
+    def scrape_events(
+        self,
+        limit: int = 100,
+        category_index: int = None,
+        rotate_category: bool = False
+    ) -> List[Dict[str, Any]]:
+        """
+        Scrape event data from Wikipedia.
+
+        Args:
+            limit: Maximum number of events to scrape
+            category_index: If provided, only scrape this specific category index.
+            rotate_category: If True and category_index is None, automatically
+                            get the next category in rotation.
+
+        Returns:
+            List of event data dictionaries
+        """
         events = []
         seen_titles = set()
 
-        for category in self.EVENT_CATEGORIES:
+        # Determine which categories to scrape
+        if category_index is not None:
+            categories = [self.EVENT_CATEGORIES[category_index % len(self.EVENT_CATEGORIES)]]
+        elif rotate_category:
+            idx = self.get_next_category_index('event')
+            categories = [self.EVENT_CATEGORIES[idx]]
+            logger.info(f"Rotating to event category {idx}: {categories[0]}")
+        else:
+            categories = self.EVENT_CATEGORIES
+
+        for category in categories:
             if len(events) >= limit:
                 break
 

@@ -82,6 +82,41 @@ class WrestleBot:
         """Reload configuration from database."""
         self._config = None
 
+    def check_rate_limit_capacity(self, source: str = 'wikipedia', min_requests: int = 20) -> Dict[str, Any]:
+        """
+        Check if we have sufficient rate limit capacity for an operation.
+
+        Args:
+            source: The API source to check (wikipedia, cagematch, etc.)
+            min_requests: Minimum number of requests needed
+
+        Returns:
+            Dict with 'has_capacity', 'remaining', 'backoff_seconds'
+        """
+        from ..scrapers.api_client import RateLimiter
+
+        # Get the rate limiter for this source
+        # Default limits if not specified
+        limits = {
+            'wikipedia': (30, 500, 5000),
+            'cagematch': (5, 60, 500),
+            'wikimedia_commons': (20, 300, 2000),
+        }
+
+        rpm, rph, rpd = limits.get(source, (30, 500, 5000))
+        rate_limiter = RateLimiter(source, rpm, rph, rpd)
+
+        remaining = rate_limiter.get_remaining_capacity()
+        has_capacity = rate_limiter.has_capacity(min_requests)
+        backoff = rate_limiter.get_backoff_seconds() if not has_capacity else 0
+
+        return {
+            'has_capacity': has_capacity,
+            'remaining': remaining,
+            'backoff_seconds': backoff,
+            'usage_percent': rate_limiter.get_usage_percentage(),
+        }
+
     def run_master_cycle(self) -> Dict[str, Any]:
         """
         Run the master orchestration cycle.
@@ -171,6 +206,17 @@ class WrestleBot:
             logger.info("WrestleBot is disabled, skipping discovery")
             return {'status': 'disabled'}
 
+        # Check rate limit capacity before starting
+        capacity = self.check_rate_limit_capacity('wikipedia', min_requests=20)
+        if not capacity['has_capacity']:
+            backoff_mins = capacity['backoff_seconds'] // 60
+            logger.info(f"Discovery skipped - rate limit exhausted. Retry in {backoff_mins} minutes")
+            return {
+                'status': 'rate_limited',
+                'backoff_seconds': capacity['backoff_seconds'],
+                'usage_percent': capacity['usage_percent'],
+            }
+
         if batch_size is None:
             batch_size = WrestleBotConfig.get('discovery_batch_size', 5)
 
@@ -230,6 +276,17 @@ class WrestleBot:
         if not self.is_enabled():
             logger.info("WrestleBot is disabled, skipping enrichment")
             return {'status': 'disabled'}
+
+        # Check rate limit capacity before starting
+        capacity = self.check_rate_limit_capacity('wikipedia', min_requests=15)
+        if not capacity['has_capacity']:
+            backoff_mins = capacity['backoff_seconds'] // 60
+            logger.info(f"Enrichment skipped - rate limit exhausted. Retry in {backoff_mins} minutes")
+            return {
+                'status': 'rate_limited',
+                'backoff_seconds': capacity['backoff_seconds'],
+                'usage_percent': capacity['usage_percent'],
+            }
 
         if batch_size is None:
             batch_size = WrestleBotConfig.get('enrichment_batch_size', 10)

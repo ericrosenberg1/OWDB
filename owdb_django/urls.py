@@ -91,4 +91,7 @@ urlpatterns = [
 
     # Health check for Docker/load balancers
     path('health/', views.health_check, name='health'),
+
+    # WrestleBot health check
+    path('wrestlebot/health/', views.wrestlebot_health, name='wrestlebot_health'),
 ]

@@ -183,21 +183,25 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': 604800.0,  # Every 7 days
     },
     # ==========================================================================
-    # Web Scraping tasks - 2X FREQUENCY (doubled for faster database building)
+    # Web Scraping tasks - Rate-limit friendly with category rotation
+    # Each task scrapes ONE category per run, rotating through all categories.
+    # With 10 wrestler + 5 event + 5 promotion categories = 20 total categories
+    # Running every 3 minutes = 20 runs/hour = all categories covered hourly
+    # Each run uses ~10-25 API calls, staying well under 500/hour limit
     # ==========================================================================
     'scrape-wikipedia-wrestlers': {
         'task': 'owdb_django.owdbapp.tasks.scrape_wikipedia_wrestlers',
-        'schedule': 60.0,  # Every minute for continuous training
-        'args': (20,),  # Smaller batches to keep runs short
+        'schedule': 180.0,  # Every 3 minutes with category rotation
+        'args': (20,),  # 20 wrestlers per category per run
     },
     'scrape-wikipedia-promotions': {
         'task': 'owdb_django.owdbapp.tasks.scrape_wikipedia_promotions',
-        'schedule': 300.0,  # Every 5 minutes
+        'schedule': 600.0,  # Every 10 minutes (fewer promotion categories)
         'args': (15,),
     },
     'scrape-wikipedia-events': {
         'task': 'owdb_django.owdbapp.tasks.scrape_wikipedia_events',
-        'schedule': 60.0,  # Every minute alongside wrestlers
+        'schedule': 300.0,  # Every 5 minutes with category rotation
         'args': (20,),
     },
     'scrape-cagematch-wrestlers': {

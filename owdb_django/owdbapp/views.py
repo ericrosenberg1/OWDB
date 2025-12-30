@@ -1008,3 +1008,76 @@ class Hot100HistoryView(ListView):
 
     def get_queryset(self):
         return Hot100Ranking.objects.filter(is_published=True).order_by('-year', '-month')
+
+
+# =============================================================================
+# WrestleBot Health Check
+# =============================================================================
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+
+
+@require_GET
+def wrestlebot_health(request):
+    """
+    Health check endpoint for WrestleBot monitoring.
+
+    Returns JSON with:
+    - healthy: Overall health status
+    - enabled: Whether WrestleBot is enabled
+    - rate_limits: Current rate limit usage
+    - today_stats: Today's activity counts
+    - errors: Recent error count
+
+    Accessible at: /wrestlebot/health/
+    """
+    from .wrestlebot import get_wrestlebot
+    from .wrestlebot.models import WrestleBotStats, WrestleBotActivity
+
+    try:
+        bot = get_wrestlebot()
+        status = bot.get_status()
+
+        # Get rate limit status for key sources
+        rate_limits = {}
+        for source in ['wikipedia', 'cagematch', 'wikimedia_commons']:
+            capacity = bot.check_rate_limit_capacity(source, min_requests=10)
+            rate_limits[source] = {
+                'has_capacity': capacity['has_capacity'],
+                'usage_percent': capacity['usage_percent'],
+                'remaining': capacity['remaining'],
+            }
+
+        # Get today's stats
+        today_stats = status.get('today', {})
+
+        # Calculate health
+        errors_today = today_stats.get('errors', 0)
+        is_healthy = (
+            status.get('enabled', False) and
+            errors_today < 50 and
+            any(r['has_capacity'] for r in rate_limits.values())
+        )
+
+        return JsonResponse({
+            'healthy': is_healthy,
+            'enabled': status.get('enabled', False),
+            'rate_limits': rate_limits,
+            'today': {
+                'discoveries': today_stats.get('discoveries', 0),
+                'enrichments': today_stats.get('enrichments', 0),
+                'images_added': today_stats.get('images_added', 0),
+                'verifications': today_stats.get('verifications', 0),
+                'errors': errors_today,
+            },
+            'totals': status.get('totals', {}),
+            'timestamp': timezone.now().isoformat(),
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'healthy': False,
+            'error': str(e),
+            'timestamp': timezone.now().isoformat(),
+        }, status=500)

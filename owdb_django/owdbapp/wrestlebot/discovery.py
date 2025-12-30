@@ -168,6 +168,69 @@ class NameValidator:
 
         return name
 
+    @classmethod
+    def is_likely_duplicate(cls, name: str, existing_names: Set[str], threshold: float = 0.85) -> Tuple[bool, Optional[str]]:
+        """
+        Check if a name is likely a duplicate of an existing name using fuzzy matching.
+
+        Args:
+            name: The new name to check
+            existing_names: Set of existing names (lowercased)
+            threshold: Similarity threshold (0.0-1.0), default 0.85
+
+        Returns:
+            Tuple of (is_duplicate, matched_name)
+        """
+        from difflib import SequenceMatcher
+
+        name_lower = name.lower().strip()
+
+        # Exact match check (fast path)
+        if name_lower in existing_names:
+            return True, name
+
+        # Fuzzy matching for similar names
+        for existing in existing_names:
+            # Quick length check to avoid expensive comparison
+            len_diff = abs(len(name_lower) - len(existing))
+            if len_diff > len(name_lower) * 0.3:  # More than 30% length difference
+                continue
+
+            ratio = SequenceMatcher(None, name_lower, existing).ratio()
+            if ratio >= threshold:
+                logger.debug(f"Fuzzy duplicate found: '{name}' matches '{existing}' ({ratio:.2%})")
+                return True, existing
+
+        return False, None
+
+    @classmethod
+    def normalize_name_for_comparison(cls, name: str) -> str:
+        """
+        Normalize a name for comparison purposes.
+
+        Removes common variations like "The", trailing numbers, etc.
+        """
+        if not name:
+            return ""
+
+        normalized = name.lower().strip()
+
+        # Remove common prefixes
+        prefixes_to_remove = ['the ', 'el ', 'la ', 'los ', 'las ']
+        for prefix in prefixes_to_remove:
+            if normalized.startswith(prefix):
+                normalized = normalized[len(prefix):]
+                break
+
+        # Remove Jr., Sr., III, etc.
+        normalized = re.sub(r'\s+(jr\.?|sr\.?|iii?|iv|v)$', '', normalized, flags=re.IGNORECASE)
+
+        # Remove quotes and parenthetical content
+        normalized = re.sub(r'["\']', '', normalized)
+        normalized = re.sub(r'\s*\([^)]*\)', '', normalized)
+
+        return normalized.strip()
+
 
 class EntityDiscovery:
     """
@@ -603,17 +666,29 @@ class EntityDiscovery:
         Import discovered entities into the database.
 
         Validates all entities before import to ensure data quality.
+        Includes fuzzy duplicate detection to prevent near-duplicates.
 
         Returns count of successfully imported entities per type.
         """
         from .models import WrestleBotActivity
+        from ..models import Wrestler, Promotion, Event, Venue
 
         imported = {}
         rejected = {}
+        duplicate_count = {}
+
+        # Pre-load existing names for fuzzy duplicate checking
+        existing_names = {
+            'wrestler': set(n.lower() for n in Wrestler.objects.values_list('name', flat=True)),
+            'promotion': set(n.lower() for n in Promotion.objects.values_list('name', flat=True)),
+            'event': set(n.lower() for n in Event.objects.values_list('name', flat=True)),
+            'venue': set(n.lower() for n in Venue.objects.values_list('name', flat=True)),
+        }
 
         for entity_type, entities in discoveries.items():
             count = 0
             reject_count = 0
+            dup_count = 0
 
             for discovery in entities:
                 name = discovery.get('name', '')
@@ -638,6 +713,18 @@ class EntityDiscovery:
                         reject_count += 1
                         continue
 
+                # Check for fuzzy duplicates
+                if entity_type in existing_names:
+                    is_dup, matched = NameValidator.is_likely_duplicate(
+                        name,
+                        existing_names[entity_type],
+                        threshold=0.85
+                    )
+                    if is_dup:
+                        logger.debug(f"Skipped likely duplicate {entity_type}: '{name}' ~ '{matched}'")
+                        dup_count += 1
+                        continue
+
                 try:
                     start_time = time.time()
                     entity_id = None
@@ -648,12 +735,20 @@ class EntityDiscovery:
                         if cleaned_name:
                             discovery['data']['name'] = cleaned_name
                             entity_id = self.coordinator.import_wrestler(discovery['data'])
+                            if entity_id:
+                                existing_names['wrestler'].add(cleaned_name.lower())
                     elif entity_type == 'event':
                         entity_id = self.coordinator.import_event(discovery['data'])
+                        if entity_id:
+                            existing_names['event'].add(name.lower())
                     elif entity_type == 'promotion':
                         entity_id = self.coordinator.import_promotion(discovery['data'])
+                        if entity_id:
+                            existing_names['promotion'].add(name.lower())
                     elif entity_type == 'venue':
                         entity_id = self._import_venue(discovery['data'])
+                        if entity_id:
+                            existing_names['venue'].add(name.lower())
 
                     if entity_id:
                         count += 1
@@ -686,6 +781,13 @@ class EntityDiscovery:
             if reject_count > 0:
                 rejected[entity_type] = reject_count
                 logger.info(f"Rejected {reject_count} invalid {entity_type} names")
+            if dup_count > 0:
+                duplicate_count[entity_type] = dup_count
+                logger.info(f"Skipped {dup_count} likely duplicate {entity_type} entries")
+
+        # Log summary
+        if duplicate_count:
+            logger.info(f"Fuzzy duplicate detection prevented: {duplicate_count}")
 
         return imported
 

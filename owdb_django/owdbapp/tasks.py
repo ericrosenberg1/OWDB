@@ -33,10 +33,17 @@ IMAGE_FETCH_HARD_LIMIT = 7 * 60  # 7 minutes hard kill
     soft_time_limit=SCRAPER_SOFT_LIMIT,
     time_limit=SCRAPER_HARD_LIMIT,
 )
-def scrape_wikipedia_wrestlers(self, limit: int = 50):
+def scrape_wikipedia_wrestlers(self, limit: int = 50, rotate_category: bool = True):
     """
     Scrape wrestler data from Wikipedia.
-    Runs periodically to discover new wrestlers and update existing ones.
+
+    Uses category rotation by default to stay within rate limits.
+    Each run scrapes only ONE category, cycling through all categories
+    across multiple runs.
+
+    Args:
+        limit: Max wrestlers to scrape per category
+        rotate_category: If True (default), scrape one category per run and rotate
     """
     lock_key = "scrape_wikipedia_wrestlers_lock"
     lock_timeout = SCRAPER_HARD_LIMIT + 60
@@ -51,7 +58,7 @@ def scrape_wikipedia_wrestlers(self, limit: int = 50):
         scraper = WikipediaScraper()
         coordinator = ScraperCoordinator()
 
-        wrestlers = scraper.scrape_wrestlers(limit=limit)
+        wrestlers = scraper.scrape_wrestlers(limit=limit, rotate_category=rotate_category)
         imported = 0
 
         for wrestler_data in wrestlers:
@@ -84,8 +91,12 @@ def scrape_wikipedia_wrestlers(self, limit: int = 50):
     soft_time_limit=SCRAPER_SOFT_LIMIT,
     time_limit=SCRAPER_HARD_LIMIT,
 )
-def scrape_wikipedia_promotions(self, limit: int = 25):
-    """Scrape promotion data from Wikipedia."""
+def scrape_wikipedia_promotions(self, limit: int = 25, rotate_category: bool = True):
+    """
+    Scrape promotion data from Wikipedia.
+
+    Uses category rotation by default to stay within rate limits.
+    """
     lock_key = "scrape_wikipedia_promotions_lock"
     lock_timeout = SCRAPER_HARD_LIMIT + 60
 
@@ -99,7 +110,7 @@ def scrape_wikipedia_promotions(self, limit: int = 25):
         scraper = WikipediaScraper()
         coordinator = ScraperCoordinator()
 
-        promotions = scraper.scrape_promotions(limit=limit)
+        promotions = scraper.scrape_promotions(limit=limit, rotate_category=rotate_category)
         imported = 0
 
         for promotion_data in promotions:
@@ -132,8 +143,12 @@ def scrape_wikipedia_promotions(self, limit: int = 25):
     soft_time_limit=SCRAPER_SOFT_LIMIT,
     time_limit=SCRAPER_HARD_LIMIT,
 )
-def scrape_wikipedia_events(self, limit: int = 50):
-    """Scrape event data from Wikipedia."""
+def scrape_wikipedia_events(self, limit: int = 50, rotate_category: bool = True):
+    """
+    Scrape event data from Wikipedia.
+
+    Uses category rotation by default to stay within rate limits.
+    """
     lock_key = "scrape_wikipedia_events_lock"
     lock_timeout = SCRAPER_HARD_LIMIT + 60
 
@@ -147,7 +162,7 @@ def scrape_wikipedia_events(self, limit: int = 50):
         scraper = WikipediaScraper()
         coordinator = ScraperCoordinator()
 
-        events = scraper.scrape_events(limit=limit)
+        events = scraper.scrape_events(limit=limit, rotate_category=rotate_category)
         imported = 0
 
         for event_data in events:

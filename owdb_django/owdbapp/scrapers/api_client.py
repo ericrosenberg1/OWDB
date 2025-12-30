@@ -271,6 +271,66 @@ class RateLimiter:
             "day": {"current": day, "limit": self.rpd},
         }
 
+    def get_remaining_capacity(self) -> Dict[str, int]:
+        """
+        Get remaining request capacity for each time period.
+
+        Returns:
+            Dict with remaining requests for minute/hour/day
+        """
+        minute, hour, day = self._get_counts()
+        return {
+            "minute": max(0, self.rpm - minute),
+            "hour": max(0, self.rph - hour),
+            "day": max(0, self.rpd - day),
+        }
+
+    def has_capacity(self, min_requests: int = 1) -> bool:
+        """
+        Check if we have enough capacity to perform an operation.
+
+        Args:
+            min_requests: Minimum number of requests we need capacity for
+
+        Returns:
+            True if all rate limits have at least min_requests remaining
+        """
+        remaining = self.get_remaining_capacity()
+        return all(v >= min_requests for v in remaining.values())
+
+    def get_backoff_seconds(self) -> int:
+        """
+        Calculate how long to wait before rate limits reset.
+
+        Returns:
+            Seconds to wait (0 if not rate limited)
+        """
+        minute, hour, day = self._get_counts()
+        now = int(time.time())
+
+        if day >= self.rpd:
+            return 86400 - (now % 86400)  # Until midnight UTC
+        if hour >= self.rph:
+            return 3600 - (now % 3600)  # Until next hour
+        if minute >= self.rpm:
+            return 60 - (now % 60)  # Until next minute
+
+        return 0
+
+    def get_usage_percentage(self) -> Dict[str, float]:
+        """
+        Get current usage as percentage of limits.
+
+        Returns:
+            Dict with usage percentages for minute/hour/day
+        """
+        minute, hour, day = self._get_counts()
+        return {
+            "minute": (minute / self.rpm * 100) if self.rpm > 0 else 0,
+            "hour": (hour / self.rph * 100) if self.rph > 0 else 0,
+            "day": (day / self.rpd * 100) if self.rpd > 0 else 0,
+        }
+
 
 class APIClient:
     """

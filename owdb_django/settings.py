@@ -95,6 +95,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'owdb_django.middleware.ContentSecurityPolicyMiddleware',  # CSP headers
 ]
 
 ROOT_URLCONF = 'owdb_django.urls'

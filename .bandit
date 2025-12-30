@@ -1,0 +1,25 @@
+[bandit]
+# Bandit configuration for OWDB security scanning
+
+# Directories to exclude from scanning
+exclude_dirs = [
+    ".git",
+    ".venv",
+    "venv",
+    "env",
+    "__pycache__",
+    "node_modules",
+    "migrations",
+    "static",
+    "staticfiles",
+    "static_collected",
+]
+
+# Skip specific test IDs if needed
+# B101: assert_used - OK in tests
+# B104: hardcoded_bind_all_interfaces - OK for Docker (0.0.0.0)
+# B311: random - OK for non-security uses (jitter, sampling)
+skips = ["B101", "B104", "B311"]
+
+# Targets to scan
+targets = ["owdb_django"]

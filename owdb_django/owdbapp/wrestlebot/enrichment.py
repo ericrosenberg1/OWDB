@@ -97,6 +97,41 @@ class EntityEnrichment:
             limit=limit
         )
 
+    def _clean_entity_name(self, name: str) -> str:
+        """
+        Clean entity names by removing Wikipedia disambiguation suffixes.
+
+        Examples:
+            "Edge (wrestler)" -> "Edge"
+            "Retribution (professional wrestling)" -> "Retribution"
+            "CM Punk" -> "CM Punk" (no change)
+        """
+        import re
+        if not name:
+            return name
+
+        # Patterns to remove (Wikipedia disambiguation suffixes)
+        patterns_to_remove = [
+            r'\s*\(wrestler\)$',
+            r'\s*\(professional wrestler\)$',
+            r'\s*\(professional wrestling\)$',
+            r'\s*\(wrestling\)$',
+            r'\s*\(American wrestler\)$',
+            r'\s*\(Canadian wrestler\)$',
+            r'\s*\(British wrestler\)$',
+            r'\s*\(Japanese wrestler\)$',
+            r'\s*\(Mexican wrestler\)$',
+            r'\s*\(Australian wrestler\)$',
+            r'\s*\(entertainer\)$',
+            r'\s*\(performer\)$',
+        ]
+
+        cleaned = name
+        for pattern in patterns_to_remove:
+            cleaned = re.sub(pattern, '', cleaned, flags=re.IGNORECASE)
+
+        return cleaned.strip()
+
     def enrich_wrestler(self, wrestler) -> Dict[str, Any]:
         """
         Enrich a wrestler with missing data.
@@ -108,6 +143,14 @@ class EntityEnrichment:
         start_time = time.time()
         updated_fields = {}
         sources_used = []
+
+        # Clean name if it has Wikipedia disambiguation suffixes
+        cleaned_name = self._clean_entity_name(wrestler.name)
+        if cleaned_name != wrestler.name:
+            logger.info(f"Cleaning wrestler name: '{wrestler.name}' -> '{cleaned_name}'")
+            wrestler.name = cleaned_name
+            updated_fields['name'] = cleaned_name
+            sources_used.append('name_cleanup')
 
         # Get current score to see what's missing
         breakdown = self.scorer.score_wrestler(wrestler)

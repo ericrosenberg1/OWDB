@@ -8,7 +8,7 @@ to ensure database entries are accurate and properly formatted.
 import logging
 import re
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from django.db.models import Q, Count
@@ -460,6 +460,222 @@ class DataQualityChecker:
                     current_value=title.debut_year,
                     auto_fixable=False,
                 ))
+
+        return issues
+
+    def check_match(self, match) -> List[QualityIssue]:
+        """
+        Check a single match for quality issues.
+
+        Issue codes:
+        - DECEASED_IN_MATCH: Deceased wrestler appears after death date
+        - ERA_MISMATCH: Wrestlers from incompatible time periods
+        - UNLINKED_WRESTLERS: Match has text but no wrestler links
+        """
+        issues = []
+
+        # Get event date for temporal checks
+        event_date = match.event.date if match.event else None
+
+        # Check for unlinked wrestlers (match_text exists but no M2M links)
+        if match.match_text and hasattr(match, 'wrestlers'):
+            if match.wrestlers.count() == 0:
+                issues.append(QualityIssue(
+                    entity_type='match',
+                    entity_id=match.id,
+                    entity_name=match.match_text[:50] + '...' if len(match.match_text) > 50 else match.match_text,
+                    issue_type='warning',
+                    issue_code='UNLINKED_WRESTLERS',
+                    description='Match has text but no linked wrestler objects',
+                    field='wrestlers',
+                    current_value=match.match_text[:100],
+                    auto_fixable=False,
+                ))
+
+        # Check wrestlers in the match
+        wrestlers = list(match.wrestlers.all()) if hasattr(match, 'wrestlers') else []
+
+        if event_date and wrestlers:
+            # Check for deceased wrestlers in matches after their death
+            issues.extend(self._check_deceased_in_match(match, wrestlers, event_date))
+
+            # Check for era mismatches (e.g., 1960s wrestler vs 2020s wrestler)
+            issues.extend(self._check_era_consistency(match, wrestlers, event_date))
+
+        return issues
+
+    def _check_deceased_in_match(
+        self,
+        match,
+        wrestlers: List,
+        event_date: date
+    ) -> List[QualityIssue]:
+        """Check if any deceased wrestlers appear in matches after their death."""
+        issues = []
+
+        for wrestler in wrestlers:
+            if wrestler.death_date and event_date > wrestler.death_date:
+                issues.append(QualityIssue(
+                    entity_type='match',
+                    entity_id=match.id,
+                    entity_name=match.match_text[:50] if match.match_text else f'Match #{match.id}',
+                    issue_type='error',
+                    issue_code='DECEASED_IN_MATCH',
+                    description=f'{wrestler.name} died on {wrestler.death_date} but appears in match on {event_date}',
+                    field='wrestlers',
+                    current_value=wrestler.name,
+                    auto_fixable=False,
+                ))
+
+        return issues
+
+    def _check_era_consistency(
+        self,
+        match,
+        wrestlers: List,
+        event_date: date
+    ) -> List[QualityIssue]:
+        """Check for wrestlers from incompatible eras in the same match."""
+        issues = []
+
+        # Get debut and retirement years for all wrestlers
+        debut_years = [w.debut_year for w in wrestlers if w.debut_year]
+        retirement_years = [w.retirement_year for w in wrestlers if w.retirement_year]
+
+        if len(debut_years) >= 2:
+            # Check for large gap between earliest and latest debut (>25 years is suspicious)
+            min_debut = min(debut_years)
+            max_debut = max(debut_years)
+
+            if max_debut - min_debut > 25:
+                issues.append(QualityIssue(
+                    entity_type='match',
+                    entity_id=match.id,
+                    entity_name=match.match_text[:50] if match.match_text else f'Match #{match.id}',
+                    issue_type='warning',
+                    issue_code='ERA_MISMATCH',
+                    description=f'Large era gap: debut years range from {min_debut} to {max_debut} ({max_debut - min_debut} years)',
+                    field='wrestlers',
+                    auto_fixable=False,
+                ))
+
+        # Check if a wrestler retired before another debuted (impossible to have faced)
+        for i, w1 in enumerate(wrestlers):
+            if not w1.retirement_year:
+                continue
+            for w2 in wrestlers[i + 1:]:
+                if not w2.debut_year:
+                    continue
+                # If w1 retired before w2 debuted, they couldn't have wrestled
+                if w1.retirement_year < w2.debut_year - 1:  # Allow 1 year overlap for data imprecision
+                    issues.append(QualityIssue(
+                        entity_type='match',
+                        entity_id=match.id,
+                        entity_name=match.match_text[:50] if match.match_text else f'Match #{match.id}',
+                        issue_type='error',
+                        issue_code='ERA_MISMATCH',
+                        description=f'{w1.name} retired in {w1.retirement_year} but {w2.name} debuted in {w2.debut_year}',
+                        field='wrestlers',
+                        auto_fixable=False,
+                    ))
+
+        return issues
+
+    def check_event_synthetic(self, event) -> List[QualityIssue]:
+        """
+        Check if an event appears to be synthetic/AI-generated.
+
+        This is separate from check_event() because it requires checking
+        match data and deceased wrestlers.
+
+        Issue codes:
+        - SYNTHETIC_EVENT: Event appears fabricated (deceased wrestlers in future)
+        - FUTURE_EVENT: Event date is unreasonably far in the future
+        - IMPOSSIBLE_CARD: Card contains impossible wrestler combinations
+        """
+        issues = []
+
+        if not event.date:
+            return issues
+
+        today = date.today()
+        event_date = event.date
+
+        # Check for events more than 30 days in the future
+        if event_date > today + timedelta(days=30):
+            issues.append(QualityIssue(
+                entity_type='event',
+                entity_id=event.id,
+                entity_name=event.name,
+                issue_type='warning',
+                issue_code='FUTURE_EVENT',
+                description=f'Event date {event_date} is more than 30 days in the future',
+                field='date',
+                current_value=str(event_date),
+                auto_fixable=False,
+            ))
+
+        # Check matches for deceased wrestlers and era issues
+        matches = list(event.matches.all()) if hasattr(event, 'matches') else []
+        deceased_violations = []
+        era_violations = []
+
+        for match in matches:
+            match_issues = self.check_match(match)
+            for issue in match_issues:
+                if issue.issue_code == 'DECEASED_IN_MATCH':
+                    deceased_violations.append(issue.description)
+                elif issue.issue_code == 'ERA_MISMATCH' and issue.issue_type == 'error':
+                    era_violations.append(issue.description)
+
+        # If we have deceased wrestlers in a future event, it's synthetic
+        if event_date > today and deceased_violations:
+            issues.append(QualityIssue(
+                entity_type='event',
+                entity_id=event.id,
+                entity_name=event.name,
+                issue_type='error',
+                issue_code='SYNTHETIC_EVENT',
+                description=f'Future event contains deceased wrestlers: {"; ".join(deceased_violations[:3])}',
+                field='matches',
+                auto_fixable=False,
+            ))
+
+        # If we have impossible era combinations, flag it
+        if era_violations:
+            issues.append(QualityIssue(
+                entity_type='event',
+                entity_id=event.id,
+                entity_name=event.name,
+                issue_type='error',
+                issue_code='IMPOSSIBLE_CARD',
+                description=f'Event has impossible wrestler combinations: {"; ".join(era_violations[:3])}',
+                field='matches',
+                auto_fixable=False,
+            ))
+
+        return issues
+
+    def find_synthetic_events(self, limit: int = 1000) -> List[QualityIssue]:
+        """
+        Scan events to find synthetic/impossible data.
+
+        Returns list of events that appear to be synthetic/fabricated.
+        """
+        from ..models import Event
+
+        issues = []
+        today = date.today()
+
+        # Focus on future events and recent events (where synthetic data is most likely)
+        events = Event.objects.filter(
+            date__gt=today - timedelta(days=30)
+        ).prefetch_related('matches', 'matches__wrestlers')[:limit]
+
+        for event in events:
+            event_issues = self.check_event_synthetic(event)
+            synthetic_issues = [i for i in event_issues if i.issue_code in ('SYNTHETIC_EVENT', 'IMPOSSIBLE_CARD')]
+            issues.extend(synthetic_issues)
 
         return issues
 
@@ -1106,4 +1322,204 @@ class DataCleaner:
                     ]
 
         logger.info(f"Cleanup cycle complete: {results}")
+        return results
+
+    def find_and_delete_synthetic_events(
+        self,
+        dry_run: bool = True,
+        include_future_only: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Find and delete synthetic/impossible events.
+
+        This method identifies events that are clearly fabricated:
+        - Future events with deceased wrestlers
+        - Events with impossible era combinations (wrestler retired before another debuted)
+
+        Args:
+            dry_run: If True, don't actually delete
+            include_future_only: If True, only check future events (safer)
+
+        Returns:
+            Summary of deleted events
+        """
+        from ..models import Event, Match
+        from .models import WrestleBotActivity
+
+        results = {
+            'dry_run': dry_run,
+            'events_checked': 0,
+            'synthetic_found': 0,
+            'events_deleted': 0,
+            'matches_deleted': 0,
+            'deleted_events': [],
+        }
+
+        today = date.today()
+
+        # Query events - either future only or all recent
+        if include_future_only:
+            events = Event.objects.filter(
+                date__gt=today
+            ).prefetch_related('matches', 'matches__wrestlers')
+        else:
+            events = Event.objects.filter(
+                date__gt=today - timedelta(days=365)
+            ).prefetch_related('matches', 'matches__wrestlers')
+
+        for event in events:
+            results['events_checked'] += 1
+
+            # Check if event is synthetic
+            issues = self.checker.check_event_synthetic(event)
+            synthetic_issues = [i for i in issues if i.issue_code in ('SYNTHETIC_EVENT', 'IMPOSSIBLE_CARD')]
+
+            if not synthetic_issues:
+                continue
+
+            results['synthetic_found'] += 1
+
+            event_info = {
+                'id': event.id,
+                'name': event.name,
+                'date': str(event.date),
+                'issues': [i.description for i in synthetic_issues],
+                'match_count': event.matches.count(),
+            }
+            results['deleted_events'].append(event_info)
+
+            if dry_run:
+                logger.info(f"Would delete synthetic event: {event.name} ({event.date})")
+            else:
+                # Log the activity before deletion
+                WrestleBotActivity.log_activity(
+                    action_type='verify',
+                    entity_type='event',
+                    entity_id=event.id,
+                    entity_name=event.name,
+                    source='synthetic_cleanup',
+                    details={
+                        'action': 'deleted',
+                        'reason': 'synthetic_event',
+                        'issues': [i.description for i in synthetic_issues],
+                        'date': str(event.date),
+                        'match_count': event.matches.count(),
+                    },
+                )
+
+                # Delete matches first (they have FK to event)
+                match_count = event.matches.count()
+                event.matches.all().delete()
+                results['matches_deleted'] += match_count
+
+                # Delete the event
+                event.delete()
+                results['events_deleted'] += 1
+
+                logger.info(f"Deleted synthetic event: {event.name} ({event.date}) with {match_count} matches")
+
+        logger.info(
+            f"Synthetic event cleanup: checked {results['events_checked']}, "
+            f"found {results['synthetic_found']}, deleted {results['events_deleted']}"
+        )
+
+        return results
+
+    def detect_synthetic_by_name_pattern(
+        self,
+        dry_run: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Find and delete events with suspicious name patterns in future dates.
+
+        Patterns detected:
+        - Generic TV episode names (WWE Raw #NNNN) in far future
+        - Events with placeholder-like names in future
+
+        Args:
+            dry_run: If True, don't actually delete
+
+        Returns:
+            Summary of deleted events
+        """
+        from ..models import Event
+        from .models import WrestleBotActivity
+        import re
+
+        results = {
+            'dry_run': dry_run,
+            'events_checked': 0,
+            'suspicious_found': 0,
+            'events_deleted': 0,
+            'matches_deleted': 0,
+            'deleted_events': [],
+        }
+
+        today = date.today()
+
+        # Patterns for generic/suspicious event names
+        suspicious_patterns = [
+            r'^WWE Raw #\d{4,}$',  # WWE Raw #NNNN
+            r'^AEW Dynamite #\d{3,}$',  # AEW Dynamite #NNN
+            r'^WWE SmackDown #\d{4,}$',  # SmackDown #NNNN
+            r'^NXT #\d{3,}$',  # NXT #NNN
+            r'^Episode\s+\d+$',  # Episode N
+            r'^Show\s+\d+$',  # Show N
+        ]
+
+        # Focus on events far in the future (more than 60 days)
+        future_events = Event.objects.filter(
+            date__gt=today + timedelta(days=60)
+        ).prefetch_related('matches')
+
+        for event in future_events:
+            results['events_checked'] += 1
+
+            # Check if name matches suspicious pattern
+            is_suspicious = False
+            for pattern in suspicious_patterns:
+                if re.match(pattern, event.name, re.IGNORECASE):
+                    is_suspicious = True
+                    break
+
+            if not is_suspicious:
+                continue
+
+            results['suspicious_found'] += 1
+
+            event_info = {
+                'id': event.id,
+                'name': event.name,
+                'date': str(event.date),
+                'reason': 'suspicious_name_pattern_in_future',
+                'match_count': event.matches.count(),
+            }
+            results['deleted_events'].append(event_info)
+
+            if dry_run:
+                logger.info(f"Would delete suspicious future event: {event.name} ({event.date})")
+            else:
+                WrestleBotActivity.log_activity(
+                    action_type='verify',
+                    entity_type='event',
+                    entity_id=event.id,
+                    entity_name=event.name,
+                    source='synthetic_cleanup',
+                    details={
+                        'action': 'deleted',
+                        'reason': 'suspicious_name_pattern',
+                        'date': str(event.date),
+                        'match_count': event.matches.count(),
+                    },
+                )
+
+                match_count = event.matches.count()
+                event.matches.all().delete()
+                results['matches_deleted'] += match_count
+
+                event.delete()
+                results['events_deleted'] += 1
+
+                logger.info(f"Deleted suspicious event: {event.name} ({event.date})")
+
         return results

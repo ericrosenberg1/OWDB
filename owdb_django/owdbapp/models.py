@@ -422,6 +422,7 @@ class Wrestler(ImageMixin, TimeStampedModel):
 
     # Additional profile fields for completeness
     birth_date = models.DateField(blank=True, null=True)
+    death_date = models.DateField(blank=True, null=True, help_text="Date of death if deceased")
     height = models.CharField(max_length=50, blank=True, null=True, help_text="e.g., 6'2\" or 188 cm")
     weight = models.CharField(max_length=50, blank=True, null=True, help_text="e.g., 250 lbs or 113 kg")
     trained_by = models.TextField(blank=True, null=True, help_text="Comma-separated list of trainers")
@@ -446,8 +447,14 @@ class Wrestler(ImageMixin, TimeStampedModel):
         return self.name
 
     @property
+    def is_deceased(self):
+        """Check if wrestler has passed away."""
+        return self.death_date is not None
+
+    @property
     def is_active(self):
-        return self.retirement_year is None
+        """Check if wrestler is still active (not retired and not deceased)."""
+        return self.retirement_year is None and self.death_date is None
 
     def get_aliases_list(self):
         if self.aliases:

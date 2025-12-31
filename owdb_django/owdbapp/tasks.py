@@ -1476,6 +1476,51 @@ def wrestlebot_synthetic_cleanup(self, dry_run: bool = False):
         cache.delete(lock_key)
 
 
+@shared_task(
+    bind=True,
+    max_retries=2,
+    default_retry_delay=600,
+    soft_time_limit=WRESTLEBOT_SOFT_LIMIT,
+    time_limit=WRESTLEBOT_HARD_LIMIT,
+)
+def wrestlebot_verification_cycle(self, batch_size: int = 15):
+    """
+    Run a verification cycle - cross-check data against TMDB and other sources.
+
+    This is the highest priority task for data ACCURACY.
+    It verifies:
+    - Episode dates match TMDB
+    - Wrestler data is accurate
+    - Event data is correct
+
+    Runs every 30 minutes via Celery Beat.
+    """
+    lock_key = "wrestlebot_verification_lock"
+    lock_timeout = WRESTLEBOT_HARD_LIMIT + 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("WrestleBot verification skipped: previous run still active")
+        return {"status": "skipped_lock"}
+
+    try:
+        from .wrestlebot import WrestleBot
+        bot = WrestleBot()
+
+        if not bot.is_enabled():
+            return {"status": "disabled"}
+
+        result = bot.run_verification_cycle(batch_size=batch_size)
+        logger.info(f"WrestleBot verification cycle: {result}")
+        return result
+
+    except Exception as e:
+        logger.error(f"WrestleBot verification failed: {e}")
+        raise self.retry(exc=e)
+
+    finally:
+        cache.delete(lock_key)
+
+
 # =============================================================================
 # TV Episode Tracking Tasks
 # =============================================================================
@@ -1705,3 +1750,167 @@ def verify_all_tv_shows(self):
     )
 
     return results
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    default_retry_delay=300,
+    soft_time_limit=TV_EPISODE_SOFT_LIMIT,
+    time_limit=TV_EPISODE_HARD_LIMIT,
+)
+def enrich_tv_episodes(self, batch_size: int = 20):
+    """
+    Enrich TV episodes with match data and wrestler links.
+
+    This task uses TMDB as the source of truth for episode existence,
+    then enriches episodes with match data from Cagematch/Wikipedia.
+
+    Runs every 30 minutes via Celery Beat.
+
+    Args:
+        batch_size: Number of episodes to enrich per run
+    """
+    from celery.exceptions import SoftTimeLimitExceeded
+    from datetime import timedelta
+    from django.utils import timezone
+
+    from .models import Event
+    from .scrapers.tv_episodes import TVEpisodeScraper
+    from owdb_django.wrestlebot.models import WrestleBotActivity
+
+    lock_key = "enrich_tv_episodes_lock"
+    lock_timeout = TV_EPISODE_HARD_LIMIT + 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("TV episode enrichment skipped: previous run still active")
+        return {"status": "skipped_lock"}
+
+    try:
+        scraper = TVEpisodeScraper()
+
+        # Find episodes that need enrichment (have no matches, are in the past)
+        cutoff = timezone.now() - timedelta(days=1)  # Only past episodes
+        episodes_to_enrich = (
+            Event.objects
+            .filter(
+                tv_show__isnull=False,
+                date__lt=cutoff.date(),
+            )
+            .exclude(matches__isnull=False)  # No matches yet
+            .order_by('-date')  # Most recent first
+            [:batch_size]
+        )
+
+        results = {
+            'checked': 0,
+            'enriched': 0,
+            'matches_added': 0,
+            'errors': 0,
+        }
+
+        for episode in episodes_to_enrich:
+            try:
+                enriched = scraper.enrich_episode_with_matches(episode)
+                results['checked'] += 1
+
+                if enriched.get('matches_added', 0) > 0:
+                    results['enriched'] += 1
+                    results['matches_added'] += enriched['matches_added']
+
+                    # Log WrestleBot activity
+                    WrestleBotActivity.log_activity(
+                        action_type='enrich',
+                        entity_type='event',
+                        entity_id=episode.id,
+                        entity_name=episode.name,
+                        source='tmdb_enrichment',
+                        details={'matches_added': enriched['matches_added']},
+                    )
+
+            except Exception as e:
+                logger.warning("Failed to enrich episode %s: %s", episode.name, e)
+                results['errors'] += 1
+
+        logger.info(
+            "TV episode enrichment: %d checked, %d enriched, %d matches added",
+            results['checked'], results['enriched'], results['matches_added']
+        )
+
+        return results
+
+    except SoftTimeLimitExceeded:
+        logger.warning("TV episode enrichment exceeded time limit")
+        return {"status": "timeout"}
+
+    except Exception as e:
+        logger.error("TV episode enrichment failed: %s", e)
+        raise self.retry(exc=e)
+
+    finally:
+        cache.delete(lock_key)
+
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+    soft_time_limit=30 * 60,  # 30 minutes
+    time_limit=35 * 60,
+)
+def scheduled_backfill_tv_episodes(self):
+    """
+    Daily task to backfill historical TV episodes.
+
+    Focuses on shows that are missing episodes, prioritizing
+    recent gaps over historical ones.
+
+    Runs daily via Celery Beat.
+    """
+    from .models import TVShow
+    from .scrapers.tv_episodes import TVEpisodeScraper
+
+    lock_key = "scheduled_backfill_episodes_lock"
+    lock_timeout = 40 * 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("Scheduled backfill skipped: previous run still active")
+        return {"status": "skipped_lock"}
+
+    try:
+        scraper = TVEpisodeScraper()
+
+        # Get all shows and check for gaps
+        shows = TVShow.objects.filter(tmdb_id__isnull=False, finale_date__isnull=True)
+
+        results = {
+            'shows_processed': 0,
+            'episodes_created': 0,
+            'episodes_updated': 0,
+        }
+
+        for show in shows[:10]:  # Limit to 10 shows per day
+            try:
+                # Backfill the current year for active shows
+                from datetime import date
+                current_year = date.today().year
+
+                show_results = scraper.backfill_show_by_year(show, current_year)
+
+                results['shows_processed'] += 1
+                results['episodes_created'] += show_results.get('created', 0)
+                results['episodes_updated'] += show_results.get('updated', 0)
+
+                logger.info("Backfilled %s for %d: %s", show.name, current_year, show_results)
+
+            except Exception as e:
+                logger.error("Error backfilling %s: %s", show.name, e)
+
+        logger.info("Scheduled backfill complete: %s", results)
+        return results
+
+    except Exception as e:
+        logger.error("Scheduled backfill failed: %s", e)
+        raise self.retry(exc=e)
+
+    finally:
+        cache.delete(lock_key)

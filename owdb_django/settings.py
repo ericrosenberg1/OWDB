@@ -292,42 +292,64 @@ CELERY_BEAT_SCHEDULE = {
     },
     # ==========================================================================
     # WrestleBot 2.0 - Autonomous Data Enhancement
+    # Priority order: ACCURACY > QUALITY > COMPREHENSIVENESS
     # ==========================================================================
-    'wrestlebot-master': {
-        'task': 'owdb_django.owdbapp.tasks.wrestlebot_master',
-        'schedule': 1800.0,  # Every 30 minutes
-    },
-    'wrestlebot-discovery': {
-        'task': 'owdb_django.owdbapp.tasks.wrestlebot_discovery_cycle',
-        'schedule': 7200.0,  # Every 2 hours
-        'args': (5,),  # batch size
-    },
-    'wrestlebot-enrichment': {
-        'task': 'owdb_django.owdbapp.tasks.wrestlebot_enrichment_cycle',
-        'schedule': 3600.0,  # Every hour
-        'args': (10,),  # batch size
-    },
-    'wrestlebot-images': {
-        'task': 'owdb_django.owdbapp.tasks.wrestlebot_image_cycle',
-        'schedule': 14400.0,  # Every 4 hours
-        'args': (10,),  # batch size
-    },
+    #
+    # ACCURACY (highest priority) - Clean and verify existing data
     'wrestlebot-match-cleanup': {
         'task': 'owdb_django.owdbapp.tasks.wrestlebot_match_cleanup',
-        'schedule': 21600.0,  # Every 6 hours
-        'kwargs': {'dry_run': False, 'limit': 5000},
+        'schedule': 3600.0,  # Every hour (was 6 hours)
+        'kwargs': {'dry_run': False, 'limit': 2000},
     },
     'wrestlebot-synthetic-cleanup': {
         'task': 'owdb_django.owdbapp.tasks.wrestlebot_synthetic_cleanup',
-        'schedule': 86400.0,  # Every 24 hours
+        'schedule': 21600.0,  # Every 6 hours (was 24 hours)
         'kwargs': {'dry_run': False},
     },
+    'wrestlebot-verification': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_verification_cycle',
+        'schedule': 1800.0,  # Every 30 minutes - verify data against sources
+        'args': (15,),  # batch size
+    },
+    #
+    # QUALITY (medium priority) - Enrich and improve existing entries
+    'wrestlebot-enrichment': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_enrichment_cycle',
+        'schedule': 1800.0,  # Every 30 minutes (was 1 hour)
+        'args': (15,),  # batch size
+    },
+    'wrestlebot-images': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_image_cycle',
+        'schedule': 7200.0,  # Every 2 hours (was 4 hours)
+        'args': (15,),  # batch size
+    },
+    #
+    # COMPREHENSIVENESS (lower priority) - Add new entries
+    'wrestlebot-discovery': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_discovery_cycle',
+        'schedule': 3600.0,  # Every hour (was 2 hours)
+        'args': (10,),  # batch size
+    },
+    'wrestlebot-master': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_master',
+        'schedule': 900.0,  # Every 15 minutes (was 30 minutes)
+    },
     # ==========================================================================
-    # TV Episode Tracking - Checks TMDB for new episodes
+    # TV Episode Tracking - TMDB is source of truth for episodes
+    # Episodes are the backbone for linking all other data
     # ==========================================================================
     'poll-tv-episodes': {
         'task': 'owdb_django.owdbapp.tasks.poll_tv_episodes',
         'schedule': 900.0,  # Every 15 minutes
+    },
+    'enrich-tv-episodes': {
+        'task': 'owdb_django.owdbapp.tasks.enrich_tv_episodes',
+        'schedule': 1800.0,  # Every 30 minutes - add match data to episodes
+        'args': (20,),  # batch size
+    },
+    'backfill-tv-episodes': {
+        'task': 'owdb_django.owdbapp.tasks.scheduled_backfill_tv_episodes',
+        'schedule': 86400.0,  # Daily - fill historical gaps
     },
 }
 

@@ -9,7 +9,19 @@
             <div class="credits-list">
                 {% for item in section.items %}
                 <div class="credit-item">
-                    <div class="credit-year">{% if item.year %}{{ item.year }}{% else %}&mdash;{% endif %}</div>
+                    <div class="credit-thumbnail">
+                        {% if item.image_url %}
+                        <img src="{{ item.image_url }}" alt="{{ item.name }}" class="linked-thumb">
+                        {% else %}
+                        <div class="linked-thumb-placeholder">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                <polyline points="21 15 16 10 5 21"></polyline>
+                            </svg>
+                        </div>
+                        {% endif %}
+                    </div>
                     <div class="credit-separator"><span class="dot"></span></div>
                     <div class="credit-info">
                         {% if item.url %}

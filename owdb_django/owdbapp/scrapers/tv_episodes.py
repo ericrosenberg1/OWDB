@@ -471,3 +471,120 @@ class TVEpisodeScraper:
             'difference': tmdb_count - db_count,
             'complete': tmdb_count == db_count,
         }
+
+    def enrich_episode_with_matches(self, episode) -> Dict[str, Any]:
+        """
+        Enrich an episode Event with match data.
+
+        Uses Cagematch to get match results for this episode.
+        Links wrestlers to matches and marks episode as verified.
+
+        Args:
+            episode: Event model instance (tv_show must not be None)
+
+        Returns:
+            Dict with enrichment results
+        """
+        from owdb_django.owdbapp.models import Match, Wrestler
+        from django.utils import timezone
+
+        results = {
+            'matches_added': 0,
+            'wrestlers_linked': 0,
+            'verified': False,
+            'source': None,
+        }
+
+        if not episode.tv_show:
+            return results
+
+        if not episode.date:
+            return results
+
+        # Try to get match data from Cagematch
+        try:
+            # Check if cagematch search_event method exists
+            if not hasattr(self.cagematch, 'search_event'):
+                logger.debug("Cagematch search_event not implemented yet")
+                return results
+
+            # Search for the event on Cagematch by name and date
+            promotion_name = episode.promotion.name if episode.promotion else ''
+            show_name = episode.tv_show.name
+
+            # Format search query
+            search_query = f"{show_name}"
+            if episode.episode_number:
+                search_query = f"{show_name} #{episode.episode_number}"
+
+            event_data = self.cagematch.search_event(
+                promotion=promotion_name,
+                event_name=search_query,
+                date=episode.date,
+            )
+
+            if not event_data or not event_data.get('matches'):
+                logger.debug("No Cagematch data found for %s", episode.name)
+                return results
+
+            # Store Cagematch event ID if found
+            if event_data.get('cagematch_id') and not episode.cagematch_event_id:
+                episode.cagematch_event_id = event_data['cagematch_id']
+
+            # Add matches
+            for i, match_data in enumerate(event_data.get('matches', [])):
+                match_text = match_data.get('match_text', '')
+                if not match_text:
+                    continue
+
+                # Create the match
+                match = Match.objects.create(
+                    event=episode,
+                    match_text=match_text[:1000],
+                    result=match_data.get('result', '')[:255],
+                    match_type=match_data.get('match_type', '')[:255],
+                    match_order=i + 1,
+                )
+                results['matches_added'] += 1
+
+                # Try to link wrestlers
+                wrestler_names = match_data.get('wrestlers', [])
+                for wrestler_name in wrestler_names:
+                    # Find wrestler by name (case-insensitive)
+                    wrestler = Wrestler.objects.filter(
+                        name__iexact=wrestler_name.strip()
+                    ).first()
+
+                    if not wrestler:
+                        # Try aliases
+                        wrestler = Wrestler.objects.filter(
+                            aliases__icontains=wrestler_name.strip()
+                        ).first()
+
+                    if wrestler:
+                        match.wrestlers.add(wrestler)
+                        results['wrestlers_linked'] += 1
+
+                # Set winner if provided
+                winner_name = match_data.get('winner_name')
+                if winner_name:
+                    winner = Wrestler.objects.filter(
+                        name__iexact=winner_name.strip()
+                    ).first()
+                    if winner:
+                        match.winner = winner
+                        match.save()
+
+            # Mark episode as verified if we found data
+            if results['matches_added'] > 0:
+                episode.verified = True
+                episode.verified_source = 'cagematch'
+                episode.last_verified = timezone.now()
+                episode.save()
+                results['verified'] = True
+                results['source'] = 'cagematch'
+
+        except Exception as e:
+            logger.warning("Error enriching episode %s: %s", episode.name, e)
+
+        return results

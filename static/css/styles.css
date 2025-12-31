@@ -948,6 +948,32 @@ a:hover {
     font-weight: 600;
 }
 
+.credit-thumbnail {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    margin-right: 4px;
+}
+
+.credit-thumbnail .linked-thumb {
+    width: 36px;
+    height: 36px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: var(--wwf-dark);
+}
+
+.credit-thumbnail .linked-thumb-placeholder {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--wwf-dark);
+    border-radius: 4px;
+    color: var(--wwf-gray);
+}
+
 .credit-separator {
     flex: 0 0 20px;
     display: flex;

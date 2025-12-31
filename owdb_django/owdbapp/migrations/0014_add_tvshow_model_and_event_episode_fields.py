@@ -101,21 +101,8 @@ class Migration(migrations.Migration):
             name='verified_source',
             field=models.CharField(blank=True, help_text='Source used for verification', max_length=50, null=True),
         ),
-        migrations.AddField(
-            model_name='podcastepisode',
-            name='discussed_events',
-            field=models.ManyToManyField(blank=True, help_text='Events discussed in this episode', related_name='podcast_discussions', to='owdbapp.event'),
-        ),
-        migrations.AddField(
-            model_name='podcastepisode',
-            name='discussed_matches',
-            field=models.ManyToManyField(blank=True, help_text='Matches discussed in this episode', related_name='podcast_discussions', to='owdbapp.match'),
-        ),
-        migrations.AddField(
-            model_name='videogame',
-            name='wrestlers',
-            field=models.ManyToManyField(blank=True, help_text="Wrestlers featured in this game's roster", related_name='video_games', to='owdbapp.wrestler'),
-        ),
+        # NOTE: podcastepisode.discussed_events, discussed_matches, and videogame.wrestlers
+        # already exist in the database from a previous migration, so we skip creating them here.
         migrations.AddField(
             model_name='tvshow',
             name='promotion',

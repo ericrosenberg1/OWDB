@@ -1,14 +1,32 @@
 """
 Cagematch.net scraper for wrestling data.
 
-Cagematch is a public wrestling database. We scrape factual data only:
+IMPORTANT: Cagematch does NOT have an official API. The site owner has explicitly
+stated they have no plans to build one. This scraper accesses the public website
+while strictly respecting their robots.txt rules.
+
+robots.txt analysis (https://www.cagematch.net/robots.txt):
+- Crawl-delay: 527 seconds (~8.8 minutes between requests)
+- Disallowed: /cageboard/, /cgi-bin/, /control/, /database/, /db/, etc.
+- We only access public /en/ pages for factual data
+
+Cagematch is a fan-run, community-driven wrestling database. We extract only
+factual, non-copyrightable data:
 - Wrestler profiles (names, dates, physical stats)
 - Match results (dates, participants, outcomes)
 - Event information (dates, locations, attendance)
 - Match ratings (public fan ratings)
 
-We respect their robots.txt and rate limits.
-We do NOT scrape copyrighted content like match descriptions or reviews.
+We do NOT extract:
+- User-generated content from /cageboard/
+- Copyrighted prose descriptions
+- Private/internal pages
+
+Ethical considerations:
+- This is a volunteer-run site with no commercial API
+- We use aggressive caching (24+ hours) to minimize requests
+- We respect the extremely long crawl-delay in robots.txt
+- We use a descriptive User-Agent with contact info
 """
 
 import logging
@@ -27,22 +45,85 @@ logger = logging.getLogger(__name__)
 class CagematchScraper(BaseScraper):
     """
     Scraper for Cagematch.net wrestling database.
-    Focuses on factual match results and wrestler data.
+
+    IMPORTANT: Cagematch has no official API. Their robots.txt specifies:
+    - Crawl-delay: 527 seconds (8.8 minutes)
+    - Various paths are disallowed
+
+    We respect these rules by:
+    1. Using extremely conservative rate limits
+    2. Aggressive caching (24-48 hours for most data)
+    3. Only accessing allowed public pages
+    4. Using a proper User-Agent with contact info
+
+    This scraper should be used sparingly - primarily for one-time imports
+    or infrequent enrichment, not continuous scraping.
     """
 
     SOURCE_NAME = "cagematch"
     BASE_URL = "https://www.cagematch.net"
 
-    # Very conservative rate limits - be respectful to fan-run sites
-    REQUESTS_PER_MINUTE = 5
-    REQUESTS_PER_HOUR = 60
-    REQUESTS_PER_DAY = 500
+    # User-Agent with contact info (good practice for any scraper)
+    USER_AGENT = "WrestlingDBBot/1.0 (https://wrestlingdb.org; admin@wrestlingdb.org) - respecting robots.txt"
+
+    # Rate limits based on robots.txt Crawl-delay: 527 seconds
+    # robots.txt specifies ~8.8 minutes between requests
+    # We round down slightly but stay very conservative
+    # With these limits, we can do about 7 requests/hour max
+    REQUESTS_PER_MINUTE = 1  # Max 1 per minute (we wait longer via crawl delay)
+    REQUESTS_PER_HOUR = 7    # ~527 seconds = ~8.8 min per request = ~7/hour
+    REQUESTS_PER_DAY = 100   # ~100 requests/day max (very conservative)
+
+    # Minimum delay between requests (from robots.txt Crawl-delay: 527)
+    # We'll use 530 seconds to be safe
+    MIN_REQUEST_DELAY = 530  # seconds
 
     # Cagematch URL patterns
     WRESTLER_URL = "/en/?id=2&nr={wrestler_id}"
     EVENT_URL = "/en/?id=1&nr={event_id}"
     PROMOTION_URL = "/en/?id=8&nr={promotion_id}"
     SEARCH_URL = "/en/?id=2&view=workers&search={query}"
+
+    # Extended cache TTLs - since we can only make ~7 requests/hour,
+    # we cache aggressively to avoid re-fetching
+    CACHE_TTL_PAGE = 86400 * 2  # 48 hours for individual pages
+    CACHE_TTL_LIST = 86400      # 24 hours for listing pages
+
+    def __init__(self):
+        """Initialize the Cagematch scraper with robots.txt-compliant settings."""
+        super().__init__()
+        # Set proper User-Agent
+        self.session.headers.update({
+            "User-Agent": self.USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate",
+        })
+        # Override the minimum delay to respect robots.txt Crawl-delay
+        self._min_request_delay = self.MIN_REQUEST_DELAY
+        logger.info(
+            f"CagematchScraper initialized with {self.MIN_REQUEST_DELAY}s crawl delay "
+            f"(per robots.txt)"
+        )
+
+    def _respect_crawl_delay(self, url: str):
+        """
+        Override parent's crawl delay to enforce robots.txt Crawl-delay: 527.
+
+        The parent class checks robots.txt for crawl-delay, but we enforce
+        our own minimum since we know it's 527 seconds.
+        """
+        import time
+        import random
+
+        elapsed = time.time() - self._last_request_time
+        if elapsed < self._min_request_delay:
+            wait_time = self._min_request_delay - elapsed + random.uniform(0, 30)
+            logger.debug(
+                f"Cagematch crawl delay: waiting {wait_time:.1f}s "
+                f"(robots.txt requires {self.MIN_REQUEST_DELAY}s)"
+            )
+            time.sleep(wait_time)
 
     def _parse_cagematch_id(self, url: str) -> Optional[int]:
         """Extract the numeric ID from a Cagematch URL."""
@@ -58,7 +139,7 @@ class CagematchScraper(BaseScraper):
     def search_wrestlers(self, query: str, limit: int = 20) -> List[Dict[str, Any]]:
         """Search for wrestlers by name."""
         url = f"{self.BASE_URL}{self.SEARCH_URL.format(query=quote(query))}"
-        html = self.get_cached_or_fetch(url, cache_ttl=3600)
+        html = self.get_cached_or_fetch(url, cache_ttl=self.CACHE_TTL_LIST)
 
         if not html:
             return []
@@ -101,7 +182,7 @@ class CagematchScraper(BaseScraper):
     def parse_wrestler_page(self, wrestler_id: int) -> Optional[Dict[str, Any]]:
         """Parse a wrestler's Cagematch page for factual data."""
         url = f"{self.BASE_URL}{self.WRESTLER_URL.format(wrestler_id=wrestler_id)}"
-        html = self.get_cached_or_fetch(url, cache_ttl=86400)  # Cache for 24 hours
+        html = self.get_cached_or_fetch(url, cache_ttl=self.CACHE_TTL_PAGE)
 
         if not html:
             return None
@@ -163,7 +244,7 @@ class CagematchScraper(BaseScraper):
     def parse_event_page(self, event_id: int) -> Optional[Dict[str, Any]]:
         """Parse an event's Cagematch page for factual data."""
         url = f"{self.BASE_URL}{self.EVENT_URL.format(event_id=event_id)}"
-        html = self.get_cached_or_fetch(url, cache_ttl=86400)
+        html = self.get_cached_or_fetch(url, cache_ttl=self.CACHE_TTL_PAGE)
 
         if not html:
             return None
@@ -263,7 +344,7 @@ class CagematchScraper(BaseScraper):
     def parse_promotion_page(self, promotion_id: int) -> Optional[Dict[str, Any]]:
         """Parse a promotion's Cagematch page for factual data."""
         url = f"{self.BASE_URL}{self.PROMOTION_URL.format(promotion_id=promotion_id)}"
-        html = self.get_cached_or_fetch(url, cache_ttl=86400)
+        html = self.get_cached_or_fetch(url, cache_ttl=self.CACHE_TTL_PAGE)
 
         if not html:
             return None
@@ -315,7 +396,7 @@ class CagematchScraper(BaseScraper):
         """Get recent events from Cagematch."""
         # Cagematch events listing page
         url = f"{self.BASE_URL}/en/?id=1&view=cards"
-        html = self.get_cached_or_fetch(url, cache_ttl=3600)
+        html = self.get_cached_or_fetch(url, cache_ttl=self.CACHE_TTL_LIST)
 
         if not html:
             return []
@@ -360,7 +441,7 @@ class CagematchScraper(BaseScraper):
 
         # Get wrestler listing
         url = f"{self.BASE_URL}/en/?id=2&view=workers&page=1"
-        html = self.get_cached_or_fetch(url, cache_ttl=3600)
+        html = self.get_cached_or_fetch(url, cache_ttl=self.CACHE_TTL_LIST)
 
         if not html:
             return []
@@ -397,7 +478,7 @@ class CagematchScraper(BaseScraper):
 
         # Get promotion listing
         url = f"{self.BASE_URL}/en/?id=8&view=promotions"
-        html = self.get_cached_or_fetch(url, cache_ttl=3600)
+        html = self.get_cached_or_fetch(url, cache_ttl=self.CACHE_TTL_LIST)
 
         if not html:
             return []

@@ -1370,6 +1370,112 @@ def wrestlebot_get_status():
         return {"status": "error", "error": str(e)}
 
 
+@shared_task(
+    bind=True,
+    max_retries=2,
+    soft_time_limit=15 * 60,  # 15 minutes
+    time_limit=20 * 60,
+)
+def wrestlebot_match_cleanup(self, dry_run: bool = False, limit: int = 5000):
+    """
+    Clean up synthetic/invalid match data.
+
+    Removes:
+    - Matches with deceased wrestlers appearing after death
+    - Matches with retired wrestlers appearing after retirement
+    - Matches with impossible era combinations
+
+    Fixes:
+    - Tag teams stored as single wrestlers (replaces with individual members)
+
+    Args:
+        dry_run: If True, don't actually make changes (just report)
+        limit: Maximum matches to check
+
+    Runs every 6 hours via Celery Beat.
+    """
+    lock_key = "wrestlebot_match_cleanup_lock"
+    lock_timeout = 25 * 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("Match cleanup skipped: previous run still active")
+        return {"status": "skipped_lock"}
+
+    try:
+        from .wrestlebot.quality import DataCleaner
+
+        cleaner = DataCleaner()
+        results = cleaner.find_and_fix_match_issues(dry_run=dry_run, limit=limit)
+
+        logger.info(f"Match cleanup complete: {results}")
+        return results
+
+    except Exception as e:
+        logger.error(f"Match cleanup failed: {e}")
+        raise self.retry(exc=e)
+
+    finally:
+        cache.delete(lock_key)
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    soft_time_limit=10 * 60,
+    time_limit=15 * 60,
+)
+def wrestlebot_synthetic_cleanup(self, dry_run: bool = False):
+    """
+    Find and delete synthetic/fabricated events.
+
+    Identifies:
+    - Future events with deceased wrestlers
+    - Far-future events with suspicious name patterns
+
+    Args:
+        dry_run: If True, don't actually delete (just report)
+
+    Runs daily via Celery Beat.
+    """
+    lock_key = "wrestlebot_synthetic_cleanup_lock"
+    lock_timeout = 20 * 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("Synthetic cleanup skipped: previous run still active")
+        return {"status": "skipped_lock"}
+
+    try:
+        from .wrestlebot.quality import DataCleaner
+
+        cleaner = DataCleaner()
+
+        # Clean up events with deceased wrestlers
+        deceased_results = cleaner.find_and_delete_synthetic_events(dry_run=dry_run)
+
+        # Clean up far-future events with suspicious names
+        pattern_results = cleaner.detect_synthetic_by_name_pattern(dry_run=dry_run)
+
+        results = {
+            'dry_run': dry_run,
+            'deceased_cleanup': deceased_results,
+            'pattern_cleanup': pattern_results,
+            'total_events_deleted': (
+                deceased_results.get('events_deleted', 0) +
+                pattern_results.get('events_deleted', 0)
+            ),
+        }
+
+        logger.info(f"Synthetic cleanup complete: {results}")
+        return results
+
+    except Exception as e:
+        logger.error(f"Synthetic cleanup failed: {e}")
+        raise self.retry(exc=e)
+
+    finally:
+        cache.delete(lock_key)
+
+
 # =============================================================================
 # TV Episode Tracking Tasks
 # =============================================================================

@@ -107,6 +107,40 @@ class DataQualityChecker:
         'suzuki-gun', 'united empire', 'house of black', 'the elite',
     }
 
+    # Known tag teams that should be two wrestlers, not one entry
+    # Format: 'tag team name': ['member1', 'member2']
+    KNOWN_TAG_TEAMS = {
+        'ftr': ['Dax Harwood', 'Cash Wheeler'],
+        'the young bucks': ['Matt Jackson', 'Nick Jackson'],
+        'young bucks': ['Matt Jackson', 'Nick Jackson'],
+        'the usos': ['Jey Uso', 'Jimmy Uso'],
+        'usos': ['Jey Uso', 'Jimmy Uso'],
+        'the new day': ['Kofi Kingston', 'Xavier Woods', 'Big E'],
+        'new day': ['Kofi Kingston', 'Xavier Woods', 'Big E'],
+        'diy': ['Johnny Gargano', 'Tommaso Ciampa'],
+        'motor city machine guns': ['Alex Shelley', 'Chris Sabin'],
+        'mcmg': ['Alex Shelley', 'Chris Sabin'],
+        'the hardys': ['Matt Hardy', 'Jeff Hardy'],
+        'hardys': ['Matt Hardy', 'Jeff Hardy'],
+        'hardy boyz': ['Matt Hardy', 'Jeff Hardy'],
+        'the dudley boyz': ['Bubba Ray Dudley', 'D-Von Dudley'],
+        'dudley boyz': ['Bubba Ray Dudley', 'D-Von Dudley'],
+        'edge and christian': ['Edge', 'Christian'],
+        'rated rko': ['Edge', 'Randy Orton'],
+        'legacy': ['Cody Rhodes', 'Ted DiBiase Jr.'],
+        'authors of pain': ['Akam', 'Rezar'],
+        'aop': ['Akam', 'Rezar'],
+        'american alpha': ['Jason Jordan', 'Chad Gable'],
+        'lucha bros': ['Pentagon Jr.', 'Rey Fenix'],
+        'lucha brothers': ['Pentagon Jr.', 'Rey Fenix'],
+        'proud n powerful': ['Santana', 'Ortiz'],
+        'santana and ortiz': ['Santana', 'Ortiz'],
+        'private party': ['Marq Quen', 'Isiah Kassidy'],
+        'the acclaimed': ['Max Caster', 'Anthony Bowens'],
+        'acclaimed': ['Max Caster', 'Anthony Bowens'],
+        'swerve in our glory': ['Swerve Strickland', 'Keith Lee'],
+    }
+
     # Minimum/maximum reasonable values
     MIN_YEAR = 1900
     MAX_YEAR_OFFSET = 2  # Allow up to 2 years in the future
@@ -499,8 +533,14 @@ class DataQualityChecker:
             # Check for deceased wrestlers in matches after their death
             issues.extend(self._check_deceased_in_match(match, wrestlers, event_date))
 
+            # Check for retired wrestlers in matches after retirement
+            issues.extend(self._check_retired_in_match(match, wrestlers, event_date))
+
             # Check for era mismatches (e.g., 1960s wrestler vs 2020s wrestler)
             issues.extend(self._check_era_consistency(match, wrestlers, event_date))
+
+        # Check for tag teams stored as single wrestlers
+        issues.extend(self._check_tag_team_as_wrestler(match, wrestlers))
 
         return issues
 
@@ -524,7 +564,60 @@ class DataQualityChecker:
                     description=f'{wrestler.name} died on {wrestler.death_date} but appears in match on {event_date}',
                     field='wrestlers',
                     current_value=wrestler.name,
-                    auto_fixable=False,
+                    auto_fixable=True,  # Can auto-delete the match
+                ))
+
+        return issues
+
+    def _check_retired_in_match(
+        self,
+        match,
+        wrestlers: List,
+        event_date: date
+    ) -> List[QualityIssue]:
+        """Check if any retired wrestlers appear in matches after retirement."""
+        issues = []
+
+        for wrestler in wrestlers:
+            # Check retirement year - if event is more than 1 year after retirement, flag it
+            if wrestler.retirement_year and event_date.year > wrestler.retirement_year + 1:
+                issues.append(QualityIssue(
+                    entity_type='match',
+                    entity_id=match.id,
+                    entity_name=match.match_text[:50] if match.match_text else f'Match #{match.id}',
+                    issue_type='error',
+                    issue_code='RETIRED_IN_MATCH',
+                    description=f'{wrestler.name} retired in {wrestler.retirement_year} but appears in match on {event_date}',
+                    field='wrestlers',
+                    current_value=wrestler.name,
+                    auto_fixable=True,  # Can auto-delete the match
+                ))
+
+        return issues
+
+    def _check_tag_team_as_wrestler(
+        self,
+        match,
+        wrestlers: List
+    ) -> List[QualityIssue]:
+        """Check if any wrestlers are actually tag teams stored incorrectly."""
+        issues = []
+
+        for wrestler in wrestlers:
+            name_lower = wrestler.name.lower().strip()
+            if name_lower in self.KNOWN_TAG_TEAMS:
+                members = self.KNOWN_TAG_TEAMS[name_lower]
+                issues.append(QualityIssue(
+                    entity_type='match',
+                    entity_id=match.id,
+                    entity_name=match.match_text[:50] if match.match_text else f'Match #{match.id}',
+                    issue_type='error',
+                    issue_code='TAG_TEAM_AS_WRESTLER',
+                    description=f'"{wrestler.name}" is a tag team, should be individual wrestlers: {", ".join(members)}',
+                    field='wrestlers',
+                    current_value=wrestler.name,
+                    suggested_value=members,
+                    auto_fixable=True,  # Can auto-fix by replacing with individual wrestlers
                 ))
 
         return issues
@@ -1561,3 +1654,182 @@ class DataCleaner:
                 logger.info(f"Deleted suspicious event: {event.name} ({event.date})")
 
         return results
+
+    def find_and_fix_match_issues(
+        self,
+        dry_run: bool = True,
+        limit: int = 1000
+    ) -> Dict[str, Any]:
+        """
+        Find and fix match data quality issues.
+
+        Handles:
+        - DECEASED_IN_MATCH: Deletes matches with deceased wrestlers after death
+        - RETIRED_IN_MATCH: Deletes matches with retired wrestlers after retirement
+        - TAG_TEAM_AS_WRESTLER: Replaces tag team entry with individual wrestlers
+        - ERA_MISMATCH: Deletes matches with impossible era combinations
+
+        Args:
+            dry_run: If True, don't actually make changes
+            limit: Maximum matches to check
+
+        Returns:
+            Summary of fixes applied
+        """
+        from ..models import Match, Wrestler, Event
+        from .models import WrestleBotActivity
+
+        results = {
+            'dry_run': dry_run,
+            'matches_checked': 0,
+            'deceased_deleted': 0,
+            'retired_deleted': 0,
+            'era_mismatch_deleted': 0,
+            'tag_teams_fixed': 0,
+            'events_cleaned': set(),  # Events that had matches deleted
+        }
+
+        today = date.today()
+
+        # Focus on recent and future events (where synthetic data is likely)
+        matches = Match.objects.filter(
+            event__date__gte=today - timedelta(days=365)
+        ).select_related('event').prefetch_related('wrestlers')[:limit]
+
+        for match in matches:
+            results['matches_checked'] += 1
+
+            if not match.event or not match.event.date:
+                continue
+
+            issues = self.checker.check_match(match)
+            if not issues:
+                continue
+
+            # Handle each issue type
+            for issue in issues:
+                if issue.issue_code == 'DECEASED_IN_MATCH':
+                    if not dry_run:
+                        self._delete_match_with_log(match, issue, 'deceased_wrestler')
+                        results['events_cleaned'].add(match.event.id)
+                    results['deceased_deleted'] += 1
+                    break  # Match deleted, no more processing needed
+
+                elif issue.issue_code == 'RETIRED_IN_MATCH':
+                    if not dry_run:
+                        self._delete_match_with_log(match, issue, 'retired_wrestler')
+                        results['events_cleaned'].add(match.event.id)
+                    results['retired_deleted'] += 1
+                    break
+
+                elif issue.issue_code == 'ERA_MISMATCH' and issue.issue_type == 'error':
+                    if not dry_run:
+                        self._delete_match_with_log(match, issue, 'era_mismatch')
+                        results['events_cleaned'].add(match.event.id)
+                    results['era_mismatch_deleted'] += 1
+                    break
+
+                elif issue.issue_code == 'TAG_TEAM_AS_WRESTLER':
+                    if not dry_run:
+                        self._fix_tag_team_in_match(match, issue)
+                    results['tag_teams_fixed'] += 1
+                    # Don't break - might have other fixable issues
+
+        # Clean up empty events (events with all matches deleted)
+        if not dry_run:
+            empty_events = Event.objects.filter(
+                id__in=results['events_cleaned']
+            ).annotate(match_count=Count('matches')).filter(match_count=0)
+
+            for event in empty_events:
+                WrestleBotActivity.log_activity(
+                    action_type='verify',
+                    entity_type='event',
+                    entity_id=event.id,
+                    entity_name=event.name,
+                    source='match_cleanup',
+                    details={'action': 'deleted', 'reason': 'all_matches_invalid'},
+                )
+                event.delete()
+
+        results['events_cleaned'] = len(results['events_cleaned'])
+
+        logger.info(
+            f"Match cleanup: checked {results['matches_checked']}, "
+            f"deleted {results['deceased_deleted']} deceased, "
+            f"deleted {results['retired_deleted']} retired, "
+            f"deleted {results['era_mismatch_deleted']} era mismatch, "
+            f"fixed {results['tag_teams_fixed']} tag teams"
+        )
+
+        return results
+
+    def _delete_match_with_log(self, match, issue: QualityIssue, reason: str):
+        """Delete a match and log the activity."""
+        from .models import WrestleBotActivity
+
+        WrestleBotActivity.log_activity(
+            action_type='verify',
+            entity_type='match',
+            entity_id=match.id,
+            entity_name=match.match_text[:100] if match.match_text else f'Match #{match.id}',
+            source='match_cleanup',
+            details={
+                'action': 'deleted',
+                'reason': reason,
+                'issue': issue.description,
+                'event_id': match.event.id if match.event else None,
+                'event_name': match.event.name if match.event else None,
+            },
+        )
+        match.delete()
+
+    def _fix_tag_team_in_match(self, match, issue: QualityIssue):
+        """Replace tag team entry with individual wrestlers."""
+        from ..models import Wrestler
+        from .models import WrestleBotActivity
+
+        if not issue.suggested_value:
+            return
+
+        member_names = issue.suggested_value  # List of individual wrestler names
+
+        # Find the tag team wrestler to remove
+        tag_team_wrestler = match.wrestlers.filter(
+            name__iexact=issue.current_value
+        ).first()
+
+        if not tag_team_wrestler:
+            return
+
+        # Remove the tag team entry
+        match.wrestlers.remove(tag_team_wrestler)
+
+        # Add individual wrestlers
+        for member_name in member_names:
+            # Find or create the individual wrestler
+            wrestler = Wrestler.objects.filter(name__iexact=member_name).first()
+            if not wrestler:
+                # Try to find by partial match
+                wrestler = Wrestler.objects.filter(name__icontains=member_name).first()
+
+            if wrestler:
+                match.wrestlers.add(wrestler)
+            else:
+                # Create the wrestler if not found
+                wrestler = Wrestler.objects.create(name=member_name)
+                match.wrestlers.add(wrestler)
+                logger.info(f"Created wrestler: {member_name}")
+
+        WrestleBotActivity.log_activity(
+            action_type='verify',
+            entity_type='match',
+            entity_id=match.id,
+            entity_name=match.match_text[:100] if match.match_text else f'Match #{match.id}',
+            source='match_cleanup',
+            details={
+                'action': 'fixed_tag_team',
+                'removed': issue.current_value,
+                'added': member_names,
+            },
+        )

@@ -311,6 +311,16 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': 14400.0,  # Every 4 hours
         'args': (10,),  # batch size
     },
+    'wrestlebot-match-cleanup': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_match_cleanup',
+        'schedule': 21600.0,  # Every 6 hours
+        'kwargs': {'dry_run': False, 'limit': 5000},
+    },
+    'wrestlebot-synthetic-cleanup': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_synthetic_cleanup',
+        'schedule': 86400.0,  # Every 24 hours
+        'kwargs': {'dry_run': False},
+    },
     # ==========================================================================
     # TV Episode Tracking - Checks TMDB for new episodes
     # ==========================================================================

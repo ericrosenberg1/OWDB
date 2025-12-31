@@ -1327,23 +1327,23 @@ class DataCleaner:
     def find_and_delete_synthetic_events(
         self,
         dry_run: bool = True,
-        include_future_only: bool = True
+        include_future_only: bool = False
     ) -> Dict[str, Any]:
         """
         Find and delete synthetic/impossible events.
 
         This method identifies events that are clearly fabricated:
-        - Future events with deceased wrestlers
+        - Events with deceased wrestlers appearing after their death date
         - Events with impossible era combinations (wrestler retired before another debuted)
 
         Args:
             dry_run: If True, don't actually delete
-            include_future_only: If True, only check future events (safer)
+            include_future_only: If True, only check future events (safer). Default False to catch all.
 
         Returns:
             Summary of deleted events
         """
-        from ..models import Event, Match
+        from ..models import Event, Match, Wrestler
         from .models import WrestleBotActivity
 
         results = {
@@ -1357,22 +1357,60 @@ class DataCleaner:
 
         today = date.today()
 
-        # Query events - either future only or all recent
-        if include_future_only:
-            events = Event.objects.filter(
-                date__gt=today
-            ).prefetch_related('matches', 'matches__wrestlers')
-        else:
-            events = Event.objects.filter(
-                date__gt=today - timedelta(days=365)
-            ).prefetch_related('matches', 'matches__wrestlers')
+        # Find events that have matches with deceased wrestlers
+        # This is more efficient than checking all events
+        deceased_wrestler_ids = list(
+            Wrestler.objects.filter(death_date__isnull=False).values_list('id', flat=True)
+        )
 
-        for event in events:
+        if not deceased_wrestler_ids:
+            logger.info("No deceased wrestlers in database, skipping synthetic check")
+            return results
+
+        # Find events where:
+        # 1. Event has matches with wrestlers who are deceased
+        # 2. Event date is after the wrestler's death date
+        # We do this by checking events with any deceased wrestler, then filtering
+        from django.db.models import F, Q
+
+        # Get events that have matches with deceased wrestlers
+        events_with_deceased = Event.objects.filter(
+            matches__wrestlers__id__in=deceased_wrestler_ids
+        ).distinct().prefetch_related('matches', 'matches__wrestlers')
+
+        for event in events_with_deceased:
             results['events_checked'] += 1
 
-            # Check if event is synthetic
-            issues = self.checker.check_event_synthetic(event)
-            synthetic_issues = [i for i in issues if i.issue_code in ('SYNTHETIC_EVENT', 'IMPOSSIBLE_CARD')]
+            if not event.date:
+                continue
+
+            # Check each match for deceased wrestlers appearing after their death
+            has_deceased_violation = False
+            violations = []
+
+            for match in event.matches.all():
+                for wrestler in match.wrestlers.all():
+                    if wrestler.death_date and event.date > wrestler.death_date:
+                        has_deceased_violation = True
+                        violations.append(
+                            f'{wrestler.name} died {wrestler.death_date} but appears in {event.date} event'
+                        )
+
+            if not has_deceased_violation:
+                continue
+
+            # This event has a deceased wrestler appearing after their death
+            synthetic_issues = [
+                QualityIssue(
+                    entity_type='event',
+                    entity_id=event.id,
+                    entity_name=event.name,
+                    issue_type='error',
+                    issue_code='SYNTHETIC_EVENT',
+                    description=f'Deceased wrestler in match: {violations[0]}',
+                    auto_fixable=False,
+                )
+            ]
 
             if not synthetic_issues:
                 continue

@@ -579,8 +579,9 @@ class DataQualityChecker:
         issues = []
 
         for wrestler in wrestlers:
-            # Check retirement year - if event is more than 1 year after retirement, flag it
-            if wrestler.retirement_year and event_date.year > wrestler.retirement_year + 1:
+            # Check retirement year - if event year > retirement year, flag it
+            # (allowing same year for data imprecision, e.g., retired mid-year)
+            if wrestler.retirement_year and event_date.year > wrestler.retirement_year:
                 issues.append(QualityIssue(
                     entity_type='match',
                     entity_id=match.id,

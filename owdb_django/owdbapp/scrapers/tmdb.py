@@ -325,3 +325,214 @@ class TMDBClient(APIClient):
 
         logger.info(f"TMDB: Scraped {len(specials)} wrestling specials")
         return specials[:limit]
+
+    # =========================================================================
+    # TV Episode Methods for TV Episode Tracking System
+    # =========================================================================
+
+    # TMDB IDs for major wrestling TV shows
+    WRESTLING_SHOWS = {
+        # WWE
+        'wwe_raw': 4370,
+        'wwe_smackdown': 4371,
+        'wwe_nxt': 35521,
+        'wwe_main_event': 45533,
+        # AEW
+        'aew_dynamite': 89770,
+        'aew_rampage': 130542,
+        'aew_collision': 227367,
+        # TNA/Impact
+        'impact_wrestling': 4431,
+        # Historical
+        'wcw_nitro': 13579,
+        'wcw_thunder': 14247,
+        'ecw_hardcore_tv': 16347,
+    }
+
+    @with_error_handling
+    def get_tv_season(self, tv_id: int, season_number: int) -> Optional[Dict]:
+        """
+        Get all episodes for a specific season.
+
+        Args:
+            tv_id: TMDB TV show ID
+            season_number: Season number (1-indexed)
+
+        Returns:
+            Season data including episodes list, or None on failure
+        """
+        if not self._is_configured():
+            return None
+        return self.request(f"/tv/{tv_id}/season/{season_number}")
+
+    @with_error_handling
+    def get_tv_episode(
+        self, tv_id: int, season_number: int, episode_number: int
+    ) -> Optional[Dict]:
+        """
+        Get details for a specific episode.
+
+        Args:
+            tv_id: TMDB TV show ID
+            season_number: Season number
+            episode_number: Episode number within the season
+
+        Returns:
+            Episode data or None on failure
+        """
+        if not self._is_configured():
+            return None
+        return self.request(
+            f"/tv/{tv_id}/season/{season_number}/episode/{episode_number}"
+        )
+
+    @with_error_handling
+    def get_latest_episodes(self, tv_id: int, limit: int = 10) -> List[Dict]:
+        """
+        Get the most recent episodes for a show.
+
+        Args:
+            tv_id: TMDB TV show ID
+            limit: Maximum number of episodes to return
+
+        Returns:
+            List of episode data dicts, most recent first
+        """
+        if not self._is_configured():
+            return []
+
+        details = self.get_tv_details(tv_id)
+        if not details:
+            return []
+
+        episodes = []
+        last_season = details.get('number_of_seasons', 0)
+
+        if last_season > 0:
+            season_data = self.get_tv_season(tv_id, last_season)
+            if season_data and 'episodes' in season_data:
+                # Sort by air date descending and return most recent
+                sorted_eps = sorted(
+                    season_data['episodes'],
+                    key=lambda x: x.get('air_date', '') or '',
+                    reverse=True
+                )
+                episodes = sorted_eps[:limit]
+
+        return episodes
+
+    def get_all_episodes_for_season(
+        self, tv_id: int, season_number: int
+    ) -> List[Dict]:
+        """
+        Get all episodes for a specific season.
+
+        Args:
+            tv_id: TMDB TV show ID
+            season_number: Season number
+
+        Returns:
+            List of episode data dicts
+        """
+        season_data = self.get_tv_season(tv_id, season_number)
+        if season_data and 'episodes' in season_data:
+            return season_data['episodes']
+        return []
+
+    def get_all_tracked_show_updates(self) -> Dict[str, List[Dict]]:
+        """
+        Check all tracked wrestling shows for new episodes.
+
+        Returns:
+            Dict mapping show key to list of recent episodes
+        """
+        updates = {}
+        for show_key, tmdb_id in self.WRESTLING_SHOWS.items():
+            episodes = self.get_latest_episodes(tmdb_id, limit=5)
+            if episodes:
+                updates[show_key] = episodes
+        return updates
+
+    def parse_episode_for_event(
+        self, episode: Dict, show_name: str, promotion_abbrev: str
+    ) -> Dict[str, Any]:
+        """
+        Convert TMDB episode data to our Event model format.
+
+        Args:
+            episode: TMDB episode data dict
+            show_name: Name of the TV show (e.g., "WWE Raw")
+            promotion_abbrev: Promotion abbreviation (e.g., "WWE")
+
+        Returns:
+            Dict with fields for Event model
+        """
+        air_date = episode.get('air_date')
+        ep_num = episode.get('episode_number')
+        season_num = episode.get('season_number')
+
+        # Build episode name (e.g., "WWE Raw #1500" or use TMDB title)
+        episode_name = episode.get('name', '')
+        if ep_num and not episode_name:
+            name = f"{show_name} #{ep_num}"
+        elif ep_num and episode_name:
+            # If TMDB provides a title, use it but include episode number
+            name = f"{show_name} #{ep_num}: {episode_name}"
+        else:
+            name = episode_name or f"{show_name} Episode"
+
+        return {
+            'name': name,
+            'date': air_date,
+            'episode_number': ep_num,
+            'season_number': season_num,
+            'event_type': 'tv_episode',
+            'tmdb_episode_id': episode.get('id'),
+            'about': episode.get('overview', '')[:500] if episode.get('overview') else None,
+            'source': 'tmdb',
+        }
+
+    def get_show_season_count(self, tv_id: int) -> int:
+        """
+        Get the total number of seasons for a TV show.
+
+        Args:
+            tv_id: TMDB TV show ID
+
+        Returns:
+            Number of seasons, or 0 if show not found
+        """
+        details = self.get_tv_details(tv_id)
+        if details:
+            return details.get('number_of_seasons', 0)
+        return 0
+
+    def get_show_premiere_date(self, tv_id: int) -> Optional[str]:
+        """
+        Get the premiere date for a TV show.
+
+        Args:
+            tv_id: TMDB TV show ID
+
+        Returns:
+            Premiere date string (YYYY-MM-DD) or None
+        """
+        details = self.get_tv_details(tv_id)
+        if details:
+            return details.get('first_air_date')
+        return None
+
+    def get_show_status(self, tv_id: int) -> Optional[str]:
+        """
+        Get the current status of a TV show.
+
+        Args:
+            tv_id: TMDB TV show ID
+
+        Returns:
+            Status string (e.g., "Returning Series", "Ended") or None
+        """
+        details = self.get_tv_details(tv_id)
+        if details:
+            return details.get('status')
+        return None

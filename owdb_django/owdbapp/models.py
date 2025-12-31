@@ -814,7 +814,96 @@ class Wrestler(ImageMixin, TimeStampedModel):
         ).order_by('priority', '-created_at')[:limit]
 
 
+class TVShow(ImageMixin, TimeStampedModel):
+    """
+    Represents a wrestling TV series (Raw, SmackDown, Dynamite, etc.)
+    Episodes are stored as Event objects linked to this show.
+    """
+    SHOW_TYPE_CHOICES = [
+        ('weekly', 'Weekly TV Show'),
+        ('ppv', 'Pay-Per-View Series'),
+        ('special', 'Special Event Series'),
+        ('online', 'Online/Streaming Show'),
+    ]
+
+    name = models.CharField(max_length=255, db_index=True)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
+    promotion = models.ForeignKey(
+        Promotion, on_delete=models.CASCADE, related_name='tv_shows'
+    )
+
+    # Show metadata
+    show_type = models.CharField(
+        max_length=50, choices=SHOW_TYPE_CHOICES, default='weekly'
+    )
+
+    # Broadcast info
+    network = models.CharField(max_length=100, blank=True, null=True,
+                               help_text="Current network (e.g., Netflix, USA Network, TBS)")
+    air_day = models.CharField(max_length=20, blank=True, null=True,
+                               help_text="Day of week (e.g., Monday, Wednesday)")
+
+    # Dates
+    premiere_date = models.DateField(blank=True, null=True)
+    finale_date = models.DateField(blank=True, null=True,
+                                   help_text="NULL = still running")
+
+    # External IDs for API lookups
+    tmdb_id = models.IntegerField(blank=True, null=True, unique=True,
+                                  help_text="The Movie Database TV show ID")
+    cagematch_id = models.IntegerField(blank=True, null=True,
+                                       help_text="Cagematch event series ID")
+    wikipedia_url = models.URLField(max_length=500, blank=True, null=True)
+
+    about = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = "TV Show"
+        verbose_name_plural = "TV Shows"
+        indexes = [
+            models.Index(fields=['promotion', 'show_type']),
+            models.Index(fields=['tmdb_id']),
+            models.Index(fields=['show_type']),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.name)
+            self.slug = generate_unique_slug(TVShow, base_slug, self.pk)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def is_active(self) -> bool:
+        """Check if the show is still running."""
+        return self.finale_date is None
+
+    @property
+    def episode_count(self) -> int:
+        """Get total number of episodes."""
+        return self.episodes.count()
+
+    def get_latest_episode(self):
+        """Get the most recent episode."""
+        return self.episodes.order_by('-date').first()
+
+    def get_episodes_by_year(self, year: int):
+        """Get all episodes from a specific year."""
+        return self.episodes.filter(date__year=year).order_by('date')
+
+
 class Event(ImageMixin, TimeStampedModel):
+    EVENT_TYPE_CHOICES = [
+        ('tv_episode', 'TV Episode'),
+        ('ppv', 'Pay-Per-View'),
+        ('house_show', 'House Show'),
+        ('special', 'Special Event'),
+        ('other', 'Other'),
+    ]
+
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     promotion = models.ForeignKey(
@@ -827,12 +916,45 @@ class Event(ImageMixin, TimeStampedModel):
     attendance = models.IntegerField(blank=True, null=True)
     about = models.TextField(blank=True, null=True)
 
+    # TV Episode fields
+    tv_show = models.ForeignKey(
+        'TVShow', on_delete=models.SET_NULL,
+        blank=True, null=True, related_name='episodes',
+        help_text="TV show this episode belongs to (if applicable)"
+    )
+    episode_number = models.IntegerField(blank=True, null=True,
+                                         help_text="Episode number within the show")
+    season_number = models.IntegerField(blank=True, null=True,
+                                        help_text="Season number (if applicable)")
+
+    # Event type for filtering
+    event_type = models.CharField(
+        max_length=30, choices=EVENT_TYPE_CHOICES, default='other', db_index=True
+    )
+
+    # External IDs for verification
+    tmdb_episode_id = models.IntegerField(blank=True, null=True,
+                                          help_text="TMDB episode ID for TV episodes")
+    cagematch_event_id = models.IntegerField(blank=True, null=True,
+                                             help_text="Cagematch event ID")
+
+    # Verification status
+    verified = models.BooleanField(default=False,
+                                   help_text="Data verified against external source")
+    verified_source = models.CharField(max_length=50, blank=True, null=True,
+                                       help_text="Source used for verification")
+    last_verified = models.DateTimeField(blank=True, null=True)
+
     class Meta:
         ordering = ['-date']
         indexes = [
             models.Index(fields=['name']),
             models.Index(fields=['date']),
             models.Index(fields=['promotion', 'date']),
+            models.Index(fields=['tv_show', 'episode_number']),
+            models.Index(fields=['event_type']),
+            models.Index(fields=['verified']),
+            models.Index(fields=['tv_show', 'date']),
         ]
 
     def save(self, *args, **kwargs):

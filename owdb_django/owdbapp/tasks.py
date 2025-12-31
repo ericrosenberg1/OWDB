@@ -1368,3 +1368,234 @@ def wrestlebot_get_status():
     except Exception as e:
         logger.error(f"Failed to get WrestleBot status: {e}")
         return {"status": "error", "error": str(e)}
+
+
+# =============================================================================
+# TV Episode Tracking Tasks
+# =============================================================================
+
+TV_EPISODE_SOFT_LIMIT = 8 * 60   # 8 minutes
+TV_EPISODE_HARD_LIMIT = 10 * 60  # 10 minutes
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=300,
+    soft_time_limit=TV_EPISODE_SOFT_LIMIT,
+    time_limit=TV_EPISODE_HARD_LIMIT,
+)
+def poll_tv_episodes(self):
+    """
+    Poll for new TV episodes every 15 minutes.
+
+    Quick check - only hits TMDB, not Cagematch.
+    Creates new episode Events for recently aired shows.
+
+    This task runs frequently to ensure new episodes are captured
+    shortly after they air (Raw, SmackDown, Dynamite, etc.)
+    """
+    from celery.exceptions import SoftTimeLimitExceeded
+
+    lock_key = "poll_tv_episodes_lock"
+    lock_timeout = TV_EPISODE_HARD_LIMIT + 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("TV episode poll skipped: previous run still active")
+        return {"status": "skipped_lock"}
+
+    try:
+        from .scrapers.tv_episodes import TVEpisodeScraper
+
+        scraper = TVEpisodeScraper()
+        results = scraper.poll_for_new_episodes()
+
+        logger.info(
+            "TV episode poll: checked %d shows, found %d new episodes",
+            results['shows_checked'], results['new_episodes']
+        )
+
+        return results
+
+    except SoftTimeLimitExceeded:
+        logger.warning("TV episode poll exceeded time limit")
+        return {"status": "timeout"}
+
+    except Exception as e:
+        logger.error("TV episode poll failed: %s", e)
+        raise self.retry(exc=e)
+
+    finally:
+        cache.delete(lock_key)
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    soft_time_limit=30 * 60,  # 30 minutes
+    time_limit=35 * 60,
+)
+def backfill_show_episodes(self, show_id: int, year: int = None):
+    """
+    Backfill historical episodes for a specific show.
+
+    Run manually or scheduled for off-peak hours.
+
+    Args:
+        show_id: ID of the TVShow to backfill
+        year: Optional specific year to backfill (all years if None)
+    """
+    from datetime import date
+
+    from .models import TVShow
+    from .scrapers.tv_episodes import TVEpisodeScraper
+
+    try:
+        show = TVShow.objects.get(id=show_id)
+    except TVShow.DoesNotExist:
+        logger.error("Show %d not found for backfill", show_id)
+        return {"error": f"Show {show_id} not found"}
+
+    scraper = TVEpisodeScraper()
+
+    if year:
+        results = scraper.backfill_show_by_year(show, year)
+        logger.info("Backfilled %s for %d: %s", show.name, year, results)
+    else:
+        results = scraper.backfill_all_episodes(show)
+        logger.info("Backfilled all episodes for %s: %s", show.name, results)
+
+    return results
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    soft_time_limit=60 * 60,  # 60 minutes for full backfill
+    time_limit=65 * 60,
+)
+def backfill_all_tv_shows(self, year: int = None):
+    """
+    Backfill episodes for all TV shows with TMDB IDs.
+
+    WARNING: This is a long-running task. Use for initial setup only.
+
+    Args:
+        year: Optional specific year to backfill (all years if None)
+    """
+    from .models import TVShow
+    from .scrapers.tv_episodes import TVEpisodeScraper
+
+    shows = TVShow.objects.filter(tmdb_id__isnull=False)
+    scraper = TVEpisodeScraper()
+
+    total_results = {
+        'shows_processed': 0,
+        'total_created': 0,
+        'total_updated': 0,
+        'total_errors': 0,
+    }
+
+    for show in shows:
+        try:
+            if year:
+                results = scraper.backfill_show_by_year(show, year)
+            else:
+                results = scraper.backfill_all_episodes(show)
+
+            total_results['shows_processed'] += 1
+            total_results['total_created'] += results.get('created', 0)
+            total_results['total_updated'] += results.get('updated', 0)
+            total_results['total_errors'] += results.get('errors', 0)
+
+            logger.info("Backfilled %s: %s", show.name, results)
+
+        except Exception as e:
+            logger.error("Error backfilling %s: %s", show.name, e)
+            total_results['total_errors'] += 1
+
+    logger.info("TV show backfill complete: %s", total_results)
+    return total_results
+
+
+@shared_task(bind=True)
+def verify_tv_show_completeness(self, show_id: int):
+    """
+    Verify that a TV show has all episodes from TMDB.
+
+    Compares our episode count against TMDB's episode count.
+
+    Args:
+        show_id: ID of the TVShow to verify
+    """
+    from .models import TVShow
+    from .scrapers.tv_episodes import TVEpisodeScraper
+
+    try:
+        show = TVShow.objects.get(id=show_id)
+    except TVShow.DoesNotExist:
+        return {"error": f"Show {show_id} not found"}
+
+    scraper = TVEpisodeScraper()
+    results = scraper.verify_episode_count(show)
+
+    if not results.get('complete', True):
+        logger.warning(
+            "Show %s is missing %d episodes (TMDB: %d, DB: %d)",
+            show.name,
+            results['difference'],
+            results['tmdb_count'],
+            results['db_count']
+        )
+    else:
+        logger.info("Show %s episode count verified: %d episodes", show.name, results['db_count'])
+
+    return results
+
+
+@shared_task(bind=True)
+def verify_all_tv_shows(self):
+    """
+    Verify episode completeness for all TV shows.
+
+    Returns summary of shows that are missing episodes.
+    """
+    from .models import TVShow
+    from .scrapers.tv_episodes import TVEpisodeScraper
+
+    shows = TVShow.objects.filter(tmdb_id__isnull=False)
+    scraper = TVEpisodeScraper()
+
+    results = {
+        'shows_checked': 0,
+        'shows_complete': 0,
+        'shows_incomplete': [],
+    }
+
+    for show in shows:
+        try:
+            verification = scraper.verify_episode_count(show)
+            results['shows_checked'] += 1
+
+            if verification.get('complete', True):
+                results['shows_complete'] += 1
+            else:
+                results['shows_incomplete'].append({
+                    'show': show.name,
+                    'show_id': show.id,
+                    'tmdb_count': verification['tmdb_count'],
+                    'db_count': verification['db_count'],
+                    'missing': verification['difference'],
+                })
+
+        except Exception as e:
+            logger.error("Error verifying %s: %s", show.name, e)
+
+    logger.info(
+        "TV show verification: %d checked, %d complete, %d incomplete",
+        results['shows_checked'],
+        results['shows_complete'],
+        len(results['shows_incomplete'])
+    )
+
+    return results

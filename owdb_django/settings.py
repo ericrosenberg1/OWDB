@@ -311,6 +311,13 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': 14400.0,  # Every 4 hours
         'args': (10,),  # batch size
     },
+    # ==========================================================================
+    # TV Episode Tracking - Checks TMDB for new episodes
+    # ==========================================================================
+    'poll-tv-episodes': {
+        'task': 'owdb_django.owdbapp.tasks.poll_tv_episodes',
+        'schedule': 900.0,  # Every 15 minutes
+    },
 }
 
 # =============================================================================

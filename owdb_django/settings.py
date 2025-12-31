@@ -84,6 +84,7 @@ INSTALLED_APPS = [
     'storages',  # Cloud storage (Cloudflare R2)
     # Local
     'owdb_django.owdbapp',
+    'owdb_django.wrestlebot',  # WrestleBot autonomous data enhancement
 ]
 
 MIDDLEWARE = [

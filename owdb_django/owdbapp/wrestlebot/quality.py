@@ -1008,7 +1008,7 @@ class DataCleaner:
             Dict with counts of fixed issues by type
         """
         from ..models import Wrestler, Event, Promotion, Venue, Title
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
 
         model_map = {
             'wrestler': Wrestler,
@@ -1140,7 +1140,7 @@ class DataCleaner:
             Count of removed entries
         """
         from ..models import Wrestler, Event, Promotion, Venue
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
 
         removed_count = 0
 
@@ -1209,7 +1209,7 @@ class DataCleaner:
             Count of entries processed
         """
         from ..models import Wrestler
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
 
         processed_count = 0
 
@@ -1282,7 +1282,7 @@ class DataCleaner:
             Count of entries fixed
         """
         from ..models import Wrestler, Stable
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
 
         fixed_count = 0
 
@@ -1438,7 +1438,7 @@ class DataCleaner:
             Summary of deleted events
         """
         from ..models import Event, Match, Wrestler
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
 
         results = {
             'dry_run': dry_run,
@@ -1575,7 +1575,7 @@ class DataCleaner:
             Summary of deleted events
         """
         from ..models import Event
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
         import re
 
         results = {
@@ -1678,7 +1678,7 @@ class DataCleaner:
             Summary of fixes applied
         """
         from ..models import Match, Wrestler, Event
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
 
         results = {
             'dry_run': dry_run,
@@ -1767,7 +1767,7 @@ class DataCleaner:
 
     def _delete_match_with_log(self, match, issue: QualityIssue, reason: str):
         """Delete a match and log the activity."""
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
 
         WrestleBotActivity.log_activity(
             action_type='verify',
@@ -1788,7 +1788,7 @@ class DataCleaner:
     def _fix_tag_team_in_match(self, match, issue: QualityIssue):
         """Replace tag team entry with individual wrestlers."""
         from ..models import Wrestler
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
 
         if not issue.suggested_value:
             return

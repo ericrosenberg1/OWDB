@@ -138,7 +138,7 @@ class EntityEnrichment:
 
         Returns dict of fields that were updated.
         """
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
 
         start_time = time.time()
         updated_fields = {}
@@ -231,7 +231,7 @@ class EntityEnrichment:
 
     def enrich_promotion(self, promotion) -> Dict[str, Any]:
         """Enrich a promotion with missing data."""
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
 
         start_time = time.time()
         updated_fields = {}
@@ -306,7 +306,7 @@ class EntityEnrichment:
 
     def enrich_event(self, event) -> Dict[str, Any]:
         """Enrich an event with missing data."""
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
 
         start_time = time.time()
         updated_fields = {}
@@ -388,7 +388,7 @@ class EntityEnrichment:
 
     def enrich_venue(self, venue) -> Dict[str, Any]:
         """Enrich a venue with missing data."""
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
 
         start_time = time.time()
         updated_fields = {}
@@ -542,7 +542,7 @@ class EntityEnrichment:
         Only used when AI is enabled and for high-value operations like
         generating bios or resolving data inconsistencies.
         """
-        from .models import WrestleBotActivity, WrestleBotConfig
+        from owdb_django.wrestlebot.models import WrestleBotActivity, WrestleBotConfig
 
         if not WrestleBotConfig.is_ai_enabled():
             logger.debug("AI enhancement skipped: AI is disabled")
@@ -602,7 +602,7 @@ class EntityEnrichment:
         Checks for consistency across Wikipedia and Cagematch.
         Returns dict with verification results and any corrections.
         """
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
 
         results = {
             'verified': True,
@@ -712,7 +712,7 @@ class EntityEnrichment:
 
         Only updates fields that are currently empty and have verified data.
         """
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
 
         updated_fields = {}
 

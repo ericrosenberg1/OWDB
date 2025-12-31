@@ -70,6 +70,7 @@ class WrestleBotActivity(models.Model):
     )
 
     class Meta:
+        db_table = 'owdbapp_wrestlebotactivity'  # Use existing table
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['action_type', 'created_at']),
@@ -167,6 +168,7 @@ class WrestleBotConfig(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = 'owdbapp_wrestlebotconfig'  # Use existing table
         ordering = ['key']
         verbose_name = "WrestleBot Config"
         verbose_name_plural = "WrestleBot Configs"
@@ -317,6 +319,7 @@ class WrestleBotStats(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = 'owdbapp_wrestlebotstats'  # Use existing table
         ordering = ['-date']
         verbose_name = "WrestleBot Daily Stats"
         verbose_name_plural = "WrestleBot Daily Stats"

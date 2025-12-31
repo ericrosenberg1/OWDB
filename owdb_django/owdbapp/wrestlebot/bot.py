@@ -69,13 +69,13 @@ class WrestleBot:
     def config(self) -> Dict[str, Any]:
         """Get current configuration."""
         if self._config is None:
-            from .models import WrestleBotConfig
+            from owdb_django.wrestlebot.models import WrestleBotConfig
             self._config = WrestleBotConfig.get_all()
         return self._config
 
     def is_enabled(self) -> bool:
         """Check if WrestleBot is enabled."""
-        from .models import WrestleBotConfig
+        from owdb_django.wrestlebot.models import WrestleBotConfig
         return WrestleBotConfig.is_enabled()
 
     def reload_config(self):
@@ -124,7 +124,7 @@ class WrestleBot:
         This is the main entry point called by Celery Beat.
         It decides what work needs to be done and queues it.
         """
-        from .models import WrestleBotActivity, WrestleBotStats
+        from owdb_django.wrestlebot.models import WrestleBotActivity, WrestleBotStats
 
         if not self.is_enabled():
             logger.info("WrestleBot is disabled, skipping cycle")
@@ -200,7 +200,7 @@ class WrestleBot:
         Returns:
             Dict with discovery results
         """
-        from .models import WrestleBotConfig, WrestleBotStats
+        from owdb_django.wrestlebot.models import WrestleBotConfig, WrestleBotStats
 
         if not self.is_enabled():
             logger.info("WrestleBot is disabled, skipping discovery")
@@ -271,7 +271,7 @@ class WrestleBot:
         Returns:
             Dict with enrichment results
         """
-        from .models import WrestleBotConfig, WrestleBotStats
+        from owdb_django.wrestlebot.models import WrestleBotConfig, WrestleBotStats
 
         if not self.is_enabled():
             logger.info("WrestleBot is disabled, skipping enrichment")
@@ -337,7 +337,7 @@ class WrestleBot:
         Returns:
             Dict with image fetching results
         """
-        from .models import WrestleBotConfig, WrestleBotStats, WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotConfig, WrestleBotStats, WrestleBotActivity
         from ..models import Wrestler, Promotion, Event, Venue
         from ..scrapers.wikimedia_commons import WikimediaCommonsClient
         from ..services import get_image_cache_service
@@ -455,7 +455,7 @@ class WrestleBot:
         Returns:
             Dict with cleanup results
         """
-        from .models import WrestleBotConfig, WrestleBotStats
+        from owdb_django.wrestlebot.models import WrestleBotConfig, WrestleBotStats
         from .quality import DataCleaner
 
         if not self.is_enabled():
@@ -512,7 +512,7 @@ class WrestleBot:
         Returns:
             Dict with verification results
         """
-        from .models import WrestleBotConfig, WrestleBotStats
+        from owdb_django.wrestlebot.models import WrestleBotConfig, WrestleBotStats
 
         if not self.is_enabled():
             logger.info("WrestleBot is disabled, skipping verification")
@@ -557,7 +557,7 @@ class WrestleBot:
 
         Returns comprehensive status information for admin dashboard.
         """
-        from .models import WrestleBotActivity, WrestleBotConfig, WrestleBotStats
+        from owdb_django.wrestlebot.models import WrestleBotActivity, WrestleBotConfig, WrestleBotStats
         from ..models import Wrestler, Promotion, Event
 
         # Get today's stats

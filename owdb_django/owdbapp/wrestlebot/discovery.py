@@ -670,7 +670,7 @@ class EntityDiscovery:
 
         Returns count of successfully imported entities per type.
         """
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
         from ..models import Wrestler, Promotion, Event, Venue
 
         imported = {}

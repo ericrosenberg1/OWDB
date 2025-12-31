@@ -13,8 +13,7 @@ echo ""
 # Configuration
 SERVER_USER="eric"
 SERVER_HOST="137.184.7.163"
-DEPLOY_PATH="/home/wrestlingdb"
-VENV_PATH="$DEPLOY_PATH/venv"
+DEPLOY_PATH="/opt/owdb"
 SSH_OPTS="-o BatchMode=yes -o ConnectTimeout=30 -o RemoteCommand=none"
 
 echo "Target server: $SERVER_USER@$SERVER_HOST"
@@ -24,38 +23,40 @@ echo ""
 # Step 1: Pull latest code on server
 echo "[1/5] Pulling latest code from GitHub..."
 ssh $SSH_OPTS $SERVER_USER@$SERVER_HOST << 'ENDSSH'
-cd /home/wrestlingdb
+cd /opt/owdb
 git pull origin main
 ENDSSH
 
-# Step 2: Install Python dependencies
-echo "[2/5] Installing Python dependencies..."
+# Step 2: Rebuild Docker containers
+echo "[2/5] Rebuilding Docker containers..."
 ssh $SSH_OPTS $SERVER_USER@$SERVER_HOST << 'ENDSSH'
-cd /home/wrestlingdb
-./venv/bin/python -m pip install --upgrade pip
-./venv/bin/python -m pip install -r requirements.txt
+cd /opt/owdb
+sudo docker compose build --no-cache
 ENDSSH
 
 # Step 3: Run Django migrations
 echo "[3/5] Running Django migrations..."
 ssh $SSH_OPTS $SERVER_USER@$SERVER_HOST << 'ENDSSH'
-cd /home/wrestlingdb
-./venv/bin/python manage.py migrate
+cd /opt/owdb
+sudo docker compose up -d
+sleep 5
+sudo docker compose exec -T web python manage.py migrate
 ENDSSH
 
 # Step 4: Collect static files
 echo "[4/5] Collecting static files..."
 ssh $SSH_OPTS $SERVER_USER@$SERVER_HOST << 'ENDSSH'
-cd /home/wrestlingdb
-./venv/bin/python manage.py collectstatic --noinput
+cd /opt/owdb
+sudo docker compose exec -T web python manage.py collectstatic --noinput
 ENDSSH
 
-# Step 5: Restart Django service
-echo "[5/5] Restarting Django service..."
+# Step 5: Restart services
+echo "[5/5] Restarting services..."
 ssh $SSH_OPTS $SERVER_USER@$SERVER_HOST << 'ENDSSH'
-sudo systemctl restart wrestlingdb
-sleep 2
-sudo systemctl status wrestlingdb --no-pager
+cd /opt/owdb
+sudo docker compose restart
+sleep 5
+sudo docker compose ps
 ENDSSH
 
 echo ""
@@ -64,10 +65,11 @@ echo "Deployment Complete!"
 echo "================================"
 echo ""
 echo "Services status:"
-echo "  Django: systemctl status wrestlingdb"
+echo "  Docker: sudo docker compose ps (in /opt/owdb)"
 echo ""
 echo "View logs:"
-echo "  Django: journalctl -u wrestlingdb -f"
+echo "  Web: sudo docker compose logs -f web"
+echo "  Celery: sudo docker compose logs -f celery"
 echo ""
 echo "Test the site:"
 echo "  https://wrestlingdb.org"

@@ -87,6 +87,26 @@ class DataQualityChecker:
         'vs', 'defeated', 'def', 'and', 'the', 'with',
     }
 
+    # Patterns that indicate a wrestler entry is actually a stable/faction
+    STABLE_INDICATORS = [
+        r'\(professional wrestling\)$',  # Wikipedia disambiguation
+        r'\(wrestling\)$',
+        r'\(faction\)$',
+        r'\(stable\)$',
+        r'\(tag team\)$',
+        r'\(group\)$',
+    ]
+
+    # Known stables/factions that might be misclassified as wrestlers
+    KNOWN_STABLES = {
+        'retribution', 'the shield', 'd-generation x', 'dx', 'nwo', 'n.w.o.',
+        'evolution', 'the nexus', 'legacy', 'the wyatt family', 'the bloodline',
+        'judgment day', 'imperium', 'damage ctrl', 'the hurt business',
+        'the new day', 'the usos', 'authors of pain', 'undisputed era',
+        'the club', 'bullet club', 'los ingobernables', 'chaos',
+        'suzuki-gun', 'united empire', 'house of black', 'the elite',
+    }
+
     # Minimum/maximum reasonable values
     MIN_YEAR = 1900
     MAX_YEAR_OFFSET = 2  # Allow up to 2 years in the future
@@ -97,6 +117,11 @@ class DataQualityChecker:
     def check_wrestler(self, wrestler) -> List[QualityIssue]:
         """Check a single wrestler for quality issues."""
         issues = []
+
+        # Check if this is actually a stable/faction misclassified as a wrestler
+        stable_issue = self._check_if_stable(wrestler)
+        if stable_issue:
+            issues.append(stable_issue)
 
         # Check name quality
         name_issues = self._check_name_quality(
@@ -540,6 +565,44 @@ class DataQualityChecker:
         """Check if a year is within valid range."""
         return self.MIN_YEAR <= year <= self._current_year + self.MAX_YEAR_OFFSET
 
+    def _check_if_stable(self, wrestler) -> Optional[QualityIssue]:
+        """Check if a wrestler entry is actually a stable/faction."""
+        name = wrestler.name
+        name_lower = name.lower().strip()
+
+        # Check for Wikipedia disambiguation patterns
+        for pattern in self.STABLE_INDICATORS:
+            if re.search(pattern, name, re.IGNORECASE):
+                return QualityIssue(
+                    entity_type='wrestler',
+                    entity_id=wrestler.id,
+                    entity_name=name,
+                    issue_type='error',
+                    issue_code='MISCLASSIFIED_STABLE',
+                    description=f'Entry appears to be a stable/faction, not a wrestler: {name}',
+                    field='name',
+                    current_value=name,
+                    auto_fixable=False,
+                )
+
+        # Check against known stables list
+        # Remove common prefixes/suffixes for matching
+        normalized = re.sub(r'\s*\([^)]*\)\s*$', '', name_lower).strip()
+        if normalized in self.KNOWN_STABLES:
+            return QualityIssue(
+                entity_type='wrestler',
+                entity_id=wrestler.id,
+                entity_name=name,
+                issue_type='error',
+                issue_code='MISCLASSIFIED_STABLE',
+                description=f'Entry is a known stable/faction, not a wrestler: {name}',
+                field='name',
+                current_value=name,
+                auto_fixable=False,
+            )
+
+        return None
+
     def run_quality_check(
         self,
         entity_types: List[str] = None,
@@ -892,6 +955,85 @@ class DataCleaner:
 
         return processed_count
 
+    def fix_misclassified_stables(
+        self,
+        dry_run: bool = True
+    ) -> int:
+        """
+        Find and fix wrestlers that are actually stables/factions.
+
+        Either migrates them to the Stable model or deletes them if a stable
+        with that name already exists.
+
+        Args:
+            dry_run: If True, don't actually make changes
+
+        Returns:
+            Count of entries fixed
+        """
+        from ..models import Wrestler, Stable
+        from .models import WrestleBotActivity
+
+        fixed_count = 0
+
+        # Check all wrestlers for stable patterns
+        for wrestler in Wrestler.objects.all():
+            issue = self.checker._check_if_stable(wrestler)
+            if not issue:
+                continue
+
+            # Clean the name (remove Wikipedia disambiguation)
+            clean_name = re.sub(r'\s*\([^)]*\)\s*$', '', wrestler.name).strip()
+
+            logger.info(f"{'Would fix' if dry_run else 'Fixing'} misclassified stable: {wrestler.name}")
+
+            if not dry_run:
+                # Check if stable already exists
+                existing_stable = Stable.objects.filter(name__iexact=clean_name).first()
+
+                if existing_stable:
+                    # Stable exists, just delete the wrestler entry
+                    WrestleBotActivity.log_activity(
+                        action_type='verify',
+                        entity_type='wrestler',
+                        entity_id=wrestler.id,
+                        entity_name=wrestler.name,
+                        source='quality_cleanup',
+                        details={
+                            'action': 'deleted_duplicate_stable',
+                            'existing_stable_id': existing_stable.id,
+                            'reason': 'misclassified_stable',
+                        },
+                    )
+                    wrestler.delete()
+                else:
+                    # Create new stable from wrestler data
+                    stable = Stable.objects.create(
+                        name=clean_name,
+                        about=wrestler.about or '',
+                        image=wrestler.image if hasattr(wrestler, 'image') else None,
+                    )
+
+                    WrestleBotActivity.log_activity(
+                        action_type='verify',
+                        entity_type='wrestler',
+                        entity_id=wrestler.id,
+                        entity_name=wrestler.name,
+                        source='quality_cleanup',
+                        details={
+                            'action': 'migrated_to_stable',
+                            'new_stable_id': stable.id,
+                            'reason': 'misclassified_stable',
+                        },
+                    )
+
+                    # Delete the wrestler entry
+                    wrestler.delete()
+
+            fixed_count += 1
+
+        return fixed_count
+
     def run_cleanup_cycle(
         self,
         entity_types: List[str] = None,
@@ -916,6 +1058,7 @@ class DataCleaner:
             'auto_fixed': 0,
             'invalid_removed': 0,
             'multi_name_split': 0,
+            'stables_fixed': 0,
             'duplicates_found': 0,
         }
 
@@ -939,6 +1082,11 @@ class DataCleaner:
         if 'wrestler' in entity_types:
             split = self.split_multi_name_entries('wrestler', dry_run=dry_run)
             results['multi_name_split'] = split
+
+        # Fix misclassified stables (wrestlers that are actually factions)
+        if 'wrestler' in entity_types:
+            stables_fixed = self.fix_misclassified_stables(dry_run=dry_run)
+            results['stables_fixed'] = stables_fixed
 
         # Find duplicates (don't auto-fix, just report)
         for entity_type in ['wrestler', 'promotion']:

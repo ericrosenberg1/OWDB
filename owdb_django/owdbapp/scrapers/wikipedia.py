@@ -1,5 +1,9 @@
 """
-Wikipedia scraper for wrestling data.
+Wikipedia scraper for wrestling data using the official MediaWiki API.
+
+This scraper follows the Wikimedia Foundation API Usage Guidelines:
+- https://foundation.wikimedia.org/wiki/Policy:Wikimedia_Foundation_API_Usage_Guidelines
+- https://www.mediawiki.org/wiki/API:Etiquette
 
 Wikipedia content is available under CC BY-SA license. We only extract
 factual, non-copyrightable data such as:
@@ -13,10 +17,19 @@ We do NOT extract:
 - Copyrighted prose descriptions
 - Images or logos
 - Match commentary or storyline descriptions
+
+API Best Practices Implemented:
+1. Proper User-Agent with contact info (required by Wikimedia)
+2. Use of maxlag parameter for server load awareness
+3. Serial requests (not parallel) to avoid overloading
+4. Batching multiple titles with pipe separator where possible
+5. Gzip compression via Accept-Encoding header
+6. Respecting rate limit responses (429) with Retry-After
 """
 
 import logging
 import re
+import time
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote
 
@@ -30,8 +43,18 @@ logger = logging.getLogger(__name__)
 
 class WikipediaScraper(BaseScraper):
     """
-    Scraper for Wikipedia wrestling data.
-    Uses the Wikipedia API where possible for structured data.
+    Scraper for Wikipedia wrestling data using the official MediaWiki Action API.
+
+    This implementation follows Wikimedia API guidelines:
+    - https://www.mediawiki.org/wiki/API:Etiquette
+    - https://api.wikimedia.org/wiki/Rate_limits
+
+    Key points:
+    - Uses the Action API (api.php) which is the official way to access Wikipedia data
+    - No hard rate limit on reads, but we self-impose conservative limits
+    - Uses maxlag parameter to back off when servers are under load
+    - Batches requests where possible using pipe (|) separator
+    - Serial requests to avoid overwhelming servers
 
     Category Rotation:
     To stay within rate limits, the scraper rotates through categories
@@ -43,11 +66,25 @@ class WikipediaScraper(BaseScraper):
     BASE_URL = "https://en.wikipedia.org"
     API_URL = "https://en.wikipedia.org/w/api.php"
 
-    # Conservative rate limits for Wikipedia
-    # Note: Hourly limit is the key constraint with frequent task runs
-    REQUESTS_PER_MINUTE = 30  # Wikipedia allows higher, but we're respectful
-    REQUESTS_PER_HOUR = 500
-    REQUESTS_PER_DAY = 5000
+    # User-Agent per Wikimedia requirements:
+    # "Should include project name, URL, and contact info"
+    # https://www.mediawiki.org/wiki/API:Etiquette#The_User-Agent_header
+    USER_AGENT = "WrestlingDBBot/1.0 (https://wrestlingdb.org; admin@wrestlingdb.org)"
+
+    # Rate limits following Wikimedia guidelines:
+    # - No hard limit on read requests, but be considerate
+    # - REST API allows up to 200 req/s
+    # - Unauthenticated: 500 req/hour at api.wikimedia.org
+    # We use conservative self-imposed limits to be a good API citizen
+    # https://api.wikimedia.org/wiki/Rate_limits
+    REQUESTS_PER_MINUTE = 60  # ~1 req/sec, very conservative
+    REQUESTS_PER_HOUR = 2000  # Well under any limit
+    REQUESTS_PER_DAY = 10000  # Reasonable daily limit
+
+    # Maxlag parameter: backs off when server replication lag exceeds this (seconds)
+    # Recommended for non-interactive bots
+    # https://www.mediawiki.org/wiki/Manual:Maxlag_parameter
+    MAXLAG_SECONDS = 5
 
     # Category pages to scrape
     WRESTLER_CATEGORIES = [
@@ -116,22 +153,165 @@ class WikipediaScraper(BaseScraper):
         else:
             raise ValueError(f"Unknown category type: {category_type}")
 
-    def _api_request(self, params: Dict[str, Any]) -> Optional[Dict]:
-        """Make a request to the Wikipedia API."""
+    def __init__(self):
+        """Initialize the Wikipedia scraper with proper API settings."""
+        super().__init__()
+        # Update session headers for Wikipedia API requirements
+        self.session.headers.update({
+            "User-Agent": self.USER_AGENT,
+            "Api-User-Agent": self.USER_AGENT,  # Backup header per Wikimedia docs
+            "Accept": "application/json",
+            "Accept-Encoding": "gzip, deflate",  # Wikimedia recommends gzip
+        })
+
+    def _api_request(
+        self,
+        params: Dict[str, Any],
+        use_maxlag: bool = True
+    ) -> Optional[Dict]:
+        """
+        Make a request to the Wikipedia Action API.
+
+        This method follows Wikimedia API best practices:
+        - Uses maxlag parameter for non-interactive requests
+        - Properly handles rate limit (429) and maxlag responses
+        - Uses JSON format with formatversion=2
+
+        Args:
+            params: API parameters
+            use_maxlag: If True, add maxlag parameter (recommended for bots)
+
+        Returns:
+            JSON response as dict, or None on failure
+        """
+        # Standard API parameters
         params["format"] = "json"
         params["formatversion"] = "2"
 
+        # Add maxlag for non-interactive requests (recommended by Wikimedia)
+        # https://www.mediawiki.org/wiki/Manual:Maxlag_parameter
+        if use_maxlag:
+            params["maxlag"] = self.MAXLAG_SECONDS
+
         try:
-            response = self.fetch(f"{self.API_URL}?{self._encode_params(params)}")
-            if response:
-                return response.json()
+            url = f"{self.API_URL}?{self._encode_params(params)}"
+            response = self.fetch(url)
+
+            if response is None:
+                return None
+
+            # Check for maxlag error (server is busy)
+            if response.status_code == 503:
+                retry_after = response.headers.get("Retry-After", "5")
+                try:
+                    wait_time = int(retry_after)
+                except ValueError:
+                    wait_time = 5
+                logger.warning(
+                    f"Wikipedia maxlag exceeded, server busy. Waiting {wait_time}s"
+                )
+                time.sleep(wait_time)
+                return None
+
+            # Check for rate limit
+            if response.status_code == 429:
+                retry_after = response.headers.get("Retry-After", "60")
+                try:
+                    wait_time = int(retry_after)
+                except ValueError:
+                    wait_time = 60
+                logger.warning(
+                    f"Wikipedia rate limit hit. Waiting {wait_time}s"
+                )
+                time.sleep(min(wait_time, 300))  # Cap at 5 minutes
+                return None
+
+            data = response.json()
+
+            # Check for API-level errors
+            if "error" in data:
+                error = data["error"]
+                error_code = error.get("code", "unknown")
+                error_info = error.get("info", "No details")
+
+                # Handle maxlag error in response body
+                if error_code == "maxlag":
+                    wait_time = 5
+                    lag_match = re.search(r"(\d+) seconds", error_info)
+                    if lag_match:
+                        wait_time = int(lag_match.group(1))
+                    logger.warning(
+                        f"Wikipedia maxlag error: {error_info}. Waiting {wait_time}s"
+                    )
+                    time.sleep(wait_time)
+                    return None
+
+                # Handle rate limit error
+                if error_code == "ratelimited":
+                    logger.warning(f"Wikipedia rate limited: {error_info}")
+                    time.sleep(60)
+                    return None
+
+                logger.error(f"Wikipedia API error [{error_code}]: {error_info}")
+                return None
+
+            # Check for warnings (non-fatal)
+            if "warnings" in data:
+                for module, warning in data["warnings"].items():
+                    logger.debug(f"Wikipedia API warning [{module}]: {warning}")
+
+            return data
+
         except Exception as e:
             logger.error(f"Wikipedia API error: {e}")
-        return None
+            return None
 
     def _encode_params(self, params: Dict[str, Any]) -> str:
         """URL-encode API parameters."""
         return "&".join(f"{k}={quote(str(v))}" for k, v in params.items())
+
+    def get_multiple_pages_info(
+        self,
+        titles: List[str],
+        props: str = "info"
+    ) -> Dict[str, Dict]:
+        """
+        Batch fetch information for multiple pages using pipe separator.
+
+        This is more efficient than making individual requests per Wikimedia guidelines:
+        "Ask for multiple items in one request by using the pipe character (|)"
+
+        Args:
+            titles: List of page titles to fetch
+            props: Properties to fetch (default: info)
+
+        Returns:
+            Dict mapping title to page info
+        """
+        if not titles:
+            return {}
+
+        results = {}
+        # Wikipedia API allows up to 50 titles per request (or 500 for bots)
+        batch_size = 50
+
+        for i in range(0, len(titles), batch_size):
+            batch = titles[i:i + batch_size]
+            titles_param = "|".join(batch)
+
+            params = {
+                "action": "query",
+                "titles": titles_param,
+                "prop": props,
+            }
+
+            data = self._api_request(params)
+            if data and "query" in data and "pages" in data["query"]:
+                for page in data["query"]["pages"]:
+                    if "missing" not in page:
+                        results[page.get("title", "")] = page
+
+        return results
 
     def get_category_members(
         self, category: str, limit: int = 100, cmtype: str = "page"

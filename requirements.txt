@@ -10,7 +10,7 @@ redis>=5.2
 
 # Celery for background tasks
 celery>=5.5
-django-celery-beat>=2.8
+django-celery-beat>=2.9.0
 
 # REST API
 djangorestframework>=3.15

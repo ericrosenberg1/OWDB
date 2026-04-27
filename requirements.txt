@@ -13,7 +13,7 @@ celery>=5.5
 django-celery-beat>=2.8
 
 # REST API
-djangorestframework>=3.15
+djangorestframework>=3.17.1
 
 # Static files
 whitenoise>=6.8

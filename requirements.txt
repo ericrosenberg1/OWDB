@@ -19,7 +19,7 @@ djangorestframework>=3.15
 whitenoise>=6.8
 
 # Cloud storage (Cloudflare R2)
-boto3>=1.35
+boto3>=1.42.96
 django-storages>=1.14
 
 # Utilities

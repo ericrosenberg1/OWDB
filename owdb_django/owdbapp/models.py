@@ -1383,6 +1383,10 @@ class EmailVerificationToken(TimeStampedModel):
         """Check if the token is still valid (not expired and not used)."""
         return not self.used and self.expires_at > timezone.now()
 
+    def is_expired(self):
+        """Check if the token has passed its expiry time."""
+        return self.expires_at <= timezone.now()
+
 
 class APIKey(TimeStampedModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='api_keys')
@@ -1410,6 +1414,15 @@ class APIKey(TimeStampedModel):
     def generate_key(cls):
         """Generate a secure API key (40 hex chars = 20 bytes)."""
         return secrets.token_hex(20)
+
+    def check_rate_limit(self):
+        """Return True if this key is within its daily request limit.
+
+        Free tier: 1000 requests/day. Paid tier: unlimited.
+        """
+        if self.is_paid:
+            return True
+        return self.requests_today < 1000
 
     def reset_daily_count(self):
         """Reset the daily request count."""

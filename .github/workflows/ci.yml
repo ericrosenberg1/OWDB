@@ -40,6 +40,15 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -59,4 +68,5 @@ jobs:
           DB_HOST: localhost
           DB_PORT: 5432
           APP_SECRET_KEY: ci-test-key-not-real
+          REDIS_URL: redis://localhost:6379/0
         run: python manage.py test --verbosity=2

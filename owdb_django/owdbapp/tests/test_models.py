@@ -132,7 +132,7 @@ class UserProfileModelTest(TestCase):
             email_verified=False,
             can_contribute=False
         )
-        self.assertEqual(str(profile), "testuser's profile")
+        self.assertEqual(str(profile), "Profile for testuser")
         self.assertFalse(profile.email_verified)
 
 

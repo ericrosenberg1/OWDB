@@ -4,6 +4,7 @@ Tests for OWDB views.
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 from ..models import Wrestler, Promotion, Event, Venue, UserProfile
 
@@ -29,7 +30,8 @@ class PublicViewsTest(TestCase):
         self.event = Event.objects.create(
             name="Test Event",
             promotion=self.promotion,
-            venue=self.venue
+            venue=self.venue,
+            date=timezone.now().date()
         )
 
     def test_homepage(self):

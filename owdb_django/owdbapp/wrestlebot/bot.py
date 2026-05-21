@@ -6,11 +6,9 @@ and image fetching operations.
 """
 
 import logging
-import random
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
-from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +122,7 @@ class WrestleBot:
         This is the main entry point called by Celery Beat.
         It decides what work needs to be done and queues it.
         """
-        from owdb_django.wrestlebot.models import WrestleBotActivity, WrestleBotStats
+        from owdb_django.wrestlebot.models import WrestleBotStats
 
         if not self.is_enabled():
             logger.info("WrestleBot is disabled, skipping cycle")
@@ -455,7 +453,7 @@ class WrestleBot:
         Returns:
             Dict with cleanup results
         """
-        from owdb_django.wrestlebot.models import WrestleBotConfig, WrestleBotStats
+        from owdb_django.wrestlebot.models import WrestleBotStats
         from .quality import DataCleaner
 
         if not self.is_enabled():
@@ -512,7 +510,7 @@ class WrestleBot:
         Returns:
             Dict with verification results
         """
-        from owdb_django.wrestlebot.models import WrestleBotConfig, WrestleBotStats
+        from owdb_django.wrestlebot.models import WrestleBotStats
 
         if not self.is_enabled():
             logger.info("WrestleBot is disabled, skipping verification")

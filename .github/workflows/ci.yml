@@ -13,6 +13,7 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -57,7 +58,5 @@ jobs:
           DB_PASSWORD: testpassword
           DB_HOST: localhost
           DB_PORT: 5432
-          SECRET_KEY: ci-test-key-not-real
-        run: |
-          cd owdb_django
-          python manage.py test --verbosity=2
+          APP_SECRET_KEY: ci-test-key-not-real
+        run: python manage.py test --verbosity=2

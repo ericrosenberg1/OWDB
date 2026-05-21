@@ -681,7 +681,6 @@ class Wrestler(ImageMixin, TimeStampedModel):
 
     def get_video_games(self):
         """Get video games this wrestler appears in (via promotions)."""
-        from django.db.models import Q
         # Get promotions this wrestler worked for
         promo_ids = self.matches.values_list('event__promotion_id', flat=True).distinct()
         return VideoGame.objects.filter(promotions__in=promo_ids).distinct().order_by('-release_year')
@@ -783,7 +782,6 @@ class Wrestler(ImageMixin, TimeStampedModel):
         3. Recently created (fresher data sources)
         """
         from django.db.models import Case, When, Value, IntegerField, Q
-        from django.db.models.functions import Coalesce
 
         # Prioritize records that have Wikipedia URLs but missing data
         return cls.objects.annotate(
@@ -1580,8 +1578,7 @@ class Hot100Calculator:
         Returns list of dicts with wrestler_id and score components.
         """
         from datetime import date
-        from django.db.models import Count, Q, Sum, Avg, F
-        from django.db.models.functions import Coalesce
+        from django.db.models import Count, Q
 
         # Get date range for this month
         start_date = date(self.year, self.month, 1)
@@ -1728,7 +1725,6 @@ class Hot100Calculator:
         if not self._previous_ranking:
             return 0
         # Opponents who were in last month's Hot 100
-        from django.db.models import Avg
         opponent_ranks = Hot100Entry.objects.filter(
             ranking=self._previous_ranking,
             wrestler__matches__wrestlers=wrestler

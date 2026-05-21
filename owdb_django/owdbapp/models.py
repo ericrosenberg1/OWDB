@@ -1375,8 +1375,8 @@ class EmailVerificationToken(TimeStampedModel):
 
     @classmethod
     def generate_token(cls):
-        """Generate a secure verification token."""
-        return secrets.token_urlsafe(32)
+        """Generate a secure verification token (64 hex chars = 32 bytes)."""
+        return secrets.token_hex(32)
 
     @property
     def is_valid(self):
@@ -1408,8 +1408,8 @@ class APIKey(TimeStampedModel):
 
     @classmethod
     def generate_key(cls):
-        """Generate a secure API key."""
-        return secrets.token_urlsafe(32)
+        """Generate a secure API key (40 hex chars = 20 bytes)."""
+        return secrets.token_hex(20)
 
     def reset_daily_count(self):
         """Reset the daily request count."""

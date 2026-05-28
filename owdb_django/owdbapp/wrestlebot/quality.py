@@ -12,7 +12,6 @@ from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from django.db.models import Q, Count
-from django.utils.text import slugify
 
 logger = logging.getLogger(__name__)
 
@@ -1139,7 +1138,7 @@ class DataCleaner:
         Returns:
             Count of removed entries
         """
-        from ..models import Wrestler, Event, Promotion, Venue
+        from ..models import Wrestler, Event
         from owdb_django.wrestlebot.models import WrestleBotActivity
 
         removed_count = 0
@@ -1437,7 +1436,7 @@ class DataCleaner:
         Returns:
             Summary of deleted events
         """
-        from ..models import Event, Match, Wrestler
+        from ..models import Event, Wrestler
         from owdb_django.wrestlebot.models import WrestleBotActivity
 
         results = {
@@ -1465,7 +1464,6 @@ class DataCleaner:
         # 1. Event has matches with wrestlers who are deceased
         # 2. Event date is after the wrestler's death date
         # We do this by checking events with any deceased wrestler, then filtering
-        from django.db.models import F, Q
 
         # Get events that have matches with deceased wrestlers
         events_with_deceased = Event.objects.filter(
@@ -1677,7 +1675,7 @@ class DataCleaner:
         Returns:
             Summary of fixes applied
         """
-        from ..models import Match, Wrestler, Event
+        from ..models import Match, Event
         from owdb_django.wrestlebot.models import WrestleBotActivity
 
         results = {

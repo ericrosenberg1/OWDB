@@ -146,7 +146,11 @@ class WrestlingNewsScraper(BaseScraper):
 
             try:
                 # Extract headline
-                headline_tag = article.find("h2") or article.find("h3") or article.find("a", class_=re.compile("title|headline"))
+                headline_tag = (
+                    article.find("h2")
+                    or article.find("h3")
+                    or article.find("a", class_=re.compile("title|headline"))
+                )
                 if not headline_tag:
                     continue
 
@@ -161,7 +165,9 @@ class WrestlingNewsScraper(BaseScraper):
                     article_url = urljoin(url, article_url)
 
                 # Extract date
-                date_tag = article.find("time") or article.find(class_=re.compile("date|time|published"))
+                date_tag = article.find("time") or article.find(
+                    class_=re.compile("date|time|published")
+                )
                 published_date = None
                 if date_tag:
                     date_text = date_tag.get("datetime") or date_tag.get_text()
@@ -204,7 +210,9 @@ class WrestlingNewsScraper(BaseScraper):
         news_items = []
 
         # WrestleZone structure
-        articles = soup.find_all(["article", "div"], class_=re.compile("post|article|news-item"), limit=limit * 2)
+        articles = soup.find_all(
+            ["article", "div"], class_=re.compile("post|article|news-item"), limit=limit * 2
+        )
 
         for article in articles:
             if len(news_items) >= limit:
@@ -212,7 +220,9 @@ class WrestlingNewsScraper(BaseScraper):
 
             try:
                 # Extract headline
-                headline_tag = article.find(["h1", "h2", "h3"], class_=re.compile("title|headline|entry-title"))
+                headline_tag = article.find(
+                    ["h1", "h2", "h3"], class_=re.compile("title|headline|entry-title")
+                )
                 if not headline_tag:
                     headline_tag = article.find("a", class_=re.compile("title|headline"))
 
@@ -230,7 +240,9 @@ class WrestlingNewsScraper(BaseScraper):
                     article_url = urljoin(url, article_url)
 
                 # Extract date
-                date_tag = article.find("time") or article.find(class_=re.compile("date|time|published|meta"))
+                date_tag = article.find("time") or article.find(
+                    class_=re.compile("date|time|published|meta")
+                )
                 published_date = None
                 if date_tag:
                     date_text = date_tag.get("datetime") or date_tag.get_text()
@@ -399,7 +411,9 @@ class WrestlingNewsScraper(BaseScraper):
         soup = BeautifulSoup(response.text, "lxml")
 
         # Remove unwanted elements
-        for element in soup.find_all(["script", "style", "nav", "header", "footer", "aside", "iframe", "ad"]):
+        for element in soup.find_all(
+            ["script", "style", "nav", "header", "footer", "aside", "iframe", "ad"]
+        ):
             element.decompose()
 
         # Try common article content selectors

@@ -1,14 +1,12 @@
 """
 Tests for OWDB models.
 """
+
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from ..models import (
-    Wrestler, Promotion, Event, Venue,
-    UserProfile, APIKey, EmailVerificationToken
-)
+from ..models import Wrestler, Promotion, Event, Venue, UserProfile, APIKey, EmailVerificationToken
 
 
 class WrestlerModelTest(TestCase):
@@ -20,7 +18,7 @@ class WrestlerModelTest(TestCase):
             name="Stone Cold Steve Austin",
             real_name="Steve Williams",
             hometown="Victoria, Texas",
-            debut_year=1989
+            debut_year=1989,
         )
         self.assertEqual(str(wrestler), "Stone Cold Steve Austin")
         self.assertEqual(wrestler.slug, "stone-cold-steve-austin")
@@ -28,18 +26,13 @@ class WrestlerModelTest(TestCase):
 
     def test_wrestler_retirement(self):
         """Test that retired wrestlers are marked correctly."""
-        wrestler = Wrestler.objects.create(
-            name="The Rock",
-            debut_year=1996,
-            retirement_year=2004
-        )
+        wrestler = Wrestler.objects.create(name="The Rock", debut_year=1996, retirement_year=2004)
         self.assertFalse(wrestler.is_active)
 
     def test_wrestler_aliases_list(self):
         """Test parsing comma-separated aliases."""
         wrestler = Wrestler.objects.create(
-            name="Triple H",
-            aliases="Hunter Hearst Helmsley, Terra Ryzing, Jean-Paul Levesque"
+            name="Triple H", aliases="Hunter Hearst Helmsley, Terra Ryzing, Jean-Paul Levesque"
         )
         aliases = wrestler.get_aliases_list()
         self.assertEqual(len(aliases), 3)
@@ -59,9 +52,7 @@ class PromotionModelTest(TestCase):
     def test_promotion_creation(self):
         """Test creating a promotion."""
         promo = Promotion.objects.create(
-            name="World Wrestling Entertainment",
-            abbreviation="WWE",
-            founded_year=1952
+            name="World Wrestling Entertainment", abbreviation="WWE", founded_year=1952
         )
         self.assertEqual(str(promo), "World Wrestling Entertainment (WWE)")
         self.assertTrue(promo.is_active)
@@ -72,7 +63,7 @@ class PromotionModelTest(TestCase):
             name="World Championship Wrestling",
             abbreviation="WCW",
             founded_year=1988,
-            closed_year=2001
+            closed_year=2001,
         )
         self.assertFalse(promo.is_active)
 
@@ -83,9 +74,7 @@ class VenueModelTest(TestCase):
     def test_venue_creation(self):
         """Test creating a venue."""
         venue = Venue.objects.create(
-            name="Madison Square Garden",
-            location="New York, NY",
-            capacity=20789
+            name="Madison Square Garden", location="New York, NY", capacity=20789
         )
         self.assertEqual(str(venue), "Madison Square Garden")
         self.assertEqual(venue.slug, "madison-square-garden")
@@ -95,14 +84,8 @@ class EventModelTest(TestCase):
     """Tests for the Event model."""
 
     def setUp(self):
-        self.promotion = Promotion.objects.create(
-            name="WWE",
-            abbreviation="WWE"
-        )
-        self.venue = Venue.objects.create(
-            name="WrestleMania Venue",
-            location="Test City"
-        )
+        self.promotion = Promotion.objects.create(name="WWE", abbreviation="WWE")
+        self.venue = Venue.objects.create(name="WrestleMania Venue", location="Test City")
 
     def test_event_creation(self):
         """Test creating an event."""
@@ -110,7 +93,7 @@ class EventModelTest(TestCase):
             name="WrestleMania 40",
             promotion=self.promotion,
             venue=self.venue,
-            date=timezone.now().date()
+            date=timezone.now().date(),
         )
         self.assertEqual(str(event), f"WrestleMania 40 ({timezone.now().year})")
 
@@ -120,17 +103,13 @@ class UserProfileModelTest(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
-            username='testuser',
-            email='test@example.com',
-            password='testpass123'
+            username="testuser", email="test@example.com", password="testpass123"
         )
 
     def test_profile_creation(self):
         """Test creating a user profile."""
         profile = UserProfile.objects.create(
-            user=self.user,
-            email_verified=False,
-            can_contribute=False
+            user=self.user, email_verified=False, can_contribute=False
         )
         self.assertEqual(str(profile), "Profile for testuser")
         self.assertFalse(profile.email_verified)
@@ -141,9 +120,7 @@ class APIKeyModelTest(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
-            username='apiuser',
-            email='api@example.com',
-            password='testpass123'
+            username="apiuser", email="api@example.com", password="testpass123"
         )
 
     def test_api_key_generation(self):
@@ -153,20 +130,13 @@ class APIKeyModelTest(TestCase):
 
     def test_api_key_creation(self):
         """Test creating an API key."""
-        api_key = APIKey.objects.create(
-            user=self.user,
-            key=APIKey.generate_key(),
-            name="Test Key"
-        )
+        api_key = APIKey.objects.create(user=self.user, key=APIKey.generate_key(), name="Test Key")
         self.assertTrue(api_key.is_active)
         self.assertFalse(api_key.is_paid)
 
     def test_api_key_rate_limiting(self):
         """Test API key daily limit checking."""
-        api_key = APIKey.objects.create(
-            user=self.user,
-            key=APIKey.generate_key()
-        )
+        api_key = APIKey.objects.create(user=self.user, key=APIKey.generate_key())
         # Free tier should have 1000 limit
         self.assertTrue(api_key.check_rate_limit())
 
@@ -176,9 +146,7 @@ class EmailVerificationTokenTest(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
-            username='verifyuser',
-            email='verify@example.com',
-            password='testpass123'
+            username="verifyuser", email="verify@example.com", password="testpass123"
         )
 
     def test_token_generation(self):
@@ -191,7 +159,7 @@ class EmailVerificationTokenTest(TestCase):
         token = EmailVerificationToken.objects.create(
             user=self.user,
             token=EmailVerificationToken.generate_token(),
-            expires_at=timezone.now() - timezone.timedelta(hours=1)
+            expires_at=timezone.now() - timezone.timedelta(hours=1),
         )
         self.assertTrue(token.is_expired())
 
@@ -200,6 +168,6 @@ class EmailVerificationTokenTest(TestCase):
         token = EmailVerificationToken.objects.create(
             user=self.user,
             token=EmailVerificationToken.generate_token(),
-            expires_at=timezone.now() + timezone.timedelta(hours=24)
+            expires_at=timezone.now() + timezone.timedelta(hours=24),
         )
         self.assertFalse(token.is_expired())

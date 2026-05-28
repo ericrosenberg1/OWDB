@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% load linking_tags %}
+{% load verification_tags %}
+{% load humanize %}
 
 {% block content %}
 <div class="detail-header">
@@ -33,7 +35,7 @@
         {% endif %}
         {% if event.attendance %}
         <div class="detail-meta-item">
-            <span class="detail-meta-label">Attendance:</span> {{ event.attendance|floatformat:0 }}
+            <span class="detail-meta-label">Attendance:</span> {{ event.attendance|intcomma }}
         </div>
         {% endif %}
     </div>
@@ -129,6 +131,12 @@
     </div>
 </div>
 {% endif %}
+
+{% verification_stamp event %}
+
+{% with entity_type="event" entity=event %}
+    {% include "partials/sources_used.html" %}
+{% endwith %}
 
 <a href="{% url 'events' %}" class="btn btn-secondary">&larr; Back to Events</a>
 {% endblock %}

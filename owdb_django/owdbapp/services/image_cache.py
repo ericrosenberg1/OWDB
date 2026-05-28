@@ -30,10 +30,10 @@ class ImageCacheService:
 
     # Supported image formats
     ALLOWED_MIME_TYPES = {
-        'image/jpeg': '.jpg',
-        'image/png': '.png',
-        'image/gif': '.gif',
-        'image/webp': '.webp',
+        "image/jpeg": ".jpg",
+        "image/png": ".png",
+        "image/gif": ".gif",
+        "image/webp": ".webp",
     }
 
     # Maximum image size (10MB)
@@ -47,13 +47,16 @@ class ImageCacheService:
 
     def __init__(self):
         self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': self.USER_AGENT,
-            'Accept': 'image/*',
-        })
+        self.session.headers.update(
+            {
+                "User-Agent": self.USER_AGENT,
+                "Accept": "image/*",
+            }
+        )
 
-    def _generate_filename(self, entity_type: str, entity_id: int,
-                          original_url: str, extension: str) -> str:
+    def _generate_filename(
+        self, entity_type: str, entity_id: int, original_url: str, extension: str
+    ) -> str:
         """
         Generate a unique filename for the cached image.
 
@@ -71,18 +74,18 @@ class ImageCacheService:
         parsed = urlparse(url)
         path = parsed.path.lower()
 
-        for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+        for ext in [".jpg", ".jpeg", ".png", ".gif", ".webp"]:
             if path.endswith(ext):
-                return '.jpg' if ext == '.jpeg' else ext
+                return ".jpg" if ext == ".jpeg" else ext
 
-        return '.jpg'  # Default to jpg
+        return ".jpg"  # Default to jpg
 
     def _get_extension_from_content_type(self, content_type: str) -> str:
         """Get file extension from content type."""
         if content_type:
-            mime = content_type.split(';')[0].strip().lower()
-            return self.ALLOWED_MIME_TYPES.get(mime, '.jpg')
-        return '.jpg'
+            mime = content_type.split(";")[0].strip().lower()
+            return self.ALLOWED_MIME_TYPES.get(mime, ".jpg")
+        return ".jpg"
 
     def download_image(self, url: str) -> Optional[Tuple[bytes, str]]:
         """
@@ -95,21 +98,17 @@ class ImageCacheService:
             Tuple of (image_bytes, extension) or None if failed
         """
         try:
-            response = self.session.get(
-                url,
-                timeout=self.REQUEST_TIMEOUT,
-                stream=True
-            )
+            response = self.session.get(url, timeout=self.REQUEST_TIMEOUT, stream=True)
             response.raise_for_status()
 
             # Check content type
-            content_type = response.headers.get('Content-Type', '')
-            if not content_type.startswith('image/'):
+            content_type = response.headers.get("Content-Type", "")
+            if not content_type.startswith("image/"):
                 logger.warning(f"Not an image: {url} (Content-Type: {content_type})")
                 return None
 
             # Check size
-            content_length = int(response.headers.get('Content-Length', 0))
+            content_length = int(response.headers.get("Content-Length", 0))
             if content_length > self.MAX_IMAGE_SIZE:
                 logger.warning(f"Image too large: {url} ({content_length} bytes)")
                 return None
@@ -147,7 +146,7 @@ class ImageCacheService:
         """
         try:
             # Check if R2 is configured
-            if not hasattr(settings, 'R2_ACCESS_KEY_ID') or not settings.R2_ACCESS_KEY_ID:
+            if not hasattr(settings, "R2_ACCESS_KEY_ID") or not settings.R2_ACCESS_KEY_ID:
                 logger.warning("R2 not configured, cannot upload image")
                 return None
 
@@ -164,8 +163,7 @@ class ImageCacheService:
             logger.error(f"Failed to upload image to R2: {e}")
             return None
 
-    def cache_image(self, source_url: str, entity_type: str,
-                   entity_id: int) -> Optional[str]:
+    def cache_image(self, source_url: str, entity_type: str, entity_id: int) -> Optional[str]:
         """
         Download an image and cache it to R2.
 
@@ -192,8 +190,7 @@ class ImageCacheService:
 
         return cdn_url
 
-    def cache_and_update_entity(self, entity, image_result: dict,
-                                archive_old: bool = True) -> bool:
+    def cache_and_update_entity(self, entity, image_result: dict, archive_old: bool = True) -> bool:
         """
         Cache an image for an entity and update its fields.
 
@@ -204,20 +201,55 @@ class ImageCacheService:
 
         Returns:
             True if successful, False otherwise
+
+        Accuracy / legal-use gate:
+          The pre-refactor code wrote whatever license string the upstream
+          client handed us straight into the DB, which meant a future
+          non-Commons client (or a Commons API regression) could quietly
+          add NonCommercial / NoDerivs / "fair-use" images. We now refuse
+          to persist unless the license normalises to a code in OWDB's
+          ALLOWED_LICENSES whitelist (cc0/pd/cc-by/cc-by-sa). Any image
+          we *do* write goes in with the canonical short code, never the
+          raw upstream string.
         """
         from ..models import ImageHistory
 
-        source_url = image_result.get('thumb_url') or image_result.get('url')
+        # Reuse the same license normaliser the wrestlebot pipeline uses
+        # so the legal whitelist has exactly one source of truth.
+        from owdb_django.wrestlebot.sources.commons import _normalize_license
+
+        source_url = image_result.get("thumb_url") or image_result.get("url")
         if not source_url:
             logger.warning(f"No image URL in result for {entity}")
             return False
 
+        # ---- legal-use gate -------------------------------------------------
+        raw_license = (image_result.get("license") or "").strip()
+        license_code = _normalize_license(raw_license)
+        if not license_code:
+            logger.warning(
+                "Refusing to cache image for %s: license %r not in OWDB allow-list",
+                entity,
+                raw_license,
+            )
+            return False
+        artist = (image_result.get("artist") or "").strip()
+        # CC-BY / CC-BY-SA require attribution. Without it, displaying the
+        # image is a license violation.
+        if license_code in ("cc-by", "cc-by-sa") and not artist:
+            logger.warning(
+                "Refusing to cache image for %s: %s requires attribution but Artist is empty",
+                entity,
+                license_code,
+            )
+            return False
+
         # Determine entity type for storage path
-        entity_type = entity.__class__.__name__.lower() + 's'  # e.g., "wrestlers"
+        entity_type = entity.__class__.__name__.lower() + "s"  # e.g., "wrestlers"
 
         # Archive old image if exists and requested
         if archive_old and entity.has_image():
-            reason = 'better_image_found' if entity.needs_image_refresh() else 'scheduled_refresh'
+            reason = "better_image_found" if entity.needs_image_refresh() else "scheduled_refresh"
             ImageHistory.archive_current_image(entity, reason=reason)
 
         # Cache to R2
@@ -226,24 +258,30 @@ class ImageCacheService:
             logger.warning(f"Failed to cache image for {entity}")
             return False
 
-        # Update entity fields
+        # Update entity fields — stamp the *normalized* license code so
+        # later filters ("only cc-by-sa") work without parsing raw strings.
         entity.image_url = cdn_url
         entity.image_original_url = source_url
-        entity.image_source_url = image_result.get('description_url', '')
-        entity.image_license = image_result.get('license', '')
-        entity.image_credit = image_result.get('artist', '')
+        entity.image_source_url = image_result.get("description_url", "")
+        entity.image_license = license_code
+        entity.image_credit = artist
         entity.image_fetched_at = timezone.now()
 
-        entity.save(update_fields=[
-            'image_url', 'image_original_url', 'image_source_url',
-            'image_license', 'image_credit', 'image_fetched_at'
-        ])
+        entity.save(
+            update_fields=[
+                "image_url",
+                "image_original_url",
+                "image_source_url",
+                "image_license",
+                "image_credit",
+                "image_fetched_at",
+            ]
+        )
 
         logger.info(f"Cached image for {entity}: {cdn_url}")
         return True
 
-    def refresh_stale_images(self, entity_class, min_age_days: int = 30,
-                            limit: int = 10) -> int:
+    def refresh_stale_images(self, entity_class, min_age_days: int = 30, limit: int = 10) -> int:
         """
         Find and refresh images older than min_age_days.
 
@@ -261,9 +299,8 @@ class ImageCacheService:
 
         # Find entities with old images
         entities = entity_class.objects.filter(
-            image_url__isnull=False,
-            image_fetched_at__lt=cutoff
-        ).order_by('image_fetched_at')[:limit]
+            image_url__isnull=False, image_fetched_at__lt=cutoff
+        ).order_by("image_fetched_at")[:limit]
 
         client = WikimediaCommonsClient()
         refreshed = 0
@@ -274,7 +311,7 @@ class ImageCacheService:
                 result = self._find_image_for_entity(client, entity)
                 if result:
                     # Check if it's actually a different/better image
-                    new_url = result.get('url') or result.get('thumb_url')
+                    new_url = result.get("url") or result.get("thumb_url")
                     if new_url and new_url != entity.image_original_url:
                         if self.cache_and_update_entity(entity, result, archive_old=True):
                             refreshed += 1
@@ -282,7 +319,7 @@ class ImageCacheService:
                     else:
                         # Same image, just update timestamp to prevent re-checking
                         entity.image_fetched_at = timezone.now()
-                        entity.save(update_fields=['image_fetched_at'])
+                        entity.save(update_fields=["image_fetched_at"])
             except Exception as e:
                 logger.error(f"Error refreshing image for {entity}: {e}")
                 continue
@@ -293,31 +330,28 @@ class ImageCacheService:
         """Find an image for an entity using the appropriate method."""
         entity_type = entity.__class__.__name__
 
-        if entity_type == 'Wrestler':
+        if entity_type == "Wrestler":
             return client.find_wrestler_image(
-                name=entity.name,
-                real_name=getattr(entity, 'real_name', None)
+                name=entity.name, real_name=getattr(entity, "real_name", None)
             )
-        elif entity_type == 'Promotion':
+        elif entity_type == "Promotion":
             return client.find_promotion_image(
-                name=entity.name,
-                abbreviation=getattr(entity, 'abbreviation', None)
+                name=entity.name, abbreviation=getattr(entity, "abbreviation", None)
             )
-        elif entity_type == 'Venue':
+        elif entity_type == "Venue":
             return client.find_venue_image(
-                name=entity.name,
-                location=getattr(entity, 'location', None)
+                name=entity.name, location=getattr(entity, "location", None)
             )
-        elif entity_type == 'Event':
+        elif entity_type == "Event":
             return client.find_event_image(
                 name=entity.name,
                 promotion=entity.promotion.abbreviation if entity.promotion else None,
-                year=entity.date.year if entity.date else None
+                year=entity.date.year if entity.date else None,
             )
-        elif entity_type == 'Title':
+        elif entity_type == "Title":
             return client.find_title_image(
                 name=entity.name,
-                promotion=entity.promotion.abbreviation if entity.promotion else None
+                promotion=entity.promotion.abbreviation if entity.promotion else None,
             )
         else:
             logger.warning(f"Unknown entity type: {entity_type}")
@@ -326,6 +360,7 @@ class ImageCacheService:
 
 # Singleton instance
 _image_cache_service = None
+
 
 def get_image_cache_service() -> ImageCacheService:
     """Get the singleton ImageCacheService instance."""

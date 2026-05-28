@@ -71,8 +71,8 @@ class CagematchScraper(BaseScraper):
     # We round down slightly but stay very conservative
     # With these limits, we can do about 7 requests/hour max
     REQUESTS_PER_MINUTE = 1  # Max 1 per minute (we wait longer via crawl delay)
-    REQUESTS_PER_HOUR = 7    # ~527 seconds = ~8.8 min per request = ~7/hour
-    REQUESTS_PER_DAY = 100   # ~100 requests/day max (very conservative)
+    REQUESTS_PER_HOUR = 7  # ~527 seconds = ~8.8 min per request = ~7/hour
+    REQUESTS_PER_DAY = 100  # ~100 requests/day max (very conservative)
 
     # Minimum delay between requests (from robots.txt Crawl-delay: 527)
     # We'll use 530 seconds to be safe
@@ -87,18 +87,20 @@ class CagematchScraper(BaseScraper):
     # Extended cache TTLs - since we can only make ~7 requests/hour,
     # we cache aggressively to avoid re-fetching
     CACHE_TTL_PAGE = 86400 * 2  # 48 hours for individual pages
-    CACHE_TTL_LIST = 86400      # 24 hours for listing pages
+    CACHE_TTL_LIST = 86400  # 24 hours for listing pages
 
     def __init__(self):
         """Initialize the Cagematch scraper with robots.txt-compliant settings."""
         super().__init__()
         # Set proper User-Agent
-        self.session.headers.update({
-            "User-Agent": self.USER_AGENT,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.5",
-            "Accept-Encoding": "gzip, deflate",
-        })
+        self.session.headers.update(
+            {
+                "User-Agent": self.USER_AGENT,
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.5",
+                "Accept-Encoding": "gzip, deflate",
+            }
+        )
         # Override the minimum delay to respect robots.txt Crawl-delay
         self._min_request_delay = self.MIN_REQUEST_DELAY
         logger.info(
@@ -309,16 +311,36 @@ class CagematchScraper(BaseScraper):
     def _parse_match_row(self, match_row) -> Optional[Dict[str, Any]]:
         """Parse a single match row from an event page."""
         match = {}
+        wrestlers = []
 
-        # Get match text (participants)
+        # Get match text (participants) and extract wrestler links
         match_text_elem = match_row.find("div", class_="MatchCard")
         if match_text_elem:
             match["match_text"] = clean_text(match_text_elem.get_text())
 
+            # Extract wrestler names from links
+            for link in match_text_elem.find_all("a"):
+                href = link.get("href", "")
+                # Wrestler links have id=2 in the URL
+                if "id=2" in href and "nr=" in href:
+                    wrestler_name = clean_text(link.get_text())
+                    if wrestler_name and wrestler_name not in wrestlers:
+                        wrestlers.append(wrestler_name)
+
+        match["wrestlers"] = wrestlers
+
         # Get match result
         result_elem = match_row.find("div", class_="MatchResults")
         if result_elem:
-            match["result"] = clean_text(result_elem.get_text())
+            result_text = clean_text(result_elem.get_text())
+            match["result"] = result_text
+
+            # Try to extract winner name from result
+            # Common patterns: "Winner defeats Loser", "Winner (time)"
+            if "defeat" in result_text.lower():
+                winner_match = re.match(r"^([^(]+?)\s+defeat", result_text, re.IGNORECASE)
+                if winner_match:
+                    match["winner_name"] = clean_text(winner_match.group(1))
 
         # Get match type
         type_elem = match_row.find("div", class_="MatchType")
@@ -434,6 +456,72 @@ class CagematchScraper(BaseScraper):
                 )
 
         return events
+
+    def search_event(
+        self,
+        promotion: str,
+        event_name: str,
+        date: "date",
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Search for a specific event on Cagematch by promotion, name, and date.
+
+        Uses Cagematch's event search functionality to find events matching
+        the given criteria. Due to the 527-second crawl delay, this should
+        be used sparingly.
+
+        Args:
+            promotion: Promotion name (e.g., "WWE", "AEW")
+            event_name: Event name to search for (e.g., "WWE Raw #1665")
+            date: Date of the event
+
+        Returns:
+            Event data dict with matches, or None if not found
+        """
+        from datetime import date as date_type
+
+        # Format the search query - Cagematch uses the event name
+        # Search URL format: /en/?id=1&view=search&sEventName=...&sDateFrom=...&sDateTo=...
+        date_str = date.strftime("%d.%m.%Y") if isinstance(date, date_type) else str(date)
+
+        # Build search URL
+        search_url = (
+            f"{self.BASE_URL}/en/?id=1&view=search"
+            f"&sEventName={quote(event_name)}"
+            f"&sDateFrom={date_str}"
+            f"&sDateTo={date_str}"
+        )
+
+        logger.debug("Searching Cagematch for event: %s on %s", event_name, date_str)
+
+        html = self.get_cached_or_fetch(search_url, cache_ttl=self.CACHE_TTL_LIST)
+        if not html:
+            return None
+
+        soup = BeautifulSoup(html, "lxml")
+
+        # Find the event table
+        table = soup.find("table", class_="TBase")
+        if not table:
+            logger.debug("No event table found for search: %s", event_name)
+            return None
+
+        # Look for matching events
+        for row in table.find_all("tr")[1:]:  # Skip header
+            link = row.find("a")
+            if not link:
+                continue
+
+            event_url = urljoin(self.BASE_URL, link.get("href", ""))
+            event_id = self._parse_cagematch_id(event_url)
+
+            if event_id:
+                # Found a matching event - fetch full details
+                logger.info("Found Cagematch event ID %d for %s", event_id, event_name)
+                return self.parse_event_page(event_id)
+
+        logger.debug("No matching event found for: %s", event_name)
+        return None
 
     def scrape_wrestlers(self, limit: int = 100) -> List[Dict[str, Any]]:
         """Scrape wrestler data from Cagematch."""

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load linking_tags %}
+{% load verification_tags %}
 
 {% block content %}
 <div class="person-page">
@@ -103,7 +104,21 @@
                     {% if record.total > 0 %}
                     <div class="info-block">
                         <h4>Record</h4>
-                        <p>{{ record.wins }}W - {{ record.losses }}L ({{ record.win_percentage }}%)</p>
+                        <p class="record-line">
+                            <span class="record-wins">{{ record.wins }}W</span>
+                            <span class="record-sep">-</span>
+                            <span class="record-losses">{{ record.losses }}L</span>
+                            {% if record.draws %}
+                            <span class="record-sep">-</span>
+                            <span class="record-draws">{{ record.draws }}D</span>
+                            {% endif %}
+                            <span class="record-pct">({{ record.win_percentage }}%)</span>
+                        </p>
+                        <p class="record-detail">
+                            {% if record.title_matches %}{{ record.title_matches }} title match{{ record.title_matches|pluralize }}{% endif %}
+                            {% if record.title_wins %} &middot; <strong>{{ record.title_wins }} title win{{ record.title_wins|pluralize }}</strong>{% endif %}
+                            {% if record.unknown %} &middot; {{ record.unknown }} unjudged{% endif %}
+                        </p>
                     </div>
                     {% endif %}
 
@@ -150,6 +165,7 @@
                             {% if meta_counts.titles > 0 %}<li><span class="count">{{ meta_counts.titles }}</span> Title Reigns</li>{% endif %}
                             {% if meta_counts.podcast_appearances > 0 %}<li><span class="count">{{ meta_counts.podcast_appearances }}</span> Podcast Episodes</li>{% endif %}
                             {% if meta_counts.books > 0 %}<li><span class="count">{{ meta_counts.books }}</span> Books</li>{% endif %}
+                            {% if meta_counts.video_games > 0 %}<li><span class="count">{{ meta_counts.video_games }}</span> Video Games</li>{% endif %}
                             {% if meta_counts.specials > 0 %}<li><span class="count">{{ meta_counts.specials }}</span> Documentaries</li>{% endif %}
                         </ul>
                     </div>
@@ -322,38 +338,106 @@
                 </div>
                 {% endif %}
 
-                <!-- Match History Section (TMDB Credits Style) -->
+                <!-- Recent Form + Match History (ESPN-feel) -->
                 {% if matches %}
                 <div class="credits-section">
                     <div class="credits-header">
                         <h3>Match History</h3>
                         <div class="credits-filters">
+                            {% if recent_form %}
+                            <div class="recent-form" title="Last {{ recent_form|length }} results, most recent first">
+                                <span class="form-label">Recent form:</span>
+                                {% for r in recent_form %}
+                                    <span class="form-pill form-{{ r|lower }}">{{ r }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                             <select class="filter-select" id="matchFilter" onchange="filterMatches()">
                                 <option value="all">All Matches</option>
-                                <option value="wins">Wins</option>
-                                <option value="losses">Losses</option>
+                                <option value="win">Wins</option>
+                                <option value="loss">Losses</option>
+                                <option value="draw">Draws / No-contests</option>
+                                <option value="unknown">Unknown result</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="credits-list">
                         {% for match in matches %}
-                        <div class="credit-item" data-result="{{ match.result|lower }}">
+                        <div class="credit-item" data-result="{{ match.this_result }}">
                             <div class="credit-year">
-                                {% if match.event.date %}{{ match.event.date|date:"Y" }}{% else %}&mdash;{% endif %}
+                                {% if match.event.date %}{{ match.event.date|date:"M j, Y" }}{% else %}&mdash;{% endif %}
                             </div>
                             <div class="credit-separator">
                                 <span class="dot"></span>
                             </div>
                             <div class="credit-info">
-                                <a href="{% url 'match_detail' match.pk %}" class="credit-title">{{ match.match_text }}</a>
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    {% if match.this_result == 'win' %}
+                                        <span class="result-badge win">W</span>
+                                    {% elif match.this_result == 'loss' %}
+                                        <span class="result-badge loss">L</span>
+                                    {% elif match.this_result == 'draw' %}
+                                        <span class="result-badge draw">D</span>
+                                    {% else %}
+                                        <span class="result-badge unknown">?</span>
+                                    {% endif %}
+                                    <a href="{% url 'match_detail' match.pk %}" class="credit-title">
+                                        {% if match.opponents %}
+                                            vs.
+                                            {% for op in match.opponents %}<a href="{% url 'wrestler_detail' op.pk %}">{{ op.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
+                                        {% else %}
+                                            {{ match.match_text|truncatechars:80 }}
+                                        {% endif %}
+                                    </a>
+                                </div>
                                 <span class="credit-meta">
-                                    <a href="{% url 'event_detail_slug' match.event.slug %}">{{ match.event.name }}</a>
-                                    {% if match.result %}<span class="result-badge {{ match.result|lower }}">{{ match.result }}</span>{% endif %}
+                                    {% if match.event.slug %}
+                                        <a href="{% url 'event_detail_slug' match.event.slug %}">{{ match.event.name }}</a>
+                                    {% else %}
+                                        <a href="{% url 'event_detail' match.event.pk %}">{{ match.event.name }}</a>
+                                    {% endif %}
+                                    {% if match.match_type %} &middot; {{ match.match_type|truncatechars:60 }}{% endif %}
+                                    {% if match.title %}
+                                        &middot; <a href="{% url 'title_detail' match.title.pk %}">{{ match.title.name }}</a>
+                                        {% if match.title_changed %}<span class="result-badge title-change">TITLE CHANGE</span>{% endif %}
+                                    {% endif %}
+                                    {% if match.cagematch_rating %}<span class="rating-badge">★ {{ match.cagematch_rating }}</span>{% endif %}
                                 </span>
                             </div>
                         </div>
                         {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Head-to-Head Leaderboard -->
+                {% if head_to_head %}
+                <div class="credits-section">
+                    <h3>Head-to-Head — most-faced opponents</h3>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped h2h-table">
+                            <thead>
+                                <tr>
+                                    <th>Opponent</th>
+                                    <th class="text-end">Total</th>
+                                    <th class="text-end">W</th>
+                                    <th class="text-end">L</th>
+                                    <th class="text-end">D</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in head_to_head %}
+                                <tr>
+                                    <td><a href="{% url 'wrestler_detail' r.wrestler.pk %}">{{ r.wrestler.name }}</a></td>
+                                    <td class="text-end">{{ r.total }}</td>
+                                    <td class="text-end text-success">{{ r.wins }}</td>
+                                    <td class="text-end text-danger">{{ r.losses }}</td>
+                                    <td class="text-end text-muted">{{ r.draws }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 {% endif %}
@@ -393,11 +477,47 @@
                             {% for book in books %}
                             <a href="{% url 'book_detail' book.pk %}" class="card-link">
                                 <div class="media-card">
-                                    <div class="media-poster placeholder book-placeholder">
-                                        <span>📚</span>
-                                    </div>
+                                    {% if book.image_url %}
+                                        <img src="{{ book.image_url }}"
+                                             alt="Cover of {{ book.title }}"
+                                             class="media-poster"
+                                             loading="lazy">
+                                    {% else %}
+                                        <div class="media-poster placeholder book-placeholder">
+                                            <span>📚</span>
+                                        </div>
+                                    {% endif %}
                                     <p class="media-title">{{ book.title|truncatechars:30 }}</p>
                                     <p class="media-meta">{{ book.publication_year|default:"" }}</p>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Video Games Section -->
+                {% if video_games %}
+                <div class="known-for-section">
+                    <h3>Appears in Video Games</h3>
+                    <div class="scroller-wrap">
+                        <div class="scroller">
+                            {% for game in video_games %}
+                            <a href="{% url 'game_detail' game.pk %}" class="card-link">
+                                <div class="media-card">
+                                    {% if game.image_url %}
+                                        <img src="{{ game.image_url }}"
+                                             alt="Cover art for {{ game.name }}"
+                                             class="media-poster"
+                                             loading="lazy">
+                                    {% else %}
+                                        <div class="media-poster placeholder game-placeholder">
+                                            <span>🎮</span>
+                                        </div>
+                                    {% endif %}
+                                    <p class="media-title">{{ game.name|truncatechars:30 }}</p>
+                                    <p class="media-meta">{{ game.release_year|default:"" }}{% if game.systems %} · {{ game.systems|truncatechars:18 }}{% endif %}</p>
                                 </div>
                             </a>
                             {% endfor %}
@@ -430,6 +550,12 @@
 
             </div>
         </div>
+
+        {% verification_stamp wrestler %}
+
+        {% with entity_type="wrestler" entity=wrestler %}
+            {% include "partials/sources_used.html" %}
+        {% endwith %}
     </div>
 </div>
 
@@ -467,22 +593,13 @@ function toggleBiography() {
     }
 }
 
-// Match filter
+// Match filter — filter by per-wrestler result value set on data-result.
 function filterMatches() {
     const filter = document.getElementById('matchFilter').value;
     const items = document.querySelectorAll('.credit-item');
-
     items.forEach(item => {
         const result = item.dataset.result;
-        if (filter === 'all') {
-            item.style.display = 'flex';
-        } else if (filter === 'wins' && result === 'win') {
-            item.style.display = 'flex';
-        } else if (filter === 'losses' && result === 'loss') {
-            item.style.display = 'flex';
-        } else {
-            item.style.display = 'none';
-        }
+        item.style.display = (filter === 'all' || result === filter) ? 'flex' : 'none';
     });
 }
 </script>

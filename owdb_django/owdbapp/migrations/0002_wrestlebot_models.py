@@ -4,71 +4,212 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('owdbapp', '0001_initial'),
+        ("owdbapp", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='WrestleBotConfig',
+            name="WrestleBotConfig",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('enabled', models.BooleanField(default=True, help_text='Master switch for WrestleBot')),
-                ('max_items_per_hour', models.IntegerField(default=50, help_text='Maximum new items to add per hour')),
-                ('max_items_per_day', models.IntegerField(default=500, help_text='Maximum new items to add per day')),
-                ('cooldown_minutes', models.IntegerField(default=5, help_text='Minutes to wait between batches')),
-                ('ai_model_name', models.CharField(default='llama3.2', help_text='Ollama model to use', max_length=100)),
-                ('ai_temperature', models.FloatField(default=0.3, help_text='AI temperature (lower = more deterministic)')),
-                ('min_confidence_threshold', models.FloatField(default=0.7, help_text='Minimum AI confidence to accept data')),
-                ('min_data_fields', models.IntegerField(default=3, help_text='Minimum fields required to create a record')),
-                ('require_verification', models.BooleanField(default=True, help_text='Require AI verification before import')),
-                ('focus_wrestlers', models.BooleanField(default=True)),
-                ('focus_promotions', models.BooleanField(default=True)),
-                ('focus_events', models.BooleanField(default=True)),
-                ('focus_titles', models.BooleanField(default=True)),
-                ('focus_matches', models.BooleanField(default=False, help_text='Matches require more complex parsing')),
-                ('items_added_today', models.IntegerField(default=0)),
-                ('items_added_this_hour', models.IntegerField(default=0)),
-                ('last_run', models.DateTimeField(blank=True, null=True)),
-                ('last_reset_date', models.DateField(blank=True, null=True)),
-                ('last_reset_hour', models.IntegerField(default=0)),
-                ('total_items_added', models.IntegerField(default=0)),
-                ('total_errors', models.IntegerField(default=0)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "enabled",
+                    models.BooleanField(default=True, help_text="Master switch for WrestleBot"),
+                ),
+                (
+                    "max_items_per_hour",
+                    models.IntegerField(default=50, help_text="Maximum new items to add per hour"),
+                ),
+                (
+                    "max_items_per_day",
+                    models.IntegerField(default=500, help_text="Maximum new items to add per day"),
+                ),
+                (
+                    "cooldown_minutes",
+                    models.IntegerField(default=5, help_text="Minutes to wait between batches"),
+                ),
+                (
+                    "ai_model_name",
+                    models.CharField(
+                        default="llama3.2", help_text="Ollama model to use", max_length=100
+                    ),
+                ),
+                (
+                    "ai_temperature",
+                    models.FloatField(
+                        default=0.3, help_text="AI temperature (lower = more deterministic)"
+                    ),
+                ),
+                (
+                    "min_confidence_threshold",
+                    models.FloatField(
+                        default=0.7, help_text="Minimum AI confidence to accept data"
+                    ),
+                ),
+                (
+                    "min_data_fields",
+                    models.IntegerField(
+                        default=3, help_text="Minimum fields required to create a record"
+                    ),
+                ),
+                (
+                    "require_verification",
+                    models.BooleanField(
+                        default=True, help_text="Require AI verification before import"
+                    ),
+                ),
+                ("focus_wrestlers", models.BooleanField(default=True)),
+                ("focus_promotions", models.BooleanField(default=True)),
+                ("focus_events", models.BooleanField(default=True)),
+                ("focus_titles", models.BooleanField(default=True)),
+                (
+                    "focus_matches",
+                    models.BooleanField(
+                        default=False, help_text="Matches require more complex parsing"
+                    ),
+                ),
+                ("items_added_today", models.IntegerField(default=0)),
+                ("items_added_this_hour", models.IntegerField(default=0)),
+                ("last_run", models.DateTimeField(blank=True, null=True)),
+                ("last_reset_date", models.DateField(blank=True, null=True)),
+                ("last_reset_hour", models.IntegerField(default=0)),
+                ("total_items_added", models.IntegerField(default=0)),
+                ("total_errors", models.IntegerField(default=0)),
             ],
             options={
-                'verbose_name': 'WrestleBot Configuration',
-                'verbose_name_plural': 'WrestleBot Configuration',
+                "verbose_name": "WrestleBot Configuration",
+                "verbose_name_plural": "WrestleBot Configuration",
             },
         ),
         migrations.CreateModel(
-            name='WrestleBotLog',
+            name="WrestleBotLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('action_type', models.CharField(choices=[('discover', 'Discovered New Entity'), ('create', 'Created Record'), ('update', 'Updated Record'), ('link', 'Linked Records'), ('enrich', 'Enriched Data'), ('verify', 'Verified Data'), ('skip', 'Skipped (Duplicate/Invalid)'), ('error', 'Error')], db_index=True, max_length=20)),
-                ('entity_type', models.CharField(choices=[('wrestler', 'Wrestler'), ('promotion', 'Promotion'), ('event', 'Event'), ('match', 'Match'), ('title', 'Title'), ('venue', 'Venue'), ('videogame', 'Video Game'), ('podcast', 'Podcast'), ('book', 'Book'), ('special', 'Special')], db_index=True, max_length=20)),
-                ('entity_name', models.CharField(max_length=255)),
-                ('entity_id', models.IntegerField(blank=True, help_text='ID of the affected record', null=True)),
-                ('source_url', models.URLField(blank=True, help_text='Wikipedia article URL', max_length=500, null=True)),
-                ('source_title', models.CharField(blank=True, help_text='Wikipedia article title', max_length=255, null=True)),
-                ('data_extracted', models.JSONField(blank=True, default=dict, help_text='Factual data extracted (names, dates, numbers - no prose)')),
-                ('ai_model', models.CharField(blank=True, help_text='AI model used (e.g., llama3.2)', max_length=100, null=True)),
-                ('ai_confidence', models.FloatField(blank=True, help_text='AI confidence score 0.0-1.0', null=True)),
-                ('ai_reasoning', models.TextField(blank=True, help_text="AI's reasoning for the action", null=True)),
-                ('task_id', models.CharField(blank=True, db_index=True, max_length=100, null=True)),
-                ('batch_id', models.CharField(blank=True, db_index=True, help_text='Groups related operations', max_length=100, null=True)),
-                ('success', models.BooleanField(default=True)),
-                ('error_message', models.TextField(blank=True, null=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "action_type",
+                    models.CharField(
+                        choices=[
+                            ("discover", "Discovered New Entity"),
+                            ("create", "Created Record"),
+                            ("update", "Updated Record"),
+                            ("link", "Linked Records"),
+                            ("enrich", "Enriched Data"),
+                            ("verify", "Verified Data"),
+                            ("skip", "Skipped (Duplicate/Invalid)"),
+                            ("error", "Error"),
+                        ],
+                        db_index=True,
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "entity_type",
+                    models.CharField(
+                        choices=[
+                            ("wrestler", "Wrestler"),
+                            ("promotion", "Promotion"),
+                            ("event", "Event"),
+                            ("match", "Match"),
+                            ("title", "Title"),
+                            ("venue", "Venue"),
+                            ("videogame", "Video Game"),
+                            ("podcast", "Podcast"),
+                            ("book", "Book"),
+                            ("special", "Special"),
+                        ],
+                        db_index=True,
+                        max_length=20,
+                    ),
+                ),
+                ("entity_name", models.CharField(max_length=255)),
+                (
+                    "entity_id",
+                    models.IntegerField(
+                        blank=True, help_text="ID of the affected record", null=True
+                    ),
+                ),
+                (
+                    "source_url",
+                    models.URLField(
+                        blank=True, help_text="Wikipedia article URL", max_length=500, null=True
+                    ),
+                ),
+                (
+                    "source_title",
+                    models.CharField(
+                        blank=True, help_text="Wikipedia article title", max_length=255, null=True
+                    ),
+                ),
+                (
+                    "data_extracted",
+                    models.JSONField(
+                        blank=True,
+                        default=dict,
+                        help_text="Factual data extracted (names, dates, numbers - no prose)",
+                    ),
+                ),
+                (
+                    "ai_model",
+                    models.CharField(
+                        blank=True,
+                        help_text="AI model used (e.g., llama3.2)",
+                        max_length=100,
+                        null=True,
+                    ),
+                ),
+                (
+                    "ai_confidence",
+                    models.FloatField(
+                        blank=True, help_text="AI confidence score 0.0-1.0", null=True
+                    ),
+                ),
+                (
+                    "ai_reasoning",
+                    models.TextField(
+                        blank=True, help_text="AI's reasoning for the action", null=True
+                    ),
+                ),
+                ("task_id", models.CharField(blank=True, db_index=True, max_length=100, null=True)),
+                (
+                    "batch_id",
+                    models.CharField(
+                        blank=True,
+                        db_index=True,
+                        help_text="Groups related operations",
+                        max_length=100,
+                        null=True,
+                    ),
+                ),
+                ("success", models.BooleanField(default=True)),
+                ("error_message", models.TextField(blank=True, null=True)),
             ],
             options={
-                'verbose_name': 'WrestleBot Log',
-                'verbose_name_plural': 'WrestleBot Logs',
-                'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['action_type', 'entity_type'], name='owdbapp_wre_action__d9390b_idx'), models.Index(fields=['created_at'], name='owdbapp_wre_created_d50535_idx'), models.Index(fields=['batch_id'], name='owdbapp_wre_batch_i_eaf522_idx'), models.Index(fields=['success'], name='owdbapp_wre_success_ff9191_idx')],
+                "verbose_name": "WrestleBot Log",
+                "verbose_name_plural": "WrestleBot Logs",
+                "ordering": ["-created_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["action_type", "entity_type"], name="owdbapp_wre_action__d9390b_idx"
+                    ),
+                    models.Index(fields=["created_at"], name="owdbapp_wre_created_d50535_idx"),
+                    models.Index(fields=["batch_id"], name="owdbapp_wre_batch_i_eaf522_idx"),
+                    models.Index(fields=["success"], name="owdbapp_wre_success_ff9191_idx"),
+                ],
             },
         ),
     ]

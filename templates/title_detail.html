@@ -169,5 +169,9 @@
 </div>
 {% endif %}
 
+{% with entity_type="title" entity=title %}
+    {% include "partials/sources_used.html" %}
+{% endwith %}
+
 <a href="{% url 'titles' %}" class="btn btn-secondary">&larr; Back to Titles</a>
 {% endblock %}

@@ -4,136 +4,260 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('owdbapp', '0002_wrestlebot_models'),
+        ("owdbapp", "0002_wrestlebot_models"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='event',
-            name='image_credit',
-            field=models.CharField(blank=True, default='', help_text='Attribution text for license compliance', max_length=500),
+            model_name="event",
+            name="image_credit",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="Attribution text for license compliance",
+                max_length=500,
+            ),
         ),
         migrations.AddField(
-            model_name='event',
-            name='image_fetched_at',
-            field=models.DateTimeField(blank=True, help_text='When the image was fetched', null=True),
+            model_name="event",
+            name="image_fetched_at",
+            field=models.DateTimeField(
+                blank=True, help_text="When the image was fetched", null=True
+            ),
         ),
         migrations.AddField(
-            model_name='event',
-            name='image_license',
-            field=models.CharField(blank=True, choices=[('cc0', 'CC0 - Public Domain'), ('cc-by', 'CC BY'), ('cc-by-sa', 'CC BY-SA'), ('pd', 'Public Domain')], default='', help_text='Creative Commons license type', max_length=20),
+            model_name="event",
+            name="image_license",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("cc0", "CC0 - Public Domain"),
+                    ("cc-by", "CC BY"),
+                    ("cc-by-sa", "CC BY-SA"),
+                    ("pd", "Public Domain"),
+                ],
+                default="",
+                help_text="Creative Commons license type",
+                max_length=20,
+            ),
         ),
         migrations.AddField(
-            model_name='event',
-            name='image_source_url',
-            field=models.URLField(blank=True, help_text='URL to the original source page (e.g., Wikimedia Commons)', max_length=500, null=True),
+            model_name="event",
+            name="image_source_url",
+            field=models.URLField(
+                blank=True,
+                help_text="URL to the original source page (e.g., Wikimedia Commons)",
+                max_length=500,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='event',
-            name='image_url',
-            field=models.URLField(blank=True, help_text='URL to the image file', max_length=500, null=True),
+            model_name="event",
+            name="image_url",
+            field=models.URLField(
+                blank=True, help_text="URL to the image file", max_length=500, null=True
+            ),
         ),
         migrations.AddField(
-            model_name='promotion',
-            name='image_credit',
-            field=models.CharField(blank=True, default='', help_text='Attribution text for license compliance', max_length=500),
+            model_name="promotion",
+            name="image_credit",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="Attribution text for license compliance",
+                max_length=500,
+            ),
         ),
         migrations.AddField(
-            model_name='promotion',
-            name='image_fetched_at',
-            field=models.DateTimeField(blank=True, help_text='When the image was fetched', null=True),
+            model_name="promotion",
+            name="image_fetched_at",
+            field=models.DateTimeField(
+                blank=True, help_text="When the image was fetched", null=True
+            ),
         ),
         migrations.AddField(
-            model_name='promotion',
-            name='image_license',
-            field=models.CharField(blank=True, choices=[('cc0', 'CC0 - Public Domain'), ('cc-by', 'CC BY'), ('cc-by-sa', 'CC BY-SA'), ('pd', 'Public Domain')], default='', help_text='Creative Commons license type', max_length=20),
+            model_name="promotion",
+            name="image_license",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("cc0", "CC0 - Public Domain"),
+                    ("cc-by", "CC BY"),
+                    ("cc-by-sa", "CC BY-SA"),
+                    ("pd", "Public Domain"),
+                ],
+                default="",
+                help_text="Creative Commons license type",
+                max_length=20,
+            ),
         ),
         migrations.AddField(
-            model_name='promotion',
-            name='image_source_url',
-            field=models.URLField(blank=True, help_text='URL to the original source page (e.g., Wikimedia Commons)', max_length=500, null=True),
+            model_name="promotion",
+            name="image_source_url",
+            field=models.URLField(
+                blank=True,
+                help_text="URL to the original source page (e.g., Wikimedia Commons)",
+                max_length=500,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='promotion',
-            name='image_url',
-            field=models.URLField(blank=True, help_text='URL to the image file', max_length=500, null=True),
+            model_name="promotion",
+            name="image_url",
+            field=models.URLField(
+                blank=True, help_text="URL to the image file", max_length=500, null=True
+            ),
         ),
         migrations.AddField(
-            model_name='title',
-            name='image_credit',
-            field=models.CharField(blank=True, default='', help_text='Attribution text for license compliance', max_length=500),
+            model_name="title",
+            name="image_credit",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="Attribution text for license compliance",
+                max_length=500,
+            ),
         ),
         migrations.AddField(
-            model_name='title',
-            name='image_fetched_at',
-            field=models.DateTimeField(blank=True, help_text='When the image was fetched', null=True),
+            model_name="title",
+            name="image_fetched_at",
+            field=models.DateTimeField(
+                blank=True, help_text="When the image was fetched", null=True
+            ),
         ),
         migrations.AddField(
-            model_name='title',
-            name='image_license',
-            field=models.CharField(blank=True, choices=[('cc0', 'CC0 - Public Domain'), ('cc-by', 'CC BY'), ('cc-by-sa', 'CC BY-SA'), ('pd', 'Public Domain')], default='', help_text='Creative Commons license type', max_length=20),
+            model_name="title",
+            name="image_license",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("cc0", "CC0 - Public Domain"),
+                    ("cc-by", "CC BY"),
+                    ("cc-by-sa", "CC BY-SA"),
+                    ("pd", "Public Domain"),
+                ],
+                default="",
+                help_text="Creative Commons license type",
+                max_length=20,
+            ),
         ),
         migrations.AddField(
-            model_name='title',
-            name='image_source_url',
-            field=models.URLField(blank=True, help_text='URL to the original source page (e.g., Wikimedia Commons)', max_length=500, null=True),
+            model_name="title",
+            name="image_source_url",
+            field=models.URLField(
+                blank=True,
+                help_text="URL to the original source page (e.g., Wikimedia Commons)",
+                max_length=500,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='title',
-            name='image_url',
-            field=models.URLField(blank=True, help_text='URL to the image file', max_length=500, null=True),
+            model_name="title",
+            name="image_url",
+            field=models.URLField(
+                blank=True, help_text="URL to the image file", max_length=500, null=True
+            ),
         ),
         migrations.AddField(
-            model_name='venue',
-            name='image_credit',
-            field=models.CharField(blank=True, default='', help_text='Attribution text for license compliance', max_length=500),
+            model_name="venue",
+            name="image_credit",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="Attribution text for license compliance",
+                max_length=500,
+            ),
         ),
         migrations.AddField(
-            model_name='venue',
-            name='image_fetched_at',
-            field=models.DateTimeField(blank=True, help_text='When the image was fetched', null=True),
+            model_name="venue",
+            name="image_fetched_at",
+            field=models.DateTimeField(
+                blank=True, help_text="When the image was fetched", null=True
+            ),
         ),
         migrations.AddField(
-            model_name='venue',
-            name='image_license',
-            field=models.CharField(blank=True, choices=[('cc0', 'CC0 - Public Domain'), ('cc-by', 'CC BY'), ('cc-by-sa', 'CC BY-SA'), ('pd', 'Public Domain')], default='', help_text='Creative Commons license type', max_length=20),
+            model_name="venue",
+            name="image_license",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("cc0", "CC0 - Public Domain"),
+                    ("cc-by", "CC BY"),
+                    ("cc-by-sa", "CC BY-SA"),
+                    ("pd", "Public Domain"),
+                ],
+                default="",
+                help_text="Creative Commons license type",
+                max_length=20,
+            ),
         ),
         migrations.AddField(
-            model_name='venue',
-            name='image_source_url',
-            field=models.URLField(blank=True, help_text='URL to the original source page (e.g., Wikimedia Commons)', max_length=500, null=True),
+            model_name="venue",
+            name="image_source_url",
+            field=models.URLField(
+                blank=True,
+                help_text="URL to the original source page (e.g., Wikimedia Commons)",
+                max_length=500,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='venue',
-            name='image_url',
-            field=models.URLField(blank=True, help_text='URL to the image file', max_length=500, null=True),
+            model_name="venue",
+            name="image_url",
+            field=models.URLField(
+                blank=True, help_text="URL to the image file", max_length=500, null=True
+            ),
         ),
         migrations.AddField(
-            model_name='wrestler',
-            name='image_credit',
-            field=models.CharField(blank=True, default='', help_text='Attribution text for license compliance', max_length=500),
+            model_name="wrestler",
+            name="image_credit",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="Attribution text for license compliance",
+                max_length=500,
+            ),
         ),
         migrations.AddField(
-            model_name='wrestler',
-            name='image_fetched_at',
-            field=models.DateTimeField(blank=True, help_text='When the image was fetched', null=True),
+            model_name="wrestler",
+            name="image_fetched_at",
+            field=models.DateTimeField(
+                blank=True, help_text="When the image was fetched", null=True
+            ),
         ),
         migrations.AddField(
-            model_name='wrestler',
-            name='image_license',
-            field=models.CharField(blank=True, choices=[('cc0', 'CC0 - Public Domain'), ('cc-by', 'CC BY'), ('cc-by-sa', 'CC BY-SA'), ('pd', 'Public Domain')], default='', help_text='Creative Commons license type', max_length=20),
+            model_name="wrestler",
+            name="image_license",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("cc0", "CC0 - Public Domain"),
+                    ("cc-by", "CC BY"),
+                    ("cc-by-sa", "CC BY-SA"),
+                    ("pd", "Public Domain"),
+                ],
+                default="",
+                help_text="Creative Commons license type",
+                max_length=20,
+            ),
         ),
         migrations.AddField(
-            model_name='wrestler',
-            name='image_source_url',
-            field=models.URLField(blank=True, help_text='URL to the original source page (e.g., Wikimedia Commons)', max_length=500, null=True),
+            model_name="wrestler",
+            name="image_source_url",
+            field=models.URLField(
+                blank=True,
+                help_text="URL to the original source page (e.g., Wikimedia Commons)",
+                max_length=500,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='wrestler',
-            name='image_url',
-            field=models.URLField(blank=True, help_text='URL to the image file', max_length=500, null=True),
+            model_name="wrestler",
+            name="image_url",
+            field=models.URLField(
+                blank=True, help_text="URL to the image file", max_length=500, null=True
+            ),
         ),
         # Note: UserProfile and EmailVerificationToken were created in a previous migration
         # and already exist in the database, so they are not recreated here.

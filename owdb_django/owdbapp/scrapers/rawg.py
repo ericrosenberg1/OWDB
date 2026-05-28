@@ -54,9 +54,7 @@ class RAWGClient(APIClient):
     ]
 
     def __init__(self, api_key: Optional[str] = None):
-        api_key = api_key or os.getenv("RAWG_API_KEY") or getattr(
-            settings, "RAWG_API_KEY", None
-        )
+        api_key = api_key or os.getenv("RAWG_API_KEY") or getattr(settings, "RAWG_API_KEY", None)
         super().__init__(api_key)
 
     def _is_configured(self) -> bool:
@@ -80,12 +78,14 @@ class RAWGClient(APIClient):
         if not self._is_configured():
             return []
 
-        params = self._add_key({
-            "search": query,
-            "page": page,
-            "page_size": page_size,
-            "search_precise": "true",
-        })
+        params = self._add_key(
+            {
+                "search": query,
+                "page": page,
+                "page_size": page_size,
+                "search_precise": "true",
+            }
+        )
 
         data = self.request("/games", params=params)
         if not data:
@@ -125,12 +125,14 @@ class RAWGClient(APIClient):
         if not self._is_configured():
             return []
 
-        params = self._add_key({
-            "genres": genre,
-            "page": page,
-            "page_size": page_size,
-            "ordering": ordering,
-        })
+        params = self._add_key(
+            {
+                "genres": genre,
+                "page": page,
+                "page_size": page_size,
+                "ordering": ordering,
+            }
+        )
 
         data = self.request("/games", params=params)
         if not data:
@@ -149,11 +151,13 @@ class RAWGClient(APIClient):
         if not self._is_configured():
             return []
 
-        params = self._add_key({
-            "tags": tag,
-            "page": page,
-            "page_size": page_size,
-        })
+        params = self._add_key(
+            {
+                "tags": tag,
+                "page": page,
+                "page_size": page_size,
+            }
+        )
 
         data = self.request("/games", params=params)
         if not data:

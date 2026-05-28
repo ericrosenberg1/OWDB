@@ -325,9 +325,7 @@ class DataDeduplicator:
         if normalized in self._wrestler_cache:
             return self._wrestler_cache[normalized]
 
-        wrestlers = Wrestler.objects.filter(
-            Q(name__iexact=name) | Q(aliases__icontains=name)
-        )
+        wrestlers = Wrestler.objects.filter(Q(name__iexact=name) | Q(aliases__icontains=name))
 
         for wrestler in wrestlers:
             if DataValidator.similarity(name, wrestler.name) >= self.SIMILARITY_THRESHOLD:
@@ -348,7 +346,10 @@ class DataDeduplicator:
                         Q(name__iexact=alias) | Q(aliases__icontains=alias)
                     )
                     for wrestler in wrestlers:
-                        if DataValidator.similarity(alias, wrestler.name) >= self.SIMILARITY_THRESHOLD:
+                        if (
+                            DataValidator.similarity(alias, wrestler.name)
+                            >= self.SIMILARITY_THRESHOLD
+                        ):
                             self._wrestler_cache[normalized] = wrestler.id
                             return wrestler.id
 
@@ -396,7 +397,9 @@ class DataDeduplicator:
 
         return None
 
-    def find_duplicate_videogame(self, name: str, release_year: Optional[int] = None) -> Optional[int]:
+    def find_duplicate_videogame(
+        self, name: str, release_year: Optional[int] = None
+    ) -> Optional[int]:
         """Find a duplicate video game by name and optional year."""
         from ..models import VideoGame
 
@@ -424,7 +427,9 @@ class DataDeduplicator:
 
         return None
 
-    def find_duplicate_book(self, title: str, author: Optional[str] = None, isbn: Optional[str] = None) -> Optional[int]:
+    def find_duplicate_book(
+        self, title: str, author: Optional[str] = None, isbn: Optional[str] = None
+    ) -> Optional[int]:
         """Find a duplicate book by title, author, or ISBN."""
         from ..models import Book
 
@@ -464,7 +469,9 @@ class DataDeduplicator:
 
         return None
 
-    def find_duplicate_special(self, title: str, release_year: Optional[int] = None) -> Optional[int]:
+    def find_duplicate_special(
+        self, title: str, release_year: Optional[int] = None
+    ) -> Optional[int]:
         """Find a duplicate special (movie/TV) by title and year."""
         from ..models import Special
 
@@ -650,9 +657,7 @@ class ScraperCoordinator:
 
         promotion = None
         if cleaned.get("promotion_name"):
-            promotion_id = self.deduplicator.find_duplicate_promotion(
-                cleaned["promotion_name"]
-            )
+            promotion_id = self.deduplicator.find_duplicate_promotion(cleaned["promotion_name"])
             if promotion_id:
                 promotion = Promotion.objects.get(id=promotion_id)
             else:

@@ -23,11 +23,12 @@ from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class APIStatus(Enum):
     """API health status."""
+
     HEALTHY = "healthy"
     DEGRADED = "degraded"
     UNAVAILABLE = "unavailable"
@@ -36,6 +37,7 @@ class APIStatus(Enum):
 @dataclass
 class APIError:
     """Represents an API error for reporting."""
+
     api_name: str
     endpoint: str
     error_type: str
@@ -70,12 +72,10 @@ class ErrorReporter:
 
         # Keep only recent errors
         if len(errors) > cls.MAX_ERRORS:
-            errors = errors[-cls.MAX_ERRORS:]
+            errors = errors[-cls.MAX_ERRORS :]
 
         cache.set(cls.CACHE_KEY, errors, timeout=86400)  # 24 hours
-        logger.warning(
-            f"API Error [{error.api_name}] {error.error_type}: {error.message}"
-        )
+        logger.warning(f"API Error [{error.api_name}] {error.error_type}: {error.message}")
 
     @classmethod
     def get_errors(cls, api_name: Optional[str] = None) -> List[Dict]:
@@ -119,11 +119,14 @@ class CircuitBreaker:
 
     def _get_state(self) -> Dict:
         """Get current circuit breaker state."""
-        return cache.get(self._cache_key, {
-            "failures": 0,
-            "state": "closed",
-            "last_failure": None,
-        })
+        return cache.get(
+            self._cache_key,
+            {
+                "failures": 0,
+                "state": "closed",
+                "last_failure": None,
+            },
+        )
 
     def _set_state(self, state: Dict):
         """Set circuit breaker state."""
@@ -367,10 +370,12 @@ class APIClient:
     def _create_session(self) -> requests.Session:
         """Create a configured requests session."""
         session = requests.Session()
-        session.headers.update({
-            "User-Agent": "OWDBBot/1.0 (+https://wrestlingdb.org/about/bot)",
-            "Accept": "application/json",
-        })
+        session.headers.update(
+            {
+                "User-Agent": "OWDBBot/1.0 (+https://wrestlingdb.org/about/bot)",
+                "Accept": "application/json",
+            }
+        )
         return session
 
     def _get_cache_key(self, endpoint: str, params: Dict) -> str:
@@ -459,9 +464,7 @@ class APIClient:
                 # Handle rate limit responses
                 if response.status_code == 429:
                     retry_after = int(response.headers.get("Retry-After", 60))
-                    logger.warning(
-                        f"{self.API_NAME} rate limited, waiting {retry_after}s"
-                    )
+                    logger.warning(f"{self.API_NAME} rate limited, waiting {retry_after}s")
                     time.sleep(min(retry_after, 300))
                     continue
 
@@ -505,7 +508,7 @@ class APIClient:
 
             # Wait before retry with exponential backoff
             if attempt < self.MAX_RETRIES - 1:
-                wait_time = self.RETRY_BACKOFF ** attempt
+                wait_time = self.RETRY_BACKOFF**attempt
                 time.sleep(wait_time)
 
         # All retries failed

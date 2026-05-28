@@ -144,11 +144,11 @@ class WikipediaScraper(BaseScraper):
 
     def _get_categories_for_type(self, category_type: str) -> list:
         """Get the category list for a given type."""
-        if category_type == 'wrestler':
+        if category_type == "wrestler":
             return self.WRESTLER_CATEGORIES
-        elif category_type == 'promotion':
+        elif category_type == "promotion":
             return self.PROMOTION_CATEGORIES
-        elif category_type == 'event':
+        elif category_type == "event":
             return self.EVENT_CATEGORIES
         else:
             raise ValueError(f"Unknown category type: {category_type}")
@@ -157,18 +157,16 @@ class WikipediaScraper(BaseScraper):
         """Initialize the Wikipedia scraper with proper API settings."""
         super().__init__()
         # Update session headers for Wikipedia API requirements
-        self.session.headers.update({
-            "User-Agent": self.USER_AGENT,
-            "Api-User-Agent": self.USER_AGENT,  # Backup header per Wikimedia docs
-            "Accept": "application/json",
-            "Accept-Encoding": "gzip, deflate",  # Wikimedia recommends gzip
-        })
+        self.session.headers.update(
+            {
+                "User-Agent": self.USER_AGENT,
+                "Api-User-Agent": self.USER_AGENT,  # Backup header per Wikimedia docs
+                "Accept": "application/json",
+                "Accept-Encoding": "gzip, deflate",  # Wikimedia recommends gzip
+            }
+        )
 
-    def _api_request(
-        self,
-        params: Dict[str, Any],
-        use_maxlag: bool = True
-    ) -> Optional[Dict]:
+    def _api_request(self, params: Dict[str, Any], use_maxlag: bool = True) -> Optional[Dict]:
         """
         Make a request to the Wikipedia Action API.
 
@@ -207,9 +205,7 @@ class WikipediaScraper(BaseScraper):
                     wait_time = int(retry_after)
                 except ValueError:
                     wait_time = 5
-                logger.warning(
-                    f"Wikipedia maxlag exceeded, server busy. Waiting {wait_time}s"
-                )
+                logger.warning(f"Wikipedia maxlag exceeded, server busy. Waiting {wait_time}s")
                 time.sleep(wait_time)
                 return None
 
@@ -220,9 +216,7 @@ class WikipediaScraper(BaseScraper):
                     wait_time = int(retry_after)
                 except ValueError:
                     wait_time = 60
-                logger.warning(
-                    f"Wikipedia rate limit hit. Waiting {wait_time}s"
-                )
+                logger.warning(f"Wikipedia rate limit hit. Waiting {wait_time}s")
                 time.sleep(min(wait_time, 300))  # Cap at 5 minutes
                 return None
 
@@ -240,9 +234,7 @@ class WikipediaScraper(BaseScraper):
                     lag_match = re.search(r"(\d+) seconds", error_info)
                     if lag_match:
                         wait_time = int(lag_match.group(1))
-                    logger.warning(
-                        f"Wikipedia maxlag error: {error_info}. Waiting {wait_time}s"
-                    )
+                    logger.warning(f"Wikipedia maxlag error: {error_info}. Waiting {wait_time}s")
                     time.sleep(wait_time)
                     return None
 
@@ -270,11 +262,7 @@ class WikipediaScraper(BaseScraper):
         """URL-encode API parameters."""
         return "&".join(f"{k}={quote(str(v))}" for k, v in params.items())
 
-    def get_multiple_pages_info(
-        self,
-        titles: List[str],
-        props: str = "info"
-    ) -> Dict[str, Dict]:
+    def get_multiple_pages_info(self, titles: List[str], props: str = "info") -> Dict[str, Dict]:
         """
         Batch fetch information for multiple pages using pipe separator.
 
@@ -296,7 +284,7 @@ class WikipediaScraper(BaseScraper):
         batch_size = 50
 
         for i in range(0, len(titles), batch_size):
-            batch = titles[i:i + batch_size]
+            batch = titles[i : i + batch_size]
             titles_param = "|".join(batch)
 
             params = {
@@ -514,10 +502,7 @@ class WikipediaScraper(BaseScraper):
         return event
 
     def scrape_wrestlers(
-        self,
-        limit: int = 100,
-        category_index: int = None,
-        rotate_category: bool = False
+        self, limit: int = 100, category_index: int = None, rotate_category: bool = False
     ) -> List[Dict[str, Any]]:
         """
         Scrape wrestler data from Wikipedia.
@@ -542,7 +527,7 @@ class WikipediaScraper(BaseScraper):
             categories = [self.WRESTLER_CATEGORIES[category_index % len(self.WRESTLER_CATEGORIES)]]
         elif rotate_category:
             # Auto-rotation mode - get next category and scrape just that one
-            idx = self.get_next_category_index('wrestler')
+            idx = self.get_next_category_index("wrestler")
             categories = [self.WRESTLER_CATEGORIES[idx]]
             logger.info(f"Rotating to wrestler category {idx}: {categories[0]}")
         else:
@@ -565,10 +550,7 @@ class WikipediaScraper(BaseScraper):
                 seen_titles.add(title)
 
                 # Skip disambiguation and list pages
-                if any(
-                    x in title.lower()
-                    for x in ["(disambiguation)", "list of", "category:"]
-                ):
+                if any(x in title.lower() for x in ["(disambiguation)", "list of", "category:"]):
                     continue
 
                 wrestler = self.parse_wrestler_page(title)
@@ -580,10 +562,7 @@ class WikipediaScraper(BaseScraper):
         return wrestlers
 
     def scrape_promotions(
-        self,
-        limit: int = 50,
-        category_index: int = None,
-        rotate_category: bool = False
+        self, limit: int = 50, category_index: int = None, rotate_category: bool = False
     ) -> List[Dict[str, Any]]:
         """
         Scrape promotion data from Wikipedia.
@@ -602,9 +581,11 @@ class WikipediaScraper(BaseScraper):
 
         # Determine which categories to scrape
         if category_index is not None:
-            categories = [self.PROMOTION_CATEGORIES[category_index % len(self.PROMOTION_CATEGORIES)]]
+            categories = [
+                self.PROMOTION_CATEGORIES[category_index % len(self.PROMOTION_CATEGORIES)]
+            ]
         elif rotate_category:
-            idx = self.get_next_category_index('promotion')
+            idx = self.get_next_category_index("promotion")
             categories = [self.PROMOTION_CATEGORIES[idx]]
             logger.info(f"Rotating to promotion category {idx}: {categories[0]}")
         else:
@@ -626,10 +607,7 @@ class WikipediaScraper(BaseScraper):
                 seen_titles.add(title)
 
                 # Skip disambiguation and list pages
-                if any(
-                    x in title.lower()
-                    for x in ["(disambiguation)", "list of", "category:"]
-                ):
+                if any(x in title.lower() for x in ["(disambiguation)", "list of", "category:"]):
                     continue
 
                 promotion = self.parse_promotion_page(title)
@@ -641,10 +619,7 @@ class WikipediaScraper(BaseScraper):
         return promotions
 
     def scrape_events(
-        self,
-        limit: int = 100,
-        category_index: int = None,
-        rotate_category: bool = False
+        self, limit: int = 100, category_index: int = None, rotate_category: bool = False
     ) -> List[Dict[str, Any]]:
         """
         Scrape event data from Wikipedia.
@@ -665,7 +640,7 @@ class WikipediaScraper(BaseScraper):
         if category_index is not None:
             categories = [self.EVENT_CATEGORIES[category_index % len(self.EVENT_CATEGORIES)]]
         elif rotate_category:
-            idx = self.get_next_category_index('event')
+            idx = self.get_next_category_index("event")
             categories = [self.EVENT_CATEGORIES[idx]]
             logger.info(f"Rotating to event category {idx}: {categories[0]}")
         else:
@@ -687,10 +662,7 @@ class WikipediaScraper(BaseScraper):
                 seen_titles.add(title)
 
                 # Skip disambiguation and list pages
-                if any(
-                    x in title.lower()
-                    for x in ["(disambiguation)", "list of", "category:"]
-                ):
+                if any(x in title.lower() for x in ["(disambiguation)", "list of", "category:"]):
                     continue
 
                 event = self.parse_event_page(title)

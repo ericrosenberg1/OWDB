@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load linking_tags %}
+{% load verification_tags %}
 
 {% block content %}
 <div class="detail-header">
@@ -44,21 +45,27 @@
     </div>
 </div>
 
-<!-- Stats Cards -->
-{% if stats %}
+<!-- Stats Cards — each card auto-hides when its number is zero/missing. -->
+{% if stats.total_events or stats.total_wrestlers or stats.total_titles or stats.active_titles %}
 <div class="stats-row mb-4">
+    {% if stats.total_events %}
     <div class="stat-card">
-        <div class="stat-value">{{ stats.total_events|default:0 }}</div>
+        <div class="stat-value">{{ stats.total_events }}</div>
         <div class="stat-label">Events</div>
     </div>
+    {% endif %}
+    {% if stats.total_wrestlers %}
     <div class="stat-card">
-        <div class="stat-value">{{ stats.total_wrestlers|default:0 }}</div>
+        <div class="stat-value">{{ stats.total_wrestlers }}</div>
         <div class="stat-label">Wrestlers</div>
     </div>
+    {% endif %}
+    {% if stats.total_titles %}
     <div class="stat-card">
-        <div class="stat-value">{{ stats.total_titles|default:0 }}</div>
+        <div class="stat-value">{{ stats.total_titles }}</div>
         <div class="stat-label">Championships</div>
     </div>
+    {% endif %}
     {% if stats.active_titles %}
     <div class="stat-card">
         <div class="stat-value">{{ stats.active_titles }}</div>
@@ -189,6 +196,37 @@
         </div>
         {% endif %}
 
+        {# ── Video games featuring this promotion ───────────────────── #}
+        {% with promo_games=promotion.video_games.all %}
+        {% if promo_games %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Video Games</span>
+                <span class="badge bg-secondary">{{ promo_games|length }}</span>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for game in promo_games %}
+                <li class="list-group-item bg-transparent d-flex align-items-center gap-3">
+                    {% if game.image_url %}
+                        <img src="{{ game.image_url }}" alt=""
+                             style="height: 48px; width: 36px; object-fit: cover; border-radius: 3px;"
+                             loading="lazy">
+                    {% else %}
+                        <span class="fs-4" aria-hidden="true">🎮</span>
+                    {% endif %}
+                    <div class="flex-grow-1">
+                        <a href="{% url 'game_detail' game.pk %}" class="fw-semibold text-decoration-none">{{ game.name }}</a>
+                        <div class="small text-muted">
+                            {{ game.release_year|default:"" }}{% if game.systems %} · {{ game.systems|truncatechars:30 }}{% endif %}
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% endwith %}
+
         {% if promotion.nicknames %}
         <div class="card mb-4">
             <div class="card-header">Also Known As</div>
@@ -199,6 +237,12 @@
         {% endif %}
     </div>
 </div>
+
+{% verification_stamp promotion %}
+
+{% with entity_type="promotion" entity=promotion %}
+    {% include "partials/sources_used.html" %}
+{% endwith %}
 
 <a href="{% url 'promotions' %}" class="btn btn-secondary">&larr; Back to Promotions</a>
 {% endblock %}

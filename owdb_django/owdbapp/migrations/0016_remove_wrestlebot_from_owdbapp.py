@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
     """
 
     dependencies = [
-        ('owdbapp', '0015_fix_existing_m2m_fields'),
+        ("owdbapp", "0015_fix_existing_m2m_fields"),
     ]
 
     operations = [
@@ -26,9 +26,9 @@ class Migration(migrations.Migration):
         # state without touching the actual database tables
         migrations.SeparateDatabaseAndState(
             state_operations=[
-                migrations.DeleteModel(name='WrestleBotActivity'),
-                migrations.DeleteModel(name='WrestleBotConfig'),
-                migrations.DeleteModel(name='WrestleBotStats'),
+                migrations.DeleteModel(name="WrestleBotActivity"),
+                migrations.DeleteModel(name="WrestleBotConfig"),
+                migrations.DeleteModel(name="WrestleBotStats"),
             ],
             database_operations=[
                 # No database operations - tables stay as-is

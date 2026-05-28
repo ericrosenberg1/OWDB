@@ -1,0 +1,49 @@
+# Keep the build context lean. The SQLite DB ships via a host bind mount,
+# not baked into the image.
+
+# Source DBs (mounted at runtime)
+db.sqlite3
+db.sqlite3-journal
+db.sqlite3-wal
+db.sqlite3-shm
+
+# Local Python state
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# IDE / OS metadata
+.idea/
+.vscode/
+.DS_Store
+*.swp
+
+# Local secrets — production .env lives outside the image; sample stays in
+.env
+.env.local
+.env.development
+.env.test
+
+# Heavy local artefacts
+node_modules/
+static_collected/
+media/
+.cloudflared/
+cloudflared/
+
+# Git metadata — image doesn't need history
+.git/
+.gitignore
+
+# Test/CI scratch
+.coverage
+htmlcov/
+.tox/
+
+# Backups created during this session
+*.bak
+*.backup
+db.sqlite3.bak*

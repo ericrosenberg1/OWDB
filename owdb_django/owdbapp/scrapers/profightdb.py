@@ -120,9 +120,7 @@ class ProFightDBScraper(BaseScraper):
             wrestler["name"] = name
 
         # Look for info table or details section
-        info_table = soup.find("table", class_="info") or soup.find(
-            "div", class_="wrestler-info"
-        )
+        info_table = soup.find("table", class_="info") or soup.find("div", class_="wrestler-info")
 
         if info_table:
             for row in info_table.find_all("tr"):
@@ -173,9 +171,7 @@ class ProFightDBScraper(BaseScraper):
             event["name"] = clean_text(title.get_text())
 
         # Look for event info
-        info_section = soup.find("div", class_="event-info") or soup.find(
-            "table", class_="info"
-        )
+        info_section = soup.find("div", class_="event-info") or soup.find("table", class_="info")
 
         if info_section:
             text = info_section.get_text()
@@ -186,9 +182,7 @@ class ProFightDBScraper(BaseScraper):
                 event["date"] = date
 
             # Try to extract venue
-            venue_match = re.search(
-                r"(?:venue|arena|location):\s*([^,\n]+)", text, re.IGNORECASE
-            )
+            venue_match = re.search(r"(?:venue|arena|location):\s*([^,\n]+)", text, re.IGNORECASE)
             if venue_match:
                 event["venue_name"] = clean_text(venue_match.group(1))
 
@@ -196,17 +190,13 @@ class ProFightDBScraper(BaseScraper):
             attendance_match = re.search(r"attendance:\s*([\d,]+)", text, re.IGNORECASE)
             if attendance_match:
                 try:
-                    event["attendance"] = int(
-                        attendance_match.group(1).replace(",", "")
-                    )
+                    event["attendance"] = int(attendance_match.group(1).replace(",", ""))
                 except ValueError:
                     pass
 
         # Parse match card
         matches = []
-        match_table = soup.find("table", class_="matches") or soup.find(
-            "div", class_="match-card"
-        )
+        match_table = soup.find("table", class_="matches") or soup.find("div", class_="match-card")
 
         if match_table:
             for row in match_table.find_all("tr"):
@@ -332,9 +322,7 @@ class ProFightDBScraper(BaseScraper):
             if len(wrestlers) >= limit:
                 break
 
-            wrestler_list = self.get_wrestler_list(
-                letter, limit=limit - len(wrestlers)
-            )
+            wrestler_list = self.get_wrestler_list(letter, limit=limit - len(wrestlers))
 
             for wrestler_info in wrestler_list:
                 if len(wrestlers) >= limit:

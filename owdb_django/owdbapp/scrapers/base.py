@@ -36,8 +36,8 @@ class RobotsChecker:
     # These are whitelisted even if robots.txt blocks them
     API_WHITELIST_PATTERNS = [
         # Wikipedia API - the official way to access Wikipedia data
-        r'https?://[^/]*\.wikipedia\.org/w/api\.php',
-        r'https?://[^/]*\.wikipedia\.org/api/',
+        r"https?://[^/]*\.wikipedia\.org/w/api\.php",
+        r"https?://[^/]*\.wikipedia\.org/api/",
     ]
 
     def __init__(self, user_agent: str = "OWDBBot/1.0"):
@@ -126,6 +126,7 @@ class RobotsChecker:
 
 class ScraperUnavailableError(Exception):
     """Raised when a scraper source is completely unavailable (e.g., SSL errors, site down)."""
+
     pass
 
 
@@ -223,12 +224,12 @@ class BaseScraper(ABC):
         """Check if an error indicates the source is completely unavailable."""
         error_str = str(error).lower()
         fatal_indicators = [
-            'ssl',
-            'certificate',
-            'handshake',
-            'connection refused',
-            'name or service not known',
-            'no route to host',
+            "ssl",
+            "certificate",
+            "handshake",
+            "connection refused",
+            "name or service not known",
+            "no route to host",
         ]
         return any(indicator in error_str for indicator in fatal_indicators)
 
@@ -270,7 +271,7 @@ class BaseScraper(ABC):
 
             except requests.RequestException as e:
                 last_error = e
-                wait_time = self.RETRY_BACKOFF ** attempt
+                wait_time = self.RETRY_BACKOFF**attempt
                 logger.warning(
                     f"Request failed for {url} (attempt {attempt + 1}/{self.MAX_RETRIES}): {e}"
                 )
@@ -279,9 +280,7 @@ class BaseScraper(ABC):
                 if self._is_fatal_error(e):
                     logger.error(f"Fatal error for {self.SOURCE_NAME}: {e}")
                     self._record_failure(is_fatal=True)
-                    raise ScraperUnavailableError(
-                        f"{self.SOURCE_NAME} unavailable: {e}"
-                    )
+                    raise ScraperUnavailableError(f"{self.SOURCE_NAME} unavailable: {e}")
 
                 if attempt < self.MAX_RETRIES - 1:
                     time.sleep(wait_time)
@@ -291,9 +290,7 @@ class BaseScraper(ABC):
         self._check_circuit_breaker()
         return None
 
-    def get_cached_or_fetch(
-        self, url: str, cache_ttl: int = 3600
-    ) -> Optional[str]:
+    def get_cached_or_fetch(self, url: str, cache_ttl: int = 3600) -> Optional[str]:
         """
         Get page content from cache or fetch it.
         Returns the HTML content or None.
@@ -349,7 +346,7 @@ def retry_on_failure(max_retries: int = 3, backoff: float = 2.0):
                 except Exception as e:
                     last_exception = e
                     if attempt < max_retries - 1:
-                        wait_time = backoff ** attempt
+                        wait_time = backoff**attempt
                         logger.warning(
                             f"{func.__name__} failed (attempt {attempt + 1}): {e}, "
                             f"retrying in {wait_time}s"

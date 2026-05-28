@@ -42,47 +42,49 @@ class WikimediaCommonsClient(APIClient):
 
     # Allowed licenses (only permissive CC licenses)
     ALLOWED_LICENSES = [
-        'cc0',
-        'cc-zero',
-        'pd',
-        'public domain',
-        'cc-by',
-        'cc-by-2.0',
-        'cc-by-2.5',
-        'cc-by-3.0',
-        'cc-by-4.0',
-        'cc-by-sa',
-        'cc-by-sa-2.0',
-        'cc-by-sa-2.5',
-        'cc-by-sa-3.0',
-        'cc-by-sa-4.0',
+        "cc0",
+        "cc-zero",
+        "pd",
+        "public domain",
+        "cc-by",
+        "cc-by-2.0",
+        "cc-by-2.5",
+        "cc-by-3.0",
+        "cc-by-4.0",
+        "cc-by-sa",
+        "cc-by-sa-2.0",
+        "cc-by-sa-2.5",
+        "cc-by-sa-3.0",
+        "cc-by-sa-4.0",
     ]
 
     # License normalization map
     LICENSE_MAP = {
-        'cc0': 'cc0',
-        'cc-zero': 'cc0',
-        'pd': 'pd',
-        'public domain': 'pd',
-        'cc-by': 'cc-by',
-        'cc-by-2.0': 'cc-by',
-        'cc-by-2.5': 'cc-by',
-        'cc-by-3.0': 'cc-by',
-        'cc-by-4.0': 'cc-by',
-        'cc-by-sa': 'cc-by-sa',
-        'cc-by-sa-2.0': 'cc-by-sa',
-        'cc-by-sa-2.5': 'cc-by-sa',
-        'cc-by-sa-3.0': 'cc-by-sa',
-        'cc-by-sa-4.0': 'cc-by-sa',
+        "cc0": "cc0",
+        "cc-zero": "cc0",
+        "pd": "pd",
+        "public domain": "pd",
+        "cc-by": "cc-by",
+        "cc-by-2.0": "cc-by",
+        "cc-by-2.5": "cc-by",
+        "cc-by-3.0": "cc-by",
+        "cc-by-4.0": "cc-by",
+        "cc-by-sa": "cc-by-sa",
+        "cc-by-sa-2.0": "cc-by-sa",
+        "cc-by-sa-2.5": "cc-by-sa",
+        "cc-by-sa-3.0": "cc-by-sa",
+        "cc-by-sa-4.0": "cc-by-sa",
     }
 
     def __init__(self):
         super().__init__()
         # Override session headers for Wikimedia API
-        self.session.headers.update({
-            "User-Agent": "OWDBBot/1.0 (https://wrestlingdb.org/about/bot; contact@wrestlingdb.org) Python/requests",
-            "Accept": "application/json",
-        })
+        self.session.headers.update(
+            {
+                "User-Agent": "OWDBBot/1.0 (https://wrestlingdb.org/about/bot; contact@wrestlingdb.org) Python/requests",
+                "Accept": "application/json",
+            }
+        )
 
     def _normalize_license(self, license_str: str) -> Optional[str]:
         """Normalize license string to our standard format."""
@@ -149,23 +151,25 @@ class WikimediaCommonsClient(APIClient):
             # Get attribution/credit
             artist = extmeta.get("Artist", {}).get("value", "")
             # Clean HTML from artist field
-            artist = re.sub(r'<[^>]+>', '', artist).strip()
+            artist = re.sub(r"<[^>]+>", "", artist).strip()
 
-            results.append({
-                "title": page_data.get("title", ""),
-                "page_id": page_id,
-                "url": imageinfo.get("url"),
-                "thumb_url": imageinfo.get("thumburl"),
-                "description_url": imageinfo.get("descriptionurl"),
-                "width": imageinfo.get("width"),
-                "height": imageinfo.get("height"),
-                "mime_type": imageinfo.get("mime"),
-                "license": self._normalize_license(license_short),
-                "license_raw": license_short,
-                "license_url": license_url,
-                "artist": artist,
-                "description": extmeta.get("ImageDescription", {}).get("value", ""),
-            })
+            results.append(
+                {
+                    "title": page_data.get("title", ""),
+                    "page_id": page_id,
+                    "url": imageinfo.get("url"),
+                    "thumb_url": imageinfo.get("thumburl"),
+                    "description_url": imageinfo.get("descriptionurl"),
+                    "width": imageinfo.get("width"),
+                    "height": imageinfo.get("height"),
+                    "mime_type": imageinfo.get("mime"),
+                    "license": self._normalize_license(license_short),
+                    "license_raw": license_short,
+                    "license_url": license_url,
+                    "artist": artist,
+                    "description": extmeta.get("ImageDescription", {}).get("value", ""),
+                }
+            )
 
         return results
 
@@ -209,7 +213,7 @@ class WikimediaCommonsClient(APIClient):
                 return None
 
             artist = extmeta.get("Artist", {}).get("value", "")
-            artist = re.sub(r'<[^>]+>', '', artist).strip()
+            artist = re.sub(r"<[^>]+>", "", artist).strip()
 
             return {
                 "title": page_data.get("title", ""),
@@ -229,7 +233,9 @@ class WikimediaCommonsClient(APIClient):
 
         return None
 
-    def find_wrestler_image(self, name: str, real_name: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def find_wrestler_image(
+        self, name: str, real_name: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
         """
         Find a CC-licensed image for a wrestler.
 
@@ -263,7 +269,10 @@ class WikimediaCommonsClient(APIClient):
             for result in results:
                 # Skip logos, belts, etc.
                 title_lower = result.get("title", "").lower()
-                if any(skip in title_lower for skip in ["logo", "belt", "championship", "title", "arena", "stadium"]):
+                if any(
+                    skip in title_lower
+                    for skip in ["logo", "belt", "championship", "title", "arena", "stadium"]
+                ):
                     continue
 
                 # Prefer portrait-oriented images
@@ -282,7 +291,9 @@ class WikimediaCommonsClient(APIClient):
         cache.set(cache_key, {}, timeout=self.CACHE_TTL)
         return None
 
-    def find_promotion_image(self, name: str, abbreviation: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def find_promotion_image(
+        self, name: str, abbreviation: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
         """
         Find a CC-licensed image/logo for a promotion.
 
@@ -318,7 +329,9 @@ class WikimediaCommonsClient(APIClient):
         cache.set(cache_key, {}, timeout=self.CACHE_TTL)
         return None
 
-    def find_venue_image(self, name: str, location: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def find_venue_image(
+        self, name: str, location: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
         """
         Find a CC-licensed image for a venue.
 
@@ -366,7 +379,9 @@ class WikimediaCommonsClient(APIClient):
         cache.set(cache_key, {}, timeout=self.CACHE_TTL)
         return None
 
-    def find_event_image(self, name: str, promotion: Optional[str] = None, year: Optional[int] = None) -> Optional[Dict[str, Any]]:
+    def find_event_image(
+        self, name: str, promotion: Optional[str] = None, year: Optional[int] = None
+    ) -> Optional[Dict[str, Any]]:
         """
         Find a CC-licensed image for an event.
 
@@ -390,11 +405,13 @@ class WikimediaCommonsClient(APIClient):
             if promotion:
                 queries.append(f'"{name}" {promotion} {year}')
 
-        queries.extend([
-            f'"{name}" wrestling',
-            f'"{name}" logo',
-            name,
-        ])
+        queries.extend(
+            [
+                f'"{name}" wrestling',
+                f'"{name}" logo',
+                name,
+            ]
+        )
 
         for query in queries:
             results = self.search_images(query, limit=5)
@@ -406,7 +423,9 @@ class WikimediaCommonsClient(APIClient):
         cache.set(cache_key, {}, timeout=self.CACHE_TTL)
         return None
 
-    def find_title_image(self, name: str, promotion: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def find_title_image(
+        self, name: str, promotion: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
         """
         Find a CC-licensed image for a championship title.
 

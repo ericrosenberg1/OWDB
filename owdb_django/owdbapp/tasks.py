@@ -25,6 +25,7 @@ IMAGE_FETCH_HARD_LIMIT = 7 * 60  # 7 minutes hard kill
 # Scraping Tasks
 # =============================================================================
 
+
 @shared_task(
     bind=True,
     max_retries=3,
@@ -388,6 +389,7 @@ def scrape_profightdb_events(self, limit: int = 25):
 # API Tasks - Movies, Games, Books, Podcasts
 # =============================================================================
 
+
 @shared_task(bind=True, max_retries=3, default_retry_delay=600)
 def fetch_tmdb_specials(self, limit: int = 30):
     """Fetch wrestling movies and TV shows from TMDB."""
@@ -542,6 +544,7 @@ def fetch_podcastindex_podcasts(self, limit: int = 30):
 # Master Orchestration Tasks
 # =============================================================================
 
+
 @shared_task
 def run_all_scrapers():
     """
@@ -636,10 +639,7 @@ def reset_daily_api_limits():
     from django.utils import timezone
 
     today = timezone.now().date()
-    updated = APIKey.objects.filter(last_reset__lt=today).update(
-        requests_today=0,
-        last_reset=today
-    )
+    updated = APIKey.objects.filter(last_reset__lt=today).update(requests_today=0, last_reset=today)
     logger.info(f"Reset daily limits for {updated} API keys")
     return updated
 
@@ -647,23 +647,34 @@ def reset_daily_api_limits():
 @shared_task
 def warm_stats_cache():
     """Pre-compute and cache database statistics. Run every 5 minutes for real-time accuracy."""
-    from .models import Wrestler, Promotion, Event, Match, Title, Venue, VideoGame, Podcast, Book, Special
+    from .models import (
+        Wrestler,
+        Promotion,
+        Event,
+        Match,
+        Title,
+        Venue,
+        VideoGame,
+        Podcast,
+        Book,
+        Special,
+    )
 
     stats = {
-        'wrestlers': Wrestler.objects.count(),
-        'promotions': Promotion.objects.count(),
-        'events': Event.objects.count(),
-        'matches': Match.objects.count(),
-        'titles': Title.objects.count(),
-        'venues': Venue.objects.count(),
-        'video_games': VideoGame.objects.count(),
-        'podcasts': Podcast.objects.count(),
-        'books': Book.objects.count(),
-        'specials': Special.objects.count(),
+        "wrestlers": Wrestler.objects.count(),
+        "promotions": Promotion.objects.count(),
+        "events": Event.objects.count(),
+        "matches": Match.objects.count(),
+        "titles": Title.objects.count(),
+        "venues": Venue.objects.count(),
+        "video_games": VideoGame.objects.count(),
+        "podcasts": Podcast.objects.count(),
+        "books": Book.objects.count(),
+        "specials": Special.objects.count(),
     }
 
     # Cache for 10 minutes (task runs every 5 min, so always fresh)
-    cache.set('homepage_stats', stats, timeout=600)
+    cache.set("homepage_stats", stats, timeout=600)
     logger.info(f"Warmed stats cache: {stats}")
     return stats
 
@@ -676,10 +687,7 @@ def cleanup_inactive_api_keys():
     from datetime import timedelta
 
     cutoff = timezone.now() - timedelta(days=90)
-    deleted, _ = APIKey.objects.filter(
-        last_used__lt=cutoff,
-        is_paid=False
-    ).delete()
+    deleted, _ = APIKey.objects.filter(last_used__lt=cutoff, is_paid=False).delete()
 
     logger.info(f"Cleaned up {deleted} inactive API keys")
     return deleted
@@ -688,6 +696,7 @@ def cleanup_inactive_api_keys():
 # =============================================================================
 # Image Fetch Tasks (Wikimedia Commons CC Images)
 # =============================================================================
+
 
 @shared_task(
     bind=True,
@@ -721,20 +730,19 @@ def fetch_wrestler_images(self, batch_size: int = 20, refresh_old: bool = True):
         refreshed = 0
 
         # 1. First, fetch images for wrestlers without any image
-        wrestlers_no_image = Wrestler.objects.filter(
-            image_url__isnull=True
-        ).annotate(
-            match_count=Count('matches')
-        ).order_by('-match_count')[:batch_size]
+        wrestlers_no_image = (
+            Wrestler.objects.filter(image_url__isnull=True)
+            .annotate(match_count=Count("matches"))
+            .order_by("-match_count")[:batch_size]
+        )
 
         for wrestler in wrestlers_no_image:
             try:
                 result = client.find_wrestler_image(
-                    name=wrestler.name,
-                    real_name=wrestler.real_name
+                    name=wrestler.name, real_name=wrestler.real_name
                 )
 
-                if result and result.get('url'):
+                if result and result.get("url"):
                     if cache_service.cache_and_update_entity(wrestler, result, archive_old=False):
                         fetched += 1
                         logger.info(f"Fetched and cached image for wrestler: {wrestler.name}")
@@ -748,31 +756,31 @@ def fetch_wrestler_images(self, batch_size: int = 20, refresh_old: bool = True):
             remaining = batch_size - fetched
             cutoff = timezone.now() - timedelta(days=30)
 
-            wrestlers_old_image = Wrestler.objects.filter(
-                image_url__isnull=False,
-                image_fetched_at__lt=cutoff
-            ).annotate(
-                match_count=Count('matches')
-            ).order_by('image_fetched_at')[:remaining]
+            wrestlers_old_image = (
+                Wrestler.objects.filter(image_url__isnull=False, image_fetched_at__lt=cutoff)
+                .annotate(match_count=Count("matches"))
+                .order_by("image_fetched_at")[:remaining]
+            )
 
             for wrestler in wrestlers_old_image:
                 try:
                     result = client.find_wrestler_image(
-                        name=wrestler.name,
-                        real_name=wrestler.real_name
+                        name=wrestler.name, real_name=wrestler.real_name
                     )
 
-                    if result and result.get('url'):
-                        new_url = result.get('url') or result.get('thumb_url')
+                    if result and result.get("url"):
+                        new_url = result.get("url") or result.get("thumb_url")
                         # Only update if it's a different image
                         if new_url != wrestler.image_original_url:
-                            if cache_service.cache_and_update_entity(wrestler, result, archive_old=True):
+                            if cache_service.cache_and_update_entity(
+                                wrestler, result, archive_old=True
+                            ):
                                 refreshed += 1
                                 logger.info(f"Refreshed image for wrestler: {wrestler.name}")
                         else:
                             # Same image, update timestamp
                             wrestler.image_fetched_at = timezone.now()
-                            wrestler.save(update_fields=['image_fetched_at'])
+                            wrestler.save(update_fields=["image_fetched_at"])
 
                 except Exception as e:
                     logger.warning(f"Failed to refresh image for {wrestler.name}: {e}")
@@ -813,20 +821,19 @@ def fetch_promotion_images(self, batch_size: int = 10, refresh_old: bool = True)
         refreshed = 0
 
         # Get promotions without images, ordered by event count
-        promotions = Promotion.objects.filter(
-            image_url__isnull=True
-        ).annotate(
-            event_count=Count('events')
-        ).order_by('-event_count')[:batch_size]
+        promotions = (
+            Promotion.objects.filter(image_url__isnull=True)
+            .annotate(event_count=Count("events"))
+            .order_by("-event_count")[:batch_size]
+        )
 
         for promotion in promotions:
             try:
                 result = client.find_promotion_image(
-                    name=promotion.name,
-                    abbreviation=promotion.abbreviation
+                    name=promotion.name, abbreviation=promotion.abbreviation
                 )
 
-                if result and result.get('url'):
+                if result and result.get("url"):
                     if cache_service.cache_and_update_entity(promotion, result, archive_old=False):
                         fetched += 1
                         logger.info(f"Fetched and cached image for promotion: {promotion.name}")
@@ -841,24 +848,24 @@ def fetch_promotion_images(self, batch_size: int = 10, refresh_old: bool = True)
             cutoff = timezone.now() - timedelta(days=30)
 
             old_promotions = Promotion.objects.filter(
-                image_url__isnull=False,
-                image_fetched_at__lt=cutoff
-            ).order_by('image_fetched_at')[:remaining]
+                image_url__isnull=False, image_fetched_at__lt=cutoff
+            ).order_by("image_fetched_at")[:remaining]
 
             for promotion in old_promotions:
                 try:
                     result = client.find_promotion_image(
-                        name=promotion.name,
-                        abbreviation=promotion.abbreviation
+                        name=promotion.name, abbreviation=promotion.abbreviation
                     )
-                    if result and result.get('url'):
-                        new_url = result.get('url') or result.get('thumb_url')
+                    if result and result.get("url"):
+                        new_url = result.get("url") or result.get("thumb_url")
                         if new_url != promotion.image_original_url:
-                            if cache_service.cache_and_update_entity(promotion, result, archive_old=True):
+                            if cache_service.cache_and_update_entity(
+                                promotion, result, archive_old=True
+                            ):
                                 refreshed += 1
                         else:
                             promotion.image_fetched_at = timezone.now()
-                            promotion.save(update_fields=['image_fetched_at'])
+                            promotion.save(update_fields=["image_fetched_at"])
                 except Exception as e:
                     logger.warning(f"Failed to refresh image for {promotion.name}: {e}")
 
@@ -897,19 +904,16 @@ def fetch_venue_images(self, batch_size: int = 10, refresh_old: bool = True):
         refreshed = 0
 
         # Get venues without images
-        venues = Venue.objects.filter(
-            image_url__isnull=True
-        ).annotate(
-            event_count=Count('events')
-        ).order_by('-event_count')[:batch_size]
+        venues = (
+            Venue.objects.filter(image_url__isnull=True)
+            .annotate(event_count=Count("events"))
+            .order_by("-event_count")[:batch_size]
+        )
 
         for venue in venues:
             try:
-                result = client.find_venue_image(
-                    name=venue.name,
-                    location=venue.location
-                )
-                if result and result.get('url'):
+                result = client.find_venue_image(name=venue.name, location=venue.location)
+                if result and result.get("url"):
                     if cache_service.cache_and_update_entity(venue, result, archive_old=False):
                         fetched += 1
                         logger.info(f"Fetched and cached image for venue: {venue.name}")
@@ -921,21 +925,22 @@ def fetch_venue_images(self, batch_size: int = 10, refresh_old: bool = True):
             remaining = batch_size - fetched
             cutoff = timezone.now() - timedelta(days=30)
             old_venues = Venue.objects.filter(
-                image_url__isnull=False,
-                image_fetched_at__lt=cutoff
-            ).order_by('image_fetched_at')[:remaining]
+                image_url__isnull=False, image_fetched_at__lt=cutoff
+            ).order_by("image_fetched_at")[:remaining]
 
             for venue in old_venues:
                 try:
                     result = client.find_venue_image(name=venue.name, location=venue.location)
-                    if result and result.get('url'):
-                        new_url = result.get('url') or result.get('thumb_url')
+                    if result and result.get("url"):
+                        new_url = result.get("url") or result.get("thumb_url")
                         if new_url != venue.image_original_url:
-                            if cache_service.cache_and_update_entity(venue, result, archive_old=True):
+                            if cache_service.cache_and_update_entity(
+                                venue, result, archive_old=True
+                            ):
                                 refreshed += 1
                         else:
                             venue.image_fetched_at = timezone.now()
-                            venue.save(update_fields=['image_fetched_at'])
+                            venue.save(update_fields=["image_fetched_at"])
                 except Exception as e:
                     logger.warning(f"Failed to refresh image for {venue.name}: {e}")
 
@@ -974,19 +979,21 @@ def fetch_title_images(self, batch_size: int = 10, refresh_old: bool = True):
         refreshed = 0
 
         # Get titles without images
-        titles = Title.objects.filter(
-            image_url__isnull=True
-        ).annotate(
-            match_count=Count('title_matches')
-        ).order_by('-match_count')[:batch_size]
+        titles = (
+            Title.objects.filter(image_url__isnull=True)
+            .annotate(match_count=Count("title_matches"))
+            .order_by("-match_count")[:batch_size]
+        )
 
         for title in titles:
             try:
                 result = client.find_title_image(
                     name=title.name,
-                    promotion=title.promotion.abbreviation or title.promotion.name if title.promotion else None
+                    promotion=title.promotion.abbreviation or title.promotion.name
+                    if title.promotion
+                    else None,
                 )
-                if result and result.get('url'):
+                if result and result.get("url"):
                     if cache_service.cache_and_update_entity(title, result, archive_old=False):
                         fetched += 1
                         logger.info(f"Fetched and cached image for title: {title.name}")
@@ -998,24 +1005,27 @@ def fetch_title_images(self, batch_size: int = 10, refresh_old: bool = True):
             remaining = batch_size - fetched
             cutoff = timezone.now() - timedelta(days=30)
             old_titles = Title.objects.filter(
-                image_url__isnull=False,
-                image_fetched_at__lt=cutoff
-            ).order_by('image_fetched_at')[:remaining]
+                image_url__isnull=False, image_fetched_at__lt=cutoff
+            ).order_by("image_fetched_at")[:remaining]
 
             for title in old_titles:
                 try:
                     result = client.find_title_image(
                         name=title.name,
-                        promotion=title.promotion.abbreviation or title.promotion.name if title.promotion else None
+                        promotion=title.promotion.abbreviation or title.promotion.name
+                        if title.promotion
+                        else None,
                     )
-                    if result and result.get('url'):
-                        new_url = result.get('url') or result.get('thumb_url')
+                    if result and result.get("url"):
+                        new_url = result.get("url") or result.get("thumb_url")
                         if new_url != title.image_original_url:
-                            if cache_service.cache_and_update_entity(title, result, archive_old=True):
+                            if cache_service.cache_and_update_entity(
+                                title, result, archive_old=True
+                            ):
                                 refreshed += 1
                         else:
                             title.image_fetched_at = timezone.now()
-                            title.save(update_fields=['image_fetched_at'])
+                            title.save(update_fields=["image_fetched_at"])
                 except Exception as e:
                     logger.warning(f"Failed to refresh image for {title.name}: {e}")
 
@@ -1054,18 +1064,18 @@ def fetch_event_images(self, batch_size: int = 15, refresh_old: bool = True):
         refreshed = 0
 
         # Get events without images
-        events = Event.objects.filter(
-            image_url__isnull=True
-        ).order_by('-date')[:batch_size]
+        events = Event.objects.filter(image_url__isnull=True).order_by("-date")[:batch_size]
 
         for event in events:
             try:
                 result = client.find_event_image(
                     name=event.name,
-                    promotion=event.promotion.abbreviation or event.promotion.name if event.promotion else None,
-                    year=event.date.year if event.date else None
+                    promotion=event.promotion.abbreviation or event.promotion.name
+                    if event.promotion
+                    else None,
+                    year=event.date.year if event.date else None,
                 )
-                if result and result.get('url'):
+                if result and result.get("url"):
                     if cache_service.cache_and_update_entity(event, result, archive_old=False):
                         fetched += 1
                         logger.info(f"Fetched and cached image for event: {event.name}")
@@ -1077,25 +1087,28 @@ def fetch_event_images(self, batch_size: int = 15, refresh_old: bool = True):
             remaining = batch_size - fetched
             cutoff = timezone.now() - timedelta(days=30)
             old_events = Event.objects.filter(
-                image_url__isnull=False,
-                image_fetched_at__lt=cutoff
-            ).order_by('image_fetched_at')[:remaining]
+                image_url__isnull=False, image_fetched_at__lt=cutoff
+            ).order_by("image_fetched_at")[:remaining]
 
             for event in old_events:
                 try:
                     result = client.find_event_image(
                         name=event.name,
-                        promotion=event.promotion.abbreviation or event.promotion.name if event.promotion else None,
-                        year=event.date.year if event.date else None
+                        promotion=event.promotion.abbreviation or event.promotion.name
+                        if event.promotion
+                        else None,
+                        year=event.date.year if event.date else None,
                     )
-                    if result and result.get('url'):
-                        new_url = result.get('url') or result.get('thumb_url')
+                    if result and result.get("url"):
+                        new_url = result.get("url") or result.get("thumb_url")
                         if new_url != event.image_original_url:
-                            if cache_service.cache_and_update_entity(event, result, archive_old=True):
+                            if cache_service.cache_and_update_entity(
+                                event, result, archive_old=True
+                            ):
                                 refreshed += 1
                         else:
                             event.image_fetched_at = timezone.now()
-                            event.save(update_fields=['image_fetched_at'])
+                            event.save(update_fields=["image_fetched_at"])
                 except Exception as e:
                     logger.warning(f"Failed to refresh image for {event.name}: {e}")
 
@@ -1133,6 +1146,7 @@ def run_all_image_fetches():
 # =============================================================================
 # Hot 100 Rankings Task
 # =============================================================================
+
 
 @shared_task(
     bind=True,
@@ -1187,342 +1201,10 @@ def generate_hot100_ranking(self, year: int = None, month: int = None, publish: 
 
 
 # =============================================================================
-# WrestleBot 2.0 Tasks - Autonomous Data Enhancement
-# =============================================================================
-
-WRESTLEBOT_SOFT_LIMIT = 10 * 60  # 10 minutes
-WRESTLEBOT_HARD_LIMIT = 12 * 60  # 12 minutes
-
-
-@shared_task(
-    bind=True,
-    soft_time_limit=WRESTLEBOT_SOFT_LIMIT,
-    time_limit=WRESTLEBOT_HARD_LIMIT,
-)
-def wrestlebot_master(self):
-    """
-    Master orchestrator task - analyzes what work needs to be done.
-
-    This is a lightweight task that runs every 30 minutes to check
-    database state and log what the bot is planning to do.
-    """
-    lock_key = "wrestlebot_master_lock"
-    lock_timeout = WRESTLEBOT_HARD_LIMIT + 60
-
-    if not cache.add(lock_key, True, timeout=lock_timeout):
-        logger.info("WrestleBot master skipped: previous run still active")
-        return {"status": "skipped_lock"}
-
-    try:
-        from .wrestlebot import WrestleBot
-        bot = WrestleBot()
-        result = bot.run_master_cycle()
-        logger.info(f"WrestleBot master cycle: {result}")
-        return result
-
-    except Exception as e:
-        logger.error(f"WrestleBot master failed: {e}")
-        return {"status": "error", "error": str(e)}
-
-    finally:
-        cache.delete(lock_key)
-
-
-@shared_task(
-    bind=True,
-    max_retries=2,
-    default_retry_delay=600,
-    soft_time_limit=WRESTLEBOT_SOFT_LIMIT,
-    time_limit=WRESTLEBOT_HARD_LIMIT,
-)
-def wrestlebot_discovery_cycle(self, batch_size: int = 5):
-    """
-    Run a discovery cycle - find and add new entries.
-
-    Runs every 2 hours via Celery Beat.
-    Discovers new wrestlers, events, promotions from various sources.
-    """
-    lock_key = "wrestlebot_discovery_lock"
-    lock_timeout = WRESTLEBOT_HARD_LIMIT + 60
-
-    if not cache.add(lock_key, True, timeout=lock_timeout):
-        logger.info("WrestleBot discovery skipped: previous run still active")
-        return {"status": "skipped_lock"}
-
-    try:
-        from .wrestlebot import WrestleBot
-        bot = WrestleBot()
-
-        if not bot.is_enabled():
-            return {"status": "disabled"}
-
-        result = bot.run_discovery_cycle(batch_size=batch_size)
-        logger.info(f"WrestleBot discovery cycle: {result}")
-        return result
-
-    except Exception as e:
-        logger.error(f"WrestleBot discovery failed: {e}")
-        raise self.retry(exc=e)
-
-    finally:
-        cache.delete(lock_key)
-
-
-@shared_task(
-    bind=True,
-    max_retries=2,
-    default_retry_delay=600,
-    soft_time_limit=WRESTLEBOT_SOFT_LIMIT,
-    time_limit=WRESTLEBOT_HARD_LIMIT,
-)
-def wrestlebot_enrichment_cycle(self, batch_size: int = 10):
-    """
-    Run an enrichment cycle - improve existing entries.
-
-    Runs every hour via Celery Beat.
-    Adds missing data (bios, dates, etc.) to incomplete entries.
-    """
-    lock_key = "wrestlebot_enrichment_lock"
-    lock_timeout = WRESTLEBOT_HARD_LIMIT + 60
-
-    if not cache.add(lock_key, True, timeout=lock_timeout):
-        logger.info("WrestleBot enrichment skipped: previous run still active")
-        return {"status": "skipped_lock"}
-
-    try:
-        from .wrestlebot import WrestleBot
-        bot = WrestleBot()
-
-        if not bot.is_enabled():
-            return {"status": "disabled"}
-
-        result = bot.run_enrichment_cycle(batch_size=batch_size)
-        logger.info(f"WrestleBot enrichment cycle: {result}")
-        return result
-
-    except Exception as e:
-        logger.error(f"WrestleBot enrichment failed: {e}")
-        raise self.retry(exc=e)
-
-    finally:
-        cache.delete(lock_key)
-
-
-@shared_task(
-    bind=True,
-    max_retries=2,
-    default_retry_delay=600,
-    soft_time_limit=WRESTLEBOT_SOFT_LIMIT,
-    time_limit=WRESTLEBOT_HARD_LIMIT,
-)
-def wrestlebot_image_cycle(self, batch_size: int = 10):
-    """
-    Run an image fetching cycle - add CC-licensed images.
-
-    Runs every 4 hours via Celery Beat.
-    Fetches images from Wikimedia Commons for entities without images.
-    """
-    lock_key = "wrestlebot_image_lock"
-    lock_timeout = WRESTLEBOT_HARD_LIMIT + 60
-
-    if not cache.add(lock_key, True, timeout=lock_timeout):
-        logger.info("WrestleBot image cycle skipped: previous run still active")
-        return {"status": "skipped_lock"}
-
-    try:
-        from .wrestlebot import WrestleBot
-        bot = WrestleBot()
-
-        if not bot.is_enabled():
-            return {"status": "disabled"}
-
-        result = bot.run_image_cycle(batch_size=batch_size)
-        logger.info(f"WrestleBot image cycle: {result}")
-        return result
-
-    except Exception as e:
-        logger.error(f"WrestleBot image cycle failed: {e}")
-        raise self.retry(exc=e)
-
-    finally:
-        cache.delete(lock_key)
-
-
-@shared_task
-def wrestlebot_get_status():
-    """
-    Get current WrestleBot status and statistics.
-
-    Can be called manually to check bot status.
-    """
-    try:
-        from .wrestlebot import WrestleBot
-        bot = WrestleBot()
-        status = bot.get_status()
-        cache.set("wrestlebot_status", status, timeout=300)
-        return status
-
-    except Exception as e:
-        logger.error(f"Failed to get WrestleBot status: {e}")
-        return {"status": "error", "error": str(e)}
-
-
-@shared_task(
-    bind=True,
-    max_retries=2,
-    soft_time_limit=15 * 60,  # 15 minutes
-    time_limit=20 * 60,
-)
-def wrestlebot_match_cleanup(self, dry_run: bool = False, limit: int = 5000):
-    """
-    Clean up synthetic/invalid match data.
-
-    Removes:
-    - Matches with deceased wrestlers appearing after death
-    - Matches with retired wrestlers appearing after retirement
-    - Matches with impossible era combinations
-
-    Fixes:
-    - Tag teams stored as single wrestlers (replaces with individual members)
-
-    Args:
-        dry_run: If True, don't actually make changes (just report)
-        limit: Maximum matches to check
-
-    Runs every 6 hours via Celery Beat.
-    """
-    lock_key = "wrestlebot_match_cleanup_lock"
-    lock_timeout = 25 * 60
-
-    if not cache.add(lock_key, True, timeout=lock_timeout):
-        logger.info("Match cleanup skipped: previous run still active")
-        return {"status": "skipped_lock"}
-
-    try:
-        from .wrestlebot.quality import DataCleaner
-
-        cleaner = DataCleaner()
-        results = cleaner.find_and_fix_match_issues(dry_run=dry_run, limit=limit)
-
-        logger.info(f"Match cleanup complete: {results}")
-        return results
-
-    except Exception as e:
-        logger.error(f"Match cleanup failed: {e}")
-        raise self.retry(exc=e)
-
-    finally:
-        cache.delete(lock_key)
-
-
-@shared_task(
-    bind=True,
-    max_retries=2,
-    soft_time_limit=10 * 60,
-    time_limit=15 * 60,
-)
-def wrestlebot_synthetic_cleanup(self, dry_run: bool = False):
-    """
-    Find and delete synthetic/fabricated events.
-
-    Identifies:
-    - Future events with deceased wrestlers
-    - Far-future events with suspicious name patterns
-
-    Args:
-        dry_run: If True, don't actually delete (just report)
-
-    Runs daily via Celery Beat.
-    """
-    lock_key = "wrestlebot_synthetic_cleanup_lock"
-    lock_timeout = 20 * 60
-
-    if not cache.add(lock_key, True, timeout=lock_timeout):
-        logger.info("Synthetic cleanup skipped: previous run still active")
-        return {"status": "skipped_lock"}
-
-    try:
-        from .wrestlebot.quality import DataCleaner
-
-        cleaner = DataCleaner()
-
-        # Clean up events with deceased wrestlers
-        deceased_results = cleaner.find_and_delete_synthetic_events(dry_run=dry_run)
-
-        # Clean up far-future events with suspicious names
-        pattern_results = cleaner.detect_synthetic_by_name_pattern(dry_run=dry_run)
-
-        results = {
-            'dry_run': dry_run,
-            'deceased_cleanup': deceased_results,
-            'pattern_cleanup': pattern_results,
-            'total_events_deleted': (
-                deceased_results.get('events_deleted', 0) +
-                pattern_results.get('events_deleted', 0)
-            ),
-        }
-
-        logger.info(f"Synthetic cleanup complete: {results}")
-        return results
-
-    except Exception as e:
-        logger.error(f"Synthetic cleanup failed: {e}")
-        raise self.retry(exc=e)
-
-    finally:
-        cache.delete(lock_key)
-
-
-@shared_task(
-    bind=True,
-    max_retries=2,
-    default_retry_delay=600,
-    soft_time_limit=WRESTLEBOT_SOFT_LIMIT,
-    time_limit=WRESTLEBOT_HARD_LIMIT,
-)
-def wrestlebot_verification_cycle(self, batch_size: int = 15):
-    """
-    Run a verification cycle - cross-check data against TMDB and other sources.
-
-    This is the highest priority task for data ACCURACY.
-    It verifies:
-    - Episode dates match TMDB
-    - Wrestler data is accurate
-    - Event data is correct
-
-    Runs every 30 minutes via Celery Beat.
-    """
-    lock_key = "wrestlebot_verification_lock"
-    lock_timeout = WRESTLEBOT_HARD_LIMIT + 60
-
-    if not cache.add(lock_key, True, timeout=lock_timeout):
-        logger.info("WrestleBot verification skipped: previous run still active")
-        return {"status": "skipped_lock"}
-
-    try:
-        from .wrestlebot import WrestleBot
-        bot = WrestleBot()
-
-        if not bot.is_enabled():
-            return {"status": "disabled"}
-
-        result = bot.run_verification_cycle(batch_size=batch_size)
-        logger.info(f"WrestleBot verification cycle: {result}")
-        return result
-
-    except Exception as e:
-        logger.error(f"WrestleBot verification failed: {e}")
-        raise self.retry(exc=e)
-
-    finally:
-        cache.delete(lock_key)
-
-
-# =============================================================================
 # TV Episode Tracking Tasks
 # =============================================================================
 
-TV_EPISODE_SOFT_LIMIT = 8 * 60   # 8 minutes
+TV_EPISODE_SOFT_LIMIT = 8 * 60  # 8 minutes
 TV_EPISODE_HARD_LIMIT = 10 * 60  # 10 minutes
 
 
@@ -1560,7 +1242,8 @@ def poll_tv_episodes(self):
 
         logger.info(
             "TV episode poll: checked %d shows, found %d new episodes",
-            results['shows_checked'], results['new_episodes']
+            results["shows_checked"],
+            results["new_episodes"],
         )
 
         return results
@@ -1637,10 +1320,10 @@ def backfill_all_tv_shows(self, year: int = None):
     scraper = TVEpisodeScraper()
 
     total_results = {
-        'shows_processed': 0,
-        'total_created': 0,
-        'total_updated': 0,
-        'total_errors': 0,
+        "shows_processed": 0,
+        "total_created": 0,
+        "total_updated": 0,
+        "total_errors": 0,
     }
 
     for show in shows:
@@ -1650,16 +1333,16 @@ def backfill_all_tv_shows(self, year: int = None):
             else:
                 results = scraper.backfill_all_episodes(show)
 
-            total_results['shows_processed'] += 1
-            total_results['total_created'] += results.get('created', 0)
-            total_results['total_updated'] += results.get('updated', 0)
-            total_results['total_errors'] += results.get('errors', 0)
+            total_results["shows_processed"] += 1
+            total_results["total_created"] += results.get("created", 0)
+            total_results["total_updated"] += results.get("updated", 0)
+            total_results["total_errors"] += results.get("errors", 0)
 
             logger.info("Backfilled %s: %s", show.name, results)
 
         except Exception as e:
             logger.error("Error backfilling %s: %s", show.name, e)
-            total_results['total_errors'] += 1
+            total_results["total_errors"] += 1
 
     logger.info("TV show backfill complete: %s", total_results)
     return total_results
@@ -1686,16 +1369,16 @@ def verify_tv_show_completeness(self, show_id: int):
     scraper = TVEpisodeScraper()
     results = scraper.verify_episode_count(show)
 
-    if not results.get('complete', True):
+    if not results.get("complete", True):
         logger.warning(
             "Show %s is missing %d episodes (TMDB: %d, DB: %d)",
             show.name,
-            results['difference'],
-            results['tmdb_count'],
-            results['db_count']
+            results["difference"],
+            results["tmdb_count"],
+            results["db_count"],
         )
     else:
-        logger.info("Show %s episode count verified: %d episodes", show.name, results['db_count'])
+        logger.info("Show %s episode count verified: %d episodes", show.name, results["db_count"])
 
     return results
 
@@ -1714,35 +1397,37 @@ def verify_all_tv_shows(self):
     scraper = TVEpisodeScraper()
 
     results = {
-        'shows_checked': 0,
-        'shows_complete': 0,
-        'shows_incomplete': [],
+        "shows_checked": 0,
+        "shows_complete": 0,
+        "shows_incomplete": [],
     }
 
     for show in shows:
         try:
             verification = scraper.verify_episode_count(show)
-            results['shows_checked'] += 1
+            results["shows_checked"] += 1
 
-            if verification.get('complete', True):
-                results['shows_complete'] += 1
+            if verification.get("complete", True):
+                results["shows_complete"] += 1
             else:
-                results['shows_incomplete'].append({
-                    'show': show.name,
-                    'show_id': show.id,
-                    'tmdb_count': verification['tmdb_count'],
-                    'db_count': verification['db_count'],
-                    'missing': verification['difference'],
-                })
+                results["shows_incomplete"].append(
+                    {
+                        "show": show.name,
+                        "show_id": show.id,
+                        "tmdb_count": verification["tmdb_count"],
+                        "db_count": verification["db_count"],
+                        "missing": verification["difference"],
+                    }
+                )
 
         except Exception as e:
             logger.error("Error verifying %s: %s", show.name, e)
 
     logger.info(
         "TV show verification: %d checked, %d complete, %d incomplete",
-        results['shows_checked'],
-        results['shows_complete'],
-        len(results['shows_incomplete'])
+        results["shows_checked"],
+        results["shows_complete"],
+        len(results["shows_incomplete"]),
     )
 
     return results
@@ -1788,49 +1473,52 @@ def enrich_tv_episodes(self, batch_size: int = 20):
         # Find episodes that need enrichment (have no matches, are in the past)
         cutoff = timezone.now() - timedelta(days=1)  # Only past episodes
         episodes_to_enrich = (
-            Event.objects
-            .filter(
+            Event.objects.filter(
                 tv_show__isnull=False,
                 date__lt=cutoff.date(),
             )
             .exclude(matches__isnull=False)  # No matches yet
-            .order_by('-date')  # Most recent first
-            [:batch_size]
+            .order_by("-date")[
+                # Most recent first
+                :batch_size
+            ]
         )
 
         results = {
-            'checked': 0,
-            'enriched': 0,
-            'matches_added': 0,
-            'errors': 0,
+            "checked": 0,
+            "enriched": 0,
+            "matches_added": 0,
+            "errors": 0,
         }
 
         for episode in episodes_to_enrich:
             try:
                 enriched = scraper.enrich_episode_with_matches(episode)
-                results['checked'] += 1
+                results["checked"] += 1
 
-                if enriched.get('matches_added', 0) > 0:
-                    results['enriched'] += 1
-                    results['matches_added'] += enriched['matches_added']
+                if enriched.get("matches_added", 0) > 0:
+                    results["enriched"] += 1
+                    results["matches_added"] += enriched["matches_added"]
 
                     # Log WrestleBot activity
                     WrestleBotActivity.log_activity(
-                        action_type='enrich',
-                        entity_type='event',
+                        action_type="enrich",
+                        entity_type="event",
                         entity_id=episode.id,
                         entity_name=episode.name,
-                        source='tmdb_enrichment',
-                        details={'matches_added': enriched['matches_added']},
+                        source="tmdb_enrichment",
+                        details={"matches_added": enriched["matches_added"]},
                     )
 
             except Exception as e:
                 logger.warning("Failed to enrich episode %s: %s", episode.name, e)
-                results['errors'] += 1
+                results["errors"] += 1
 
         logger.info(
             "TV episode enrichment: %d checked, %d enriched, %d matches added",
-            results['checked'], results['enriched'], results['matches_added']
+            results["checked"],
+            results["enriched"],
+            results["matches_added"],
         )
 
         return results
@@ -1879,22 +1567,23 @@ def scheduled_backfill_tv_episodes(self):
         shows = TVShow.objects.filter(tmdb_id__isnull=False, finale_date__isnull=True)
 
         results = {
-            'shows_processed': 0,
-            'episodes_created': 0,
-            'episodes_updated': 0,
+            "shows_processed": 0,
+            "episodes_created": 0,
+            "episodes_updated": 0,
         }
 
         for show in shows[:10]:  # Limit to 10 shows per day
             try:
                 # Backfill the current year for active shows
                 from datetime import date
+
                 current_year = date.today().year
 
                 show_results = scraper.backfill_show_by_year(show, current_year)
 
-                results['shows_processed'] += 1
-                results['episodes_created'] += show_results.get('created', 0)
-                results['episodes_updated'] += show_results.get('updated', 0)
+                results["shows_processed"] += 1
+                results["episodes_created"] += show_results.get("created", 0)
+                results["episodes_updated"] += show_results.get("updated", 0)
 
                 logger.info("Backfilled %s for %d: %s", show.name, current_year, show_results)
 

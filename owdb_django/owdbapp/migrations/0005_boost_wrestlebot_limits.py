@@ -6,58 +6,89 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('owdbapp', '0004_add_enrichment_fields'),
+        ("owdbapp", "0004_add_enrichment_fields"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='wrestlebotconfig',
-            name='cooldown_minutes',
-            field=models.IntegerField(default=1, help_text='Minutes to wait between batches'),
+            model_name="wrestlebotconfig",
+            name="cooldown_minutes",
+            field=models.IntegerField(default=1, help_text="Minutes to wait between batches"),
         ),
         migrations.AlterField(
-            model_name='wrestlebotconfig',
-            name='max_items_per_day',
-            field=models.IntegerField(default=3600, help_text='Maximum new items to add per day'),
+            model_name="wrestlebotconfig",
+            name="max_items_per_day",
+            field=models.IntegerField(default=3600, help_text="Maximum new items to add per day"),
         ),
         migrations.AlterField(
-            model_name='wrestlebotconfig',
-            name='max_items_per_hour',
-            field=models.IntegerField(default=180, help_text='Maximum new items to add per hour'),
+            model_name="wrestlebotconfig",
+            name="max_items_per_hour",
+            field=models.IntegerField(default=180, help_text="Maximum new items to add per hour"),
         ),
         migrations.CreateModel(
-            name='UserProfile',
+            name="UserProfile",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('email_verified', models.BooleanField(default=False)),
-                ('can_contribute', models.BooleanField(default=False, help_text='Can add/edit content after email verification')),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='profile', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("email_verified", models.BooleanField(default=False)),
+                (
+                    "can_contribute",
+                    models.BooleanField(
+                        default=False, help_text="Can add/edit content after email verification"
+                    ),
+                ),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="profile",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'User Profile',
-                'verbose_name_plural': 'User Profiles',
+                "verbose_name": "User Profile",
+                "verbose_name_plural": "User Profiles",
             },
         ),
         migrations.CreateModel(
-            name='EmailVerificationToken',
+            name="EmailVerificationToken",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('token', models.CharField(db_index=True, max_length=64, unique=True)),
-                ('expires_at', models.DateTimeField()),
-                ('used', models.BooleanField(default=False)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='verification_tokens', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("token", models.CharField(db_index=True, max_length=64, unique=True)),
+                ("expires_at", models.DateTimeField()),
+                ("used", models.BooleanField(default=False)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="verification_tokens",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Email Verification Token',
-                'verbose_name_plural': 'Email Verification Tokens',
-                'indexes': [models.Index(fields=['token'], name='owdbapp_ema_token_6166e5_idx'), models.Index(fields=['user'], name='owdbapp_ema_user_id_cc6896_idx')],
+                "verbose_name": "Email Verification Token",
+                "verbose_name_plural": "Email Verification Tokens",
+                "indexes": [
+                    models.Index(fields=["token"], name="owdbapp_ema_token_6166e5_idx"),
+                    models.Index(fields=["user"], name="owdbapp_ema_user_id_cc6896_idx"),
+                ],
             },
         ),
     ]

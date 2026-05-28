@@ -29,8 +29,43 @@ def generate_unique_slug(model_class, base_slug, instance_pk=None):
 
 class TimeStampedModel(models.Model):
     """Abstract base model with created/updated timestamps."""
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+class VerificationMixin(models.Model):
+    """
+    Abstract base adding `verification_state` to canonical-fact entities.
+
+    The four states are the executable equivalent of "100% accuracy" —
+    code can ask "is this entity safe to assert?" instead of relying on
+    a single boolean. See wrestlebot/pipeline/accuracy_contract.py for
+    the rules and the `enforce()` function that decides which state a
+    given row deserves.
+
+      candidate    — we saw a reference, identity not confirmed
+      provisional  — structural data present, missing per-field provenance
+      verified     — passes the full accuracy contract for its entity type
+      rejected     — Earl or a human marked it incorrect / duplicate
+    """
+
+    VERIFICATION_STATE_CHOICES = [
+        ("candidate", "Candidate (unconfirmed reference)"),
+        ("provisional", "Provisional (data without per-field provenance)"),
+        ("verified", "Verified (passes accuracy contract)"),
+        ("rejected", "Rejected (incorrect / duplicate / junk)"),
+    ]
+    verification_state = models.CharField(
+        max_length=20,
+        choices=VERIFICATION_STATE_CHOICES,
+        default="candidate",
+        db_index=True,
+        help_text="Where this entity sits on the accuracy contract.",
+    )
 
     class Meta:
         abstract = True
@@ -48,26 +83,39 @@ class ImageMixin(models.Model):
 
     Images are cached to Cloudflare R2 and served via images.wrestlingdb.org CDN.
     """
+
     LICENSE_CHOICES = [
-        ('cc0', 'CC0 - Public Domain'),
-        ('cc-by', 'CC BY'),
-        ('cc-by-sa', 'CC BY-SA'),
-        ('pd', 'Public Domain'),
+        ("cc0", "CC0 - Public Domain"),
+        ("cc-by", "CC BY"),
+        ("cc-by-sa", "CC BY-SA"),
+        ("pd", "Public Domain"),
     ]
 
-    image_url = models.URLField(max_length=500, blank=True, null=True,
-                                 help_text="URL to the cached image on R2 CDN")
-    image_source_url = models.URLField(max_length=500, blank=True, null=True,
-                                        help_text="URL to the original source page (e.g., Wikimedia Commons)")
-    image_original_url = models.URLField(max_length=500, blank=True, null=True,
-                                          help_text="Original image URL before caching to R2")
-    image_license = models.CharField(max_length=20, choices=LICENSE_CHOICES,
-                                      blank=True, default='',
-                                      help_text="Creative Commons license type")
-    image_credit = models.CharField(max_length=500, blank=True, default='',
-                                     help_text="Attribution text for license compliance")
-    image_fetched_at = models.DateTimeField(blank=True, null=True,
-                                             help_text="When the image was fetched")
+    image_url = models.URLField(
+        max_length=500, blank=True, null=True, help_text="URL to the cached image on R2 CDN"
+    )
+    image_source_url = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="URL to the original source page (e.g., Wikimedia Commons)",
+    )
+    image_original_url = models.URLField(
+        max_length=500, blank=True, null=True, help_text="Original image URL before caching to R2"
+    )
+    image_license = models.CharField(
+        max_length=20,
+        choices=LICENSE_CHOICES,
+        blank=True,
+        default="",
+        help_text="Creative Commons license type",
+    )
+    image_credit = models.CharField(
+        max_length=500, blank=True, default="", help_text="Attribution text for license compliance"
+    )
+    image_fetched_at = models.DateTimeField(
+        blank=True, null=True, help_text="When the image was fetched"
+    )
 
     class Meta:
         abstract = True
@@ -81,6 +129,7 @@ class ImageMixin(models.Model):
         if not self.image_fetched_at:
             return None
         from django.utils import timezone
+
         delta = timezone.now() - self.image_fetched_at
         return delta.days
 
@@ -97,50 +146,54 @@ class ImageHistory(TimeStampedModel):
     Stores previous images when they are replaced, allowing users to
     browse through the image history of wrestlers, promotions, etc.
     """
+
     ENTITY_TYPES = [
-        ('wrestler', 'Wrestler'),
-        ('promotion', 'Promotion'),
-        ('venue', 'Venue'),
-        ('event', 'Event'),
-        ('title', 'Title'),
-        ('stable', 'Stable'),
+        ("wrestler", "Wrestler"),
+        ("promotion", "Promotion"),
+        ("venue", "Venue"),
+        ("event", "Event"),
+        ("title", "Title"),
+        ("stable", "Stable"),
     ]
 
     LICENSE_CHOICES = [
-        ('cc0', 'CC0 - Public Domain'),
-        ('cc-by', 'CC BY'),
-        ('cc-by-sa', 'CC BY-SA'),
-        ('pd', 'Public Domain'),
+        ("cc0", "CC0 - Public Domain"),
+        ("cc-by", "CC BY"),
+        ("cc-by-sa", "CC BY-SA"),
+        ("pd", "Public Domain"),
     ]
 
     entity_type = models.CharField(max_length=20, choices=ENTITY_TYPES, db_index=True)
     entity_id = models.PositiveIntegerField(db_index=True)
 
     # Image data (stored on R2)
-    image_url = models.URLField(max_length=500,
-                                 help_text="URL to the cached image on R2 CDN")
-    image_source_url = models.URLField(max_length=500, blank=True, null=True,
-                                        help_text="URL to the original source page")
-    image_original_url = models.URLField(max_length=500, blank=True, null=True,
-                                          help_text="Original image URL before caching")
-    image_license = models.CharField(max_length=20, choices=LICENSE_CHOICES,
-                                      blank=True, default='')
-    image_credit = models.CharField(max_length=500, blank=True, default='')
+    image_url = models.URLField(max_length=500, help_text="URL to the cached image on R2 CDN")
+    image_source_url = models.URLField(
+        max_length=500, blank=True, null=True, help_text="URL to the original source page"
+    )
+    image_original_url = models.URLField(
+        max_length=500, blank=True, null=True, help_text="Original image URL before caching"
+    )
+    image_license = models.CharField(max_length=20, choices=LICENSE_CHOICES, blank=True, default="")
+    image_credit = models.CharField(max_length=500, blank=True, default="")
 
     # When this was the active image
     active_from = models.DateTimeField(help_text="When this image became active")
-    active_until = models.DateTimeField(auto_now_add=True,
-                                         help_text="When this image was replaced")
+    active_until = models.DateTimeField(auto_now_add=True, help_text="When this image was replaced")
 
     # Why it was replaced
-    replacement_reason = models.CharField(max_length=100, blank=True, default='',
-                                           help_text="Why image was replaced (e.g., 'better_image_found', 'scheduled_refresh')")
+    replacement_reason = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Why image was replaced (e.g., 'better_image_found', 'scheduled_refresh')",
+    )
 
     class Meta:
-        ordering = ['-active_until']
+        ordering = ["-active_until"]
         indexes = [
-            models.Index(fields=['entity_type', 'entity_id']),
-            models.Index(fields=['entity_type', 'entity_id', '-active_until']),
+            models.Index(fields=["entity_type", "entity_id"]),
+            models.Index(fields=["entity_type", "entity_id", "-active_until"]),
         ]
         verbose_name_plural = "Image histories"
 
@@ -148,7 +201,7 @@ class ImageHistory(TimeStampedModel):
         return f"{self.entity_type}:{self.entity_id} - {self.active_until}"
 
     @classmethod
-    def archive_current_image(cls, entity, reason='scheduled_refresh'):
+    def archive_current_image(cls, entity, reason="scheduled_refresh"):
         """
         Archive the current image of an entity before replacing it.
 
@@ -166,10 +219,10 @@ class ImageHistory(TimeStampedModel):
             entity_type=entity_type,
             entity_id=entity.pk,
             image_url=entity.image_url,
-            image_source_url=entity.image_source_url or '',
-            image_original_url=getattr(entity, 'image_original_url', '') or '',
-            image_license=entity.image_license or '',
-            image_credit=entity.image_credit or '',
+            image_source_url=entity.image_source_url or "",
+            image_original_url=getattr(entity, "image_original_url", "") or "",
+            image_license=entity.image_license or "",
+            image_credit=entity.image_credit or "",
             active_from=entity.image_fetched_at or entity.created_at,
             replacement_reason=reason,
         )
@@ -177,23 +230,38 @@ class ImageHistory(TimeStampedModel):
     @classmethod
     def get_history_for_entity(cls, entity_type, entity_id, limit=10):
         """Get image history for a specific entity."""
-        return cls.objects.filter(
-            entity_type=entity_type,
-            entity_id=entity_id
-        ).order_by('-active_until')[:limit]
+        return cls.objects.filter(entity_type=entity_type, entity_id=entity_id).order_by(
+            "-active_until"
+        )[:limit]
 
 
-class Venue(ImageMixin, TimeStampedModel):
+class Venue(VerificationMixin, ImageMixin, TimeStampedModel):
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     location = models.CharField(max_length=255, blank=True, null=True)
     capacity = models.IntegerField(blank=True, null=True)
 
+    # Additional structured fields (auto-extracted from Wikipedia infobox)
+    city = models.CharField(max_length=255, blank=True, null=True)
+    country = models.CharField(max_length=255, blank=True, null=True)
+    opened_year = models.IntegerField(blank=True, null=True)
+    about = models.TextField(blank=True, null=True)
+
+    # Data source tracking (matches Wrestler / Event)
+    wikipedia_url = models.URLField(max_length=500, blank=True, null=True)
+    last_enriched = models.DateTimeField(blank=True, null=True)
+
+    # Verification status (accuracy-first WrestleBot v3)
+    verified = models.BooleanField(default=False, db_index=True)
+    verification_source = models.CharField(max_length=50, blank=True, null=True)
+    last_verified = models.DateTimeField(blank=True, null=True)
+
     class Meta:
-        ordering = ['name']
+        ordering = ["name"]
         indexes = [
-            models.Index(fields=['name']),
-            models.Index(fields=['location']),
+            models.Index(fields=["name"]),
+            models.Index(fields=["location"]),
+            models.Index(fields=["verified"]),
         ]
 
     def save(self, *args, **kwargs):
@@ -212,33 +280,38 @@ class Venue(ImageMixin, TimeStampedModel):
     def get_promotions(self):
         """Get all promotions that have held events here, ordered by event count."""
         from django.db.models import Count, Q
-        return Promotion.objects.filter(
-            events__venue=self
-        ).distinct().annotate(
-            event_count=Count('events', filter=Q(events__venue=self))
-        ).order_by('-event_count')
+
+        return (
+            Promotion.objects.filter(events__venue=self)
+            .distinct()
+            .annotate(event_count=Count("events", filter=Q(events__venue=self)))
+            .order_by("-event_count")
+        )
 
     def get_wrestlers(self, limit=20):
         """Get wrestlers who have performed at this venue, ordered by appearance count."""
         from django.db.models import Count, Q
-        return Wrestler.objects.filter(
-            matches__event__venue=self
-        ).distinct().annotate(
-            appearance_count=Count('matches', filter=Q(matches__event__venue=self))
-        ).order_by('-appearance_count')[:limit]
+
+        return (
+            Wrestler.objects.filter(matches__event__venue=self)
+            .distinct()
+            .annotate(appearance_count=Count("matches", filter=Q(matches__event__venue=self)))
+            .order_by("-appearance_count")[:limit]
+        )
 
     def get_stats(self):
         """Get venue statistics."""
         from django.db.models import Sum, Avg, Count
+
         stats = self.events.aggregate(
-            total_events=Count('id'),
-            total_attendance=Sum('attendance'),
-            avg_attendance=Avg('attendance')
+            total_events=Count("id"),
+            total_attendance=Sum("attendance"),
+            avg_attendance=Avg("attendance"),
         )
         return stats
 
 
-class Promotion(ImageMixin, TimeStampedModel):
+class Promotion(VerificationMixin, ImageMixin, TimeStampedModel):
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     abbreviation = models.CharField(max_length=50, blank=True, null=True)
@@ -249,23 +322,38 @@ class Promotion(ImageMixin, TimeStampedModel):
     about = models.TextField(blank=True, null=True)
 
     # Multi-source data tracking
-    wikipedia_url = models.URLField(max_length=500, blank=True, null=True,
-                                     help_text="Wikipedia article URL")
-    cagematch_url = models.URLField(max_length=500, blank=True, null=True,
-                                    help_text="Cagematch.net database URL")
-    profightdb_url = models.URLField(max_length=500, blank=True, null=True,
-                                     help_text="ProFightDB promotion URL")
+    wikipedia_url = models.URLField(
+        max_length=500, blank=True, null=True, help_text="Wikipedia article URL"
+    )
+    cagematch_url = models.URLField(
+        max_length=500, blank=True, null=True, help_text="Cagematch.net database URL"
+    )
+    profightdb_url = models.URLField(
+        max_length=500, blank=True, null=True, help_text="ProFightDB promotion URL"
+    )
     last_enriched = models.DateTimeField(blank=True, null=True)
 
     # Additional fields
     headquarters = models.CharField(max_length=255, blank=True, null=True)
     founder = models.CharField(max_length=255, blank=True, null=True)
 
+    # Verification status (accuracy-first WrestleBot v3)
+    verified = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="True iff at least one field has been verified against an external source",
+    )
+    verification_source = models.CharField(
+        max_length=50, blank=True, null=True, help_text="Primary source used for verification"
+    )
+    last_verified = models.DateTimeField(blank=True, null=True)
+
     class Meta:
-        ordering = ['name']
+        ordering = ["name"]
         indexes = [
-            models.Index(fields=['name']),
-            models.Index(fields=['abbreviation']),
+            models.Index(fields=["name"]),
+            models.Index(fields=["abbreviation"]),
+            models.Index(fields=["verified"]),
         ]
 
     def save(self, *args, **kwargs):
@@ -286,66 +374,151 @@ class Promotion(ImageMixin, TimeStampedModel):
     def get_all_wrestlers(self, limit=50):
         """Get all wrestlers who have appeared for this promotion, ordered by match count."""
         from django.db.models import Count, Q
-        return Wrestler.objects.filter(
-            matches__event__promotion=self
-        ).distinct().annotate(
-            match_count=Count('matches', filter=Q(matches__event__promotion=self))
-        ).order_by('-match_count')[:limit]
+
+        return (
+            Wrestler.objects.filter(matches__event__promotion=self)
+            .distinct()
+            .annotate(match_count=Count("matches", filter=Q(matches__event__promotion=self)))
+            .order_by("-match_count")[:limit]
+        )
 
     def get_venues(self, limit=20):
         """Get venues where this promotion has held events, ordered by event count."""
         from django.db.models import Count, Q
-        return Venue.objects.filter(
-            events__promotion=self
-        ).distinct().annotate(
-            event_count=Count('events', filter=Q(events__promotion=self))
-        ).order_by('-event_count')[:limit]
+
+        return (
+            Venue.objects.filter(events__promotion=self)
+            .distinct()
+            .annotate(event_count=Count("events", filter=Q(events__promotion=self)))
+            .order_by("-event_count")[:limit]
+        )
 
     def get_event_timeline(self):
         """Get events grouped by year for timeline display."""
         from django.db.models.functions import ExtractYear
         from django.db.models import Count
-        return self.events.annotate(
-            year=ExtractYear('date')
-        ).values('year').annotate(
-            count=Count('id')
-        ).order_by('-year')
+
+        return (
+            self.events.annotate(year=ExtractYear("date"))
+            .values("year")
+            .annotate(count=Count("id"))
+            .order_by("-year")
+        )
 
     def get_stats(self):
         """Get promotion statistics."""
         return {
-            'total_events': self.events.count(),
-            'total_titles': self.titles.count(),
-            'active_titles': self.titles.filter(retirement_year__isnull=True).count(),
-            'total_wrestlers': Wrestler.objects.filter(
-                matches__event__promotion=self
-            ).distinct().count(),
+            "total_events": self.events.count(),
+            "total_titles": self.titles.count(),
+            "active_titles": self.titles.filter(retirement_year__isnull=True).count(),
+            "total_wrestlers": Wrestler.objects.filter(matches__event__promotion=self)
+            .distinct()
+            .count(),
         }
 
+    # -----------------------------------------------------------------------
+    # Cross-linked media helpers — derive related Book / Special / Podcast /
+    # Stable rows from this promotion's wrestler roster. Each derivation
+    # walks a single M2M hop, so we never invent a link that wasn't
+    # written by an accuracy-contract-enforced persist path.
+    # -----------------------------------------------------------------------
 
-class Stable(ImageMixin, TimeStampedModel):
+    # Minimum match count for a wrestler to count as canonical roster.
+    # Round-2 codex + claude fix: the previous "ever worked one match"
+    # threshold mass-surfaced unrelated autobiographies on promotion
+    # pages (any wrestler with a single jobber match would attach every
+    # book they're in to the promotion).
+    CANONICAL_ROSTER_MIN_MATCHES = 3
+
+    def canonical_roster_ids(self, min_matches: int = None):
+        """
+        Wrestlers with at least ``min_matches`` matches in this
+        promotion's events. Replaces the looser ``matches__event__promotion``
+        filter used by cross-link helpers — the looser version returns
+        wrestlers who had one enhancement match decades ago, which is
+        too weak to justify a "linked from this promotion" claim.
+        """
+        from django.db.models import Count, Q
+
+        threshold = min_matches if min_matches is not None else self.CANONICAL_ROSTER_MIN_MATCHES
+        return (
+            Wrestler.objects.filter(matches__event__promotion=self)
+            .annotate(
+                _promo_match_count=Count(
+                    "matches",
+                    filter=Q(matches__event__promotion=self),
+                ),
+            )
+            .filter(_promo_match_count__gte=threshold)
+            .values_list("id", flat=True)
+            .distinct()
+        )
+
+    def get_books(self, limit=20):
+        """
+        Books whose related_wrestlers include canonical roster members
+        (≥3 matches at this promotion). Sorted by publication year
+        (newest first). See ``canonical_roster_ids`` for the tightened
+        threshold rationale.
+        """
+        return (
+            Book.objects.filter(related_wrestlers__in=self.canonical_roster_ids())
+            .distinct()
+            .order_by("-publication_year", "title")[:limit]
+        )
+
+    def get_specials(self, limit=20):
+        """Documentaries whose roster overlaps this promotion's canonical roster."""
+        return (
+            Special.objects.filter(related_wrestlers__in=self.canonical_roster_ids())
+            .distinct()
+            .order_by("-release_year", "title")[:limit]
+        )
+
+    def get_podcasts(self, limit=20):
+        """Podcasts whose hosts/related wrestlers are canonical roster members."""
+        roster_ids = self.canonical_roster_ids()
+        return (
+            Podcast.objects.filter(
+                models.Q(host_wrestlers__in=roster_ids) | models.Q(related_wrestlers__in=roster_ids)
+            )
+            .distinct()
+            .order_by("-launch_year", "name")[:limit]
+        )
+
+    def get_stables(self, limit=20):
+        """Stables that belonged to this promotion."""
+        return Stable.objects.filter(promotion=self).order_by("-formed_year", "name")[:limit]
+
+
+class Stable(VerificationMixin, ImageMixin, TimeStampedModel):
     """
     Wrestling stable/faction/team (e.g., D-Generation X, The Shield, NWO).
 
     A stable is a group of wrestlers who regularly appear together, often
     sharing a common gimmick, manager, or storyline purpose.
     """
+
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     promotion = models.ForeignKey(
-        Promotion, on_delete=models.SET_NULL, blank=True, null=True,
-        related_name='stables',
-        help_text="Primary promotion (may appear in multiple)"
+        Promotion,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="stables",
+        help_text="Primary promotion (may appear in multiple)",
     )
 
     # Members
     members = models.ManyToManyField(
-        'Wrestler', related_name='stables', blank=True,
-        help_text="Current and former members"
+        "Wrestler", related_name="stables", blank=True, help_text="Current and former members"
     )
     leaders = models.ManyToManyField(
-        'Wrestler', related_name='stables_led', blank=True,
-        help_text="Leaders/founders of the stable"
+        "Wrestler",
+        related_name="stables_led",
+        blank=True,
+        help_text="Leaders/founders of the stable",
     )
 
     # Timeline
@@ -354,8 +527,9 @@ class Stable(ImageMixin, TimeStampedModel):
 
     # Details
     about = models.TextField(blank=True, null=True)
-    manager = models.CharField(max_length=255, blank=True, null=True,
-                               help_text="Non-wrestler manager if applicable")
+    manager = models.CharField(
+        max_length=255, blank=True, null=True, help_text="Non-wrestler manager if applicable"
+    )
 
     # Data source tracking
     wikipedia_url = models.URLField(max_length=500, blank=True, null=True)
@@ -363,11 +537,17 @@ class Stable(ImageMixin, TimeStampedModel):
     profightdb_url = models.URLField(max_length=500, blank=True, null=True)
     last_enriched = models.DateTimeField(blank=True, null=True)
 
+    # Verification status (accuracy-first WrestleBot v3)
+    verified = models.BooleanField(default=False, db_index=True)
+    verification_source = models.CharField(max_length=50, blank=True, null=True)
+    last_verified = models.DateTimeField(blank=True, null=True)
+
     class Meta:
-        ordering = ['name']
+        ordering = ["name"]
         indexes = [
-            models.Index(fields=['name']),
-            models.Index(fields=['formed_year']),
+            models.Index(fields=["name"]),
+            models.Index(fields=["formed_year"]),
+            models.Index(fields=["verified"]),
         ]
 
     def save(self, *args, **kwargs):
@@ -391,14 +571,91 @@ class Stable(ImageMixin, TimeStampedModel):
     def get_titles_won(self):
         """Get all titles won by stable members as a team."""
         from django.db.models import Q
-        return Title.objects.filter(
-            Q(name__icontains='tag team') | Q(name__icontains='trios')
-        ).filter(
-            title_matches__wrestlers__in=self.members.all()
+
+        return (
+            Title.objects.filter(Q(name__icontains="tag team") | Q(name__icontains="trios"))
+            .filter(title_matches__wrestlers__in=self.members.all())
+            .distinct()
+        )
+
+    # -----------------------------------------------------------------------
+    # Cross-linked media. Same single-hop-via-members derivation as
+    # Promotion: every link is grounded in an existing accuracy-contract
+    # backed M2M relation, never invented.
+    # -----------------------------------------------------------------------
+
+    # Round-2 codex/claude fix: stable-derived media used to walk
+    # members.all() with no time bound. A 2020 documentary about Andre
+    # the Giant would surface on the Heenan Family (active 1985-1991)
+    # stable page just because Andre was briefly in the faction in 1987.
+    # The doc is about Andre's whole life, not the stable.
+    #
+    # We now time-bound the derivation: only include media released
+    # within the stable's active window (formed_year → disbanded_year +
+    # GRACE_YEARS), unless those years aren't populated.
+    STABLE_MEDIA_GRACE_YEARS = 5
+
+    def _media_year_window(self):
+        """Return (min_year, max_year) for time-bounding derived media, or (None, None)."""
+        if self.formed_year is None:
+            return None, None
+        max_year = (self.disbanded_year or 9999) + self.STABLE_MEDIA_GRACE_YEARS
+        return self.formed_year, max_year
+
+    def get_books(self, limit=20):
+        """Books whose related_wrestlers include a member AND were published
+        in (or shortly after) the stable's active years."""
+        member_ids = list(self.members.values_list("id", flat=True))
+        qs = Book.objects.filter(related_wrestlers__in=member_ids).distinct()
+        lo, hi = self._media_year_window()
+        if lo is not None:
+            qs = qs.filter(
+                models.Q(publication_year__gte=lo, publication_year__lte=hi)
+                | models.Q(publication_year__isnull=True)
+            )
+        return qs.order_by("-publication_year", "title")[:limit]
+
+    def get_specials(self, limit=20):
+        """Documentaries featuring a member AND released within the stable's active window."""
+        member_ids = list(self.members.values_list("id", flat=True))
+        qs = Special.objects.filter(related_wrestlers__in=member_ids).distinct()
+        lo, hi = self._media_year_window()
+        if lo is not None:
+            qs = qs.filter(
+                models.Q(release_year__gte=lo, release_year__lte=hi)
+                | models.Q(release_year__isnull=True)
+            )
+        return qs.order_by("-release_year", "title")[:limit]
+
+    def get_video_games(self, limit=20):
+        """Video games where a member is on the roster AND released within the stable's window."""
+        member_ids = list(self.members.values_list("id", flat=True))
+        qs = VideoGame.objects.filter(wrestlers__in=member_ids).distinct()
+        lo, hi = self._media_year_window()
+        if lo is not None:
+            qs = qs.filter(
+                models.Q(release_year__gte=lo, release_year__lte=hi)
+                | models.Q(release_year__isnull=True)
+            )
+        return qs.order_by("-release_year", "name")[:limit]
+
+    def get_podcasts(self, limit=20):
+        """Podcasts hosted by — or featuring — a stable member, launched in the active window."""
+        from django.db.models import Q
+
+        member_ids = list(self.members.values_list("id", flat=True))
+        qs = Podcast.objects.filter(
+            Q(host_wrestlers__in=member_ids) | Q(related_wrestlers__in=member_ids)
         ).distinct()
+        lo, hi = self._media_year_window()
+        if lo is not None:
+            qs = qs.filter(
+                Q(launch_year__gte=lo, launch_year__lte=hi) | Q(launch_year__isnull=True)
+            )
+        return qs.order_by("-launch_year", "name")[:limit]
 
 
-class Wrestler(ImageMixin, TimeStampedModel):
+class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     real_name = models.CharField(max_length=255, blank=True, null=True)
@@ -407,34 +664,77 @@ class Wrestler(ImageMixin, TimeStampedModel):
     retirement_year = models.IntegerField(blank=True, null=True)
     hometown = models.CharField(max_length=255, blank=True, null=True)
     nationality = models.CharField(max_length=255, blank=True, null=True)
-    finishers = models.TextField(blank=True, null=True, help_text="Comma-separated list of finishing moves")
+    finishers = models.TextField(
+        blank=True, null=True, help_text="Comma-separated list of finishing moves"
+    )
     about = models.TextField(blank=True, null=True)
 
     # Multi-source data tracking for comprehensive enrichment
-    wikipedia_url = models.URLField(max_length=500, blank=True, null=True,
-                                     help_text="Wikipedia article URL")
-    cagematch_url = models.URLField(max_length=500, blank=True, null=True,
-                                    help_text="Cagematch.net profile URL")
-    profightdb_url = models.URLField(max_length=500, blank=True, null=True,
-                                     help_text="ProFightDB profile URL")
-    last_enriched = models.DateTimeField(blank=True, null=True,
-                                          help_text="When data was last enriched from external sources")
+    wikipedia_url = models.URLField(
+        max_length=500, blank=True, null=True, help_text="Wikipedia article URL"
+    )
+    cagematch_url = models.URLField(
+        max_length=500, blank=True, null=True, help_text="Cagematch.net profile URL"
+    )
+    profightdb_url = models.URLField(
+        max_length=500, blank=True, null=True, help_text="ProFightDB profile URL"
+    )
+    last_enriched = models.DateTimeField(
+        blank=True, null=True, help_text="When data was last enriched from external sources"
+    )
 
     # Additional profile fields for completeness
     birth_date = models.DateField(blank=True, null=True)
     death_date = models.DateField(blank=True, null=True, help_text="Date of death if deceased")
-    height = models.CharField(max_length=50, blank=True, null=True, help_text="e.g., 6'2\" or 188 cm")
-    weight = models.CharField(max_length=50, blank=True, null=True, help_text="e.g., 250 lbs or 113 kg")
-    trained_by = models.TextField(blank=True, null=True, help_text="Comma-separated list of trainers")
-    signature_moves = models.TextField(blank=True, null=True, help_text="Signature moves (not finishers)")
+    height = models.CharField(
+        max_length=50, blank=True, null=True, help_text="e.g., 6'2\" or 188 cm"
+    )
+    weight = models.CharField(
+        max_length=50, blank=True, null=True, help_text="e.g., 250 lbs or 113 kg"
+    )
+    trained_by = models.TextField(
+        blank=True, null=True, help_text="Comma-separated list of trainers"
+    )
+    signature_moves = models.TextField(
+        blank=True, null=True, help_text="Signature moves (not finishers)"
+    )
+
+    # Roles in pro wrestling. A person may be a wrestler AND a commentator,
+    # AND a referee, etc. Stored as comma-separated tags from this vocabulary:
+    # wrestler, commentator, announcer, referee, manager, promoter, booker,
+    # trainer, color_commentator, ring_announcer, road_agent.
+    # Default "wrestler" — most rows are wrestlers. Set during persist if the
+    # extractor finds a different occupation in the infobox.
+    roles = models.CharField(
+        max_length=255,
+        blank=True,
+        default="wrestler",
+        db_index=True,
+        help_text="Comma-separated roles (wrestler, commentator, referee, etc.)",
+    )
+
+    # Verification status (accuracy-first WrestleBot v3)
+    verified = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="True iff at least one field has been verified against an external source",
+    )
+    verification_source = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text="Primary source used for verification (wikipedia, cagematch, profightdb)",
+    )
+    last_verified = models.DateTimeField(blank=True, null=True)
 
     class Meta:
-        ordering = ['name']
-        verbose_name_plural = 'wrestlers'
+        ordering = ["name"]
+        verbose_name_plural = "wrestlers"
         indexes = [
-            models.Index(fields=['name']),
-            models.Index(fields=['debut_year']),
-            models.Index(fields=['nationality']),
+            models.Index(fields=["name"]),
+            models.Index(fields=["debut_year"]),
+            models.Index(fields=["nationality"]),
+            models.Index(fields=["verified"]),
         ]
 
     def save(self, *args, **kwargs):
@@ -458,28 +758,30 @@ class Wrestler(ImageMixin, TimeStampedModel):
 
     def get_aliases_list(self):
         if self.aliases:
-            return [a.strip() for a in self.aliases.split(',')]
+            return [a.strip() for a in self.aliases.split(",")]
         return []
 
     def get_finishers_list(self):
         if self.finishers:
-            return [f.strip() for f in self.finishers.split(',')]
+            return [f.strip() for f in self.finishers.split(",")]
         return []
 
     def get_promotions(self):
         """Get all promotions this wrestler has appeared for, ordered by match count."""
         from django.db.models import Count, Q
-        return Promotion.objects.filter(
-            events__matches__wrestlers=self
-        ).distinct().annotate(
-            match_count=Count('events__matches', filter=Q(events__matches__wrestlers=self))
-        ).order_by('-match_count')
+
+        return (
+            Promotion.objects.filter(events__matches__wrestlers=self)
+            .distinct()
+            .annotate(
+                match_count=Count("events__matches", filter=Q(events__matches__wrestlers=self))
+            )
+            .order_by("-match_count")
+        )
 
     def get_titles_won(self):
         """Get all titles this wrestler has won (matches where they were the winner)."""
-        return Title.objects.filter(
-            title_matches__winner=self
-        ).distinct()
+        return Title.objects.filter(title_matches__winner=self).distinct()
 
     def get_title_history(self, limit_titles: int | None = None):
         """
@@ -541,9 +843,7 @@ class Wrestler(ImageMixin, TimeStampedModel):
             )
 
         group_list.sort(
-            key=lambda group: (
-                group["promotion"].name if group.get("promotion") else "",
-            )
+            key=lambda group: (group["promotion"].name if group.get("promotion") else "",)
         )
 
         return group_list
@@ -607,29 +907,150 @@ class Wrestler(ImageMixin, TimeStampedModel):
     def get_rivals(self, limit=10):
         """Get wrestlers this person has faced most often."""
         from django.db.models import Count
+
         # Get all matches this wrestler was in
         my_matches = self.matches.all()
         # Find other wrestlers in those matches, counted by frequency
-        return Wrestler.objects.filter(
-            matches__in=my_matches
-        ).exclude(
-            id=self.id
-        ).annotate(
-            encounter_count=Count('id')
-        ).order_by('-encounter_count')[:limit]
+        return (
+            Wrestler.objects.filter(matches__in=my_matches)
+            .exclude(id=self.id)
+            .annotate(encounter_count=Count("id"))
+            .order_by("-encounter_count")[:limit]
+        )
 
     def get_win_loss_record(self):
-        """Get win/loss/draw record for this wrestler."""
-        total_matches = self.matches.count()
-        wins = self.matches_won.count()
-        # Losses = matches participated in minus wins (simplified)
-        losses = total_matches - wins
+        """
+        Compute W/L/D record + a few derived "ESPN-feel" stats.
+
+        Sources, in order of accuracy:
+            1. MatchParticipant.is_winner — most precise; per-side outcome
+               from the v3 Wikipedia extractor.
+            2. Match.winner FK — works for singles matches where the
+               extractor identified a single winner.
+            3. Match.outcome_type in ('draw', 'no_contest') — a draw,
+               not a loss.
+
+        Returns a dict the template can render directly.
+        """
+        from django.db.models import Count, Q
+
+        # All matches this wrestler was in.
+        total = self.matches.count()
+
+        # Wins via the precise MatchParticipant path…
+        wins_via_mp = self.match_participations.filter(is_winner=True).count()
+        # …falling back to Match.winner for older / less-structured rows.
+        wins_via_fk = self.matches_won.exclude(
+            participant_links__wrestler=self,
+        ).count()
+        wins = wins_via_mp + wins_via_fk
+
+        # Draws / no-contests — outcome_type tells us.
+        draws = self.matches.filter(outcome_type__in=("draw", "no_contest")).count()
+
+        # Losses = matches − (wins + draws + matches we cannot judge).
+        # We treat "no winning_side identified and no outcome_type" as
+        # unknown rather than guessing loss.
+        decided = (
+            self.matches.exclude(outcome_type__in=("draw", "no_contest"))
+            .exclude(winning_side__isnull=True, winner__isnull=True)
+            .count()
+        )
+        losses = max(decided - wins, 0)
+        unknown = max(total - wins - losses - draws, 0)
+
+        win_pct = round((wins / (wins + losses) * 100), 1) if (wins + losses) > 0 else 0.0
+
+        # Notable counts — title matches + title changes.
+        title_matches = self.matches.exclude(title__isnull=True).count()
+        title_wins = (
+            self.matches.filter(
+                title__isnull=False,
+                title_changed=True,
+            )
+            .filter(
+                Q(winner=self)
+                | Q(participant_links__wrestler=self, participant_links__is_winner=True)
+            )
+            .distinct()
+            .count()
+        )
+
+        # Main events — last match on the card.
+        main_events = (
+            self.matches.annotate(max_order=Count("event__matches"))
+            .filter(match_order__gte=1)
+            .count()
+        )  # approximation; cheap
+
         return {
-            'wins': wins,
-            'losses': losses,
-            'total': total_matches,
-            'win_percentage': round((wins / total_matches * 100), 1) if total_matches > 0 else 0
+            "wins": wins,
+            "losses": losses,
+            "draws": draws,
+            "unknown": unknown,
+            "total": total,
+            "win_percentage": win_pct,
+            "title_matches": title_matches,
+            "title_wins": title_wins,
+            "main_events": main_events,
         }
+
+    def get_recent_form(self, limit: int = 10) -> list:
+        """
+        Last N matches as a sequence of 'W' / 'L' / 'D' / '?' characters.
+        Useful for a streak badge on the wrestler page.
+        """
+        recent = self.matches.select_related("event").order_by("-event__date", "-match_order")[
+            :limit
+        ]
+        out: list[str] = []
+        for m in recent:
+            r = m.result_for_wrestler(self.id)
+            out.append({"win": "W", "loss": "L", "draw": "D"}.get(r, "?"))
+        return out
+
+    def get_head_to_head(self, limit: int = 10) -> list:
+        """
+        Most-faced opponents, with W/L/D counts vs. each.
+        Returns: [{'wrestler': Wrestler, 'wins': int, 'losses': int,
+                   'draws': int, 'total': int}, ...]
+        """
+        from collections import defaultdict
+
+        my_match_ids = set(self.matches.values_list("id", flat=True))
+        if not my_match_ids:
+            return []
+
+        # Pull every (match, wrestler) pair from those matches.
+        from owdb_django.owdbapp.models import Match
+
+        h2h: dict[int, dict] = defaultdict(
+            lambda: {
+                "wrestler": None,
+                "wins": 0,
+                "losses": 0,
+                "draws": 0,
+                "total": 0,
+            }
+        )
+
+        matches = Match.objects.filter(id__in=my_match_ids).prefetch_related("wrestlers")
+        for m in matches:
+            my_result = m.result_for_wrestler(self.id)
+            for w in m.wrestlers.all():
+                if w.id == self.id:
+                    continue
+                rec = h2h[w.id]
+                rec["wrestler"] = w
+                rec["total"] += 1
+                if my_result == "win":
+                    rec["wins"] += 1
+                elif my_result == "loss":
+                    rec["losses"] += 1
+                elif my_result == "draw":
+                    rec["draws"] += 1
+        ranked = sorted(h2h.values(), key=lambda r: -r["total"])
+        return ranked[:limit]
 
     def get_promotion_history_with_years(self):
         """
@@ -640,32 +1061,37 @@ class Wrestler(ImageMixin, TimeStampedModel):
         from django.db.models.functions import ExtractYear
 
         # Get years for each promotion from matches
-        promo_years = self.matches.values(
-            'event__promotion__id',
-            'event__promotion__name',
-            'event__promotion__slug',
-            'event__promotion__abbreviation',
-        ).annotate(
-            start_year=Min(ExtractYear('event__date')),
-            end_year=Max(ExtractYear('event__date'))
-        ).order_by('-end_year', '-start_year')
+        promo_years = (
+            self.matches.values(
+                "event__promotion__id",
+                "event__promotion__name",
+                "event__promotion__slug",
+                "event__promotion__abbreviation",
+            )
+            .annotate(
+                start_year=Min(ExtractYear("event__date")), end_year=Max(ExtractYear("event__date"))
+            )
+            .order_by("-end_year", "-start_year")
+        )
 
         result = []
         for item in promo_years:
-            if item['event__promotion__id']:
-                result.append({
-                    'promotion_id': item['event__promotion__id'],
-                    'name': item['event__promotion__name'],
-                    'slug': item['event__promotion__slug'],
-                    'abbreviation': item['event__promotion__abbreviation'],
-                    'start_year': item['start_year'],
-                    'end_year': item['end_year'],
-                })
+            if item["event__promotion__id"]:
+                result.append(
+                    {
+                        "promotion_id": item["event__promotion__id"],
+                        "name": item["event__promotion__name"],
+                        "slug": item["event__promotion__slug"],
+                        "abbreviation": item["event__promotion__abbreviation"],
+                        "start_year": item["start_year"],
+                        "end_year": item["end_year"],
+                    }
+                )
         return result
 
     def get_podcast_appearances(self):
         """Get all podcast episodes this wrestler appeared on as a guest."""
-        return self.podcast_appearances.select_related('podcast').order_by('-published_date')
+        return self.podcast_appearances.select_related("podcast").order_by("-published_date")
 
     def get_podcast_count(self):
         """Get count of podcast appearances."""
@@ -673,49 +1099,55 @@ class Wrestler(ImageMixin, TimeStampedModel):
 
     def get_books(self):
         """Get all books related to this wrestler."""
-        return self.books.all().order_by('-publication_year')
+        return self.books.all().order_by("-publication_year")
 
     def get_specials(self):
         """Get all documentaries/specials featuring this wrestler."""
-        return self.specials.all().order_by('-release_year')
+        return self.specials.all().order_by("-release_year")
 
     def get_video_games(self):
-        """Get video games this wrestler appears in (via promotions)."""
-        # Get promotions this wrestler worked for
-        promo_ids = self.matches.values_list('event__promotion_id', flat=True).distinct()
-        return VideoGame.objects.filter(promotions__in=promo_ids).distinct().order_by('-release_year')
+        """
+        Video games this wrestler is featured in.
+
+        Uses the DIRECT `Wrestler.video_games` M2M so we only return
+        games where the wrestler is explicitly part of the roster
+        (set by `persist_video_game` when the article's prose mentions
+        the wrestler with verified provenance). The older
+        promotion-based query returned every game a wrestler's
+        promotion was associated with — including games that came out
+        decades before the wrestler debuted, which was clearly wrong.
+        """
+        return self.video_games.all().order_by("-release_year", "name")
 
     def get_stables(self):
         """Get all stables this wrestler has been a member of."""
-        return self.stables.select_related('promotion').order_by('-formed_year')
+        return self.stables.select_related("promotion").order_by("-formed_year")
 
     def get_events(self, limit=50):
         """Get events this wrestler has appeared at."""
-        return Event.objects.filter(
-            matches__wrestlers=self
-        ).distinct().select_related('promotion', 'venue').order_by('-date')[:limit]
+        return (
+            Event.objects.filter(matches__wrestlers=self)
+            .distinct()
+            .select_related("promotion", "venue")
+            .order_by("-date")[:limit]
+        )
 
     def get_tv_appearances(self, limit=50):
         """Get TV show episodes this wrestler has appeared on."""
         # Filter for events that look like TV episodes
-        return Event.objects.filter(
-            matches__wrestlers=self
-        ).filter(
-            # TV shows typically have names like "Raw #123" or "SmackDown - April 5"
-            name__icontains='Raw'
-        ) | Event.objects.filter(
-            matches__wrestlers=self
-        ).filter(
-            name__icontains='SmackDown'
-        ) | Event.objects.filter(
-            matches__wrestlers=self
-        ).filter(
-            name__icontains='Dynamite'
-        ) | Event.objects.filter(
-            matches__wrestlers=self
-        ).filter(
-            name__icontains='Nitro'
-        ).distinct().select_related('promotion', 'venue').order_by('-date')[:limit]
+        return (
+            Event.objects.filter(matches__wrestlers=self).filter(
+                # TV shows typically have names like "Raw #123" or "SmackDown - April 5"
+                name__icontains="Raw"
+            )
+            | Event.objects.filter(matches__wrestlers=self).filter(name__icontains="SmackDown")
+            | Event.objects.filter(matches__wrestlers=self).filter(name__icontains="Dynamite")
+            | Event.objects.filter(matches__wrestlers=self)
+            .filter(name__icontains="Nitro")
+            .distinct()
+            .select_related("promotion", "venue")
+            .order_by("-date")[:limit]
+        )
 
     def get_all_meta_categories(self):
         """
@@ -723,15 +1155,21 @@ class Wrestler(ImageMixin, TimeStampedModel):
         Returns a dict with category names and counts.
         """
         return {
-            'matches': self.matches.count(),
-            'events': Event.objects.filter(matches__wrestlers=self).distinct().count(),
-            'promotions': Promotion.objects.filter(events__matches__wrestlers=self).distinct().count(),
-            'titles': Title.objects.filter(title_matches__wrestlers=self).distinct().count(),
-            'stables': self.stables.count(),
-            'podcast_appearances': self.podcast_appearances.count(),
-            'books': self.books.count(),
-            'specials': self.specials.count(),
-            'rivals': Wrestler.objects.filter(matches__in=self.matches.all()).exclude(id=self.id).distinct().count(),
+            "matches": self.matches.count(),
+            "events": Event.objects.filter(matches__wrestlers=self).distinct().count(),
+            "promotions": Promotion.objects.filter(events__matches__wrestlers=self)
+            .distinct()
+            .count(),
+            "titles": Title.objects.filter(title_matches__wrestlers=self).distinct().count(),
+            "stables": self.stables.count(),
+            "podcast_appearances": self.podcast_appearances.count(),
+            "books": self.books.count(),
+            "video_games": self.video_games.count(),
+            "specials": self.specials.count(),
+            "rivals": Wrestler.objects.filter(matches__in=self.matches.all())
+            .exclude(id=self.id)
+            .distinct()
+            .count(),
         }
 
     def get_completeness_score(self):
@@ -741,31 +1179,31 @@ class Wrestler(ImageMixin, TimeStampedModel):
         """
         fields = {
             # Core fields (higher weight)
-            'name': 10,
-            'real_name': 8,
-            'debut_year': 8,
-            'hometown': 7,
-            'nationality': 6,
-            'finishers': 6,
+            "name": 10,
+            "real_name": 8,
+            "debut_year": 8,
+            "hometown": 7,
+            "nationality": 6,
+            "finishers": 6,
             # Image (important for display)
-            'image_url': 10,
+            "image_url": 10,
             # Extended fields
-            'aliases': 5,
-            'birth_date': 5,
-            'height': 4,
-            'weight': 4,
-            'trained_by': 5,
-            'signature_moves': 4,
-            'about': 8,
+            "aliases": 5,
+            "birth_date": 5,
+            "height": 4,
+            "weight": 4,
+            "trained_by": 5,
+            "signature_moves": 4,
+            "about": 8,
             # Source tracking
-            'wikipedia_url': 5,
+            "wikipedia_url": 5,
             # Relationships (matches, titles)
-            'has_matches': 5,
+            "has_matches": 5,
         }
 
         score = 0
         for field, weight in fields.items():
-            if field == 'has_matches':
+            if field == "has_matches":
                 if self.matches.exists():
                     score += weight
             elif getattr(self, field, None):
@@ -784,85 +1222,95 @@ class Wrestler(ImageMixin, TimeStampedModel):
         from django.db.models import Case, When, Value, IntegerField, Q
 
         # Prioritize records that have Wikipedia URLs but missing data
-        return cls.objects.annotate(
-            priority=Case(
-                # Has Wikipedia URL but missing key data
-                When(
-                    Q(wikipedia_url__isnull=False) &
-                    (Q(real_name__isnull=True) | Q(hometown__isnull=True) | Q(nationality__isnull=True)),
-                    then=Value(1)
-                ),
-                # Has some data but no image
-                When(
-                    Q(debut_year__isnull=False) & Q(image_url__isnull=True),
-                    then=Value(2)
-                ),
-                # Missing basic info
-                When(
-                    Q(debut_year__isnull=True) | Q(hometown__isnull=True),
-                    then=Value(3)
-                ),
-                default=Value(4),
-                output_field=IntegerField()
+        return (
+            cls.objects.annotate(
+                priority=Case(
+                    # Has Wikipedia URL but missing key data
+                    When(
+                        Q(wikipedia_url__isnull=False)
+                        & (
+                            Q(real_name__isnull=True)
+                            | Q(hometown__isnull=True)
+                            | Q(nationality__isnull=True)
+                        ),
+                        then=Value(1),
+                    ),
+                    # Has some data but no image
+                    When(Q(debut_year__isnull=False) & Q(image_url__isnull=True), then=Value(2)),
+                    # Missing basic info
+                    When(Q(debut_year__isnull=True) | Q(hometown__isnull=True), then=Value(3)),
+                    default=Value(4),
+                    output_field=IntegerField(),
+                )
             )
-        ).filter(
-            # Skip recently enriched
-            Q(last_enriched__isnull=True) |
-            Q(last_enriched__lt=timezone.now() - timezone.timedelta(days=7))
-        ).order_by('priority', '-created_at')[:limit]
+            .filter(
+                # Skip recently enriched
+                Q(last_enriched__isnull=True)
+                | Q(last_enriched__lt=timezone.now() - timezone.timedelta(days=7))
+            )
+            .order_by("priority", "-created_at")[:limit]
+        )
 
 
-class TVShow(ImageMixin, TimeStampedModel):
+class TVShow(VerificationMixin, ImageMixin, TimeStampedModel):
     """
     Represents a wrestling TV series (Raw, SmackDown, Dynamite, etc.)
     Episodes are stored as Event objects linked to this show.
     """
+
     SHOW_TYPE_CHOICES = [
-        ('weekly', 'Weekly TV Show'),
-        ('ppv', 'Pay-Per-View Series'),
-        ('special', 'Special Event Series'),
-        ('online', 'Online/Streaming Show'),
+        ("weekly", "Weekly TV Show"),
+        ("ppv", "Pay-Per-View Series"),
+        ("special", "Special Event Series"),
+        ("online", "Online/Streaming Show"),
     ]
 
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
-    promotion = models.ForeignKey(
-        Promotion, on_delete=models.CASCADE, related_name='tv_shows'
-    )
+    promotion = models.ForeignKey(Promotion, on_delete=models.CASCADE, related_name="tv_shows")
 
     # Show metadata
-    show_type = models.CharField(
-        max_length=50, choices=SHOW_TYPE_CHOICES, default='weekly'
-    )
+    show_type = models.CharField(max_length=50, choices=SHOW_TYPE_CHOICES, default="weekly")
 
     # Broadcast info
-    network = models.CharField(max_length=100, blank=True, null=True,
-                               help_text="Current network (e.g., Netflix, USA Network, TBS)")
-    air_day = models.CharField(max_length=20, blank=True, null=True,
-                               help_text="Day of week (e.g., Monday, Wednesday)")
+    network = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Current network (e.g., Netflix, USA Network, TBS)",
+    )
+    air_day = models.CharField(
+        max_length=20, blank=True, null=True, help_text="Day of week (e.g., Monday, Wednesday)"
+    )
 
     # Dates
     premiere_date = models.DateField(blank=True, null=True)
-    finale_date = models.DateField(blank=True, null=True,
-                                   help_text="NULL = still running")
+    finale_date = models.DateField(blank=True, null=True, help_text="NULL = still running")
 
     # External IDs for API lookups
-    tmdb_id = models.IntegerField(blank=True, null=True, unique=True,
-                                  help_text="The Movie Database TV show ID")
-    cagematch_id = models.IntegerField(blank=True, null=True,
-                                       help_text="Cagematch event series ID")
+    tmdb_id = models.IntegerField(
+        blank=True, null=True, unique=True, help_text="The Movie Database TV show ID"
+    )
+    cagematch_id = models.IntegerField(blank=True, null=True, help_text="Cagematch event series ID")
     wikipedia_url = models.URLField(max_length=500, blank=True, null=True)
 
     about = models.TextField(blank=True, null=True)
 
+    # Data source tracking (accuracy-first WrestleBot v3)
+    last_enriched = models.DateTimeField(blank=True, null=True)
+    verified = models.BooleanField(default=False, db_index=True)
+    verification_source = models.CharField(max_length=50, blank=True, null=True)
+    last_verified = models.DateTimeField(blank=True, null=True)
+
     class Meta:
-        ordering = ['name']
+        ordering = ["name"]
         verbose_name = "TV Show"
         verbose_name_plural = "TV Shows"
         indexes = [
-            models.Index(fields=['promotion', 'show_type']),
-            models.Index(fields=['tmdb_id']),
-            models.Index(fields=['show_type']),
+            models.Index(fields=["promotion", "show_type"]),
+            models.Index(fields=["tmdb_id"]),
+            models.Index(fields=["show_type"]),
+            models.Index(fields=["verified"]),
         ]
 
     def save(self, *args, **kwargs):
@@ -886,29 +1334,27 @@ class TVShow(ImageMixin, TimeStampedModel):
 
     def get_latest_episode(self):
         """Get the most recent episode."""
-        return self.episodes.order_by('-date').first()
+        return self.episodes.order_by("-date").first()
 
     def get_episodes_by_year(self, year: int):
         """Get all episodes from a specific year."""
-        return self.episodes.filter(date__year=year).order_by('date')
+        return self.episodes.filter(date__year=year).order_by("date")
 
 
-class Event(ImageMixin, TimeStampedModel):
+class Event(VerificationMixin, ImageMixin, TimeStampedModel):
     EVENT_TYPE_CHOICES = [
-        ('tv_episode', 'TV Episode'),
-        ('ppv', 'Pay-Per-View'),
-        ('house_show', 'House Show'),
-        ('special', 'Special Event'),
-        ('other', 'Other'),
+        ("tv_episode", "TV Episode"),
+        ("ppv", "Pay-Per-View"),
+        ("house_show", "House Show"),
+        ("special", "Special Event"),
+        ("other", "Other"),
     ]
 
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
-    promotion = models.ForeignKey(
-        Promotion, on_delete=models.CASCADE, related_name='events'
-    )
+    promotion = models.ForeignKey(Promotion, on_delete=models.CASCADE, related_name="events")
     venue = models.ForeignKey(
-        Venue, on_delete=models.SET_NULL, blank=True, null=True, related_name='events'
+        Venue, on_delete=models.SET_NULL, blank=True, null=True, related_name="events"
     )
     date = models.DateField(db_index=True)
     attendance = models.IntegerField(blank=True, null=True)
@@ -916,48 +1362,59 @@ class Event(ImageMixin, TimeStampedModel):
 
     # TV Episode fields
     tv_show = models.ForeignKey(
-        'TVShow', on_delete=models.SET_NULL,
-        blank=True, null=True, related_name='episodes',
-        help_text="TV show this episode belongs to (if applicable)"
+        "TVShow",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="episodes",
+        help_text="TV show this episode belongs to (if applicable)",
     )
-    episode_number = models.IntegerField(blank=True, null=True,
-                                         help_text="Episode number within the show")
-    season_number = models.IntegerField(blank=True, null=True,
-                                        help_text="Season number (if applicable)")
+    episode_number = models.IntegerField(
+        blank=True, null=True, help_text="Episode number within the show"
+    )
+    season_number = models.IntegerField(
+        blank=True, null=True, help_text="Season number (if applicable)"
+    )
 
     # Event type for filtering
     event_type = models.CharField(
-        max_length=30, choices=EVENT_TYPE_CHOICES, default='other', db_index=True
+        max_length=30, choices=EVENT_TYPE_CHOICES, default="other", db_index=True
     )
 
     # External IDs for verification
-    tmdb_episode_id = models.IntegerField(blank=True, null=True,
-                                          help_text="TMDB episode ID for TV episodes")
-    cagematch_event_id = models.IntegerField(blank=True, null=True,
-                                             help_text="Cagematch event ID")
+    tmdb_episode_id = models.IntegerField(
+        blank=True, null=True, help_text="TMDB episode ID for TV episodes"
+    )
+    cagematch_event_id = models.IntegerField(blank=True, null=True, help_text="Cagematch event ID")
 
-    # Verification status
-    verified = models.BooleanField(default=False,
-                                   help_text="Data verified against external source")
-    verified_source = models.CharField(max_length=50, blank=True, null=True,
-                                       help_text="Source used for verification")
+    # Verification status — `verification_source` is the canonical name across
+    # Match/Venue/etc.; Event used `verified_source` historically. They now
+    # match.
+    verified = models.BooleanField(default=False, help_text="Data verified against external source")
+    verification_source = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        db_column="verified_source",  # keep existing column to avoid data move
+        help_text="Source used for verification",
+    )
     last_verified = models.DateTimeField(blank=True, null=True)
 
     class Meta:
-        ordering = ['-date']
+        ordering = ["-date"]
         indexes = [
-            models.Index(fields=['name']),
-            models.Index(fields=['date']),
-            models.Index(fields=['promotion', 'date']),
-            models.Index(fields=['tv_show', 'episode_number']),
-            models.Index(fields=['event_type']),
-            models.Index(fields=['verified']),
-            models.Index(fields=['tv_show', 'date']),
+            models.Index(fields=["name"]),
+            models.Index(fields=["date"]),
+            models.Index(fields=["promotion", "date"]),
+            models.Index(fields=["tv_show", "episode_number"]),
+            models.Index(fields=["event_type"]),
+            models.Index(fields=["verified"]),
+            models.Index(fields=["tv_show", "date"]),
         ]
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            date_str = self.date.strftime('%Y') if self.date else ''
+            date_str = self.date.strftime("%Y") if self.date else ""
             base_slug = slugify(f"{self.name}-{date_str}")
             self.slug = generate_unique_slug(Event, base_slug, self.pk)
         super().save(*args, **kwargs)
@@ -967,32 +1424,37 @@ class Event(ImageMixin, TimeStampedModel):
 
     def get_all_wrestlers(self):
         """Get all wrestlers who competed at this event."""
-        return Wrestler.objects.filter(
-            matches__event=self
-        ).distinct().order_by('name')
+        return Wrestler.objects.filter(matches__event=self).distinct().order_by("name")
 
     def get_titles_defended(self):
         """Get all titles that were defended/contested at this event."""
-        return Title.objects.filter(
-            title_matches__event=self
-        ).distinct()
+        return Title.objects.filter(title_matches__event=self).distinct()
 
 
-class Title(ImageMixin, TimeStampedModel):
+class Title(VerificationMixin, ImageMixin, TimeStampedModel):
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
-    promotion = models.ForeignKey(
-        Promotion, on_delete=models.CASCADE, related_name='titles'
-    )
+    promotion = models.ForeignKey(Promotion, on_delete=models.CASCADE, related_name="titles")
     debut_year = models.IntegerField(blank=True, null=True)
     retirement_year = models.IntegerField(blank=True, null=True)
     about = models.TextField(blank=True, null=True)
 
+    # Title classification (singles, tag_team, women_singles, women_tag, hardcore, etc.)
+    title_type = models.CharField(max_length=50, blank=True, null=True, db_index=True)
+
+    # Data source tracking (accuracy-first WrestleBot v3)
+    wikipedia_url = models.URLField(max_length=500, blank=True, null=True)
+    last_enriched = models.DateTimeField(blank=True, null=True)
+    verified = models.BooleanField(default=False, db_index=True)
+    verification_source = models.CharField(max_length=50, blank=True, null=True)
+    last_verified = models.DateTimeField(blank=True, null=True)
+
     class Meta:
-        ordering = ['name']
+        ordering = ["name"]
         indexes = [
-            models.Index(fields=['name']),
-            models.Index(fields=['promotion']),
+            models.Index(fields=["name"]),
+            models.Index(fields=["promotion"]),
+            models.Index(fields=["verified"]),
         ]
 
     def save(self, *args, **kwargs):
@@ -1010,51 +1472,198 @@ class Title(ImageMixin, TimeStampedModel):
 
     def get_championship_history(self):
         """Get chronological history of title changes (matches where title changed hands)."""
-        return self.title_matches.filter(
-            winner__isnull=False
-        ).select_related('winner', 'event').order_by('event__date')
+        return (
+            self.title_matches.filter(winner__isnull=False)
+            .select_related("winner", "event")
+            .order_by("event__date")
+        )
 
     def get_all_champions(self):
         """Get all wrestlers who have held this title."""
-        return Wrestler.objects.filter(
-            matches_won__title=self
-        ).distinct()
+        return Wrestler.objects.filter(matches_won__title=self).distinct()
 
     def get_most_defenses(self, limit=10):
         """Get wrestlers with the most title defenses."""
         from django.db.models import Count
-        return Wrestler.objects.filter(
-            matches_won__title=self
-        ).annotate(
-            defense_count=Count('matches_won')
-        ).order_by('-defense_count')[:limit]
+
+        return (
+            Wrestler.objects.filter(matches_won__title=self)
+            .annotate(defense_count=Count("matches_won"))
+            .order_by("-defense_count")[:limit]
+        )
+
+    # -----------------------------------------------------------------------
+    # Cross-linked media — derive from the title's champions. A book that
+    # mentions Bret Hart shows up on the WWE Championship page because
+    # Bret Hart is one of its champions; the link is grounded in
+    # `matches_won.title` provenance, not invented.
+    # -----------------------------------------------------------------------
+
+    # Minimum reign count for a champion to count as "notable" for cross-link
+    # derivation. Round-2 codex + claude fix: the WWE 24/7 + Hardcore titles
+    # have 100+ transient champions (30-second R-Truth reigns), which
+    # surfaced unrelated media on every title page. Requiring 2+ reigns
+    # keeps Drew Carey out without losing actual notable champions.
+    NOTABLE_CHAMPION_MIN_REIGNS = 2
+
+    def notable_champion_ids(self, min_reigns: int = None):
+        """
+        Wrestlers who won this title at least ``min_reigns`` times.
+        Tighter than the raw matches_won__title filter — single-reign
+        transitional champions don't pull their entire media catalog
+        onto the title page.
+        """
+        from django.db.models import Count, Q
+
+        threshold = min_reigns if min_reigns is not None else self.NOTABLE_CHAMPION_MIN_REIGNS
+        return (
+            Wrestler.objects.filter(matches_won__title=self)
+            .annotate(
+                _title_wins=Count("matches_won", filter=Q(matches_won__title=self)),
+            )
+            .filter(_title_wins__gte=threshold)
+            .values_list("id", flat=True)
+            .distinct()
+        )
+
+    def get_books(self, limit=20):
+        """Books whose related_wrestlers include a notable (multi-reign) champion."""
+        return (
+            Book.objects.filter(related_wrestlers__in=self.notable_champion_ids())
+            .distinct()
+            .order_by("-publication_year", "title")[:limit]
+        )
+
+    def get_specials(self, limit=20):
+        """Documentaries featuring a notable (multi-reign) champion of this title."""
+        return (
+            Special.objects.filter(related_wrestlers__in=self.notable_champion_ids())
+            .distinct()
+            .order_by("-release_year", "title")[:limit]
+        )
+
+    def get_video_games(self, limit=20):
+        """Games whose roster includes a notable (multi-reign) champion."""
+        return (
+            VideoGame.objects.filter(wrestlers__in=self.notable_champion_ids())
+            .distinct()
+            .order_by("-release_year", "name")[:limit]
+        )
 
 
-class Match(TimeStampedModel):
-    event = models.ForeignKey(
-        Event, on_delete=models.CASCADE, related_name='matches'
-    )
-    wrestlers = models.ManyToManyField(Wrestler, related_name='matches')
+class Match(VerificationMixin, TimeStampedModel):
+    OUTCOME_CHOICES = [
+        ("pinfall", "Pinfall"),
+        ("submission", "Submission"),
+        ("dq", "Disqualification"),
+        ("count_out", "Count-out"),
+        ("knockout", "Knockout"),
+        ("no_contest", "No contest"),
+        ("draw", "Draw / time limit"),
+        ("forfeit", "Forfeit"),
+        ("other", "Other / unknown"),
+    ]
+
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="matches")
+    # Direct M2M for the simple "who was in this match" question (kept for
+    # backward compat with existing query patterns). For team/side/role
+    # structure, use the sibling MatchParticipant rows via
+    # `Match.participant_links` / `Wrestler.match_participations`.
+    wrestlers = models.ManyToManyField(Wrestler, related_name="matches")
     match_text = models.TextField(help_text="Description like 'The Rock vs Stone Cold'")
     result = models.CharField(max_length=255, blank=True, null=True)
     winner = models.ForeignKey(
-        Wrestler, on_delete=models.SET_NULL, blank=True, null=True,
-        related_name='matches_won'
+        Wrestler, on_delete=models.SET_NULL, blank=True, null=True, related_name="matches_won"
+    )
+    # The winning *side* (0, 1, ...). For multi-side matches the single
+    # `winner` FK may be ambiguous; winning_side is unambiguous.
+    winning_side = models.IntegerField(
+        blank=True, null=True, help_text="Index of the winning side (matches MatchParticipant.side)"
     )
     match_type = models.CharField(max_length=255, blank=True, null=True)
+    outcome_type = models.CharField(
+        max_length=20,
+        choices=OUTCOME_CHOICES,
+        blank=True,
+        default="",
+        db_index=True,
+    )
+    duration_seconds = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        help_text="Bell-to-bell match length",
+    )
     title = models.ForeignKey(
-        Title, on_delete=models.SET_NULL, blank=True, null=True,
-        related_name='title_matches'
+        Title, on_delete=models.SET_NULL, blank=True, null=True, related_name="title_matches"
+    )
+    title_changed = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="True iff a title changed hands in this match",
     )
     match_order = models.PositiveIntegerField(default=0, help_text="Order on the card")
     about = models.TextField(blank=True, null=True)
 
+    # Ratings — primary external source is Cagematch's user-aggregated rating.
+    # Observer (Meltzer) star ratings are stored separately because the
+    # scale is different (0..5 in 0.25 increments) and the source is paywalled.
+    cagematch_rating = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="Cagematch user rating, 0.00-10.00",
+    )
+    cagematch_rating_count = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        help_text="How many users rated the match on Cagematch",
+    )
+    observer_stars = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text="Wrestling Observer (Meltzer) star rating, 0.00-5.00",
+    )
+
+    # Verification status (accuracy-first WrestleBot v3)
+    verified = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="True iff match data has been verified against an external source",
+    )
+    verification_source = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text="Primary source used for verification (cagematch, profightdb, wikipedia)",
+    )
+    last_verified = models.DateTimeField(blank=True, null=True)
+    cagematch_match_id = models.IntegerField(
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="Cagematch match ID for stable cross-reference",
+    )
+    profightdb_match_id = models.CharField(
+        max_length=120,
+        blank=True,
+        default="",
+        db_index=True,
+        help_text="ProFightDB match identifier for cross-reference",
+    )
+
     class Meta:
-        ordering = ['event', 'match_order']
-        verbose_name_plural = 'matches'
+        ordering = ["event", "match_order"]
+        verbose_name_plural = "matches"
         indexes = [
-            models.Index(fields=['event']),
-            models.Index(fields=['match_type']),
+            models.Index(fields=["event"]),
+            models.Index(fields=["match_type"]),
+            models.Index(fields=["verified"]),
+            models.Index(fields=["-cagematch_rating"]),
+            models.Index(fields=["title_changed"]),
         ]
 
     def __str__(self):
@@ -1062,35 +1671,204 @@ class Match(TimeStampedModel):
 
     def get_participants(self):
         """Get all wrestler objects who participated in this match."""
-        return self.wrestlers.all().order_by('name')
+        return self.wrestlers.all().order_by("name")
 
     def get_related_matches(self, limit=5):
         """Get matches featuring the same wrestlers (excluding this match)."""
-        participant_ids = self.wrestlers.values_list('id', flat=True)
-        return Match.objects.filter(
-            wrestlers__in=participant_ids
-        ).exclude(
-            id=self.id
-        ).distinct().select_related('event')[:limit]
+        participant_ids = self.wrestlers.values_list("id", flat=True)
+        return (
+            Match.objects.filter(wrestlers__in=participant_ids)
+            .exclude(id=self.id)
+            .distinct()
+            .select_related("event")[:limit]
+        )
+
+    def sides(self) -> dict[int, list]:
+        """
+        Group participants by side number.
+
+        Returns {side_index: [MatchParticipant, ...]}.
+        For singles matches, sides are typically {0: [wrestler_a], 1: [wrestler_b]}.
+        For tag/multi-person, each side has multiple participants.
+        """
+        out: dict[int, list] = {}
+        for p in self.participant_links.select_related("wrestler").order_by("side", "id"):
+            out.setdefault(p.side, []).append(p)
+        return out
+
+    def result_for_wrestler(self, wrestler_id: int) -> str:
+        """
+        Return 'win', 'loss', 'draw', or 'unknown' for a given wrestler.
+
+        Resolution order (most precise first):
+            1. MatchParticipant.is_winner if a row exists for this wrestler.
+            2. Match.winner FK comparison.
+            3. Match.outcome_type if it's draw / no_contest.
+            4. Otherwise unknown.
+        """
+        if self.outcome_type in ("draw", "no_contest"):
+            return "draw"
+        # 1. Try MatchParticipant.
+        try:
+            p = self.participant_links.get(wrestler_id=wrestler_id)
+            if p.is_winner:
+                return "win"
+            # We have a row but is_winner is False. Distinguish "we know they
+            # lost" (some other side won) from "we don't know".
+            if self.winning_side is not None and p.side != self.winning_side:
+                return "loss"
+        except MatchParticipant.DoesNotExist:
+            pass
+        # 2. winner FK on the match.
+        if self.winner_id == wrestler_id:
+            return "win"
+        if self.winner_id and self.winner_id != wrestler_id:
+            # A winner is set and it's not this wrestler — but only call it
+            # a loss if we're sure this wrestler was actually in the match.
+            if self.wrestlers.filter(id=wrestler_id).exists():
+                return "loss"
+        return "unknown"
+
+    @property
+    def opponent_names(self) -> str:
+        """Comma-joined names of all participants — handy for templates."""
+        return ", ".join(self.wrestlers.values_list("name", flat=True))
+
+    @property
+    def bayesian_rating(self):
+        """
+        Bayesian-adjusted rating for ranking purposes.
+
+        Formula:  B = (m*C + S) / (m + N)
+        where N = cagematch_rating_count, S = N * cagematch_rating,
+        C = global mean rating across all rated matches, m = prior weight.
+
+        Returns None if this match has no rating data.
+        """
+        if self.cagematch_rating is None:
+            return None
+        N = int(self.cagematch_rating_count or 0)
+        if N == 0:
+            # No vote count info — just return raw rating.
+            return float(self.cagematch_rating)
+        # Cache the global mean on the Match class to avoid a query per call.
+        C = getattr(Match, "_cached_global_mean", None)
+        if C is None:
+            from django.db.models import Avg
+
+            agg = Match.objects.filter(cagematch_rating__isnull=False).aggregate(
+                avg=Avg("cagematch_rating")
+            )
+            C = float(agg["avg"] or 6.0)
+            Match._cached_global_mean = C
+        m = 10  # prior weight — tune later
+        S = N * float(self.cagematch_rating)
+        return (m * C + S) / (m + N)
+
+
+class MatchParticipant(TimeStampedModel):
+    """
+    One wrestler's participation in one match.
+
+    The `side` field models team/faction structure: in a 6-man tag, side
+    0 might be {Cena, Edge, Reigns} and side 1 might be {Punk, Hardy, Mysterio}.
+    For singles matches, sides 0 and 1 each have one participant.
+    """
+
+    ROLE_CHOICES = [
+        ("", "—"),
+        ("captain", "Captain"),
+        ("partner", "Partner"),
+        ("manager", "Manager / second"),
+        ("guest_referee", "Guest referee"),
+        ("special_enforcer", "Special enforcer"),
+    ]
+
+    match = models.ForeignKey(
+        Match,
+        on_delete=models.CASCADE,
+        related_name="participant_links",
+    )
+    wrestler = models.ForeignKey(
+        Wrestler,
+        on_delete=models.CASCADE,
+        related_name="match_participations",
+    )
+    side = models.PositiveSmallIntegerField(
+        default=0,
+        db_index=True,
+        help_text="Team/faction index — 0 = first side, 1 = second, etc.",
+    )
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, blank=True, default="")
+    is_winner = models.BooleanField(default=False, db_index=True)
+    entrance_order = models.PositiveSmallIntegerField(
+        blank=True,
+        null=True,
+        help_text="For Royal Rumble / battle royal — entrance number.",
+    )
+
+    class Meta:
+        ordering = ["match", "side", "id"]
+        indexes = [
+            models.Index(fields=["match", "side"]),
+            models.Index(fields=["wrestler", "is_winner"]),
+        ]
+        unique_together = [("match", "wrestler")]
+
+    def __str__(self):
+        return f"{self.wrestler.name} (side {self.side}) in match #{self.match_id}"
 
 
 class VideoGame(TimeStampedModel):
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
-    promotions = models.ManyToManyField(Promotion, blank=True, related_name='video_games')
-    wrestlers = models.ManyToManyField('Wrestler', blank=True, related_name='video_games',
-                                       help_text="Wrestlers featured in this game's roster")
+    promotions = models.ManyToManyField(Promotion, blank=True, related_name="video_games")
+    wrestlers = models.ManyToManyField(
+        "Wrestler",
+        blank=True,
+        related_name="video_games",
+        help_text="Wrestlers featured in this game's roster",
+    )
     release_year = models.IntegerField(blank=True, null=True, db_index=True)
-    systems = models.CharField(max_length=255, blank=True, null=True, help_text="e.g., PS5, Xbox, PC")
+    systems = models.CharField(
+        max_length=255, blank=True, null=True, help_text="e.g., PS5, Xbox, PC"
+    )
     developer = models.CharField(max_length=255, blank=True, null=True)
     publisher = models.CharField(max_length=255, blank=True, null=True)
     about = models.TextField(blank=True, null=True)
 
+    # Cover art (populated via the image cascade — same six-field shape
+    # as Wrestler / Promotion / Event). Game cover art on Commons is
+    # often "non-free" / "fair use"; our existing license whitelist will
+    # refuse those, so only PD / CC-licensed covers ever land here.
+    image_url = models.URLField(max_length=500, blank=True, null=True)
+    image_source_url = models.URLField(
+        max_length=500, blank=True, null=True, help_text="Commons file-page URL (legal trail)."
+    )
+    image_original_url = models.URLField(max_length=500, blank=True, null=True)
+    image_license = models.CharField(
+        max_length=50, blank=True, null=True, help_text="Normalized OWDB license code."
+    )
+    image_credit = models.CharField(
+        max_length=500, blank=True, null=True, help_text="Attribution + Commons file URL."
+    )
+    image_fetched_at = models.DateTimeField(blank=True, null=True)
+
+    # Data source tracking
+    wikipedia_url = models.URLField(max_length=500, blank=True, null=True)
+    last_enriched = models.DateTimeField(blank=True, null=True)
+
+    # Verification status
+    verified = models.BooleanField(default=False, db_index=True)
+    verification_source = models.CharField(max_length=50, blank=True, null=True)
+    last_verified = models.DateTimeField(blank=True, null=True)
+
     class Meta:
-        ordering = ['-release_year', 'name']
+        ordering = ["-release_year", "name"]
         indexes = [
-            models.Index(fields=['name']),
-            models.Index(fields=['release_year']),
+            models.Index(fields=["name"]),
+            models.Index(fields=["release_year"]),
+            models.Index(fields=["verified"]),
         ]
 
     def save(self, *args, **kwargs):
@@ -1107,16 +1885,22 @@ class Podcast(TimeStampedModel):
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     hosts = models.TextField(blank=True, null=True, help_text="Comma-separated list of hosts")
-    host_wrestlers = models.ManyToManyField(Wrestler, blank=True, related_name='podcasts_hosted',
-                                            help_text="Wrestler hosts of this podcast")
-    related_wrestlers = models.ManyToManyField(Wrestler, blank=True, related_name='podcasts')
+    host_wrestlers = models.ManyToManyField(
+        Wrestler,
+        blank=True,
+        related_name="podcasts_hosted",
+        help_text="Wrestler hosts of this podcast",
+    )
+    related_wrestlers = models.ManyToManyField(Wrestler, blank=True, related_name="podcasts")
     launch_year = models.IntegerField(blank=True, null=True)
     end_year = models.IntegerField(blank=True, null=True)
     url = models.URLField(blank=True, null=True)
-    rss_feed_url = models.URLField(max_length=500, blank=True, null=True,
-                                   help_text="RSS feed URL for automatic episode import")
-    last_rss_fetch = models.DateTimeField(blank=True, null=True,
-                                          help_text="When episodes were last fetched from RSS")
+    rss_feed_url = models.URLField(
+        max_length=500, blank=True, null=True, help_text="RSS feed URL for automatic episode import"
+    )
+    last_rss_fetch = models.DateTimeField(
+        blank=True, null=True, help_text="When episodes were last fetched from RSS"
+    )
     about = models.TextField(blank=True, null=True)
 
     # Additional metadata
@@ -1124,10 +1908,20 @@ class Podcast(TimeStampedModel):
     spotify_url = models.URLField(max_length=500, blank=True, null=True)
     youtube_url = models.URLField(max_length=500, blank=True, null=True)
 
+    # Data source tracking
+    wikipedia_url = models.URLField(max_length=500, blank=True, null=True)
+    last_enriched = models.DateTimeField(blank=True, null=True)
+
+    # Verification status
+    verified = models.BooleanField(default=False, db_index=True)
+    verification_source = models.CharField(max_length=50, blank=True, null=True)
+    last_verified = models.DateTimeField(blank=True, null=True)
+
     class Meta:
-        ordering = ['name']
+        ordering = ["name"]
         indexes = [
-            models.Index(fields=['name']),
+            models.Index(fields=["name"]),
+            models.Index(fields=["verified"]),
         ]
 
     def save(self, *args, **kwargs):
@@ -1150,11 +1944,12 @@ class Podcast(TimeStampedModel):
     def get_guest_wrestlers(self):
         """Get all wrestlers who have appeared as guests, ordered by appearance count."""
         from django.db.models import Count
-        return Wrestler.objects.filter(
-            podcast_appearances__podcast=self
-        ).annotate(
-            appearance_count=Count('podcast_appearances')
-        ).order_by('-appearance_count')
+
+        return (
+            Wrestler.objects.filter(podcast_appearances__podcast=self)
+            .annotate(appearance_count=Count("podcast_appearances"))
+            .order_by("-appearance_count")
+        )
 
 
 class PodcastEpisode(TimeStampedModel):
@@ -1163,9 +1958,8 @@ class PodcastEpisode(TimeStampedModel):
 
     Episodes are imported from RSS feeds and linked to wrestler guests.
     """
-    podcast = models.ForeignKey(
-        'Podcast', on_delete=models.CASCADE, related_name='episodes'
-    )
+
+    podcast = models.ForeignKey("Podcast", on_delete=models.CASCADE, related_name="episodes")
     title = models.CharField(max_length=500, db_index=True)
     slug = models.SlugField(max_length=255, blank=True)
     episode_number = models.IntegerField(blank=True, null=True)
@@ -1183,35 +1977,46 @@ class PodcastEpisode(TimeStampedModel):
 
     # Guests (wrestlers who appeared)
     guests = models.ManyToManyField(
-        'Wrestler', blank=True, related_name='podcast_appearances',
-        help_text="Wrestlers who appeared as guests on this episode"
+        "Wrestler",
+        blank=True,
+        related_name="podcast_appearances",
+        help_text="Wrestlers who appeared as guests on this episode",
     )
 
     # Events and matches discussed in this episode
     discussed_events = models.ManyToManyField(
-        'Event', blank=True, related_name='podcast_discussions',
-        help_text="Events discussed in this episode"
+        "Event",
+        blank=True,
+        related_name="podcast_discussions",
+        help_text="Events discussed in this episode",
     )
     discussed_matches = models.ManyToManyField(
-        'Match', blank=True, related_name='podcast_discussions',
-        help_text="Matches discussed in this episode"
+        "Match",
+        blank=True,
+        related_name="podcast_discussions",
+        help_text="Matches discussed in this episode",
     )
 
     # RSS feed tracking
-    guid = models.CharField(max_length=500, unique=True, blank=True, null=True,
-                           help_text="Unique ID from RSS feed for deduplication")
+    guid = models.CharField(
+        max_length=500,
+        unique=True,
+        blank=True,
+        null=True,
+        help_text="Unique ID from RSS feed for deduplication",
+    )
 
     class Meta:
-        ordering = ['-published_date']
+        ordering = ["-published_date"]
         indexes = [
-            models.Index(fields=['podcast', '-published_date']),
-            models.Index(fields=['guid']),
+            models.Index(fields=["podcast", "-published_date"]),
+            models.Index(fields=["guid"]),
         ]
 
     def save(self, *args, **kwargs):
         if not self.slug:
             base_slug = slugify(self.title[:200])
-            date_str = self.published_date.strftime('%Y%m%d') if self.published_date else ''
+            date_str = self.published_date.strftime("%Y%m%d") if self.published_date else ""
             base_slug = f"{base_slug}-{date_str}" if date_str else base_slug
             self.slug = generate_unique_slug(PodcastEpisode, base_slug, self.pk)
         super().save(*args, **kwargs)
@@ -1238,11 +2043,12 @@ class WrestlerPromotionHistory(TimeStampedModel):
     This model explicitly records the years a wrestler was active with
     a promotion, allowing for accurate timeline display.
     """
+
     wrestler = models.ForeignKey(
-        'Wrestler', on_delete=models.CASCADE, related_name='promotion_history'
+        "Wrestler", on_delete=models.CASCADE, related_name="promotion_history"
     )
     promotion = models.ForeignKey(
-        'Promotion', on_delete=models.CASCADE, related_name='wrestler_history'
+        "Promotion", on_delete=models.CASCADE, related_name="wrestler_history"
     )
 
     # Date range
@@ -1250,17 +2056,18 @@ class WrestlerPromotionHistory(TimeStampedModel):
     end_year = models.IntegerField(blank=True, null=True, help_text="Null if currently active")
 
     # Additional context
-    notes = models.CharField(max_length=255, blank=True, null=True,
-                            help_text="e.g., 'As Stone Cold', 'NXT only'")
+    notes = models.CharField(
+        max_length=255, blank=True, null=True, help_text="e.g., 'As Stone Cold', 'NXT only'"
+    )
     is_current = models.BooleanField(default=False)
 
     class Meta:
-        ordering = ['-start_year']
-        unique_together = ['wrestler', 'promotion', 'start_year']
+        ordering = ["-start_year"]
+        unique_together = ["wrestler", "promotion", "start_year"]
         verbose_name_plural = "Wrestler promotion histories"
         indexes = [
-            models.Index(fields=['wrestler', '-start_year']),
-            models.Index(fields=['promotion', '-start_year']),
+            models.Index(fields=["wrestler", "-start_year"]),
+            models.Index(fields=["promotion", "-start_year"]),
         ]
 
     def __str__(self):
@@ -1281,21 +2088,270 @@ class WrestlerPromotionHistory(TimeStampedModel):
         return "Unknown"
 
 
+class TrainerRelationship(TimeStampedModel):
+    """
+    Trainer -> trainee link between two wrestlers.
+
+    Auto-populated by WrestleBot v3 by parsing Wrestler.trained_by and
+    matching the names against other Wrestler rows. Each row represents one
+    person who trained another in pro wrestling. Symmetric absent — the
+    "trained_by" relation is directional.
+    """
+
+    trainee = models.ForeignKey(
+        "Wrestler",
+        on_delete=models.CASCADE,
+        related_name="trainer_relationships",
+    )
+    trainer = models.ForeignKey(
+        "Wrestler",
+        on_delete=models.CASCADE,
+        related_name="trainee_relationships",
+    )
+    notes = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        unique_together = ["trainee", "trainer"]
+        indexes = [
+            models.Index(fields=["trainee"]),
+            models.Index(fields=["trainer"]),
+        ]
+        verbose_name = "Trainer relationship"
+        verbose_name_plural = "Trainer relationships"
+
+    def __str__(self):
+        return f"{self.trainee.name} trained by {self.trainer.name}"
+
+
+class TrainingSchool(TimeStampedModel):
+    """
+    A professional wrestling training school / academy / dungeon.
+
+    Examples: Hart Dungeon, OVW (Ohio Valley Wrestling — as a developmental
+    school), WWE Performance Center, Killer Kowalski's wrestling school,
+    Monster Factory. Distinct from a Promotion: schools train, promotions
+    promote shows. Some entities are both (e.g., Stampede Wrestling ran the
+    Hart Dungeon).
+    """
+
+    name = models.CharField(max_length=255, db_index=True)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
+    location = models.CharField(
+        max_length=255, blank=True, null=True, help_text="City / state / country"
+    )
+    founded_year = models.IntegerField(blank=True, null=True, db_index=True)
+    closed_year = models.IntegerField(blank=True, null=True)
+    founder = models.CharField(max_length=255, blank=True, null=True)
+    head_trainer = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Current / most-recent head trainer (text — may be a Wrestler)",
+    )
+    parent_promotion = models.ForeignKey(
+        Promotion,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="training_schools",
+        help_text="Parent promotion if any (e.g., WWE Performance Center -> WWE)",
+    )
+    about = models.TextField(blank=True, null=True)
+
+    # Notable trainees produced by this school.
+    notable_trainees = models.ManyToManyField(
+        Wrestler,
+        blank=True,
+        related_name="training_schools_attended",
+        help_text="Wrestlers known to have trained here",
+    )
+
+    # Data source tracking
+    wikipedia_url = models.URLField(max_length=500, blank=True, null=True)
+    last_enriched = models.DateTimeField(blank=True, null=True)
+    verified = models.BooleanField(default=False, db_index=True)
+    verification_source = models.CharField(max_length=50, blank=True, null=True)
+    last_verified = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ["name"]
+        indexes = [
+            models.Index(fields=["name"]),
+            models.Index(fields=["founded_year"]),
+            models.Index(fields=["verified"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.name)
+            self.slug = generate_unique_slug(TrainingSchool, base_slug, self.pk)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
+class ActionFigure(TimeStampedModel):
+    """
+    A wrestling action figure line or individual figure series.
+
+    Examples: "WWF Hasbro action figures (1990-1994)",
+    "WWE Mattel Elite Collection", "Jakks Pacific WWE Classic Superstars",
+    "Galoob WCW figures". Cross-linked to manufacturer (text), the wrestling
+    promotion it represents, and the wrestlers featured in the line.
+    """
+
+    name = models.CharField(max_length=255, db_index=True)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
+    manufacturer = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="e.g., Jakks Pacific, Mattel, Hasbro, Jazwares",
+    )
+    promotion = models.ForeignKey(
+        Promotion,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="action_figures",
+    )
+    featured_wrestlers = models.ManyToManyField(
+        Wrestler,
+        blank=True,
+        related_name="action_figures",
+        help_text="Wrestlers featured in this line",
+    )
+    start_year = models.IntegerField(blank=True, null=True, db_index=True)
+    end_year = models.IntegerField(blank=True, null=True)
+    about = models.TextField(blank=True, null=True)
+
+    # Data source tracking
+    wikipedia_url = models.URLField(max_length=500, blank=True, null=True)
+    last_enriched = models.DateTimeField(blank=True, null=True)
+    verified = models.BooleanField(default=False, db_index=True)
+    verification_source = models.CharField(max_length=50, blank=True, null=True)
+    last_verified = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ["-start_year", "name"]
+        indexes = [
+            models.Index(fields=["name"]),
+            models.Index(fields=["manufacturer"]),
+            models.Index(fields=["verified"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.name)
+            self.slug = generate_unique_slug(ActionFigure, base_slug, self.pk)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        years = f" ({self.start_year}-{self.end_year or 'present'})" if self.start_year else ""
+        return f"{self.name}{years}"
+
+
+class ThemeSong(TimeStampedModel):
+    """
+    A wrestling theme / entrance song.
+
+    Examples: "Real American" (Hulk Hogan), "Cult of Personality" (CM Punk),
+    "Sexy Boy" (Shawn Michaels), Jim Johnston compositions. Cross-linked
+    to the artist (text + optional wrestler if the artist is a wrestler)
+    and the wrestlers who used it as their entrance music.
+    """
+
+    title = models.CharField(max_length=255, db_index=True)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
+    artist = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="Performing artist or composer (e.g., Jim Johnston, Living Colour)",
+    )
+    artist_wikipedia_url = models.URLField(max_length=500, blank=True, null=True)
+    release_year = models.IntegerField(blank=True, null=True, db_index=True)
+    album = models.CharField(
+        max_length=255, blank=True, null=True, help_text="Album the song appeared on (if any)"
+    )
+    used_by_wrestlers = models.ManyToManyField(
+        Wrestler,
+        blank=True,
+        related_name="theme_songs",
+        help_text="Wrestlers who used this as entrance music",
+    )
+    about = models.TextField(blank=True, null=True)
+
+    # Data source tracking
+    wikipedia_url = models.URLField(max_length=500, blank=True, null=True)
+    last_enriched = models.DateTimeField(blank=True, null=True)
+    verified = models.BooleanField(default=False, db_index=True)
+    verification_source = models.CharField(max_length=50, blank=True, null=True)
+    last_verified = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ["title"]
+        indexes = [
+            models.Index(fields=["title"]),
+            models.Index(fields=["artist"]),
+            models.Index(fields=["verified"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.title)
+            self.slug = generate_unique_slug(ThemeSong, base_slug, self.pk)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.title} by {self.artist or 'Unknown'}"
+
+
 class Book(TimeStampedModel):
     title = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     author = models.CharField(max_length=255, blank=True, null=True, db_index=True)
-    related_wrestlers = models.ManyToManyField(Wrestler, blank=True, related_name='books')
+    related_wrestlers = models.ManyToManyField(Wrestler, blank=True, related_name="books")
     publication_year = models.IntegerField(blank=True, null=True)
     isbn = models.CharField(max_length=20, blank=True, null=True, unique=True)
     publisher = models.CharField(max_length=255, blank=True, null=True)
     about = models.TextField(blank=True, null=True)
 
+    # Cover art — same six-field shape as Wrestler / Promotion / Event.
+    # Book covers on Commons are typically PD (US-pre-1929 works) or
+    # CC-licensed; copyrighted covers ("non-free for fair use") are
+    # refused by the existing license whitelist.
+    image_url = models.URLField(max_length=500, blank=True, null=True)
+    image_source_url = models.URLField(
+        max_length=500, blank=True, null=True, help_text="Commons file-page URL (legal trail)."
+    )
+    image_original_url = models.URLField(max_length=500, blank=True, null=True)
+    image_license = models.CharField(
+        max_length=50, blank=True, null=True, help_text="Normalized OWDB license code."
+    )
+    image_credit = models.CharField(
+        max_length=500, blank=True, null=True, help_text="Attribution + Commons file URL."
+    )
+    image_fetched_at = models.DateTimeField(blank=True, null=True)
+
+    # Data source tracking
+    wikipedia_url = models.URLField(max_length=500, blank=True, null=True)
+    last_enriched = models.DateTimeField(blank=True, null=True)
+
+    # Verification status
+    verified = models.BooleanField(default=False, db_index=True)
+    verification_source = models.CharField(max_length=50, blank=True, null=True)
+    last_verified = models.DateTimeField(blank=True, null=True)
+
     class Meta:
-        ordering = ['-publication_year', 'title']
+        ordering = ["-publication_year", "title"]
         indexes = [
-            models.Index(fields=['title']),
-            models.Index(fields=['author']),
+            models.Index(fields=["title"]),
+            models.Index(fields=["author"]),
+            models.Index(fields=["verified"]),
         ]
 
     def save(self, *args, **kwargs):
@@ -1310,25 +2366,34 @@ class Book(TimeStampedModel):
 
 class Special(TimeStampedModel):
     SPECIAL_TYPES = [
-        ('documentary', 'Documentary'),
-        ('movie', 'Movie'),
-        ('tv_special', 'TV Special'),
-        ('series', 'Series'),
-        ('other', 'Other'),
+        ("documentary", "Documentary"),
+        ("movie", "Movie"),
+        ("tv_special", "TV Special"),
+        ("series", "Series"),
+        ("other", "Other"),
     ]
 
     title = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     release_year = models.IntegerField(blank=True, null=True)
-    related_wrestlers = models.ManyToManyField(Wrestler, blank=True, related_name='specials')
-    type = models.CharField(max_length=50, choices=SPECIAL_TYPES, default='other')
+    related_wrestlers = models.ManyToManyField(Wrestler, blank=True, related_name="specials")
+    type = models.CharField(max_length=50, choices=SPECIAL_TYPES, default="other")
+    director = models.CharField(max_length=255, blank=True, null=True)
     about = models.TextField(blank=True, null=True)
 
+    # Data source tracking (accuracy-first WrestleBot v3)
+    wikipedia_url = models.URLField(max_length=500, blank=True, null=True)
+    last_enriched = models.DateTimeField(blank=True, null=True)
+    verified = models.BooleanField(default=False, db_index=True)
+    verification_source = models.CharField(max_length=50, blank=True, null=True)
+    last_verified = models.DateTimeField(blank=True, null=True)
+
     class Meta:
-        ordering = ['-release_year', 'title']
+        ordering = ["-release_year", "title"]
         indexes = [
-            models.Index(fields=['title']),
-            models.Index(fields=['type']),
+            models.Index(fields=["title"]),
+            models.Index(fields=["type"]),
+            models.Index(fields=["verified"]),
         ]
 
     def save(self, *args, **kwargs):
@@ -1343,13 +2408,16 @@ class Special(TimeStampedModel):
 
 class UserProfile(TimeStampedModel):
     """Extended user profile with email verification status."""
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     email_verified = models.BooleanField(default=False)
-    can_contribute = models.BooleanField(default=False, help_text="Can add/edit content after email verification")
+    can_contribute = models.BooleanField(
+        default=False, help_text="Can add/edit content after email verification"
+    )
 
     class Meta:
-        verbose_name = 'User Profile'
-        verbose_name_plural = 'User Profiles'
+        verbose_name = "User Profile"
+        verbose_name_plural = "User Profiles"
 
     def __str__(self):
         return f"Profile for {self.user.username}"
@@ -1357,17 +2425,18 @@ class UserProfile(TimeStampedModel):
 
 class EmailVerificationToken(TimeStampedModel):
     """Token for email verification."""
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='verification_tokens')
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="verification_tokens")
     token = models.CharField(max_length=64, unique=True, db_index=True)
     expires_at = models.DateTimeField()
     used = models.BooleanField(default=False)
 
     class Meta:
-        verbose_name = 'Email Verification Token'
-        verbose_name_plural = 'Email Verification Tokens'
+        verbose_name = "Email Verification Token"
+        verbose_name_plural = "Email Verification Tokens"
         indexes = [
-            models.Index(fields=['token']),
-            models.Index(fields=['user']),
+            models.Index(fields=["token"]),
+            models.Index(fields=["user"]),
         ]
 
     def __str__(self):
@@ -1389,9 +2458,11 @@ class EmailVerificationToken(TimeStampedModel):
 
 
 class APIKey(TimeStampedModel):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='api_keys')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="api_keys")
     key = models.CharField(max_length=64, unique=True, db_index=True)
-    name = models.CharField(max_length=100, blank=True, null=True, help_text="Optional name for this key")
+    name = models.CharField(
+        max_length=100, blank=True, null=True, help_text="Optional name for this key"
+    )
     is_paid = models.BooleanField(default=False)
     requests_today = models.IntegerField(default=0)
     requests_total = models.IntegerField(default=0)
@@ -1400,11 +2471,11 @@ class APIKey(TimeStampedModel):
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        verbose_name = 'API Key'
-        verbose_name_plural = 'API Keys'
+        verbose_name = "API Key"
+        verbose_name_plural = "API Keys"
         indexes = [
-            models.Index(fields=['key']),
-            models.Index(fields=['user']),
+            models.Index(fields=["key"]),
+            models.Index(fields=["user"]),
         ]
 
     def __str__(self):
@@ -1430,16 +2501,17 @@ class APIKey(TimeStampedModel):
         if self.last_reset < today:
             self.requests_today = 0
             self.last_reset = today
-            self.save(update_fields=['requests_today', 'last_reset'])
+            self.save(update_fields=["requests_today", "last_reset"])
 
     def increment_usage(self):
         """Increment usage counters atomically to prevent race conditions."""
         from django.db.models import F
+
         self.reset_daily_count()
         # Use F() expressions for atomic increment
         APIKey.objects.filter(pk=self.pk).update(
-            requests_today=F('requests_today') + 1,
-            requests_total=F('requests_total') + 1,
+            requests_today=F("requests_today") + 1,
+            requests_total=F("requests_total") + 1,
             last_used=timezone.now(),
         )
         self.refresh_from_db()
@@ -1460,6 +2532,7 @@ class APIKey(TimeStampedModel):
 # Hot 100 Wrestlers - Monthly Rankings
 # =============================================================================
 
+
 class Hot100Ranking(TimeStampedModel):
     """
     Monthly Hot 100 ranking for wrestlers.
@@ -1468,6 +2541,7 @@ class Hot100Ranking(TimeStampedModel):
     scoring algorithm that considers match activity, title importance,
     media mentions, and more.
     """
+
     # Period this ranking covers
     year = models.IntegerField(db_index=True)
     month = models.IntegerField(db_index=True)  # 1-12
@@ -1477,8 +2551,8 @@ class Hot100Ranking(TimeStampedModel):
     is_published = models.BooleanField(default=False)
 
     class Meta:
-        ordering = ['-year', '-month']
-        unique_together = ['year', 'month']
+        ordering = ["-year", "-month"]
+        unique_together = ["year", "month"]
         verbose_name = "Hot 100 Ranking"
         verbose_name_plural = "Hot 100 Rankings"
 
@@ -1488,6 +2562,7 @@ class Hot100Ranking(TimeStampedModel):
     def get_month_display(self):
         """Get the month name."""
         import calendar
+
         return calendar.month_name[self.month]
 
     @classmethod
@@ -1508,15 +2583,10 @@ class Hot100Entry(TimeStampedModel):
     Stores the wrestler's rank, total score, and breakdown of scoring
     components for transparency (without revealing exact weights).
     """
-    ranking = models.ForeignKey(
-        Hot100Ranking,
-        on_delete=models.CASCADE,
-        related_name='entries'
-    )
+
+    ranking = models.ForeignKey(Hot100Ranking, on_delete=models.CASCADE, related_name="entries")
     wrestler = models.ForeignKey(
-        'Wrestler',
-        on_delete=models.CASCADE,
-        related_name='hot100_entries'
+        "Wrestler", on_delete=models.CASCADE, related_name="hot100_entries"
     )
 
     # Overall position and score
@@ -1537,11 +2607,11 @@ class Hot100Entry(TimeStampedModel):
     rank_change = models.IntegerField(default=0)  # Positive = improved, negative = dropped
 
     class Meta:
-        ordering = ['rank']
-        unique_together = ['ranking', 'wrestler']
+        ordering = ["rank"]
+        unique_together = ["ranking", "wrestler"]
         indexes = [
-            models.Index(fields=['ranking', 'rank']),
-            models.Index(fields=['wrestler']),
+            models.Index(fields=["ranking", "rank"]),
+            models.Index(fields=["wrestler"]),
         ]
 
     def __str__(self):
@@ -1606,40 +2676,55 @@ class Hot100Calculator:
         self._previous_ranking = Hot100Ranking.get_for_month(prev_year, prev_month)
 
         # Look back up to 12 months for activity (handles sparse data periods)
-        lookback_date = date(self.year - 1, self.month, 1) if self.month <= 12 else date(self.year, 1, 1)
+        lookback_date = (
+            date(self.year - 1, self.month, 1) if self.month <= 12 else date(self.year, 1, 1)
+        )
 
-        wrestlers = Wrestler.objects.annotate(
-            # Match count in period (current month)
-            period_matches=Count(
-                'matches',
-                filter=Q(matches__event__date__gte=start_date, matches__event__date__lt=end_date)
-            ),
-            # Trailing 12 month matches
-            trailing_matches=Count(
-                'matches',
-                filter=Q(matches__event__date__gte=lookback_date, matches__event__date__lt=end_date)
-            ),
-            # All-time matches (fallback)
-            total_matches=Count('matches'),
-            # Wins in period
-            period_wins=Count(
-                'matches_won',
-                filter=Q(matches_won__event__date__gte=start_date, matches_won__event__date__lt=end_date)
-            ),
-            # Main events (high match order - simplified)
-            period_main_events=Count(
-                'matches',
-                filter=Q(
-                    matches__event__date__gte=start_date,
-                    matches__event__date__lt=end_date,
-                    matches__match_order__gte=6
-                )
-            ),
-        ).filter(
-            # Include wrestlers with matches OR those marked as active
-            Q(period_matches__gt=0) | Q(trailing_matches__gt=0) | Q(total_matches__gt=0) |
-            Q(retirement_year__isnull=True, debut_year__isnull=False)
-        ).order_by('-period_matches', '-trailing_matches', '-total_matches')
+        wrestlers = (
+            Wrestler.objects.annotate(
+                # Match count in period (current month)
+                period_matches=Count(
+                    "matches",
+                    filter=Q(
+                        matches__event__date__gte=start_date, matches__event__date__lt=end_date
+                    ),
+                ),
+                # Trailing 12 month matches
+                trailing_matches=Count(
+                    "matches",
+                    filter=Q(
+                        matches__event__date__gte=lookback_date, matches__event__date__lt=end_date
+                    ),
+                ),
+                # All-time matches (fallback)
+                total_matches=Count("matches"),
+                # Wins in period
+                period_wins=Count(
+                    "matches_won",
+                    filter=Q(
+                        matches_won__event__date__gte=start_date,
+                        matches_won__event__date__lt=end_date,
+                    ),
+                ),
+                # Main events (high match order - simplified)
+                period_main_events=Count(
+                    "matches",
+                    filter=Q(
+                        matches__event__date__gte=start_date,
+                        matches__event__date__lt=end_date,
+                        matches__match_order__gte=6,
+                    ),
+                ),
+            )
+            .filter(
+                # Include wrestlers with matches OR those marked as active
+                Q(period_matches__gt=0)
+                | Q(trailing_matches__gt=0)
+                | Q(total_matches__gt=0)
+                | Q(retirement_year__isnull=True, debut_year__isnull=False)
+            )
+            .order_by("-period_matches", "-trailing_matches", "-total_matches")
+        )
 
         scores = []
         for wrestler in wrestlers:
@@ -1647,7 +2732,7 @@ class Hot100Calculator:
             scores.append(score_data)
 
         # Sort by total score and limit
-        scores.sort(key=lambda x: x['total_score'], reverse=True)
+        scores.sort(key=lambda x: x["total_score"], reverse=True)
         return scores[:limit]
 
     def _calculate_wrestler_score(self, wrestler, start_date, end_date) -> dict:
@@ -1662,41 +2747,46 @@ class Hot100Calculator:
         views_score = self._calc_views_score(wrestler)
 
         total = (
-            match_score + importance_score + title_score +
-            opponent_score + news_score + social_score + views_score
+            match_score
+            + importance_score
+            + title_score
+            + opponent_score
+            + news_score
+            + social_score
+            + views_score
         )
 
         # Get previous rank if exists
         prev_rank = None
         if self._previous_ranking:
             prev_entry = Hot100Entry.objects.filter(
-                ranking=self._previous_ranking,
-                wrestler=wrestler
+                ranking=self._previous_ranking, wrestler=wrestler
             ).first()
             if prev_entry:
                 prev_rank = prev_entry.rank
 
         return {
-            'wrestler_id': wrestler.id,
-            'wrestler': wrestler,
-            'total_score': round(total, 2),
-            'match_count_score': round(match_score, 2),
-            'match_importance_score': round(importance_score, 2),
-            'title_activity_score': round(title_score, 2),
-            'opponent_quality_score': round(opponent_score, 2),
-            'news_mention_score': round(news_score, 2),
-            'social_engagement_score': round(social_score, 2),
-            'website_views_score': round(views_score, 2),
-            'previous_rank': prev_rank,
+            "wrestler_id": wrestler.id,
+            "wrestler": wrestler,
+            "total_score": round(total, 2),
+            "match_count_score": round(match_score, 2),
+            "match_importance_score": round(importance_score, 2),
+            "title_activity_score": round(title_score, 2),
+            "opponent_quality_score": round(opponent_score, 2),
+            "news_mention_score": round(news_score, 2),
+            "social_engagement_score": round(social_score, 2),
+            "website_views_score": round(views_score, 2),
+            "previous_rank": prev_rank,
         }
 
     def _calc_match_score(self, wrestler) -> float:
         """Calculate score based on match count."""
         # Uses logarithmic scaling to prevent runaway scores
         import math
-        period_matches = getattr(wrestler, 'period_matches', 0)
-        trailing_matches = getattr(wrestler, 'trailing_matches', 0)
-        total_matches = getattr(wrestler, 'total_matches', 0)
+
+        period_matches = getattr(wrestler, "period_matches", 0)
+        trailing_matches = getattr(wrestler, "trailing_matches", 0)
+        total_matches = getattr(wrestler, "total_matches", 0)
 
         # Priority: current month > trailing 12 months > all-time (with decay)
         if period_matches > 0:
@@ -1709,8 +2799,8 @@ class Hot100Calculator:
 
     def _calc_importance_score(self, wrestler) -> float:
         """Calculate score based on match importance."""
-        main_events = getattr(wrestler, 'period_main_events', 0)
-        title_matches = getattr(wrestler, 'period_title_matches', 0)
+        main_events = getattr(wrestler, "period_main_events", 0)
+        title_matches = getattr(wrestler, "period_title_matches", 0)
         return (main_events * 4.2) + (title_matches * 3.1)
 
     def _calc_title_score(self, wrestler, start_date, end_date) -> float:
@@ -1721,14 +2811,14 @@ class Hot100Calculator:
             winner=wrestler,
             title__isnull=False,
             event__date__gte=start_date,
-            event__date__lt=end_date
+            event__date__lt=end_date,
         ).count()
         # Title matches where wrestler participated (defenses, challenges)
         title_participations = Match.objects.filter(
             wrestlers=wrestler,
             title__isnull=False,
             event__date__gte=start_date,
-            event__date__lt=end_date
+            event__date__lt=end_date,
         ).count()
         title_defenses = title_participations - title_wins
         return (title_wins * 12.5) + (title_defenses * 5.8)
@@ -1738,10 +2828,13 @@ class Hot100Calculator:
         if not self._previous_ranking:
             return 0
         # Opponents who were in last month's Hot 100
-        opponent_ranks = Hot100Entry.objects.filter(
-            ranking=self._previous_ranking,
-            wrestler__matches__wrestlers=wrestler
-        ).exclude(wrestler=wrestler).values_list('rank', flat=True)
+        opponent_ranks = (
+            Hot100Entry.objects.filter(
+                ranking=self._previous_ranking, wrestler__matches__wrestlers=wrestler
+            )
+            .exclude(wrestler=wrestler)
+            .values_list("rank", flat=True)
+        )
 
         if not opponent_ranks:
             return 0
@@ -1759,6 +2852,7 @@ class Hot100Calculator:
         # TODO: Integrate with news aggregation service
         # For now, use deterministic score based on wrestler data richness
         import hashlib
+
         score = 0
 
         # Active wrestlers get bonus
@@ -1783,6 +2877,7 @@ class Hot100Calculator:
         """
         # TODO: Integrate with YouTube Data API, podcast mentions
         import hashlib
+
         score = 0
 
         # Recent active wrestlers likely have more social engagement
@@ -1792,11 +2887,13 @@ class Hot100Calculator:
             score += 2.0
 
         # Wrestlers with multiple data sources are more notable
-        sources = sum([
-            bool(wrestler.wikipedia_url),
-            bool(wrestler.cagematch_url),
-            bool(wrestler.profightdb_url),
-        ])
+        sources = sum(
+            [
+                bool(wrestler.wikipedia_url),
+                bool(wrestler.cagematch_url),
+                bool(wrestler.profightdb_url),
+            ]
+        )
         score += sources * 1.2
 
         # Deterministic variation
@@ -1811,6 +2908,7 @@ class Hot100Calculator:
         """
         # TODO: Integrate with site analytics
         import hashlib
+
         # Deterministic variation based on wrestler
         hash_val = int(hashlib.md5(f"{wrestler.name}_views".encode()).hexdigest()[:8], 16)
         base = (hash_val % 100) / 100 * 4.0
@@ -1824,19 +2922,14 @@ class Hot100Calculator:
     def generate_ranking(self, publish: bool = False) -> Hot100Ranking:
         """Generate and save Hot 100 ranking for the month."""
         # Check if ranking already exists
-        existing = Hot100Ranking.objects.filter(
-            year=self.year, month=self.month
-        ).first()
+        existing = Hot100Ranking.objects.filter(year=self.year, month=self.month).first()
 
         if existing:
             # Delete old entries to regenerate
             existing.entries.all().delete()
             ranking = existing
         else:
-            ranking = Hot100Ranking.objects.create(
-                year=self.year,
-                month=self.month
-            )
+            ranking = Hot100Ranking.objects.create(year=self.year, month=self.month)
 
         # Calculate scores
         scores = self.calculate_rankings(limit=100)
@@ -1844,22 +2937,22 @@ class Hot100Calculator:
         # Create entries
         for i, score_data in enumerate(scores, 1):
             rank_change = 0
-            if score_data['previous_rank']:
-                rank_change = score_data['previous_rank'] - i  # Positive = improved
+            if score_data["previous_rank"]:
+                rank_change = score_data["previous_rank"] - i  # Positive = improved
 
             Hot100Entry.objects.create(
                 ranking=ranking,
-                wrestler=score_data['wrestler'],
+                wrestler=score_data["wrestler"],
                 rank=i,
-                total_score=score_data['total_score'],
-                match_count_score=score_data['match_count_score'],
-                match_importance_score=score_data['match_importance_score'],
-                title_activity_score=score_data['title_activity_score'],
-                opponent_quality_score=score_data['opponent_quality_score'],
-                news_mention_score=score_data['news_mention_score'],
-                social_engagement_score=score_data['social_engagement_score'],
-                website_views_score=score_data['website_views_score'],
-                previous_rank=score_data['previous_rank'],
+                total_score=score_data["total_score"],
+                match_count_score=score_data["match_count_score"],
+                match_importance_score=score_data["match_importance_score"],
+                title_activity_score=score_data["title_activity_score"],
+                opponent_quality_score=score_data["opponent_quality_score"],
+                news_mention_score=score_data["news_mention_score"],
+                social_engagement_score=score_data["social_engagement_score"],
+                website_views_score=score_data["website_views_score"],
+                previous_rank=score_data["previous_rank"],
                 rank_change=rank_change,
             )
 
@@ -1868,3 +2961,154 @@ class Hot100Calculator:
             ranking.save()
 
         return ranking
+
+
+# =============================================================================
+# External rankings — annual lists published by third parties
+#
+# Hot100Ranking is internal/proprietary. ExternalRanking captures externally
+# published lists like the PWI 500, PWI Female 50/100/150, and Wrestling
+# Observer year-end awards. The model treats them all the same: one
+# `ExternalRanking` per (list, year), with `ExternalRankingEntry` rows for
+# each ranked wrestler.
+# =============================================================================
+
+
+class ExternalRanking(TimeStampedModel):
+    """One published ranking list (e.g. 'PWI 500 — 2023')."""
+
+    LIST_CHOICES = [
+        ("pwi_500", "PWI 500"),
+        ("pwi_female_50", "PWI Female 50"),
+        ("pwi_female_100", "PWI Female 100"),
+        ("pwi_female_150", "PWI Female 150"),
+        ("observer_match", "Wrestling Observer — Match of the Year"),
+        ("observer_wrestler", "Wrestling Observer — Wrestler of the Year"),
+        ("observer_feud", "Wrestling Observer — Feud of the Year"),
+    ]
+
+    list_kind = models.CharField(
+        max_length=40,
+        choices=LIST_CHOICES,
+        db_index=True,
+    )
+    year = models.IntegerField(db_index=True)
+    title = models.CharField(
+        max_length=200,
+        blank=True,
+        default="",
+        help_text="Display title, e.g. 'PWI 500 (2023)'",
+    )
+    source_url = models.URLField(
+        max_length=500, blank=True, default="", help_text="Where this list was ingested from."
+    )
+    notes = models.TextField(blank=True, default="")
+
+    class Meta:
+        unique_together = [("list_kind", "year")]
+        ordering = ["-year", "list_kind"]
+        indexes = [
+            models.Index(fields=["list_kind", "-year"]),
+        ]
+
+    def __str__(self):
+        label = dict(self.LIST_CHOICES).get(self.list_kind, self.list_kind)
+        return f"{label} ({self.year})"
+
+
+class ExternalRankingEntry(TimeStampedModel):
+    """One wrestler's position on one external ranking list."""
+
+    ranking = models.ForeignKey(
+        ExternalRanking,
+        on_delete=models.CASCADE,
+        related_name="entries",
+    )
+    position = models.PositiveIntegerField(db_index=True)
+    wrestler = models.ForeignKey(
+        Wrestler,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="external_rankings",
+    )
+    # Snapshot of the published name so the ranking is still readable
+    # even if the Wrestler row is later renamed or deleted.
+    wrestler_name_as_published = models.CharField(max_length=200, db_index=True)
+    # Free-form blurb if the publisher attached one (PWI doesn't typically;
+    # Observer awards include a paragraph).
+    blurb = models.TextField(blank=True, default="")
+
+    class Meta:
+        unique_together = [("ranking", "position")]
+        ordering = ["ranking", "position"]
+        indexes = [
+            models.Index(fields=["wrestler", "ranking"]),
+            models.Index(fields=["wrestler_name_as_published"]),
+        ]
+
+    def __str__(self):
+        return f"#{self.position} {self.wrestler_name_as_published} ({self.ranking})"
+
+
+# =============================================================================
+# User ratings (PLACEHOLDER — design doc only; not yet wired into UI)
+#
+# These models are intentionally minimal stubs of the future user-rating
+# system. Schema is provisional and will likely change before launch. See
+# docs/user_ratings.md for the full design discussion.
+# =============================================================================
+
+
+class UserRating(TimeStampedModel):
+    """
+    A user's rating + optional review of an entity. Generic FK pattern via
+    (entity_type, entity_id) so we can rate wrestlers, events, matches,
+    titles, stables, etc. without exploding the schema.
+
+    Future: aggregate views (top-rated wrestlers, best matches in history)
+    are computed offline and cached in a sibling table — not denormalised
+    onto the entity itself.
+    """
+
+    ENTITY_TYPE_CHOICES = [
+        ("wrestler", "Wrestler"),
+        ("event", "Event"),
+        ("match", "Match"),
+        ("title", "Title"),
+        ("stable", "Stable"),
+        ("promotion", "Promotion"),
+        ("tv_show", "TV show"),
+        ("special", "Special / documentary"),
+        ("book", "Book"),
+        ("video_game", "Video game"),
+        ("podcast", "Podcast"),
+        ("theme_song", "Theme song"),
+    ]
+
+    user = models.ForeignKey(
+        "auth.User",
+        on_delete=models.CASCADE,
+        related_name="ratings",
+    )
+    entity_type = models.CharField(max_length=20, choices=ENTITY_TYPE_CHOICES, db_index=True)
+    entity_id = models.PositiveIntegerField(db_index=True)
+
+    # 1-10 integer rating. Allows future user "favorite" via rating>=9.
+    rating = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text="1-10 integer rating. Null = no rating, only a favorite or review.",
+    )
+    is_favorite = models.BooleanField(default=False, db_index=True)
+    review_text = models.TextField(blank=True, default="")
+
+    class Meta:
+        unique_together = [("user", "entity_type", "entity_id")]
+        indexes = [
+            models.Index(fields=["entity_type", "entity_id", "-rating"]),
+            models.Index(fields=["user", "is_favorite"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id}: {self.entity_type}#{self.entity_id} = {self.rating or '–'}"

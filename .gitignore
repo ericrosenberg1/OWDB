@@ -134,3 +134,12 @@ owdb_django/owdbapp/wrestlingdb.code-workspace
 !SENTRY.md
 !.github/**
 !CLAUDE.md
+
+# =============================================================================
+# Secrets and deployment-specific config (never commit)
+# =============================================================================
+.env.nuc
+.env.production
+.env.staging
+cloudflared/
+.context/

@@ -1479,7 +1479,7 @@ def enrich_tv_episodes(self, batch_size: int = 20):
             )
             .exclude(matches__isnull=False)  # No matches yet
             .order_by("-date")[
-                  # Most recent first
+                # Most recent first
                 :batch_size
             ]
         )

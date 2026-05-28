@@ -10,9 +10,225 @@ import time
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from django.db.models import Count, Q
-from django.utils.text import slugify
 
 logger = logging.getLogger(__name__)
+
+
+class NameValidator:
+    """
+    Validates entity names before import to ensure data quality.
+
+    Filters out:
+    - Placeholder names (unknown, tbd, etc.)
+    - Match text fragments (contains 'vs', 'defeated', etc.)
+    - Multiple names concatenated together
+    - Names with invalid characters
+    """
+
+    # Names that are clearly invalid
+    INVALID_NAMES = {
+        'unknown', 'tbd', 'vacant', 'n/a', 'none', 'test', 'wrestler',
+        'champion', 'title', 'match', 'winner', 'loser', 'referee',
+        'manager', 'valet', 'announcer', 'commentator', 'guest',
+        'special', 'event', 'show', 'episode', 'segment', 'promo',
+    }
+
+    # Patterns that indicate this is not a valid name
+    INVALID_PATTERNS = [
+        r'\bvs\.?\b',  # Contains "vs" or "vs."
+        r'\bdef\.?\b',  # Contains "def" or "def."
+        r'\bdefeated\b',
+        r'\bbeat\b',
+        r'\bpinned\b',
+        r'\bsubmitted\b',
+        r'\bover\b',
+        r'\(\d+:\d+\)',  # Match time like (10:32)
+        r'\[c\]',  # Champion marker
+        r'^#\d+',  # Starts with ranking
+        r'\d{4}$',  # Ends with 4-digit year
+        r'^the\s+\w+\s+championship',  # Title name
+        r'^\d+\s+man\b',  # "10 man battle royal"
+    ]
+
+    # Minimum and maximum reasonable name lengths
+    MIN_NAME_LENGTH = 2
+    MAX_NAME_LENGTH = 100
+
+    @classmethod
+    def is_valid_wrestler_name(cls, name: str) -> Tuple[bool, Optional[str]]:
+        """
+        Check if a name is a valid wrestler name.
+
+        Returns:
+            Tuple of (is_valid, reason_if_invalid)
+        """
+        if not name:
+            return False, "Empty name"
+
+        name = name.strip()
+
+        # Length checks
+        if len(name) < cls.MIN_NAME_LENGTH:
+            return False, f"Name too short: {len(name)} chars"
+        if len(name) > cls.MAX_NAME_LENGTH:
+            return False, f"Name too long: {len(name)} chars"
+
+        # Check for invalid placeholder names
+        name_lower = name.lower()
+        if name_lower in cls.INVALID_NAMES:
+            return False, f"Invalid placeholder name: {name}"
+
+        # Check for multiple names (comma-separated)
+        if ',' in name:
+            parts = [p.strip() for p in name.split(',')]
+            # If multiple parts look like names, it's probably concatenated
+            name_like_parts = [p for p in parts if len(p) >= 3 and p[0].isupper()]
+            if len(name_like_parts) > 1:
+                return False, f"Multiple names concatenated: {name}"
+
+        # Check for invalid patterns
+        for pattern in cls.INVALID_PATTERNS:
+            if re.search(pattern, name, re.IGNORECASE):
+                return False, f"Contains invalid pattern '{pattern}': {name}"
+
+        # Check for suspicious characters
+        if re.search(r'[<>{}|\[\]\\]', name):
+            return False, f"Contains invalid characters: {name}"
+
+        # Name should start with uppercase or be all uppercase
+        words = name.split()
+        if words and not words[0][0].isupper():
+            return False, f"Name doesn't start with capital letter: {name}"
+
+        return True, None
+
+    @classmethod
+    def is_valid_promotion_name(cls, name: str) -> Tuple[bool, Optional[str]]:
+        """Check if a name is a valid promotion name."""
+        if not name:
+            return False, "Empty name"
+
+        name = name.strip()
+
+        if len(name) < cls.MIN_NAME_LENGTH:
+            return False, f"Name too short: {len(name)} chars"
+        if len(name) > cls.MAX_NAME_LENGTH:
+            return False, f"Name too long: {len(name)} chars"
+
+        # Promotions can have lowercase words, but should be mostly proper nouns
+        invalid_promo = {'unknown', 'tbd', 'n/a', 'none', 'test'}
+        if name.lower() in invalid_promo:
+            return False, f"Invalid placeholder name: {name}"
+
+        return True, None
+
+    @classmethod
+    def is_valid_event_name(cls, name: str) -> Tuple[bool, Optional[str]]:
+        """Check if a name is a valid event name."""
+        if not name:
+            return False, "Empty name"
+
+        name = name.strip()
+
+        if len(name) < cls.MIN_NAME_LENGTH:
+            return False, f"Name too short: {len(name)} chars"
+        if len(name) > 200:  # Events can have longer names
+            return False, f"Name too long: {len(name)} chars"
+
+        invalid_event = {'unknown', 'tbd', 'n/a', 'none', 'test'}
+        if name.lower() in invalid_event:
+            return False, f"Invalid placeholder name: {name}"
+
+        return True, None
+
+    @classmethod
+    def clean_wrestler_name(cls, name: str) -> Optional[str]:
+        """
+        Clean and validate a wrestler name.
+
+        Returns cleaned name or None if invalid.
+        """
+        if not name:
+            return None
+
+        # Strip whitespace
+        name = name.strip()
+
+        # Remove common suffixes
+        name = re.sub(r'\s*\(c\)\s*$', '', name)  # Champion marker
+        name = re.sub(r'\s*\[\d+\]\s*$', '', name)  # Reference markers
+        name = re.sub(r'\s+', ' ', name)  # Multiple spaces
+
+        # Validate
+        is_valid, reason = cls.is_valid_wrestler_name(name)
+        if not is_valid:
+            logger.debug(f"Invalid name rejected: {reason}")
+            return None
+
+        return name
+
+    @classmethod
+    def is_likely_duplicate(cls, name: str, existing_names: Set[str], threshold: float = 0.85) -> Tuple[bool, Optional[str]]:
+        """
+        Check if a name is likely a duplicate of an existing name using fuzzy matching.
+
+        Args:
+            name: The new name to check
+            existing_names: Set of existing names (lowercased)
+            threshold: Similarity threshold (0.0-1.0), default 0.85
+
+        Returns:
+            Tuple of (is_duplicate, matched_name)
+        """
+        from difflib import SequenceMatcher
+
+        name_lower = name.lower().strip()
+
+        # Exact match check (fast path)
+        if name_lower in existing_names:
+            return True, name
+
+        # Fuzzy matching for similar names
+        for existing in existing_names:
+            # Quick length check to avoid expensive comparison
+            len_diff = abs(len(name_lower) - len(existing))
+            if len_diff > len(name_lower) * 0.3:  # More than 30% length difference
+                continue
+
+            ratio = SequenceMatcher(None, name_lower, existing).ratio()
+            if ratio >= threshold:
+                logger.debug(f"Fuzzy duplicate found: '{name}' matches '{existing}' ({ratio:.2%})")
+                return True, existing
+
+        return False, None
+
+    @classmethod
+    def normalize_name_for_comparison(cls, name: str) -> str:
+        """
+        Normalize a name for comparison purposes.
+
+        Removes common variations like "The", trailing numbers, etc.
+        """
+        if not name:
+            return ""
+
+        normalized = name.lower().strip()
+
+        # Remove common prefixes
+        prefixes_to_remove = ['the ', 'el ', 'la ', 'los ', 'las ']
+        for prefix in prefixes_to_remove:
+            if normalized.startswith(prefix):
+                normalized = normalized[len(prefix):]
+                break
+
+        # Remove Jr., Sr., III, etc.
+        normalized = re.sub(r'\s+(jr\.?|sr\.?|iii?|iv|v)$', '', normalized, flags=re.IGNORECASE)
+
+        # Remove quotes and parenthetical content
+        normalized = re.sub(r'["\']', '', normalized)
+        normalized = re.sub(r'\s*\([^)]*\)', '', normalized)
+
+        return normalized.strip()
 
 
 class EntityDiscovery:
@@ -26,33 +242,23 @@ class EntityDiscovery:
     """
 
     def __init__(self):
-        self._coordinator = None
-        self._wikipedia_scraper = None
-        self._cagematch_scraper = None
+        from . import ScraperProvider
+        self._scrapers = ScraperProvider()
 
     @property
     def coordinator(self):
-        """Lazy load scraper coordinator."""
-        if self._coordinator is None:
-            from ..scrapers.coordinator import ScraperCoordinator
-            self._coordinator = ScraperCoordinator()
-        return self._coordinator
+        """Get scraper coordinator from shared provider."""
+        return self._scrapers.coordinator
 
     @property
     def wikipedia_scraper(self):
-        """Lazy load Wikipedia scraper."""
-        if self._wikipedia_scraper is None:
-            from ..scrapers.wikipedia import WikipediaScraper
-            self._wikipedia_scraper = WikipediaScraper()
-        return self._wikipedia_scraper
+        """Get Wikipedia scraper from shared provider."""
+        return self._scrapers.wikipedia_scraper
 
     @property
     def cagematch_scraper(self):
-        """Lazy load Cagematch scraper."""
-        if self._cagematch_scraper is None:
-            from ..scrapers.cagematch import CagematchScraper
-            self._cagematch_scraper = CagematchScraper()
-        return self._cagematch_scraper
+        """Get Cagematch scraper from shared provider."""
+        return self._scrapers.cagematch_scraper
 
     def discover_wrestlers_from_matches(self, limit: int = 10) -> List[Dict[str, Any]]:
         """
@@ -109,15 +315,19 @@ class EntityDiscovery:
         return discovered[:limit]
 
     def _extract_names_from_match(self, match_text: str) -> List[str]:
-        """Extract potential wrestler names from match text."""
+        """
+        Extract potential wrestler names from match text.
+
+        Common patterns:
+        - "John Cena defeated Randy Orton"
+        - "The Rock vs Stone Cold Steve Austin"
+        - "Triple H (c) vs Shawn Michaels"
+        - "Team Alpha (Wrestler A, Wrestler B) vs Team Beta"
+        - "Wrestler A & Wrestler B defeated Wrestler C & Wrestler D"
+        """
         names = []
 
-        # Common patterns in match text:
-        # "John Cena defeated Randy Orton"
-        # "The Rock vs Stone Cold Steve Austin"
-        # "Triple H (c) vs Shawn Michaels"
-
-        # Remove common non-name words
+        # Common non-name words to filter out
         stop_words = {
             'defeated', 'def', 'beat', 'pinned', 'submitted', 'won', 'lost',
             'drew', 'retained', 'captured', 'defended', 'vacant', 'vacated',
@@ -126,29 +336,60 @@ class EntityDiscovery:
             'disqualification', 'dq', 'countout', 'count', 'out', 'pinfall',
             'submission', 'referee', 'stoppage', 'no', 'contest', 'draw',
             'table', 'ladder', 'cage', 'cell', 'steel', 'falls', 'anywhere',
+            'team', 'vs', 'over', 'in', 'at', 'to', 'from', 'into',
         }
 
-        # Split by common separators
-        parts = re.split(r'\s+vs\.?\s+|\s+def\.?\s+|\s+defeated\s+|\s+beat\s+|\s+&\s+|\s+and\s+', match_text, flags=re.IGNORECASE)
+        # First, clean the text
+        text = match_text
+
+        # Remove parenthetical content like (c) for champion, (2:15) for time
+        text = re.sub(r'\([^)]*\)', ' ', text)
+        # Remove bracket content
+        text = re.sub(r'\[[^\]]*\]', ' ', text)
+
+        # Split by all common separators to get individual names
+        # This includes: vs, vs., defeated, def., beat, &, and, comma
+        parts = re.split(
+            r'\s+vs\.?\s+|\s+def\.?\s+|\s+defeated\s+|\s+beat\s+'
+            r'|\s+&\s+|\s+and\s+|\s*,\s*|\s+over\s+',
+            text,
+            flags=re.IGNORECASE
+        )
 
         for part in parts:
-            # Clean up the part
-            part = re.sub(r'\([^)]*\)', '', part)  # Remove parentheses content
-            part = re.sub(r'\[[^\]]*\]', '', part)  # Remove bracket content
             part = part.strip()
+            if not part:
+                continue
 
-            # Check if it looks like a name (2-4 capitalized words)
+            # Skip if it's too short or too long
             words = part.split()
-            if 1 <= len(words) <= 4:
-                # Check if words are mostly capitalized and not stop words
-                valid_words = [
-                    w for w in words
-                    if w[0].isupper() and w.lower() not in stop_words
-                ]
-                if len(valid_words) >= len(words) * 0.5:
-                    name = ' '.join(words)
-                    if len(name) >= 3:  # Minimum name length
-                        names.append(name)
+            if not (1 <= len(words) <= 5):
+                continue
+
+            # Skip if it's mostly stop words
+            non_stop_words = [
+                w for w in words
+                if w.lower() not in stop_words and len(w) > 1
+            ]
+            if len(non_stop_words) < len(words) * 0.5:
+                continue
+
+            # Check if it looks like a name (starts with capital, reasonable length)
+            # Allow "The Rock", "Stone Cold Steve Austin", etc.
+            first_word = words[0]
+            if not first_word[0].isupper():
+                continue
+
+            # Build the potential name
+            name = ' '.join(words)
+
+            # Validate the name
+            if len(name) >= 3 and len(name) <= 50:  # Reasonable name length
+                # Skip common non-wrestler terms that might slip through
+                lower_name = name.lower()
+                if lower_name in {'world', 'heavyweight', 'champion', 'title match'}:
+                    continue
+                names.append(name)
 
         return names
 
@@ -423,28 +664,90 @@ class EntityDiscovery:
         """
         Import discovered entities into the database.
 
+        Validates all entities before import to ensure data quality.
+        Includes fuzzy duplicate detection to prevent near-duplicates.
+
         Returns count of successfully imported entities per type.
         """
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
+        from ..models import Wrestler, Promotion, Event, Venue
 
         imported = {}
+        rejected = {}
+        duplicate_count = {}
+
+        # Pre-load existing names for fuzzy duplicate checking
+        existing_names = {
+            'wrestler': set(n.lower() for n in Wrestler.objects.values_list('name', flat=True)),
+            'promotion': set(n.lower() for n in Promotion.objects.values_list('name', flat=True)),
+            'event': set(n.lower() for n in Event.objects.values_list('name', flat=True)),
+            'venue': set(n.lower() for n in Venue.objects.values_list('name', flat=True)),
+        }
 
         for entity_type, entities in discoveries.items():
             count = 0
+            reject_count = 0
+            dup_count = 0
 
             for discovery in entities:
+                name = discovery.get('name', '')
+
+                # Validate name before importing
+                if entity_type == 'wrestler':
+                    is_valid, reason = NameValidator.is_valid_wrestler_name(name)
+                    if not is_valid:
+                        logger.debug(f"Rejected wrestler name: {reason}")
+                        reject_count += 1
+                        continue
+                elif entity_type == 'promotion':
+                    is_valid, reason = NameValidator.is_valid_promotion_name(name)
+                    if not is_valid:
+                        logger.debug(f"Rejected promotion name: {reason}")
+                        reject_count += 1
+                        continue
+                elif entity_type == 'event':
+                    is_valid, reason = NameValidator.is_valid_event_name(name)
+                    if not is_valid:
+                        logger.debug(f"Rejected event name: {reason}")
+                        reject_count += 1
+                        continue
+
+                # Check for fuzzy duplicates
+                if entity_type in existing_names:
+                    is_dup, matched = NameValidator.is_likely_duplicate(
+                        name,
+                        existing_names[entity_type],
+                        threshold=0.85
+                    )
+                    if is_dup:
+                        logger.debug(f"Skipped likely duplicate {entity_type}: '{name}' ~ '{matched}'")
+                        dup_count += 1
+                        continue
+
                 try:
                     start_time = time.time()
                     entity_id = None
 
                     if entity_type == 'wrestler':
-                        entity_id = self.coordinator.import_wrestler(discovery['data'])
+                        # Clean name before import
+                        cleaned_name = NameValidator.clean_wrestler_name(name)
+                        if cleaned_name:
+                            discovery['data']['name'] = cleaned_name
+                            entity_id = self.coordinator.import_wrestler(discovery['data'])
+                            if entity_id:
+                                existing_names['wrestler'].add(cleaned_name.lower())
                     elif entity_type == 'event':
                         entity_id = self.coordinator.import_event(discovery['data'])
+                        if entity_id:
+                            existing_names['event'].add(name.lower())
                     elif entity_type == 'promotion':
                         entity_id = self.coordinator.import_promotion(discovery['data'])
+                        if entity_id:
+                            existing_names['promotion'].add(name.lower())
                     elif entity_type == 'venue':
                         entity_id = self._import_venue(discovery['data'])
+                        if entity_id:
+                            existing_names['venue'].add(name.lower())
 
                     if entity_id:
                         count += 1
@@ -474,6 +777,16 @@ class EntityDiscovery:
                     )
 
             imported[entity_type] = count
+            if reject_count > 0:
+                rejected[entity_type] = reject_count
+                logger.info(f"Rejected {reject_count} invalid {entity_type} names")
+            if dup_count > 0:
+                duplicate_count[entity_type] = dup_count
+                logger.info(f"Skipped {dup_count} likely duplicate {entity_type} entries")
+
+        # Log summary
+        if duplicate_count:
+            logger.info(f"Fuzzy duplicate detection prevented: {duplicate_count}")
 
         return imported
 
@@ -485,10 +798,10 @@ class EntityDiscovery:
         if not name:
             return None
 
+        # The Venue.save() method now handles unique slug generation
         venue, created = Venue.objects.get_or_create(
             name=name,
             defaults={
-                'slug': slugify(name),
                 'location': data.get('location', ''),
                 'capacity': data.get('capacity'),
             }

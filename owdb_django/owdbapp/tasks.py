@@ -4,7 +4,6 @@ from django.core.cache import cache
 from django.db.models import Count
 
 import logging
-import random
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +32,17 @@ IMAGE_FETCH_HARD_LIMIT = 7 * 60  # 7 minutes hard kill
     soft_time_limit=SCRAPER_SOFT_LIMIT,
     time_limit=SCRAPER_HARD_LIMIT,
 )
-def scrape_wikipedia_wrestlers(self, limit: int = 50):
+def scrape_wikipedia_wrestlers(self, limit: int = 50, rotate_category: bool = True):
     """
     Scrape wrestler data from Wikipedia.
-    Runs periodically to discover new wrestlers and update existing ones.
+
+    Uses category rotation by default to stay within rate limits.
+    Each run scrapes only ONE category, cycling through all categories
+    across multiple runs.
+
+    Args:
+        limit: Max wrestlers to scrape per category
+        rotate_category: If True (default), scrape one category per run and rotate
     """
     lock_key = "scrape_wikipedia_wrestlers_lock"
     lock_timeout = SCRAPER_HARD_LIMIT + 60
@@ -51,7 +57,7 @@ def scrape_wikipedia_wrestlers(self, limit: int = 50):
         scraper = WikipediaScraper()
         coordinator = ScraperCoordinator()
 
-        wrestlers = scraper.scrape_wrestlers(limit=limit)
+        wrestlers = scraper.scrape_wrestlers(limit=limit, rotate_category=rotate_category)
         imported = 0
 
         for wrestler_data in wrestlers:
@@ -84,8 +90,12 @@ def scrape_wikipedia_wrestlers(self, limit: int = 50):
     soft_time_limit=SCRAPER_SOFT_LIMIT,
     time_limit=SCRAPER_HARD_LIMIT,
 )
-def scrape_wikipedia_promotions(self, limit: int = 25):
-    """Scrape promotion data from Wikipedia."""
+def scrape_wikipedia_promotions(self, limit: int = 25, rotate_category: bool = True):
+    """
+    Scrape promotion data from Wikipedia.
+
+    Uses category rotation by default to stay within rate limits.
+    """
     lock_key = "scrape_wikipedia_promotions_lock"
     lock_timeout = SCRAPER_HARD_LIMIT + 60
 
@@ -99,7 +109,7 @@ def scrape_wikipedia_promotions(self, limit: int = 25):
         scraper = WikipediaScraper()
         coordinator = ScraperCoordinator()
 
-        promotions = scraper.scrape_promotions(limit=limit)
+        promotions = scraper.scrape_promotions(limit=limit, rotate_category=rotate_category)
         imported = 0
 
         for promotion_data in promotions:
@@ -132,8 +142,12 @@ def scrape_wikipedia_promotions(self, limit: int = 25):
     soft_time_limit=SCRAPER_SOFT_LIMIT,
     time_limit=SCRAPER_HARD_LIMIT,
 )
-def scrape_wikipedia_events(self, limit: int = 50):
-    """Scrape event data from Wikipedia."""
+def scrape_wikipedia_events(self, limit: int = 50, rotate_category: bool = True):
+    """
+    Scrape event data from Wikipedia.
+
+    Uses category rotation by default to stay within rate limits.
+    """
     lock_key = "scrape_wikipedia_events_lock"
     lock_timeout = SCRAPER_HARD_LIMIT + 60
 
@@ -147,7 +161,7 @@ def scrape_wikipedia_events(self, limit: int = 50):
         scraper = WikipediaScraper()
         coordinator = ScraperCoordinator()
 
-        events = scraper.scrape_events(limit=limit)
+        events = scraper.scrape_events(limit=limit, rotate_category=rotate_category)
         imported = 0
 
         for event_data in events:
@@ -697,7 +711,6 @@ def fetch_wrestler_images(self, batch_size: int = 20, refresh_old: bool = True):
         from .models import Wrestler
         from .scrapers import WikimediaCommonsClient
         from .services import get_image_cache_service
-        from django.db.models import Q
         from django.utils import timezone
         from datetime import timedelta
 
@@ -1139,8 +1152,7 @@ def generate_hot100_ranking(self, year: int = None, month: int = None, publish: 
         publish: Whether to publish the ranking immediately
     """
     from django.utils import timezone
-    from datetime import date
-    from .models import Hot100Calculator, Hot100Ranking
+    from .models import Hot100Calculator
 
     try:
         # Default to previous month
@@ -1353,3 +1365,548 @@ def wrestlebot_get_status():
     except Exception as e:
         logger.error(f"Failed to get WrestleBot status: {e}")
         return {"status": "error", "error": str(e)}
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    soft_time_limit=15 * 60,  # 15 minutes
+    time_limit=20 * 60,
+)
+def wrestlebot_match_cleanup(self, dry_run: bool = False, limit: int = 5000):
+    """
+    Clean up synthetic/invalid match data.
+
+    Removes:
+    - Matches with deceased wrestlers appearing after death
+    - Matches with retired wrestlers appearing after retirement
+    - Matches with impossible era combinations
+
+    Fixes:
+    - Tag teams stored as single wrestlers (replaces with individual members)
+
+    Args:
+        dry_run: If True, don't actually make changes (just report)
+        limit: Maximum matches to check
+
+    Runs every 6 hours via Celery Beat.
+    """
+    lock_key = "wrestlebot_match_cleanup_lock"
+    lock_timeout = 25 * 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("Match cleanup skipped: previous run still active")
+        return {"status": "skipped_lock"}
+
+    try:
+        from .wrestlebot.quality import DataCleaner
+
+        cleaner = DataCleaner()
+        results = cleaner.find_and_fix_match_issues(dry_run=dry_run, limit=limit)
+
+        logger.info(f"Match cleanup complete: {results}")
+        return results
+
+    except Exception as e:
+        logger.error(f"Match cleanup failed: {e}")
+        raise self.retry(exc=e)
+
+    finally:
+        cache.delete(lock_key)
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    soft_time_limit=10 * 60,
+    time_limit=15 * 60,
+)
+def wrestlebot_synthetic_cleanup(self, dry_run: bool = False):
+    """
+    Find and delete synthetic/fabricated events.
+
+    Identifies:
+    - Future events with deceased wrestlers
+    - Far-future events with suspicious name patterns
+
+    Args:
+        dry_run: If True, don't actually delete (just report)
+
+    Runs daily via Celery Beat.
+    """
+    lock_key = "wrestlebot_synthetic_cleanup_lock"
+    lock_timeout = 20 * 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("Synthetic cleanup skipped: previous run still active")
+        return {"status": "skipped_lock"}
+
+    try:
+        from .wrestlebot.quality import DataCleaner
+
+        cleaner = DataCleaner()
+
+        # Clean up events with deceased wrestlers
+        deceased_results = cleaner.find_and_delete_synthetic_events(dry_run=dry_run)
+
+        # Clean up far-future events with suspicious names
+        pattern_results = cleaner.detect_synthetic_by_name_pattern(dry_run=dry_run)
+
+        results = {
+            'dry_run': dry_run,
+            'deceased_cleanup': deceased_results,
+            'pattern_cleanup': pattern_results,
+            'total_events_deleted': (
+                deceased_results.get('events_deleted', 0) +
+                pattern_results.get('events_deleted', 0)
+            ),
+        }
+
+        logger.info(f"Synthetic cleanup complete: {results}")
+        return results
+
+    except Exception as e:
+        logger.error(f"Synthetic cleanup failed: {e}")
+        raise self.retry(exc=e)
+
+    finally:
+        cache.delete(lock_key)
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    default_retry_delay=600,
+    soft_time_limit=WRESTLEBOT_SOFT_LIMIT,
+    time_limit=WRESTLEBOT_HARD_LIMIT,
+)
+def wrestlebot_verification_cycle(self, batch_size: int = 15):
+    """
+    Run a verification cycle - cross-check data against TMDB and other sources.
+
+    This is the highest priority task for data ACCURACY.
+    It verifies:
+    - Episode dates match TMDB
+    - Wrestler data is accurate
+    - Event data is correct
+
+    Runs every 30 minutes via Celery Beat.
+    """
+    lock_key = "wrestlebot_verification_lock"
+    lock_timeout = WRESTLEBOT_HARD_LIMIT + 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("WrestleBot verification skipped: previous run still active")
+        return {"status": "skipped_lock"}
+
+    try:
+        from .wrestlebot import WrestleBot
+        bot = WrestleBot()
+
+        if not bot.is_enabled():
+            return {"status": "disabled"}
+
+        result = bot.run_verification_cycle(batch_size=batch_size)
+        logger.info(f"WrestleBot verification cycle: {result}")
+        return result
+
+    except Exception as e:
+        logger.error(f"WrestleBot verification failed: {e}")
+        raise self.retry(exc=e)
+
+    finally:
+        cache.delete(lock_key)
+
+
+# =============================================================================
+# TV Episode Tracking Tasks
+# =============================================================================
+
+TV_EPISODE_SOFT_LIMIT = 8 * 60   # 8 minutes
+TV_EPISODE_HARD_LIMIT = 10 * 60  # 10 minutes
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=300,
+    soft_time_limit=TV_EPISODE_SOFT_LIMIT,
+    time_limit=TV_EPISODE_HARD_LIMIT,
+)
+def poll_tv_episodes(self):
+    """
+    Poll for new TV episodes every 15 minutes.
+
+    Quick check - only hits TMDB, not Cagematch.
+    Creates new episode Events for recently aired shows.
+
+    This task runs frequently to ensure new episodes are captured
+    shortly after they air (Raw, SmackDown, Dynamite, etc.)
+    """
+    from celery.exceptions import SoftTimeLimitExceeded
+
+    lock_key = "poll_tv_episodes_lock"
+    lock_timeout = TV_EPISODE_HARD_LIMIT + 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("TV episode poll skipped: previous run still active")
+        return {"status": "skipped_lock"}
+
+    try:
+        from .scrapers.tv_episodes import TVEpisodeScraper
+
+        scraper = TVEpisodeScraper()
+        results = scraper.poll_for_new_episodes()
+
+        logger.info(
+            "TV episode poll: checked %d shows, found %d new episodes",
+            results['shows_checked'], results['new_episodes']
+        )
+
+        return results
+
+    except SoftTimeLimitExceeded:
+        logger.warning("TV episode poll exceeded time limit")
+        return {"status": "timeout"}
+
+    except Exception as e:
+        logger.error("TV episode poll failed: %s", e)
+        raise self.retry(exc=e)
+
+    finally:
+        cache.delete(lock_key)
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    soft_time_limit=30 * 60,  # 30 minutes
+    time_limit=35 * 60,
+)
+def backfill_show_episodes(self, show_id: int, year: int = None):
+    """
+    Backfill historical episodes for a specific show.
+
+    Run manually or scheduled for off-peak hours.
+
+    Args:
+        show_id: ID of the TVShow to backfill
+        year: Optional specific year to backfill (all years if None)
+    """
+
+    from .models import TVShow
+    from .scrapers.tv_episodes import TVEpisodeScraper
+
+    try:
+        show = TVShow.objects.get(id=show_id)
+    except TVShow.DoesNotExist:
+        logger.error("Show %d not found for backfill", show_id)
+        return {"error": f"Show {show_id} not found"}
+
+    scraper = TVEpisodeScraper()
+
+    if year:
+        results = scraper.backfill_show_by_year(show, year)
+        logger.info("Backfilled %s for %d: %s", show.name, year, results)
+    else:
+        results = scraper.backfill_all_episodes(show)
+        logger.info("Backfilled all episodes for %s: %s", show.name, results)
+
+    return results
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    soft_time_limit=60 * 60,  # 60 minutes for full backfill
+    time_limit=65 * 60,
+)
+def backfill_all_tv_shows(self, year: int = None):
+    """
+    Backfill episodes for all TV shows with TMDB IDs.
+
+    WARNING: This is a long-running task. Use for initial setup only.
+
+    Args:
+        year: Optional specific year to backfill (all years if None)
+    """
+    from .models import TVShow
+    from .scrapers.tv_episodes import TVEpisodeScraper
+
+    shows = TVShow.objects.filter(tmdb_id__isnull=False)
+    scraper = TVEpisodeScraper()
+
+    total_results = {
+        'shows_processed': 0,
+        'total_created': 0,
+        'total_updated': 0,
+        'total_errors': 0,
+    }
+
+    for show in shows:
+        try:
+            if year:
+                results = scraper.backfill_show_by_year(show, year)
+            else:
+                results = scraper.backfill_all_episodes(show)
+
+            total_results['shows_processed'] += 1
+            total_results['total_created'] += results.get('created', 0)
+            total_results['total_updated'] += results.get('updated', 0)
+            total_results['total_errors'] += results.get('errors', 0)
+
+            logger.info("Backfilled %s: %s", show.name, results)
+
+        except Exception as e:
+            logger.error("Error backfilling %s: %s", show.name, e)
+            total_results['total_errors'] += 1
+
+    logger.info("TV show backfill complete: %s", total_results)
+    return total_results
+
+
+@shared_task(bind=True)
+def verify_tv_show_completeness(self, show_id: int):
+    """
+    Verify that a TV show has all episodes from TMDB.
+
+    Compares our episode count against TMDB's episode count.
+
+    Args:
+        show_id: ID of the TVShow to verify
+    """
+    from .models import TVShow
+    from .scrapers.tv_episodes import TVEpisodeScraper
+
+    try:
+        show = TVShow.objects.get(id=show_id)
+    except TVShow.DoesNotExist:
+        return {"error": f"Show {show_id} not found"}
+
+    scraper = TVEpisodeScraper()
+    results = scraper.verify_episode_count(show)
+
+    if not results.get('complete', True):
+        logger.warning(
+            "Show %s is missing %d episodes (TMDB: %d, DB: %d)",
+            show.name,
+            results['difference'],
+            results['tmdb_count'],
+            results['db_count']
+        )
+    else:
+        logger.info("Show %s episode count verified: %d episodes", show.name, results['db_count'])
+
+    return results
+
+
+@shared_task(bind=True)
+def verify_all_tv_shows(self):
+    """
+    Verify episode completeness for all TV shows.
+
+    Returns summary of shows that are missing episodes.
+    """
+    from .models import TVShow
+    from .scrapers.tv_episodes import TVEpisodeScraper
+
+    shows = TVShow.objects.filter(tmdb_id__isnull=False)
+    scraper = TVEpisodeScraper()
+
+    results = {
+        'shows_checked': 0,
+        'shows_complete': 0,
+        'shows_incomplete': [],
+    }
+
+    for show in shows:
+        try:
+            verification = scraper.verify_episode_count(show)
+            results['shows_checked'] += 1
+
+            if verification.get('complete', True):
+                results['shows_complete'] += 1
+            else:
+                results['shows_incomplete'].append({
+                    'show': show.name,
+                    'show_id': show.id,
+                    'tmdb_count': verification['tmdb_count'],
+                    'db_count': verification['db_count'],
+                    'missing': verification['difference'],
+                })
+
+        except Exception as e:
+            logger.error("Error verifying %s: %s", show.name, e)
+
+    logger.info(
+        "TV show verification: %d checked, %d complete, %d incomplete",
+        results['shows_checked'],
+        results['shows_complete'],
+        len(results['shows_incomplete'])
+    )
+
+    return results
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    default_retry_delay=300,
+    soft_time_limit=TV_EPISODE_SOFT_LIMIT,
+    time_limit=TV_EPISODE_HARD_LIMIT,
+)
+def enrich_tv_episodes(self, batch_size: int = 20):
+    """
+    Enrich TV episodes with match data and wrestler links.
+
+    This task uses TMDB as the source of truth for episode existence,
+    then enriches episodes with match data from Cagematch/Wikipedia.
+
+    Runs every 30 minutes via Celery Beat.
+
+    Args:
+        batch_size: Number of episodes to enrich per run
+    """
+    from celery.exceptions import SoftTimeLimitExceeded
+    from datetime import timedelta
+    from django.utils import timezone
+
+    from .models import Event
+    from .scrapers.tv_episodes import TVEpisodeScraper
+    from owdb_django.wrestlebot.models import WrestleBotActivity
+
+    lock_key = "enrich_tv_episodes_lock"
+    lock_timeout = TV_EPISODE_HARD_LIMIT + 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("TV episode enrichment skipped: previous run still active")
+        return {"status": "skipped_lock"}
+
+    try:
+        scraper = TVEpisodeScraper()
+
+        # Find episodes that need enrichment (have no matches, are in the past)
+        cutoff = timezone.now() - timedelta(days=1)  # Only past episodes
+        episodes_to_enrich = (
+            Event.objects
+            .filter(
+                tv_show__isnull=False,
+                date__lt=cutoff.date(),
+            )
+            .exclude(matches__isnull=False)  # No matches yet
+            .order_by('-date')  # Most recent first
+            [:batch_size]
+        )
+
+        results = {
+            'checked': 0,
+            'enriched': 0,
+            'matches_added': 0,
+            'errors': 0,
+        }
+
+        for episode in episodes_to_enrich:
+            try:
+                enriched = scraper.enrich_episode_with_matches(episode)
+                results['checked'] += 1
+
+                if enriched.get('matches_added', 0) > 0:
+                    results['enriched'] += 1
+                    results['matches_added'] += enriched['matches_added']
+
+                    # Log WrestleBot activity
+                    WrestleBotActivity.log_activity(
+                        action_type='enrich',
+                        entity_type='event',
+                        entity_id=episode.id,
+                        entity_name=episode.name,
+                        source='tmdb_enrichment',
+                        details={'matches_added': enriched['matches_added']},
+                    )
+
+            except Exception as e:
+                logger.warning("Failed to enrich episode %s: %s", episode.name, e)
+                results['errors'] += 1
+
+        logger.info(
+            "TV episode enrichment: %d checked, %d enriched, %d matches added",
+            results['checked'], results['enriched'], results['matches_added']
+        )
+
+        return results
+
+    except SoftTimeLimitExceeded:
+        logger.warning("TV episode enrichment exceeded time limit")
+        return {"status": "timeout"}
+
+    except Exception as e:
+        logger.error("TV episode enrichment failed: %s", e)
+        raise self.retry(exc=e)
+
+    finally:
+        cache.delete(lock_key)
+
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+    soft_time_limit=30 * 60,  # 30 minutes
+    time_limit=35 * 60,
+)
+def scheduled_backfill_tv_episodes(self):
+    """
+    Daily task to backfill historical TV episodes.
+
+    Focuses on shows that are missing episodes, prioritizing
+    recent gaps over historical ones.
+
+    Runs daily via Celery Beat.
+    """
+    from .models import TVShow
+    from .scrapers.tv_episodes import TVEpisodeScraper
+
+    lock_key = "scheduled_backfill_episodes_lock"
+    lock_timeout = 40 * 60
+
+    if not cache.add(lock_key, True, timeout=lock_timeout):
+        logger.info("Scheduled backfill skipped: previous run still active")
+        return {"status": "skipped_lock"}
+
+    try:
+        scraper = TVEpisodeScraper()
+
+        # Get all shows and check for gaps
+        shows = TVShow.objects.filter(tmdb_id__isnull=False, finale_date__isnull=True)
+
+        results = {
+            'shows_processed': 0,
+            'episodes_created': 0,
+            'episodes_updated': 0,
+        }
+
+        for show in shows[:10]:  # Limit to 10 shows per day
+            try:
+                # Backfill the current year for active shows
+                from datetime import date
+                current_year = date.today().year
+
+                show_results = scraper.backfill_show_by_year(show, current_year)
+
+                results['shows_processed'] += 1
+                results['episodes_created'] += show_results.get('created', 0)
+                results['episodes_updated'] += show_results.get('updated', 0)
+
+                logger.info("Backfilled %s for %d: %s", show.name, current_year, show_results)
+
+            except Exception as e:
+                logger.error("Error backfilling %s: %s", show.name, e)
+
+        logger.info("Scheduled backfill complete: %s", results)
+        return results
+
+    except Exception as e:
+        logger.error("Scheduled backfill failed: %s", e)
+        raise self.retry(exc=e)
+
+    finally:
+        cache.delete(lock_key)

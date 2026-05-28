@@ -5,6 +5,28 @@ from django.utils.text import slugify
 import secrets
 
 
+def generate_unique_slug(model_class, base_slug, instance_pk=None):
+    """
+    Generate a unique slug for a model instance.
+
+    If the base slug already exists, appends -2, -3, etc. until unique.
+
+    Args:
+        model_class: The Django model class to check against
+        base_slug: The initial slug to try
+        instance_pk: The PK of the current instance (to exclude from check)
+
+    Returns:
+        A unique slug string
+    """
+    slug = base_slug
+    counter = 1
+    while model_class.objects.filter(slug=slug).exclude(pk=instance_pk).exists():
+        counter += 1
+        slug = f"{base_slug}-{counter}"
+    return slug
+
+
 class TimeStampedModel(models.Model):
     """Abstract base model with created/updated timestamps."""
     created_at = models.DateTimeField(auto_now_add=True)
@@ -176,7 +198,8 @@ class Venue(ImageMixin, TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            self.slug = generate_unique_slug(Venue, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -247,7 +270,8 @@ class Promotion(ImageMixin, TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            self.slug = generate_unique_slug(Promotion, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -348,7 +372,8 @@ class Stable(ImageMixin, TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            self.slug = generate_unique_slug(Stable, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -397,6 +422,7 @@ class Wrestler(ImageMixin, TimeStampedModel):
 
     # Additional profile fields for completeness
     birth_date = models.DateField(blank=True, null=True)
+    death_date = models.DateField(blank=True, null=True, help_text="Date of death if deceased")
     height = models.CharField(max_length=50, blank=True, null=True, help_text="e.g., 6'2\" or 188 cm")
     weight = models.CharField(max_length=50, blank=True, null=True, help_text="e.g., 250 lbs or 113 kg")
     trained_by = models.TextField(blank=True, null=True, help_text="Comma-separated list of trainers")
@@ -413,15 +439,22 @@ class Wrestler(ImageMixin, TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            self.slug = generate_unique_slug(Wrestler, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
 
     @property
+    def is_deceased(self):
+        """Check if wrestler has passed away."""
+        return self.death_date is not None
+
+    @property
     def is_active(self):
-        return self.retirement_year is None
+        """Check if wrestler is still active (not retired and not deceased)."""
+        return self.retirement_year is None and self.death_date is None
 
     def get_aliases_list(self):
         if self.aliases:
@@ -648,7 +681,6 @@ class Wrestler(ImageMixin, TimeStampedModel):
 
     def get_video_games(self):
         """Get video games this wrestler appears in (via promotions)."""
-        from django.db.models import Q
         # Get promotions this wrestler worked for
         promo_ids = self.matches.values_list('event__promotion_id', flat=True).distinct()
         return VideoGame.objects.filter(promotions__in=promo_ids).distinct().order_by('-release_year')
@@ -750,7 +782,6 @@ class Wrestler(ImageMixin, TimeStampedModel):
         3. Recently created (fresher data sources)
         """
         from django.db.models import Case, When, Value, IntegerField, Q
-        from django.db.models.functions import Coalesce
 
         # Prioritize records that have Wikipedia URLs but missing data
         return cls.objects.annotate(
@@ -781,7 +812,96 @@ class Wrestler(ImageMixin, TimeStampedModel):
         ).order_by('priority', '-created_at')[:limit]
 
 
+class TVShow(ImageMixin, TimeStampedModel):
+    """
+    Represents a wrestling TV series (Raw, SmackDown, Dynamite, etc.)
+    Episodes are stored as Event objects linked to this show.
+    """
+    SHOW_TYPE_CHOICES = [
+        ('weekly', 'Weekly TV Show'),
+        ('ppv', 'Pay-Per-View Series'),
+        ('special', 'Special Event Series'),
+        ('online', 'Online/Streaming Show'),
+    ]
+
+    name = models.CharField(max_length=255, db_index=True)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
+    promotion = models.ForeignKey(
+        Promotion, on_delete=models.CASCADE, related_name='tv_shows'
+    )
+
+    # Show metadata
+    show_type = models.CharField(
+        max_length=50, choices=SHOW_TYPE_CHOICES, default='weekly'
+    )
+
+    # Broadcast info
+    network = models.CharField(max_length=100, blank=True, null=True,
+                               help_text="Current network (e.g., Netflix, USA Network, TBS)")
+    air_day = models.CharField(max_length=20, blank=True, null=True,
+                               help_text="Day of week (e.g., Monday, Wednesday)")
+
+    # Dates
+    premiere_date = models.DateField(blank=True, null=True)
+    finale_date = models.DateField(blank=True, null=True,
+                                   help_text="NULL = still running")
+
+    # External IDs for API lookups
+    tmdb_id = models.IntegerField(blank=True, null=True, unique=True,
+                                  help_text="The Movie Database TV show ID")
+    cagematch_id = models.IntegerField(blank=True, null=True,
+                                       help_text="Cagematch event series ID")
+    wikipedia_url = models.URLField(max_length=500, blank=True, null=True)
+
+    about = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = "TV Show"
+        verbose_name_plural = "TV Shows"
+        indexes = [
+            models.Index(fields=['promotion', 'show_type']),
+            models.Index(fields=['tmdb_id']),
+            models.Index(fields=['show_type']),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.name)
+            self.slug = generate_unique_slug(TVShow, base_slug, self.pk)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def is_active(self) -> bool:
+        """Check if the show is still running."""
+        return self.finale_date is None
+
+    @property
+    def episode_count(self) -> int:
+        """Get total number of episodes."""
+        return self.episodes.count()
+
+    def get_latest_episode(self):
+        """Get the most recent episode."""
+        return self.episodes.order_by('-date').first()
+
+    def get_episodes_by_year(self, year: int):
+        """Get all episodes from a specific year."""
+        return self.episodes.filter(date__year=year).order_by('date')
+
+
 class Event(ImageMixin, TimeStampedModel):
+    EVENT_TYPE_CHOICES = [
+        ('tv_episode', 'TV Episode'),
+        ('ppv', 'Pay-Per-View'),
+        ('house_show', 'House Show'),
+        ('special', 'Special Event'),
+        ('other', 'Other'),
+    ]
+
     name = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     promotion = models.ForeignKey(
@@ -794,18 +914,52 @@ class Event(ImageMixin, TimeStampedModel):
     attendance = models.IntegerField(blank=True, null=True)
     about = models.TextField(blank=True, null=True)
 
+    # TV Episode fields
+    tv_show = models.ForeignKey(
+        'TVShow', on_delete=models.SET_NULL,
+        blank=True, null=True, related_name='episodes',
+        help_text="TV show this episode belongs to (if applicable)"
+    )
+    episode_number = models.IntegerField(blank=True, null=True,
+                                         help_text="Episode number within the show")
+    season_number = models.IntegerField(blank=True, null=True,
+                                        help_text="Season number (if applicable)")
+
+    # Event type for filtering
+    event_type = models.CharField(
+        max_length=30, choices=EVENT_TYPE_CHOICES, default='other', db_index=True
+    )
+
+    # External IDs for verification
+    tmdb_episode_id = models.IntegerField(blank=True, null=True,
+                                          help_text="TMDB episode ID for TV episodes")
+    cagematch_event_id = models.IntegerField(blank=True, null=True,
+                                             help_text="Cagematch event ID")
+
+    # Verification status
+    verified = models.BooleanField(default=False,
+                                   help_text="Data verified against external source")
+    verified_source = models.CharField(max_length=50, blank=True, null=True,
+                                       help_text="Source used for verification")
+    last_verified = models.DateTimeField(blank=True, null=True)
+
     class Meta:
         ordering = ['-date']
         indexes = [
             models.Index(fields=['name']),
             models.Index(fields=['date']),
             models.Index(fields=['promotion', 'date']),
+            models.Index(fields=['tv_show', 'episode_number']),
+            models.Index(fields=['event_type']),
+            models.Index(fields=['verified']),
+            models.Index(fields=['tv_show', 'date']),
         ]
 
     def save(self, *args, **kwargs):
         if not self.slug:
             date_str = self.date.strftime('%Y') if self.date else ''
-            self.slug = slugify(f"{self.name}-{date_str}")
+            base_slug = slugify(f"{self.name}-{date_str}")
+            self.slug = generate_unique_slug(Event, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -843,7 +997,8 @@ class Title(ImageMixin, TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            self.slug = generate_unique_slug(Title, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -940,7 +1095,8 @@ class VideoGame(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            self.slug = generate_unique_slug(VideoGame, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -976,7 +1132,8 @@ class Podcast(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            self.slug = generate_unique_slug(Podcast, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -1055,7 +1212,8 @@ class PodcastEpisode(TimeStampedModel):
         if not self.slug:
             base_slug = slugify(self.title[:200])
             date_str = self.published_date.strftime('%Y%m%d') if self.published_date else ''
-            self.slug = f"{base_slug}-{date_str}" if date_str else base_slug
+            base_slug = f"{base_slug}-{date_str}" if date_str else base_slug
+            self.slug = generate_unique_slug(PodcastEpisode, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -1142,7 +1300,8 @@ class Book(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.title)
+            base_slug = slugify(self.title)
+            self.slug = generate_unique_slug(Book, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -1174,7 +1333,8 @@ class Special(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.title)
+            base_slug = slugify(self.title)
+            self.slug = generate_unique_slug(Special, base_slug, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -1215,13 +1375,17 @@ class EmailVerificationToken(TimeStampedModel):
 
     @classmethod
     def generate_token(cls):
-        """Generate a secure verification token."""
-        return secrets.token_urlsafe(32)
+        """Generate a secure verification token (64 hex chars = 32 bytes)."""
+        return secrets.token_hex(32)
 
     @property
     def is_valid(self):
         """Check if the token is still valid (not expired and not used)."""
         return not self.used and self.expires_at > timezone.now()
+
+    def is_expired(self):
+        """Check if the token has passed its expiry time."""
+        return self.expires_at <= timezone.now()
 
 
 class APIKey(TimeStampedModel):
@@ -1248,8 +1412,17 @@ class APIKey(TimeStampedModel):
 
     @classmethod
     def generate_key(cls):
-        """Generate a secure API key."""
-        return secrets.token_urlsafe(32)
+        """Generate a secure API key (40 hex chars = 20 bytes)."""
+        return secrets.token_hex(20)
+
+    def check_rate_limit(self):
+        """Return True if this key is within its daily request limit.
+
+        Free tier: 1000 requests/day. Paid tier: unlimited.
+        """
+        if self.is_paid:
+            return True
+        return self.requests_today < 1000
 
     def reset_daily_count(self):
         """Reset the daily request count."""
@@ -1418,8 +1591,7 @@ class Hot100Calculator:
         Returns list of dicts with wrestler_id and score components.
         """
         from datetime import date
-        from django.db.models import Count, Q, Sum, Avg, F
-        from django.db.models.functions import Coalesce
+        from django.db.models import Count, Q
 
         # Get date range for this month
         start_date = date(self.year, self.month, 1)
@@ -1566,7 +1738,6 @@ class Hot100Calculator:
         if not self._previous_ranking:
             return 0
         # Opponents who were in last month's Hot 100
-        from django.db.models import Avg
         opponent_ranks = Hot100Entry.objects.filter(
             ranking=self._previous_ranking,
             wrestler__matches__wrestlers=wrestler

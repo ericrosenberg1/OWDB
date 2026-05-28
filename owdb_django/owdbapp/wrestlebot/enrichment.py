@@ -6,10 +6,9 @@ Improves existing database entries by adding missing data from external sources.
 
 import logging
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
-from django.db.models import Count, Q
-from django.utils import timezone
+from django.db.models import Q
 
 from .scoring import CompletenessScorer, ScoreBreakdown
 
@@ -28,35 +27,25 @@ class EntityEnrichment:
     """
 
     def __init__(self):
+        from . import ScraperProvider
         self.scorer = CompletenessScorer()
-        self._wikipedia_scraper = None
-        self._wikimedia_client = None
-        self._cagematch_scraper = None
+        self._scrapers = ScraperProvider()
         self._ai_enhancer = None
 
     @property
     def wikipedia_scraper(self):
-        """Lazy load Wikipedia scraper."""
-        if self._wikipedia_scraper is None:
-            from ..scrapers.wikipedia import WikipediaScraper
-            self._wikipedia_scraper = WikipediaScraper()
-        return self._wikipedia_scraper
+        """Get Wikipedia scraper from shared provider."""
+        return self._scrapers.wikipedia_scraper
 
     @property
     def wikimedia_client(self):
-        """Lazy load Wikimedia Commons client."""
-        if self._wikimedia_client is None:
-            from ..scrapers.wikimedia_commons import WikimediaCommonsClient
-            self._wikimedia_client = WikimediaCommonsClient()
-        return self._wikimedia_client
+        """Get Wikimedia Commons client from shared provider."""
+        return self._scrapers.wikimedia_client
 
     @property
     def cagematch_scraper(self):
-        """Lazy load Cagematch scraper."""
-        if self._cagematch_scraper is None:
-            from ..scrapers.cagematch import CagematchScraper
-            self._cagematch_scraper = CagematchScraper()
-        return self._cagematch_scraper
+        """Get Cagematch scraper from shared provider."""
+        return self._scrapers.cagematch_scraper
 
     @property
     def ai_enhancer(self):
@@ -107,17 +96,60 @@ class EntityEnrichment:
             limit=limit
         )
 
+    def _clean_entity_name(self, name: str) -> str:
+        """
+        Clean entity names by removing Wikipedia disambiguation suffixes.
+
+        Examples:
+            "Edge (wrestler)" -> "Edge"
+            "Retribution (professional wrestling)" -> "Retribution"
+            "CM Punk" -> "CM Punk" (no change)
+        """
+        import re
+        if not name:
+            return name
+
+        # Patterns to remove (Wikipedia disambiguation suffixes)
+        patterns_to_remove = [
+            r'\s*\(wrestler\)$',
+            r'\s*\(professional wrestler\)$',
+            r'\s*\(professional wrestling\)$',
+            r'\s*\(wrestling\)$',
+            r'\s*\(American wrestler\)$',
+            r'\s*\(Canadian wrestler\)$',
+            r'\s*\(British wrestler\)$',
+            r'\s*\(Japanese wrestler\)$',
+            r'\s*\(Mexican wrestler\)$',
+            r'\s*\(Australian wrestler\)$',
+            r'\s*\(entertainer\)$',
+            r'\s*\(performer\)$',
+        ]
+
+        cleaned = name
+        for pattern in patterns_to_remove:
+            cleaned = re.sub(pattern, '', cleaned, flags=re.IGNORECASE)
+
+        return cleaned.strip()
+
     def enrich_wrestler(self, wrestler) -> Dict[str, Any]:
         """
         Enrich a wrestler with missing data.
 
         Returns dict of fields that were updated.
         """
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
 
         start_time = time.time()
         updated_fields = {}
         sources_used = []
+
+        # Clean name if it has Wikipedia disambiguation suffixes
+        cleaned_name = self._clean_entity_name(wrestler.name)
+        if cleaned_name != wrestler.name:
+            logger.info(f"Cleaning wrestler name: '{wrestler.name}' -> '{cleaned_name}'")
+            wrestler.name = cleaned_name
+            updated_fields['name'] = cleaned_name
+            sources_used.append('name_cleanup')
 
         # Get current score to see what's missing
         breakdown = self.scorer.score_wrestler(wrestler)
@@ -198,7 +230,7 @@ class EntityEnrichment:
 
     def enrich_promotion(self, promotion) -> Dict[str, Any]:
         """Enrich a promotion with missing data."""
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
 
         start_time = time.time()
         updated_fields = {}
@@ -273,7 +305,7 @@ class EntityEnrichment:
 
     def enrich_event(self, event) -> Dict[str, Any]:
         """Enrich an event with missing data."""
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
 
         start_time = time.time()
         updated_fields = {}
@@ -355,7 +387,7 @@ class EntityEnrichment:
 
     def enrich_venue(self, venue) -> Dict[str, Any]:
         """Enrich a venue with missing data."""
-        from .models import WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotActivity
 
         start_time = time.time()
         updated_fields = {}
@@ -509,7 +541,7 @@ class EntityEnrichment:
         Only used when AI is enabled and for high-value operations like
         generating bios or resolving data inconsistencies.
         """
-        from .models import WrestleBotActivity, WrestleBotConfig
+        from owdb_django.wrestlebot.models import WrestleBotActivity, WrestleBotConfig
 
         if not WrestleBotConfig.is_ai_enabled():
             logger.debug("AI enhancement skipped: AI is disabled")
@@ -561,3 +593,212 @@ class EntityEnrichment:
             )
 
         return updated_fields
+
+    def verify_wrestler_data(self, wrestler) -> Dict[str, Any]:
+        """
+        Cross-verify wrestler data against multiple sources.
+
+        Checks for consistency across Wikipedia and Cagematch.
+        Returns dict with verification results and any corrections.
+        """
+        from owdb_django.wrestlebot.models import WrestleBotActivity
+
+        results = {
+            'verified': True,
+            'sources_checked': [],
+            'discrepancies': [],
+            'corrections': {},
+        }
+
+        # Get data from Wikipedia
+        wiki_data = None
+        try:
+            wiki_data = self.wikipedia_scraper.scrape_wrestler_by_name(wrestler.name)
+            if wiki_data:
+                results['sources_checked'].append('wikipedia')
+        except Exception as e:
+            logger.debug(f"Wikipedia verification failed for {wrestler.name}: {e}")
+
+        # Get data from Cagematch
+        cm_data = None
+        try:
+            cm_data = self.cagematch_scraper.scrape_wrestler_by_name(wrestler.name)
+            if cm_data:
+                results['sources_checked'].append('cagematch')
+        except Exception as e:
+            logger.debug(f"Cagematch verification failed for {wrestler.name}: {e}")
+
+        if not wiki_data and not cm_data:
+            results['verified'] = False
+            results['discrepancies'].append('No data found in external sources')
+            return results
+
+        # Cross-verify debut year
+        if wrestler.debut_year:
+            wiki_debut = wiki_data.get('debut_year') if wiki_data else None
+            cm_debut = cm_data.get('debut_year') if cm_data else None
+
+            if wiki_debut and cm_debut and wiki_debut != cm_debut:
+                results['discrepancies'].append(
+                    f"Debut year mismatch: DB={wrestler.debut_year}, "
+                    f"Wikipedia={wiki_debut}, Cagematch={cm_debut}"
+                )
+            elif wiki_debut and wrestler.debut_year != wiki_debut:
+                results['discrepancies'].append(
+                    f"Debut year differs from Wikipedia: DB={wrestler.debut_year}, Wiki={wiki_debut}"
+                )
+
+        # Cross-verify real name
+        if wrestler.real_name:
+            wiki_real = wiki_data.get('real_name') if wiki_data else None
+            cm_real = cm_data.get('real_name') if cm_data else None
+
+            # Check for significant differences
+            if wiki_real and cm_real:
+                from ..scrapers.coordinator import DataValidator
+                if DataValidator.similarity(wiki_real, cm_real) < 0.8:
+                    results['discrepancies'].append(
+                        f"Real name mismatch: Wikipedia='{wiki_real}', Cagematch='{cm_real}'"
+                    )
+
+        # If we have sources but no current data, suggest corrections
+        if not wrestler.debut_year:
+            wiki_debut = wiki_data.get('debut_year') if wiki_data else None
+            cm_debut = cm_data.get('debut_year') if cm_data else None
+            if wiki_debut and cm_debut and wiki_debut == cm_debut:
+                results['corrections']['debut_year'] = wiki_debut
+            elif wiki_debut:
+                results['corrections']['debut_year'] = wiki_debut
+            elif cm_debut:
+                results['corrections']['debut_year'] = cm_debut
+
+        if not wrestler.real_name:
+            wiki_real = wiki_data.get('real_name') if wiki_data else None
+            if wiki_real:
+                results['corrections']['real_name'] = wiki_real
+
+        if not wrestler.hometown:
+            wiki_hometown = wiki_data.get('hometown') if wiki_data else None
+            cm_hometown = cm_data.get('hometown') if cm_data else None
+            if wiki_hometown:
+                results['corrections']['hometown'] = wiki_hometown
+            elif cm_hometown:
+                results['corrections']['hometown'] = cm_hometown
+
+        # Log verification activity
+        if results['discrepancies'] or results['corrections']:
+            WrestleBotActivity.log_activity(
+                action_type='verify',
+                entity_type='wrestler',
+                entity_id=wrestler.id,
+                entity_name=wrestler.name,
+                source=', '.join(results['sources_checked']),
+                details={
+                    'discrepancies': results['discrepancies'],
+                    'suggested_corrections': results['corrections'],
+                },
+            )
+
+        return results
+
+    def apply_verified_corrections(
+        self,
+        wrestler,
+        corrections: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Apply corrections that have been verified across multiple sources.
+
+        Only updates fields that are currently empty and have verified data.
+        """
+        from owdb_django.wrestlebot.models import WrestleBotActivity
+
+        updated_fields = {}
+
+        for field, value in corrections.items():
+            current_value = getattr(wrestler, field, None)
+            # Only update if current value is empty
+            if not current_value and value:
+                setattr(wrestler, field, value)
+                updated_fields[field] = value
+
+        if updated_fields:
+            wrestler.save()
+            WrestleBotActivity.log_activity(
+                action_type='enrich',
+                entity_type='wrestler',
+                entity_id=wrestler.id,
+                entity_name=wrestler.name,
+                source='cross_verification',
+                details={
+                    'updated_fields': list(updated_fields.keys()),
+                    'verified': True,
+                },
+            )
+            logger.info(f"Applied verified corrections to {wrestler.name}: {list(updated_fields.keys())}")
+
+        return updated_fields
+
+    def run_verification_cycle(
+        self,
+        entity_type: str = 'wrestler',
+        limit: int = 10,
+        apply_corrections: bool = True
+    ) -> Dict[str, int]:
+        """
+        Run a verification cycle to cross-check and correct data.
+
+        Args:
+            entity_type: Type of entity to verify (currently only 'wrestler')
+            limit: Maximum entities to verify
+            apply_corrections: Whether to auto-apply verified corrections
+
+        Returns:
+            Dict with counts of verified, discrepancies found, and corrections applied
+        """
+        from ..models import Wrestler
+
+        results = {
+            'verified': 0,
+            'discrepancies': 0,
+            'corrections_applied': 0,
+            'corrections_available': 0,
+        }
+
+        if entity_type != 'wrestler':
+            logger.warning(f"Verification not yet implemented for {entity_type}")
+            return results
+
+        # Get wrestlers that need verification (incomplete data)
+        wrestlers = Wrestler.objects.filter(
+            Q(debut_year__isnull=True) |
+            Q(real_name__isnull=True) | Q(real_name='') |
+            Q(hometown__isnull=True) | Q(hometown='')
+        ).order_by('?')[:limit]
+
+        for wrestler in wrestlers:
+            try:
+                verification = self.verify_wrestler_data(wrestler)
+
+                if verification['verified']:
+                    results['verified'] += 1
+                if verification['discrepancies']:
+                    results['discrepancies'] += len(verification['discrepancies'])
+                if verification['corrections']:
+                    results['corrections_available'] += len(verification['corrections'])
+
+                    if apply_corrections:
+                        applied = self.apply_verified_corrections(
+                            wrestler,
+                            verification['corrections']
+                        )
+                        results['corrections_applied'] += len(applied)
+
+                # Small pause to be gentle on external APIs
+                time.sleep(0.5)
+
+            except Exception as e:
+                logger.error(f"Verification failed for {wrestler.name}: {e}")
+
+        logger.info(f"Verification cycle complete: {results}")
+        return results

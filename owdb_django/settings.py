@@ -84,6 +84,7 @@ INSTALLED_APPS = [
     'storages',  # Cloud storage (Cloudflare R2)
     # Local
     'owdb_django.owdbapp',
+    'owdb_django.wrestlebot',  # WrestleBot autonomous data enhancement
 ]
 
 MIDDLEWARE = [
@@ -183,21 +184,25 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': 604800.0,  # Every 7 days
     },
     # ==========================================================================
-    # Web Scraping tasks - 2X FREQUENCY (doubled for faster database building)
+    # Web Scraping tasks - Rate-limit friendly with category rotation
+    # Each task scrapes ONE category per run, rotating through all categories.
+    # With 10 wrestler + 5 event + 5 promotion categories = 20 total categories
+    # Running every 3 minutes = 20 runs/hour = all categories covered hourly
+    # Each run uses ~10-25 API calls, staying well under 500/hour limit
     # ==========================================================================
     'scrape-wikipedia-wrestlers': {
         'task': 'owdb_django.owdbapp.tasks.scrape_wikipedia_wrestlers',
-        'schedule': 60.0,  # Every minute for continuous training
-        'args': (20,),  # Smaller batches to keep runs short
+        'schedule': 180.0,  # Every 3 minutes with category rotation
+        'args': (20,),  # 20 wrestlers per category per run
     },
     'scrape-wikipedia-promotions': {
         'task': 'owdb_django.owdbapp.tasks.scrape_wikipedia_promotions',
-        'schedule': 300.0,  # Every 5 minutes
+        'schedule': 600.0,  # Every 10 minutes (fewer promotion categories)
         'args': (15,),
     },
     'scrape-wikipedia-events': {
         'task': 'owdb_django.owdbapp.tasks.scrape_wikipedia_events',
-        'schedule': 60.0,  # Every minute alongside wrestlers
+        'schedule': 300.0,  # Every 5 minutes with category rotation
         'args': (20,),
     },
     'scrape-cagematch-wrestlers': {
@@ -287,25 +292,64 @@ CELERY_BEAT_SCHEDULE = {
     },
     # ==========================================================================
     # WrestleBot 2.0 - Autonomous Data Enhancement
+    # Priority order: ACCURACY > QUALITY > COMPREHENSIVENESS
     # ==========================================================================
-    'wrestlebot-master': {
-        'task': 'owdb_django.owdbapp.tasks.wrestlebot_master',
-        'schedule': 1800.0,  # Every 30 minutes
+    #
+    # ACCURACY (highest priority) - Clean and verify existing data
+    'wrestlebot-match-cleanup': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_match_cleanup',
+        'schedule': 3600.0,  # Every hour (was 6 hours)
+        'kwargs': {'dry_run': False, 'limit': 2000},
     },
-    'wrestlebot-discovery': {
-        'task': 'owdb_django.owdbapp.tasks.wrestlebot_discovery_cycle',
-        'schedule': 7200.0,  # Every 2 hours
-        'args': (5,),  # batch size
+    'wrestlebot-synthetic-cleanup': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_synthetic_cleanup',
+        'schedule': 21600.0,  # Every 6 hours (was 24 hours)
+        'kwargs': {'dry_run': False},
     },
+    'wrestlebot-verification': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_verification_cycle',
+        'schedule': 1800.0,  # Every 30 minutes - verify data against sources
+        'args': (15,),  # batch size
+    },
+    #
+    # QUALITY (medium priority) - Enrich and improve existing entries
     'wrestlebot-enrichment': {
         'task': 'owdb_django.owdbapp.tasks.wrestlebot_enrichment_cycle',
-        'schedule': 3600.0,  # Every hour
-        'args': (10,),  # batch size
+        'schedule': 1800.0,  # Every 30 minutes (was 1 hour)
+        'args': (15,),  # batch size
     },
     'wrestlebot-images': {
         'task': 'owdb_django.owdbapp.tasks.wrestlebot_image_cycle',
-        'schedule': 14400.0,  # Every 4 hours
+        'schedule': 7200.0,  # Every 2 hours (was 4 hours)
+        'args': (15,),  # batch size
+    },
+    #
+    # COMPREHENSIVENESS (lower priority) - Add new entries
+    'wrestlebot-discovery': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_discovery_cycle',
+        'schedule': 3600.0,  # Every hour (was 2 hours)
         'args': (10,),  # batch size
+    },
+    'wrestlebot-master': {
+        'task': 'owdb_django.owdbapp.tasks.wrestlebot_master',
+        'schedule': 900.0,  # Every 15 minutes (was 30 minutes)
+    },
+    # ==========================================================================
+    # TV Episode Tracking - TMDB is source of truth for episodes
+    # Episodes are the backbone for linking all other data
+    # ==========================================================================
+    'poll-tv-episodes': {
+        'task': 'owdb_django.owdbapp.tasks.poll_tv_episodes',
+        'schedule': 900.0,  # Every 15 minutes
+    },
+    'enrich-tv-episodes': {
+        'task': 'owdb_django.owdbapp.tasks.enrich_tv_episodes',
+        'schedule': 1800.0,  # Every 30 minutes - add match data to episodes
+        'args': (20,),  # batch size
+    },
+    'backfill-tv-episodes': {
+        'task': 'owdb_django.owdbapp.tasks.scheduled_backfill_tv_episodes',
+        'schedule': 86400.0,  # Daily - fill historical gaps
     },
 }
 
@@ -590,3 +634,27 @@ WRESTLEBOT = {
     # Pause between operations (milliseconds)
     'PAUSE_BETWEEN_OPERATIONS_MS': 500,
 }
+
+
+# =============================================================================
+# SENTRY — error + performance monitoring
+# =============================================================================
+try:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=os.getenv(
+            'SENTRY_DSN',
+            'https://3527ae5df926c7d32962395ce6dbb143@o4507525754060800.ingest.us.sentry.io/4511429590056960',
+        ),
+        environment=APP_ENV,
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=float(os.getenv('SENTRY_TRACES_SAMPLE_RATE', '0.2')),
+        profiles_sample_rate=float(os.getenv('SENTRY_PROFILES_SAMPLE_RATE', '0.2')),
+        send_default_pii=False,
+        release=os.getenv('SENTRY_RELEASE'),
+    )
+except ImportError:
+    # sentry-sdk not installed — silently skip
+    pass

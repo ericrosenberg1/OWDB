@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.html import format_html
 from .models import (
     Promotion,
     VideoGame,
@@ -14,6 +15,7 @@ from .models import (
     APIKey,
     UserProfile,
     EmailVerificationToken,
+    TVShow,
 )
 
 
@@ -49,15 +51,93 @@ class PromotionAdmin(admin.ModelAdmin):
     ordering = ['name']
 
 
+@admin.register(TVShow)
+class TVShowAdmin(admin.ModelAdmin):
+    list_display = [
+        'name', 'promotion', 'show_type', 'network', 'air_day',
+        'is_active_display', 'episode_count', 'tmdb_status', 'created_at'
+    ]
+    list_filter = ['show_type', 'promotion', 'finale_date', 'created_at']
+    search_fields = ['name', 'promotion__name', 'network']
+    prepopulated_fields = {'slug': ('name',)}
+    autocomplete_fields = ['promotion']
+    readonly_fields = ['episode_count']
+    ordering = ['name']
+    fieldsets = (
+        (None, {
+            'fields': ('name', 'slug', 'promotion', 'show_type', 'about')
+        }),
+        ('Broadcast Info', {
+            'fields': ('network', 'air_day', 'premiere_date', 'finale_date')
+        }),
+        ('External IDs', {
+            'fields': ('tmdb_id', 'cagematch_id', 'wikipedia_url'),
+            'classes': ('collapse',)
+        }),
+        ('Image', {
+            'fields': ('image_url', 'image_source_url', 'image_license', 'image_credit'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def is_active_display(self, obj):
+        if obj.is_active:
+            return format_html('<span style="color:#28a745;">Active</span>')
+        return format_html('<span style="color:#6c757d;">Ended</span>')
+    is_active_display.short_description = 'Status'
+
+    def tmdb_status(self, obj):
+        if obj.tmdb_id:
+            return format_html(
+                '<span style="color:#28a745;">&#10004; {}</span>',
+                obj.tmdb_id
+            )
+        return format_html('<span style="color:#dc3545;">No ID</span>')
+    tmdb_status.short_description = 'TMDB'
+
+
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
-    list_display = ['name', 'promotion', 'venue', 'date', 'created_at']
-    list_filter = ['promotion', 'date', 'created_at']
-    search_fields = ['name', 'promotion__name', 'venue__name']
+    list_display = [
+        'name', 'promotion', 'venue', 'date', 'event_type',
+        'tv_show', 'episode_number', 'verified_status', 'created_at'
+    ]
+    list_filter = ['promotion', 'event_type', 'tv_show', 'verified', 'date', 'created_at']
+    search_fields = ['name', 'promotion__name', 'venue__name', 'tv_show__name']
     prepopulated_fields = {'slug': ('name',)}
-    autocomplete_fields = ['promotion', 'venue']
+    autocomplete_fields = ['promotion', 'venue', 'tv_show']
     date_hierarchy = 'date'
     ordering = ['-date']
+    fieldsets = (
+        (None, {
+            'fields': ('name', 'slug', 'promotion', 'venue', 'date', 'event_type', 'about')
+        }),
+        ('TV Episode Info', {
+            'fields': ('tv_show', 'episode_number', 'season_number'),
+            'classes': ('collapse',)
+        }),
+        ('External IDs', {
+            'fields': ('tmdb_episode_id', 'cagematch_event_id'),
+            'classes': ('collapse',)
+        }),
+        ('Verification', {
+            'fields': ('verified', 'verified_source', 'last_verified'),
+            'classes': ('collapse',)
+        }),
+        ('Image', {
+            'fields': ('image_url', 'image_source_url', 'image_license', 'image_credit'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def verified_status(self, obj):
+        if obj.verified:
+            return format_html(
+                '<span style="color:#28a745;">&#10004; {}</span>',
+                obj.verified_source or 'Yes'
+            )
+        return ''
+    verified_status.short_description = 'Verified'
 
 
 @admin.register(Match)
@@ -177,51 +257,5 @@ class EmailVerificationTokenAdmin(admin.ModelAdmin):
     token_display.short_description = 'Token'
 
 
-# =============================================================================
-# WrestleBot 2.0 Admin
-# =============================================================================
 
-from .wrestlebot.models import WrestleBotActivity, WrestleBotConfig, WrestleBotStats
-
-
-@admin.register(WrestleBotActivity)
-class WrestleBotActivityAdmin(admin.ModelAdmin):
-    list_display = ['created_at', 'action_type', 'entity_type', 'entity_name', 'source', 'success', 'ai_assisted']
-    list_filter = ['action_type', 'entity_type', 'source', 'success', 'ai_assisted', 'created_at']
-    search_fields = ['entity_name', 'source', 'error_message']
-    readonly_fields = ['created_at', 'action_type', 'entity_type', 'entity_id', 'entity_name',
-                       'source', 'details', 'ai_assisted', 'success', 'error_message', 'duration_ms']
-    date_hierarchy = 'created_at'
-    ordering = ['-created_at']
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        return False
-
-
-@admin.register(WrestleBotConfig)
-class WrestleBotConfigAdmin(admin.ModelAdmin):
-    list_display = ['key', 'value', 'description', 'updated_at']
-    search_fields = ['key', 'description']
-    readonly_fields = ['updated_at']
-    ordering = ['key']
-
-
-@admin.register(WrestleBotStats)
-class WrestleBotStatsAdmin(admin.ModelAdmin):
-    list_display = ['date', 'discoveries', 'enrichments', 'images_added', 'errors', 'claude_api_calls']
-    list_filter = ['date']
-    readonly_fields = ['date', 'discoveries', 'enrichments', 'images_added', 'verifications',
-                       'errors', 'wikipedia_calls', 'cagematch_calls', 'wikimedia_calls',
-                       'claude_api_calls', 'total_duration_ms', 'average_score_improvement',
-                       'created_at', 'updated_at']
-    date_hierarchy = 'date'
-    ordering = ['-date']
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        return False
+# WrestleBot admin is now in owdb_django.wrestlebot.admin

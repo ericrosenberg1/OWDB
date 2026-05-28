@@ -3,7 +3,6 @@ Management command to seed the database with sample wrestling data.
 Data sourced from Wikipedia for accuracy.
 """
 from django.core.management.base import BaseCommand
-from django.utils.text import slugify
 from datetime import date
 from owdb_django.owdbapp.models import (
     Wrestler, Promotion, Event, Match, Title, Venue,

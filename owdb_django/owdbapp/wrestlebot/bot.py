@@ -6,11 +6,9 @@ and image fetching operations.
 """
 
 import logging
-import random
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
-from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -69,18 +67,53 @@ class WrestleBot:
     def config(self) -> Dict[str, Any]:
         """Get current configuration."""
         if self._config is None:
-            from .models import WrestleBotConfig
+            from owdb_django.wrestlebot.models import WrestleBotConfig
             self._config = WrestleBotConfig.get_all()
         return self._config
 
     def is_enabled(self) -> bool:
         """Check if WrestleBot is enabled."""
-        from .models import WrestleBotConfig
+        from owdb_django.wrestlebot.models import WrestleBotConfig
         return WrestleBotConfig.is_enabled()
 
     def reload_config(self):
         """Reload configuration from database."""
         self._config = None
+
+    def check_rate_limit_capacity(self, source: str = 'wikipedia', min_requests: int = 20) -> Dict[str, Any]:
+        """
+        Check if we have sufficient rate limit capacity for an operation.
+
+        Args:
+            source: The API source to check (wikipedia, cagematch, etc.)
+            min_requests: Minimum number of requests needed
+
+        Returns:
+            Dict with 'has_capacity', 'remaining', 'backoff_seconds'
+        """
+        from ..scrapers.api_client import RateLimiter
+
+        # Get the rate limiter for this source
+        # Default limits if not specified
+        limits = {
+            'wikipedia': (30, 500, 5000),
+            'cagematch': (5, 60, 500),
+            'wikimedia_commons': (20, 300, 2000),
+        }
+
+        rpm, rph, rpd = limits.get(source, (30, 500, 5000))
+        rate_limiter = RateLimiter(source, rpm, rph, rpd)
+
+        remaining = rate_limiter.get_remaining_capacity()
+        has_capacity = rate_limiter.has_capacity(min_requests)
+        backoff = rate_limiter.get_backoff_seconds() if not has_capacity else 0
+
+        return {
+            'has_capacity': has_capacity,
+            'remaining': remaining,
+            'backoff_seconds': backoff,
+            'usage_percent': rate_limiter.get_usage_percentage(),
+        }
 
     def run_master_cycle(self) -> Dict[str, Any]:
         """
@@ -89,7 +122,7 @@ class WrestleBot:
         This is the main entry point called by Celery Beat.
         It decides what work needs to be done and queues it.
         """
-        from .models import WrestleBotActivity, WrestleBotStats
+        from owdb_django.wrestlebot.models import WrestleBotStats
 
         if not self.is_enabled():
             logger.info("WrestleBot is disabled, skipping cycle")
@@ -165,11 +198,22 @@ class WrestleBot:
         Returns:
             Dict with discovery results
         """
-        from .models import WrestleBotConfig, WrestleBotStats
+        from owdb_django.wrestlebot.models import WrestleBotConfig, WrestleBotStats
 
         if not self.is_enabled():
             logger.info("WrestleBot is disabled, skipping discovery")
             return {'status': 'disabled'}
+
+        # Check rate limit capacity before starting
+        capacity = self.check_rate_limit_capacity('wikipedia', min_requests=20)
+        if not capacity['has_capacity']:
+            backoff_mins = capacity['backoff_seconds'] // 60
+            logger.info(f"Discovery skipped - rate limit exhausted. Retry in {backoff_mins} minutes")
+            return {
+                'status': 'rate_limited',
+                'backoff_seconds': capacity['backoff_seconds'],
+                'usage_percent': capacity['usage_percent'],
+            }
 
         if batch_size is None:
             batch_size = WrestleBotConfig.get('discovery_batch_size', 5)
@@ -225,11 +269,22 @@ class WrestleBot:
         Returns:
             Dict with enrichment results
         """
-        from .models import WrestleBotConfig, WrestleBotStats
+        from owdb_django.wrestlebot.models import WrestleBotConfig, WrestleBotStats
 
         if not self.is_enabled():
             logger.info("WrestleBot is disabled, skipping enrichment")
             return {'status': 'disabled'}
+
+        # Check rate limit capacity before starting
+        capacity = self.check_rate_limit_capacity('wikipedia', min_requests=15)
+        if not capacity['has_capacity']:
+            backoff_mins = capacity['backoff_seconds'] // 60
+            logger.info(f"Enrichment skipped - rate limit exhausted. Retry in {backoff_mins} minutes")
+            return {
+                'status': 'rate_limited',
+                'backoff_seconds': capacity['backoff_seconds'],
+                'usage_percent': capacity['usage_percent'],
+            }
 
         if batch_size is None:
             batch_size = WrestleBotConfig.get('enrichment_batch_size', 10)
@@ -280,7 +335,7 @@ class WrestleBot:
         Returns:
             Dict with image fetching results
         """
-        from .models import WrestleBotConfig, WrestleBotStats, WrestleBotActivity
+        from owdb_django.wrestlebot.models import WrestleBotConfig, WrestleBotStats, WrestleBotActivity
         from ..models import Wrestler, Promotion, Event, Venue
         from ..scrapers.wikimedia_commons import WikimediaCommonsClient
         from ..services import get_image_cache_service
@@ -381,13 +436,126 @@ class WrestleBot:
         results['duration_ms'] = int((time.time() - start_time) * 1000)
         return results
 
+    def run_cleanup_cycle(self, dry_run: bool = False) -> Dict[str, Any]:
+        """
+        Run a data cleanup cycle to fix/remove errors.
+
+        This cycle:
+        1. Runs quality checks on all entity types
+        2. Auto-fixes fixable issues (whitespace, invalid values)
+        3. Splits multi-name entries
+        4. Removes clearly invalid entries (placeholders, no relationships)
+        5. Reports potential duplicates
+
+        Args:
+            dry_run: If True, report what would be done without making changes
+
+        Returns:
+            Dict with cleanup results
+        """
+        from owdb_django.wrestlebot.models import WrestleBotStats
+        from .quality import DataCleaner
+
+        if not self.is_enabled():
+            logger.info("WrestleBot is disabled, skipping cleanup")
+            return {'status': 'disabled'}
+
+        start_time = time.time()
+
+        results = {
+            'status': 'completed',
+            'dry_run': dry_run,
+        }
+
+        try:
+            cleaner = DataCleaner()
+            cleanup_results = cleaner.run_cleanup_cycle(
+                entity_types=['wrestler', 'event', 'promotion', 'venue'],
+                dry_run=dry_run
+            )
+
+            results.update(cleanup_results)
+
+            # Update daily stats if not dry run
+            if not dry_run:
+                stats = WrestleBotStats.get_or_create_today()
+                # Log cleanup as verifications
+                total_fixed = cleanup_results.get('auto_fixed', 0) + cleanup_results.get('multi_name_split', 0)
+                if total_fixed > 0:
+                    stats.increment('verifications', total_fixed)
+
+            logger.info(f"Cleanup cycle complete: {cleanup_results}")
+
+        except Exception as e:
+            logger.error(f"Cleanup cycle failed: {e}")
+            results['status'] = 'error'
+            results['error'] = str(e)
+
+        results['duration_ms'] = int((time.time() - start_time) * 1000)
+        return results
+
+    def run_verification_cycle(self, batch_size: int = None) -> Dict[str, Any]:
+        """
+        Run a verification cycle to cross-check data accuracy.
+
+        This cycle:
+        1. Gets entities with incomplete data
+        2. Cross-references with Wikipedia and Cagematch
+        3. Applies verified corrections for missing fields
+        4. Reports discrepancies for manual review
+
+        Args:
+            batch_size: Number of entities to verify (default 10)
+
+        Returns:
+            Dict with verification results
+        """
+        from owdb_django.wrestlebot.models import WrestleBotStats
+
+        if not self.is_enabled():
+            logger.info("WrestleBot is disabled, skipping verification")
+            return {'status': 'disabled'}
+
+        if batch_size is None:
+            batch_size = 10
+
+        start_time = time.time()
+
+        results = {
+            'status': 'completed',
+        }
+
+        try:
+            verification_results = self.enrichment.run_verification_cycle(
+                entity_type='wrestler',
+                limit=batch_size,
+                apply_corrections=True
+            )
+
+            results.update(verification_results)
+
+            # Update daily stats
+            stats = WrestleBotStats.get_or_create_today()
+            if verification_results.get('corrections_applied', 0) > 0:
+                stats.increment('verifications', verification_results['corrections_applied'])
+
+            logger.info(f"Verification cycle complete: {verification_results}")
+
+        except Exception as e:
+            logger.error(f"Verification cycle failed: {e}")
+            results['status'] = 'error'
+            results['error'] = str(e)
+
+        results['duration_ms'] = int((time.time() - start_time) * 1000)
+        return results
+
     def get_status(self) -> Dict[str, Any]:
         """
         Get current WrestleBot status and statistics.
 
         Returns comprehensive status information for admin dashboard.
         """
-        from .models import WrestleBotActivity, WrestleBotConfig, WrestleBotStats
+        from owdb_django.wrestlebot.models import WrestleBotActivity, WrestleBotConfig, WrestleBotStats
         from ..models import Wrestler, Promotion, Event
 
         # Get today's stats
@@ -397,6 +565,7 @@ class WrestleBot:
                 'discoveries': today_stats.discoveries,
                 'enrichments': today_stats.enrichments,
                 'images_added': today_stats.images_added,
+                'verifications': today_stats.verifications,
                 'errors': today_stats.errors,
             }
         except Exception:

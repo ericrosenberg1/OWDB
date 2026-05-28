@@ -10,7 +10,6 @@ Usage:
     python manage.py enrich_entities --type=championships
 """
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 from django.utils.text import slugify
 from owdb_django.owdbapp.models import Promotion, Title, Venue, VideoGame, Podcast, Book, Special, Stable
 
@@ -99,7 +98,7 @@ class Command(BaseCommand):
             total_updated += self.enrich_stables_batch_2()
             total_updated += self.enrich_stables_batch_3()
 
-        self.stdout.write(self.style.SUCCESS(f'\n=== ENRICHMENT COMPLETE ==='))
+        self.stdout.write(self.style.SUCCESS('\n=== ENRICHMENT COMPLETE ==='))
         self.stdout.write(f'Total entities updated: {total_updated}')
 
     def update_promotion(self, name, **kwargs):

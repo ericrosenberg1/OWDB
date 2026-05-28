@@ -9,7 +9,7 @@ Usage:
 """
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
-from owdb_django.owdbapp.models import VideoGame, Wrestler, Promotion
+from owdb_django.owdbapp.models import VideoGame, Wrestler
 
 
 class Command(BaseCommand):
@@ -51,7 +51,7 @@ class Command(BaseCommand):
         total_created += created
         total_linked += linked
 
-        self.stdout.write(self.style.SUCCESS(f'\n=== COMPLETE ==='))
+        self.stdout.write(self.style.SUCCESS('\n=== COMPLETE ==='))
         self.stdout.write(f'Games created: {total_created}')
         self.stdout.write(f'Wrestler links: {total_linked}')
         self.stdout.write(f'Total games in DB: {VideoGame.objects.count()}')

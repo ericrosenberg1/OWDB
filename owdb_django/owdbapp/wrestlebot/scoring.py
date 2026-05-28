@@ -7,9 +7,8 @@ which entries need the most improvement.
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
-from django.db.models import Count, Q
 
 logger = logging.getLogger(__name__)
 

@@ -9,7 +9,7 @@ Usage:
 """
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
-from owdb_django.owdbapp.models import Event, Venue, Promotion
+from owdb_django.owdbapp.models import Event, Venue
 
 
 class Command(BaseCommand):
@@ -45,7 +45,7 @@ class Command(BaseCommand):
         if event_type in ['all', 'survivorseries']:
             total_updated += self.enrich_survivor_series()
 
-        self.stdout.write(self.style.SUCCESS(f'\n=== ENRICHMENT COMPLETE ==='))
+        self.stdout.write(self.style.SUCCESS('\n=== ENRICHMENT COMPLETE ==='))
         self.stdout.write(f'Total events updated: {total_updated}')
 
     def get_or_create_venue(self, name, location=None, capacity=None):

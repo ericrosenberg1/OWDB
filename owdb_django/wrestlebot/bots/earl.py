@@ -21,11 +21,8 @@ Entry points:
 from __future__ import annotations
 
 import logging
-from dataclasses import asdict, dataclass, field
-from datetime import timedelta
-from typing import Optional
+from dataclasses import asdict, dataclass
 
-from django.db import transaction
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)

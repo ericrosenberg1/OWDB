@@ -7,8 +7,6 @@ uploads them to R2, and returns CDN URLs for serving.
 
 import hashlib
 import logging
-import mimetypes
-import uuid
 from io import BytesIO
 from typing import Optional, Tuple
 from urllib.parse import urlparse
@@ -206,12 +204,44 @@ class ImageCacheService:
 
         Returns:
             True if successful, False otherwise
+
+        Accuracy / legal-use gate:
+          The pre-refactor code wrote whatever license string the upstream
+          client handed us straight into the DB, which meant a future
+          non-Commons client (or a Commons API regression) could quietly
+          add NonCommercial / NoDerivs / "fair-use" images. We now refuse
+          to persist unless the license normalises to a code in OWDB's
+          ALLOWED_LICENSES whitelist (cc0/pd/cc-by/cc-by-sa). Any image
+          we *do* write goes in with the canonical short code, never the
+          raw upstream string.
         """
         from ..models import ImageHistory
+        # Reuse the same license normaliser the wrestlebot pipeline uses
+        # so the legal whitelist has exactly one source of truth.
+        from owdb_django.wrestlebot.sources.commons import _normalize_license
 
         source_url = image_result.get('thumb_url') or image_result.get('url')
         if not source_url:
             logger.warning(f"No image URL in result for {entity}")
+            return False
+
+        # ---- legal-use gate -------------------------------------------------
+        raw_license = (image_result.get('license') or '').strip()
+        license_code = _normalize_license(raw_license)
+        if not license_code:
+            logger.warning(
+                "Refusing to cache image for %s: license %r not in OWDB allow-list",
+                entity, raw_license,
+            )
+            return False
+        artist = (image_result.get('artist') or '').strip()
+        # CC-BY / CC-BY-SA require attribution. Without it, displaying the
+        # image is a license violation.
+        if license_code in ('cc-by', 'cc-by-sa') and not artist:
+            logger.warning(
+                "Refusing to cache image for %s: %s requires attribution but Artist is empty",
+                entity, license_code,
+            )
             return False
 
         # Determine entity type for storage path
@@ -228,12 +258,13 @@ class ImageCacheService:
             logger.warning(f"Failed to cache image for {entity}")
             return False
 
-        # Update entity fields
+        # Update entity fields — stamp the *normalized* license code so
+        # later filters ("only cc-by-sa") work without parsing raw strings.
         entity.image_url = cdn_url
         entity.image_original_url = source_url
         entity.image_source_url = image_result.get('description_url', '')
-        entity.image_license = image_result.get('license', '')
-        entity.image_credit = image_result.get('artist', '')
+        entity.image_license = license_code
+        entity.image_credit = artist
         entity.image_fetched_at = timezone.now()
 
         entity.save(update_fields=[

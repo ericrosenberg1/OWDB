@@ -49,14 +49,13 @@ from __future__ import annotations
 
 import logging
 import re as _re
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from typing import Iterator, Optional
 
 from django.utils import timezone
 
 from ..sources.commons import (
-    P_IMAGE, P_LOGO, P_SIGNATURE,
-    CommonsImageMeta,
+    P_IMAGE, P_LOGO, CommonsImageMeta,
     categories_contain,
     description_mentions_name,
     fetch_commons_category_files,

@@ -18,7 +18,6 @@ import hashlib
 import logging
 
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 
 from owdb_django.wrestlebot.models import SourceFetch
 from owdb_django.wrestlebot.pipeline.extract import extract_wrestler

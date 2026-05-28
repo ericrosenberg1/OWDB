@@ -19,8 +19,8 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from dataclasses import dataclass
+from typing import Callable, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +122,7 @@ def _t_assign_image_to_entity(entity_type: str, entity_id: int,
     Writes FieldProvenance + archives prior image to ImageHistory.
     """
     from owdb_django.owdbapp import models as dm
-    from ..pipeline.images import assign_image_to_entity, ENTITY_IMAGE_PROPS
+    from ..pipeline.images import assign_image_to_entity
 
     model_map = {
         "wrestler": dm.Wrestler, "event": dm.Event, "venue": dm.Venue,
@@ -284,14 +284,6 @@ def _t_assign_images_for_wrestlers_without_images(
 ) -> dict:
     return _t_assign_images_for_entities_without_images(
         entity_type="wrestler", limit=limit, dry_run=dry_run,
-    )
-
-    return _ok(
-        sweep_size=len(results),
-        assigned=assigned,
-        refused=refused,
-        dry_run=dry_run,
-        results=results,
     )
 
 

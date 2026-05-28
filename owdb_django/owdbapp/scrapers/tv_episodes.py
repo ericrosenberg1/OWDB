@@ -60,7 +60,6 @@ class TVEpisodeScraper:
         Returns:
             Dict with counts: created, updated, skipped
         """
-        from owdb_django.owdbapp.models import Event
 
         results = {'created': 0, 'updated': 0, 'skipped': 0, 'errors': 0}
 
@@ -486,7 +485,6 @@ class TVEpisodeScraper:
             Dict with enrichment results
         """
         from owdb_django.owdbapp.models import Match, Wrestler
-        from django.utils import timezone
 
         results = {
             'matches_added': 0,
@@ -578,7 +576,7 @@ class TVEpisodeScraper:
             # Mark episode as verified if we found data
             if results['matches_added'] > 0:
                 episode.verified = True
-                episode.verified_source = 'cagematch'
+                episode.verification_source = 'cagematch'
                 episode.last_verified = timezone.now()
                 episode.save()
                 results['verified'] = True

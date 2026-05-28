@@ -35,10 +35,9 @@ from __future__ import annotations
 
 import logging
 import re
-import time
 import urllib.error
 import urllib.request
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Optional
 
@@ -317,7 +316,7 @@ def fetch_all_upcoming() -> dict[str, list[UpcomingEvent]]:
 
 
 if __name__ == "__main__":  # pragma: no cover
-    import json, sys
+    import sys
     keys = sys.argv[1:] or sorted(FETCHERS)
     for k in keys:
         evs = fetch_upcoming(k)

@@ -29,7 +29,6 @@ import re
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import timedelta
-from typing import Optional
 
 from django.utils import timezone
 
@@ -154,7 +153,7 @@ def link_wrestler_promotions(wrestler) -> WrestlerLinkingReport:
     Idempotent — won't create a duplicate (wrestler, promotion) row.
     """
     from owdb_django.owdbapp.models import (
-        Wrestler, Promotion, WrestlerPromotionHistory,
+        WrestlerPromotionHistory,
     )
     from ..models import SourceFetch
 
@@ -220,7 +219,7 @@ def link_all_unlinked_wrestlers(limit: int = 30) -> dict:
     Process wrestlers with FEWER than 2 promotion links + a stored
     Wikipedia source fetch. Returns a summary dict.
     """
-    from django.db.models import Count, Q
+    from django.db.models import Count
     from owdb_django.owdbapp.models import Wrestler
 
     candidates = (Wrestler.objects
@@ -252,7 +251,7 @@ def wrestlers_due_for_review(days_since_review: int = 14,
     Wrestlers without ANY image, bio, or promotion links are prioritised
     first (they're the most-incomplete entries).
     """
-    from django.db.models import Count, Q
+    from django.db.models import Count
     from owdb_django.owdbapp.models import Wrestler
 
     cutoff = timezone.now() - timedelta(days=days_since_review)

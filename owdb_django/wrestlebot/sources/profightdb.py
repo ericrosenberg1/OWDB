@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import logging
 import re
-import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -265,7 +264,8 @@ def fetch_wrestler_profile(url: str) -> Optional[PFDBProfile]:
 
 
 if __name__ == "__main__":  # pragma: no cover
-    import json, sys
+    import json
+    import sys
     args = sys.argv[1:] or ["Bret Hart"]
     hits = search(args[0], limit=3)
     print(f"{len(hits)} hits:")

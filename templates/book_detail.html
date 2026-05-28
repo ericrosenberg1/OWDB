@@ -1,60 +1,124 @@
 {% extends "base.html" %}
 {% load linking_tags %}
 
+{% block title %}{{ book.title }} — Book — OWDB{% endblock %}
+
 {% block content %}
-<div class="detail-header">
-    <h1 class="detail-title">{{ book.title }}</h1>
-    <div class="detail-meta">
-        {% if book.author %}
-        <div class="detail-meta-item">
-            <span class="detail-meta-label">Author:</span> {{ book.author }}
-        </div>
-        {% endif %}
-        {% if book.publication_year %}
-        <div class="detail-meta-item">
-            <span class="detail-meta-label">Published:</span> {{ book.publication_year }}
-        </div>
-        {% endif %}
-        {% if book.publisher %}
-        <div class="detail-meta-item">
-            <span class="detail-meta-label">Publisher:</span> {{ book.publisher }}
-        </div>
-        {% endif %}
-        {% if book.isbn %}
-        <div class="detail-meta-item">
-            <span class="detail-meta-label">ISBN:</span> {{ book.isbn }}
-        </div>
-        {% endif %}
-    </div>
-</div>
 
-{% with about_text=book|about_with_links %}
-    {% if about_text %}
-    <div class="card mb-4">
-        <div class="card-header">About</div>
-        <div class="card-body">
-            <p>{{ about_text|linebreaks }}</p>
-        </div>
-    </div>
+<div class="detail-layout row g-4">
+
+  {# ── LEFT COLUMN: cover + key facts ─────────────────────────────────── #}
+  <aside class="col-md-4">
+    {% if book.image_url %}
+      <figure class="media-poster mb-3">
+        <img src="{{ book.image_url }}"
+             alt="Cover of {{ book.title }}"
+             class="img-fluid rounded shadow-sm">
+        {% if book.image_credit %}
+          <figcaption class="small text-muted mt-2">
+            {{ book.image_credit|truncatechars:160 }}
+          </figcaption>
+        {% endif %}
+      </figure>
+    {% else %}
+      <div class="media-poster placeholder book-placeholder mb-3 d-flex
+                  align-items-center justify-content-center
+                  bg-secondary-subtle rounded"
+           style="aspect-ratio: 2/3; min-height: 320px;">
+        <span class="display-1">📚</span>
+      </div>
     {% endif %}
-{% endwith %}
 
-{% with linked_sections=book|linked_from_sections %}
-    {% include "partials/linked_from.html" with sections=linked_sections %}
-{% endwith %}
+    <dl class="row small">
+      {% if book.author %}
+        <dt class="col-5 text-muted">Author</dt>
+        <dd class="col-7">{{ book.author }}</dd>
+      {% endif %}
+      {% if book.publication_year %}
+        <dt class="col-5 text-muted">Published</dt>
+        <dd class="col-7">{{ book.publication_year }}</dd>
+      {% endif %}
+      {% if book.publisher %}
+        <dt class="col-5 text-muted">Publisher</dt>
+        <dd class="col-7">{{ book.publisher }}</dd>
+      {% endif %}
+      {% if book.isbn %}
+        <dt class="col-5 text-muted">ISBN</dt>
+        <dd class="col-7"><code class="small">{{ book.isbn }}</code></dd>
+      {% endif %}
+      {% if book.wikipedia_url %}
+        <dt class="col-5 text-muted">Wikipedia</dt>
+        <dd class="col-7">
+          <a href="{{ book.wikipedia_url }}" target="_blank" rel="noopener noreferrer">view ↗</a>
+        </dd>
+      {% endif %}
+    </dl>
+  </aside>
 
-{% if book.related_wrestlers.exists %}
-<div class="card mb-4">
-    <div class="card-header">Related Wrestlers</div>
-    <ul class="list-group list-group-flush">
-        {% for wrestler in book.related_wrestlers.all %}
-        <li class="list-group-item bg-transparent">
-            <a href="{% url 'wrestler_detail' wrestler.pk %}">{{ wrestler.name }}</a>
-        </li>
-        {% endfor %}
-    </ul>
-</div>
-{% endif %}
+  {# ── RIGHT COLUMN: header + about + related wrestlers ───────────────── #}
+  <div class="col-md-8">
 
-<a href="{% url 'books' %}" class="btn btn-secondary">&larr; Back to Books</a>
+    <header class="detail-header mb-3">
+      <h1 class="detail-title">{{ book.title }}</h1>
+      {% if book.author %}
+        <p class="text-muted mb-0">by {{ book.author }}{% if book.publication_year %} · {{ book.publication_year }}{% endif %}</p>
+      {% endif %}
+    </header>
+
+    {% with about_text=book|about_with_links %}
+      {% if about_text %}
+        <section class="card mb-4">
+          <div class="card-header">About</div>
+          <div class="card-body">
+            <p class="mb-0">{{ about_text|linebreaks }}</p>
+          </div>
+        </section>
+      {% endif %}
+    {% endwith %}
+
+    {% if book.related_wrestlers.exists %}
+      <section class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span>Related wrestlers</span>
+          <span class="badge bg-secondary">{{ book.related_wrestlers.count }}</span>
+        </div>
+        <div class="card-body">
+          <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+            {% for w in book.related_wrestlers.all %}
+              <div class="col">
+                <a href="{% url 'wrestler_detail' w.pk %}"
+                   class="card h-100 text-decoration-none text-reset wrestler-roster-card">
+                  {% if w.image_url %}
+                    <img src="{{ w.image_url }}" alt="{{ w.name }}"
+                         class="card-img-top"
+                         style="aspect-ratio: 1/1; object-fit: cover;">
+                  {% else %}
+                    <div class="card-img-top placeholder bg-secondary-subtle d-flex align-items-center justify-content-center"
+                         style="aspect-ratio: 1/1;">
+                      <span class="fs-3">🤼</span>
+                    </div>
+                  {% endif %}
+                  <div class="card-body p-2">
+                    <p class="card-title small mb-0 fw-semibold text-truncate" title="{{ w.name }}">
+                      {{ w.name }}
+                    </p>
+                  </div>
+                </a>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+    {% endif %}
+
+    {% with linked_sections=book|linked_from_sections %}
+      {% include "partials/linked_from.html" with sections=linked_sections %}
+    {% endwith %}
+
+    <p class="mt-4">
+      <a href="{% url 'books' %}" class="btn btn-secondary">&larr; Back to Books</a>
+    </p>
+  </div>{# /col-md-8 #}
+</div>{# /row #}
+
 {% endblock %}

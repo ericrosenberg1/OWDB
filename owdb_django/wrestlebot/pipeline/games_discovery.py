@@ -118,16 +118,12 @@ def _looks_like_video_game_article(html: str, article_title: str) -> bool:
         if len(paragraphs) >= 3:
             break
     lead_text = " ".join(paragraphs)[:2000]
-    game_phrases = (
-        "is a video game", "is a wrestling video game",
-        "is an upcoming video game", "is a fighting game",
-        "is a sports video game", "is a professional wrestling video game",
-        "was released for", "developed by", "published by",
-    )
-    # Require BOTH a "is a ... game" phrase and at least one corroborating
-    # publisher/developer phrase — single-phrase matches false-positive
-    # too often (a wrestler's biography may say "appeared in a video game").
-    has_game_subject = any(
+    # Require a "is a ... game" phrase. Single-phrase matches false-positive
+    # too often (a wrestler biography saying "appeared in a video game"),
+    # but inside the games-discovery loop we only call this on URLs that
+    # already came from a curated seed catalog, so a positive match here
+    # is high signal.
+    return any(
         p in lead_text for p in (
             "is a video game", "is a wrestling video game",
             "is an upcoming video game", "is a fighting game",
@@ -135,7 +131,6 @@ def _looks_like_video_game_article(html: str, article_title: str) -> bool:
             "is a 2d professional wrestling", "is a 3d professional wrestling",
         )
     )
-    return has_game_subject
 
 
 def ingest_games_discovery(

@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Matches</h1>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="mb-0">Matches</h1>
+  <a href="{% url 'top_matches' %}" class="btn btn-outline-warning btn-sm">★ Top Matches</a>
+</div>
 
 {% include "partials/search_form.html" %}
 

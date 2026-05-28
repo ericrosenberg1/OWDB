@@ -35,7 +35,6 @@ import json
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Optional
 
 from django.db import transaction
 from django.utils import timezone

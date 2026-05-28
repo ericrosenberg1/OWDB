@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% load humanize %}
+{% load linking_tags %}
 
 {% block content %}
 <div class="detail-header">
@@ -24,33 +26,39 @@
         {% endif %}
         {% if venue.capacity %}
         <div class="detail-meta-item">
-            <span class="detail-meta-label">Capacity:</span> {{ venue.capacity|floatformat:0 }}
+            <span class="detail-meta-label">Capacity:</span> {{ venue.capacity|intcomma }}
         </div>
         {% endif %}
     </div>
 </div>
 
-<!-- Stats Cards -->
-{% if stats %}
+<!-- Stats Cards — every card auto-hides when its number is zero/missing. -->
+{% if stats.total_events or stats.total_attendance or stats.avg_attendance %}
 <div class="stats-row mb-4">
+    {% if stats.total_events %}
     <div class="stat-card">
-        <div class="stat-value">{{ stats.total_events|default:0 }}</div>
+        <div class="stat-value">{{ stats.total_events }}</div>
         <div class="stat-label">Total Events</div>
     </div>
+    {% endif %}
     {% if stats.total_attendance %}
     <div class="stat-card">
-        <div class="stat-value">{{ stats.total_attendance|floatformat:0 }}</div>
+        <div class="stat-value">{{ stats.total_attendance|intcomma }}</div>
         <div class="stat-label">Total Attendance</div>
     </div>
     {% endif %}
     {% if stats.avg_attendance %}
     <div class="stat-card">
-        <div class="stat-value">{{ stats.avg_attendance|floatformat:0 }}</div>
+        <div class="stat-value">{{ stats.avg_attendance|intcomma }}</div>
         <div class="stat-label">Avg Attendance</div>
     </div>
     {% endif %}
 </div>
 {% endif %}
+
+{% with linked_sections=venue|linked_from_sections %}
+    {% include "partials/linked_from.html" with sections=linked_sections %}
+{% endwith %}
 
 <!-- Promotions that have run events here -->
 {% if promotions %}
@@ -135,6 +143,10 @@
     {% endif %}
 </div>
 {% endif %}
+
+{% with entity_type="venue" entity=venue %}
+    {% include "partials/sources_used.html" %}
+{% endwith %}
 
 <a href="{% url 'venues' %}" class="btn btn-secondary">&larr; Back to Venues</a>
 {% endblock %}

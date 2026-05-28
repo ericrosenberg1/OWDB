@@ -33,7 +33,6 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Optional
 
 from bs4 import BeautifulSoup
@@ -333,7 +332,7 @@ def persist_matches_for_event(event, fetch=None) -> dict:
     }
 
     from . import accuracy_contract
-    from ._provenance import bulk_synthetic_provenance, record_provenance
+    from ._provenance import bulk_synthetic_provenance
 
     created = 0
     updated = 0

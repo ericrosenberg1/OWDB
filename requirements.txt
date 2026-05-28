@@ -30,3 +30,7 @@ requests>=2.32
 beautifulsoup4>=4.13
 lxml>=5.3
 feedparser>=6.0  # RSS feed parsing for news sources
+
+# Claude (Sonnet 4.6) for WrestleBot bio generation.
+# Supports both ANTHROPIC_API_KEY (Console) and CLAUDE_CODE_OAUTH_TOKEN (Max subscription).
+anthropic>=0.40

@@ -38,7 +38,7 @@ class Command(BaseCommand):
                             help="Also process tv_episode events (default: PPVs only).")
 
     def handle(self, *args, **options):
-        from owdb_django.owdbapp.models import Event, Match
+        from owdb_django.owdbapp.models import Event
         from owdb_django.wrestlebot.models import SourceFetch
         from owdb_django.wrestlebot.pipeline.fetch import fetch_event_candidates
         from owdb_django.wrestlebot.pipeline.match_extract import persist_matches_for_event

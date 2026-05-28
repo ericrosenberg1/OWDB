@@ -1,13 +1,12 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST, require_http_methods
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.decorators.http import require_http_methods
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.views.generic import ListView, DetailView, TemplateView
-from django.db.models import Q, Count
+from django.db.models import Q
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
@@ -32,7 +31,6 @@ from .models import (
     UserProfile,
     EmailVerificationToken,
     Hot100Ranking,
-    Hot100Entry,
 )
 
 
@@ -245,7 +243,20 @@ class WrestlerDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         wrestler = self.object
         context['page_title'] = wrestler.name
-        context['matches'] = wrestler.matches.select_related('event', 'event__promotion', 'winner', 'title')[:20]
+
+        # Recent matches with per-match W/L badge precomputed for the
+        # template (avoids one query per row in a templatetag).
+        recent_matches = list(
+            wrestler.matches
+            .select_related('event', 'event__promotion', 'event__venue',
+                            'winner', 'title')
+            .prefetch_related('wrestlers')
+            .order_by('-event__date', '-match_order')[:30]
+        )
+        for m in recent_matches:
+            m.this_result = m.result_for_wrestler(wrestler.id)
+            m.opponents = [w for w in m.wrestlers.all() if w.id != wrestler.id]
+        context['matches'] = recent_matches
 
         # Interlinking: promotions, titles, rivals, record
         context['promotions'] = wrestler.get_promotions()[:10]
@@ -255,10 +266,15 @@ class WrestlerDetailView(DetailView):
         context['rivals'] = wrestler.get_rivals(limit=10)
         context['record'] = wrestler.get_win_loss_record()
 
+        # New ESPN-feel additions.
+        context['recent_form'] = wrestler.get_recent_form(limit=10)
+        context['head_to_head'] = wrestler.get_head_to_head(limit=8)
+
         # Extended meta categories
         context['stables'] = wrestler.get_stables()
         context['podcast_appearances'] = wrestler.get_podcast_appearances()[:10]
         context['books'] = wrestler.get_books()
+        context['video_games'] = wrestler.get_video_games()
         context['specials'] = wrestler.get_specials()
         context['meta_counts'] = wrestler.get_all_meta_categories()
 
@@ -364,6 +380,88 @@ class MatchListView(PaginatedListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = 'Matches'
+        return context
+
+
+class TopMatchesView(PaginatedListView):
+    """
+    Best matches of all time — Bayesian-ranked when rating data is available,
+    otherwise sorted by championship/main-event importance as a fallback so
+    the page is still useful before Cagematch ratings flow in.
+
+    Filters:
+        ?year=2023            Only matches whose event date is in that year.
+        ?promotion=wwe        Only matches from that promotion (slug).
+        ?has_rating=1         Only matches with a populated cagematch_rating.
+    """
+    model = Match
+    template_name = 'top_matches.html'
+    context_object_name = 'matches'
+    search_fields = ['match_text', 'event__name']
+    search_placeholder = 'top matches by description or event...'
+    paginate_by = 50
+
+    def get_queryset(self):
+        from django.db.models import Case, When, F, FloatField, Value
+        from django.db.models.functions import Coalesce
+        qs = (Match.objects
+              .select_related('event', 'event__promotion', 'event__venue',
+                              'winner', 'title')
+              .prefetch_related('wrestlers'))
+
+        year = self.request.GET.get('year', '').strip()
+        if year.isdigit():
+            qs = qs.filter(event__date__year=int(year))
+
+        promo = self.request.GET.get('promotion', '').strip()
+        if promo:
+            qs = qs.filter(event__promotion__slug=promo)
+
+        if self.request.GET.get('has_rating') == '1':
+            qs = qs.filter(cagematch_rating__isnull=False)
+
+        # Search box.
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            from django.db.models import Q
+            qs = qs.filter(Q(match_text__icontains=q) | Q(event__name__icontains=q))
+
+        # Sort key: prefer Bayesian-style "rating × log(votes)" when present,
+        # otherwise fall back to title_changed + recency. The annotated
+        # `sort_score` is exposed in the template so it can render the source.
+        from django.db.models import ExpressionWrapper
+        qs = qs.annotate(
+            sort_score=Coalesce(
+                # When we have cagematch_rating, prefer it (scale to 0..100).
+                ExpressionWrapper(F('cagematch_rating') * 10.0,
+                                  output_field=FloatField()),
+                # Fallback: title changes + championship matches score high.
+                Case(
+                    When(title_changed=True, then=Value(50.0)),
+                    When(title__isnull=False, then=Value(35.0)),
+                    default=Value(0.0),
+                    output_field=FloatField(),
+                ),
+            )
+        ).order_by('-sort_score', '-event__date', '-id')
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = 'Top Matches'
+        # Filter state for the template.
+        context['filter_year'] = self.request.GET.get('year', '')
+        context['filter_promotion'] = self.request.GET.get('promotion', '')
+        context['filter_has_rating'] = self.request.GET.get('has_rating', '') == '1'
+        # Are we currently using real ratings, or the importance fallback?
+        context['ratings_available'] = Match.objects.filter(
+            cagematch_rating__isnull=False
+        ).exists()
+        # Promotion list for the filter dropdown.
+        context['filter_promotions'] = (
+            Promotion.objects.filter(events__matches__isnull=False)
+            .distinct().order_by('name')[:30]
+        )
         return context
 
 
@@ -758,7 +856,7 @@ And that's the bottom line, 'cause OWDB said so!
                     fail_silently=False,
                 )
                 messages.success(request, 'Account created! Please check your email to verify your account.')
-            except Exception as e:
+            except Exception:
                 messages.warning(request, 'Account created, but we could not send verification email. Please contact support.')
 
             # Log user in but they won't be able to contribute until verified
@@ -856,7 +954,7 @@ And that's the bottom line, 'cause OWDB said so!
             fail_silently=False,
         )
         messages.success(request, 'Verification email sent! Please check your inbox.')
-    except Exception as e:
+    except Exception:
         messages.error(request, 'Failed to send verification email. Please try again later.')
 
     return redirect('verification_pending')
@@ -1010,74 +1108,3 @@ class Hot100HistoryView(ListView):
         return Hot100Ranking.objects.filter(is_published=True).order_by('-year', '-month')
 
 
-# =============================================================================
-# WrestleBot Health Check
-# =============================================================================
-
-from django.http import JsonResponse
-from django.views.decorators.http import require_GET
-
-
-@require_GET
-def wrestlebot_health(request):
-    """
-    Health check endpoint for WrestleBot monitoring.
-
-    Returns JSON with:
-    - healthy: Overall health status
-    - enabled: Whether WrestleBot is enabled
-    - rate_limits: Current rate limit usage
-    - today_stats: Today's activity counts
-    - errors: Recent error count
-
-    Accessible at: /wrestlebot/health/
-    """
-    from .wrestlebot import get_wrestlebot
-    from .wrestlebot.models import WrestleBotStats, WrestleBotActivity
-
-    try:
-        bot = get_wrestlebot()
-        status = bot.get_status()
-
-        # Get rate limit status for key sources
-        rate_limits = {}
-        for source in ['wikipedia', 'cagematch', 'wikimedia_commons']:
-            capacity = bot.check_rate_limit_capacity(source, min_requests=10)
-            rate_limits[source] = {
-                'has_capacity': capacity['has_capacity'],
-                'usage_percent': capacity['usage_percent'],
-                'remaining': capacity['remaining'],
-            }
-
-        # Get today's stats
-        today_stats = status.get('today', {})
-
-        # Calculate health
-        errors_today = today_stats.get('errors', 0)
-        is_healthy = (
-            status.get('enabled', False) and
-            errors_today < 50 and
-            any(r['has_capacity'] for r in rate_limits.values())
-        )
-
-        return JsonResponse({
-            'healthy': is_healthy,
-            'enabled': status.get('enabled', False),
-            'rate_limits': rate_limits,
-            'today': {
-                'discoveries': today_stats.get('discoveries', 0),
-                'enrichments': today_stats.get('enrichments', 0),
-                'images_added': today_stats.get('images_added', 0),
-                'verifications': today_stats.get('verifications', 0),
-                'errors': errors_today,
-            },
-            'totals': status.get('totals', {}),
-            'timestamp': timezone.now().isoformat(),
-        })
-
-    except Exception as e:
-        return JsonResponse({
-            'healthy': False,
-            'error': str(e),
-            'timestamp': timezone.now().isoformat(),
-        }, status=500)

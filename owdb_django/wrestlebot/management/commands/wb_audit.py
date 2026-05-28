@@ -17,7 +17,6 @@ safe auto-fix). Other issues are surfaced as warnings.
 
 from __future__ import annotations
 
-import argparse
 from datetime import timedelta
 from typing import Optional
 

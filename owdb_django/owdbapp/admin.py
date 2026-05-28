@@ -121,7 +121,7 @@ class EventAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
         ('Verification', {
-            'fields': ('verified', 'verified_source', 'last_verified'),
+            'fields': ('verified', 'verification_source', 'last_verified'),
             'classes': ('collapse',)
         }),
         ('Image', {
@@ -134,19 +134,28 @@ class EventAdmin(admin.ModelAdmin):
         if obj.verified:
             return format_html(
                 '<span style="color:#28a745;">&#10004; {}</span>',
-                obj.verified_source or 'Yes'
+                obj.verification_source or 'Yes'
             )
         return ''
     verified_status.short_description = 'Verified'
 
 
+class MatchParticipantInline(admin.TabularInline):
+    from .models import MatchParticipant
+    model = MatchParticipant
+    extra = 0
+    autocomplete_fields = ['wrestler']
+    fields = ('wrestler', 'side', 'role', 'is_winner', 'entrance_order')
+
+
 @admin.register(Match)
 class MatchAdmin(admin.ModelAdmin):
-    list_display = ['match_text', 'event', 'match_type', 'winner', 'created_at']
-    list_filter = ['match_type', 'created_at']
+    list_display = ['match_text', 'event', 'match_type', 'winner',
+                    'cagematch_rating', 'title_changed', 'created_at']
+    list_filter = ['match_type', 'title_changed', 'outcome_type', 'created_at']
     search_fields = ['match_text', 'event__name', 'wrestlers__name']
     autocomplete_fields = ['event', 'winner', 'title']
-    filter_horizontal = ['wrestlers']
+    inlines = [MatchParticipantInline]
     ordering = ['-created_at']
 
 

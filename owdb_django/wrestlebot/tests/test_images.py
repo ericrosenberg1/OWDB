@@ -17,7 +17,7 @@ from unittest import mock
 from django.test import TestCase
 
 from owdb_django.owdbapp.models import Wrestler, Promotion
-from owdb_django.wrestlebot.models import SourceFetch, FieldProvenance
+from owdb_django.wrestlebot.models import FieldProvenance
 from owdb_django.wrestlebot.sources import commons
 
 
@@ -852,7 +852,7 @@ class EventGateRejectsPromoArtTests(TestCase):
             return images.assign_image_to_entity(ent, entity_type=entity_type)
 
     def test_event_with_poster_filename_is_refused(self):
-        from owdb_django.owdbapp.models import Event, Promotion
+        from owdb_django.owdbapp.models import Event
         # Events need a promotion FK — create one. Event model doesn't
         # carry a wikipedia_url field; the cascade falls back to the
         # entity's `name` for the Wikipedia title.
@@ -886,7 +886,6 @@ class EventGateRejectsPromoArtTests(TestCase):
         # Promotion logos are NOT filtered by the promo-art guard, since
         # the logo IS the trademark identifier and nominative fair use
         # applies. (The same file passed as "event" would be refused.)
-        from owdb_django.owdbapp.models import Promotion
         promo = Promotion.objects.create(
             name="Test Promo", slug="test-promo",
             wikipedia_url="https://en.wikipedia.org/wiki/Test_Promo",

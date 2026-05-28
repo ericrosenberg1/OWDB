@@ -1,60 +1,149 @@
 {% extends "base.html" %}
 {% load linking_tags %}
 
+{% block title %}{{ game.name }} — Video Game — OWDB{% endblock %}
+
 {% block content %}
-<div class="detail-header">
-    <h1 class="detail-title">{{ game.name }}</h1>
-    <div class="detail-meta">
-        {% if game.release_year %}
-        <div class="detail-meta-item">
-            <span class="detail-meta-label">Release Year:</span> {{ game.release_year }}
-        </div>
-        {% endif %}
-        {% if game.systems %}
-        <div class="detail-meta-item">
-            <span class="detail-meta-label">Platforms:</span> {{ game.systems }}
-        </div>
-        {% endif %}
-        {% if game.developer %}
-        <div class="detail-meta-item">
-            <span class="detail-meta-label">Developer:</span> {{ game.developer }}
-        </div>
-        {% endif %}
-        {% if game.publisher %}
-        <div class="detail-meta-item">
-            <span class="detail-meta-label">Publisher:</span> {{ game.publisher }}
-        </div>
-        {% endif %}
-    </div>
-</div>
 
-{% with about_text=game|about_with_links %}
-    {% if about_text %}
-    <div class="card mb-4">
-        <div class="card-header">About</div>
-        <div class="card-body">
-            <p>{{ about_text|linebreaks }}</p>
-        </div>
-    </div>
+<div class="detail-layout row g-4">
+
+  {# ── LEFT COLUMN: cover + key facts ─────────────────────────────────── #}
+  <aside class="col-md-4">
+    {% if game.image_url %}
+      <figure class="media-poster mb-3">
+        <img src="{{ game.image_url }}"
+             alt="Cover art for {{ game.name }}"
+             class="img-fluid rounded shadow-sm">
+        {% if game.image_credit %}
+          <figcaption class="small text-muted mt-2">
+            {{ game.image_credit|truncatechars:160 }}
+          </figcaption>
+        {% endif %}
+      </figure>
+    {% else %}
+      <div class="media-poster placeholder game-placeholder mb-3 d-flex
+                  align-items-center justify-content-center
+                  bg-secondary-subtle rounded"
+           style="aspect-ratio: 3/4; min-height: 320px;">
+        <span class="display-1">🎮</span>
+      </div>
     {% endif %}
-{% endwith %}
 
-{% with linked_sections=game|linked_from_sections %}
-    {% include "partials/linked_from.html" with sections=linked_sections %}
-{% endwith %}
+    <dl class="row small">
+      {% if game.release_year %}
+        <dt class="col-5 text-muted">Released</dt>
+        <dd class="col-7">{{ game.release_year }}</dd>
+      {% endif %}
+      {% if game.systems %}
+        <dt class="col-5 text-muted">Platforms</dt>
+        <dd class="col-7">{{ game.systems }}</dd>
+      {% endif %}
+      {% if game.developer %}
+        <dt class="col-5 text-muted">Developer</dt>
+        <dd class="col-7">{{ game.developer }}</dd>
+      {% endif %}
+      {% if game.publisher %}
+        <dt class="col-5 text-muted">Publisher</dt>
+        <dd class="col-7">{{ game.publisher }}</dd>
+      {% endif %}
+      {% if game.wikipedia_url %}
+        <dt class="col-5 text-muted">Wikipedia</dt>
+        <dd class="col-7">
+          <a href="{{ game.wikipedia_url }}" target="_blank" rel="noopener noreferrer">view ↗</a>
+        </dd>
+      {% endif %}
+    </dl>
+  </aside>
 
-{% if game.promotions.exists %}
-<div class="card mb-4">
-    <div class="card-header">Featured Promotions</div>
-    <ul class="list-group list-group-flush">
-        {% for promo in game.promotions.all %}
-        <li class="list-group-item bg-transparent">
-            <a href="{% url 'promotion_detail' promo.pk %}">{{ promo.name }}</a>
-        </li>
-        {% endfor %}
-    </ul>
-</div>
-{% endif %}
+  {# ── RIGHT COLUMN: header + about + roster + promotions ────────────── #}
+  <div class="col-md-8">
 
-<a href="{% url 'games' %}" class="btn btn-secondary">&larr; Back to Video Games</a>
+    <header class="detail-header mb-3">
+      <h1 class="detail-title">{{ game.name }}</h1>
+      {% if game.release_year %}
+        <p class="text-muted mb-0">{{ game.release_year }}{% if game.systems %} · {{ game.systems }}{% endif %}</p>
+      {% endif %}
+    </header>
+
+    {% with about_text=game|about_with_links %}
+      {% if about_text %}
+        <section class="card mb-4">
+          <div class="card-header">About</div>
+          <div class="card-body">
+            <p class="mb-0">{{ about_text|linebreaks }}</p>
+          </div>
+        </section>
+      {% endif %}
+    {% endwith %}
+
+    {# ── Featured promotions ─────────────────────────────────────────── #}
+    {% if game.promotions.exists %}
+      <section class="card mb-4">
+        <div class="card-header">Featured promotion{{ game.promotions.all|length|pluralize }}</div>
+        <ul class="list-group list-group-flush">
+          {% for promo in game.promotions.all %}
+            <li class="list-group-item bg-transparent d-flex align-items-center gap-3">
+              {% if promo.image_url %}
+                <img src="{{ promo.image_url }}" alt=""
+                     style="height: 32px; width: auto; max-width: 64px; object-fit: contain;">
+              {% endif %}
+              <a href="{% url 'promotion_detail' promo.pk %}" class="text-decoration-none">
+                {{ promo.name }}
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+    {# ── Roster of featured wrestlers ────────────────────────────────── #}
+    {% with roster=game.wrestlers.all %}
+      {% if roster %}
+        <section class="card mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Featured wrestlers</span>
+            <span class="badge bg-secondary">{{ roster|length }}</span>
+          </div>
+          <div class="card-body">
+            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+              {% for w in roster %}
+                <div class="col">
+                  <a href="{% url 'wrestler_detail' w.pk %}"
+                     class="card h-100 text-decoration-none text-reset wrestler-roster-card">
+                    {% if w.image_url %}
+                      <img src="{{ w.image_url }}" alt="{{ w.name }}"
+                           class="card-img-top"
+                           style="aspect-ratio: 1/1; object-fit: cover;">
+                    {% else %}
+                      <div class="card-img-top placeholder bg-secondary-subtle d-flex align-items-center justify-content-center"
+                           style="aspect-ratio: 1/1;">
+                        <span class="fs-3">🤼</span>
+                      </div>
+                    {% endif %}
+                    <div class="card-body p-2">
+                      <p class="card-title small mb-0 fw-semibold text-truncate" title="{{ w.name }}">
+                        {{ w.name }}
+                      </p>
+                    </div>
+                  </a>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </section>
+      {% endif %}
+    {% endwith %}
+
+    {# ── Cross-references from other entities (mentions, etc.) ───────── #}
+    {% with linked_sections=game|linked_from_sections %}
+      {% include "partials/linked_from.html" with sections=linked_sections %}
+    {% endwith %}
+
+    <p class="mt-4">
+      <a href="{% url 'games' %}" class="btn btn-secondary">&larr; Back to Video Games</a>
+    </p>
+
+  </div>{# /col-md-8 #}
+</div>{# /row #}
+
 {% endblock %}

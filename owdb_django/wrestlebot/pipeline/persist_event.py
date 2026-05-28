@@ -25,7 +25,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
 
-from ..models import FieldProvenance, SourceFetch
+from ..models import SourceFetch
 from ..sources.base import EventFields, VenueFields
 from . import accuracy_contract
 from ._provenance import record_provenance
@@ -414,7 +414,7 @@ def persist_event(
     Persist an Event with provenance. Skips if the promotion can't be
     resolved (Event.promotion is a required FK).
     """
-    from owdb_django.owdbapp.models import Event, Venue
+    from owdb_django.owdbapp.models import Event
 
     name_snip = fields.name
     canonical_name = (

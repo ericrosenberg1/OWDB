@@ -21,7 +21,6 @@ import hashlib
 import logging
 from collections import Counter
 from dataclasses import dataclass
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +125,6 @@ def auto_discover_step(limit: int = 5) -> AutoDiscoveryStats:
     from ..models import SourceFetch
     from ..sources.wikipedia import WikipediaAdapter
     from .classifier import classify_html, is_generic_wiki_title
-    from .fetch import _content_hash
     from .extract import extract_event, extract_venue, extract_wrestler
     from .persist import persist_wrestler
     from .persist_event import persist_event, persist_venue

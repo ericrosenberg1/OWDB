@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load humanize %}
 
 {% block content %}
 <h1>Venues</h1>
@@ -20,7 +21,7 @@
             <tr>
                 <td><a href="{% url 'venue_detail' venue.pk %}">{{ venue.name }}</a></td>
                 <td>{{ venue.location|default:"—" }}</td>
-                <td>{% if venue.capacity %}{{ venue.capacity|floatformat:0 }}{% else %}—{% endif %}</td>
+                <td>{% if venue.capacity %}{{ venue.capacity|intcomma }}{% else %}—{% endif %}</td>
             </tr>
         {% endfor %}
         </tbody>

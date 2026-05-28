@@ -9,7 +9,7 @@ import re
 import time
 from abc import ABC, abstractmethod
 from functools import wraps
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
 

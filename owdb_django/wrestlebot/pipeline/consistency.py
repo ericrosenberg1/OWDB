@@ -50,7 +50,7 @@ def _check_dates(birth: Optional[date], death: Optional[date]) -> list[Consisten
             issues.append(ConsistencyIssue(
                 severity="warning",
                 field="death_date",
-                message=f"death_date is less than 5 years after birth_date — suspicious",
+                message="death_date is less than 5 years after birth_date — suspicious",
                 rule="death_too_soon",
             ))
     if birth and birth.year < 1850:
@@ -337,7 +337,7 @@ def check_image_legal_use(entity_type: str, entity) -> list[ConsistencyIssue]:
     if not license_code:
         issues.append(ConsistencyIssue(
             severity="error", field="image_license",
-            message=f"Entity has image_url but no image_license — legal-use unknown",
+            message="Entity has image_url but no image_license — legal-use unknown",
             rule="image_without_license",
         ))
 
@@ -369,6 +369,157 @@ def check_image_legal_use(entity_type: str, entity) -> list[ConsistencyIssue]:
             message="image_url set but image_source_url empty — provenance unauditable",
             rule="image_no_source_url",
         ))
+
+    # Round-2 codex/claude rule: for video_game / book / special entities,
+    # an image whose filename or credit mentions a "cover-art" token is
+    # almost certainly a copyrighted design (box art, dust jacket, key art)
+    # that the photographer's CC license doesn't clear. The promo-art
+    # guard in images.py blocks this at write time; this audit rule
+    # catches pre-existing rows from before the guard was widened.
+    if entity_type in ("video_game", "book", "special"):
+        cover_art_tokens = (
+            "box art", "boxart", "cover art", "coverart",
+            "dust jacket", "book cover", "video game cover", "game cover",
+        )
+        # Normalize underscores AND hyphens to spaces so "box_art.jpg",
+        # "boxart.jpg" and "box art" all hit the same token list.
+        haystack = " ".join([
+            (img or "").lower(),
+            (credit or "").lower(),
+            (source_url or "").lower(),
+        ]).replace("_", " ").replace("-", " ")
+        for token in cover_art_tokens:
+            if token in haystack:
+                issues.append(ConsistencyIssue(
+                    severity="error", field="image_url",
+                    message=(
+                        f"image references a copyrighted design token {token!r} — "
+                        f"the photographer's CC license does not clear the "
+                        f"underlying cover artwork"
+                    ),
+                    rule="image_copyrighted_design",
+                ))
+                break
+
+    # Round-2 attribution rule: explicit "unknown" / "anonymous" credit
+    # is NOT attribution under CC-BY / CC-BY-SA. Same string-set as the
+    # images.py write gate; this catches old rows persisted before the
+    # gate tightened.
+    _NULL_ATTRIBUTION = {
+        "unknown", "anonymous", "n/a", "na",
+        "no machine-readable author provided", "self-published",
+    }
+    if (
+        license_code in ("cc-by", "cc-by-sa")
+        and credit.lower() in _NULL_ATTRIBUTION
+    ):
+        issues.append(ConsistencyIssue(
+            severity="error", field="image_credit",
+            message=(
+                f"image_credit={credit!r} is not real attribution — "
+                f"CC-BY/CC-BY-SA require crediting the actual creator"
+            ),
+            rule="image_attribution_null",
+        ))
+
+    return issues
+
+
+def check_cross_link_grounding(entity_type: str, entity) -> list[ConsistencyIssue]:
+    """
+    Round-2 codex/claude rule. Flag cross-link M2Ms that have weak grounding:
+
+      cross_link_video_game_roster_lead_only
+          A VideoGame.wrestlers entry whose only evidence is a single
+          lead-paragraph EntityMention. The persist path now requires
+          ≥2 mentions, but rows persisted before the fix may have
+          single-mention grounding.
+
+      cross_link_book_lead_only
+          Same shape for Book.related_wrestlers.
+
+      cross_link_book_promo_no_canonical_roster
+          Book attached to a Promotion via the runtime derivation, but
+          NONE of the book's wrestlers is in the promotion's canonical
+          roster (≥3 matches). The new ``canonical_roster_ids`` predicate
+          should hide these, but the audit also flags any persisted
+          M2M relations that violate the policy.
+
+    Returns issues; doesn't mutate.
+    """
+    from collections import Counter
+    from ..models import EntityMention
+
+    issues: list[ConsistencyIssue] = []
+
+    if entity_type == "video_game":
+        wrestler_ids = list(entity.wrestlers.values_list("id", flat=True))
+        if not wrestler_ids:
+            return issues
+        mentions = EntityMention.objects.filter(
+            source_fetch__entity_type="video_game",
+            source_fetch__entity_id=entity.id,
+            resolved_entity_type="wrestler",
+            resolved_entity_id__in=wrestler_ids,
+        )
+        counts = Counter(m.resolved_entity_id for m in mentions)
+        for wid in wrestler_ids:
+            if counts.get(wid, 0) < 2:
+                issues.append(ConsistencyIssue(
+                    severity="warning", field="wrestlers",
+                    message=(
+                        f"VideoGame#{entity.id} has wrestler#{wid} on its "
+                        f"roster but only {counts.get(wid, 0)} mention(s) in "
+                        f"the source — likely a lead-paragraph false-positive"
+                    ),
+                    rule="cross_link_video_game_roster_lead_only",
+                ))
+
+    elif entity_type == "book":
+        wrestler_ids = list(entity.related_wrestlers.values_list("id", flat=True))
+        if not wrestler_ids:
+            return issues
+        mentions = EntityMention.objects.filter(
+            source_fetch__entity_type="book",
+            source_fetch__entity_id=entity.id,
+            resolved_entity_type="wrestler",
+            resolved_entity_id__in=wrestler_ids,
+        )
+        counts = Counter(m.resolved_entity_id for m in mentions)
+        # Books also get an author-based linker (author_wiki_link → Wrestler);
+        # those rows legitimately have ZERO mentions because the link
+        # path is the author field, not paragraph text. Skip wrestlers
+        # whose entity is also the book's known author.
+        author_name = ""
+        try:
+            from ._provenance import FieldProvenance
+            author_prov = FieldProvenance.objects.filter(
+                entity_type="book", entity_id=entity.id, field_name="author",
+            ).first()
+            if author_prov:
+                author_name = (author_prov.value or "").strip().lower()
+        except Exception:
+            pass
+        from owdb_django.owdbapp.models import Wrestler
+        for wid in wrestler_ids:
+            if counts.get(wid, 0) >= 2:
+                continue
+            # Check if this wrestler IS the author — skip the warning.
+            try:
+                w = Wrestler.objects.get(id=wid)
+                if author_name and author_name in w.name.lower():
+                    continue
+            except Wrestler.DoesNotExist:
+                pass
+            issues.append(ConsistencyIssue(
+                severity="warning", field="related_wrestlers",
+                message=(
+                    f"Book#{entity.id} has wrestler#{wid} in related_wrestlers "
+                    f"with only {counts.get(wid, 0)} mention(s) in the source "
+                    f"— may be a passing reference rather than subject"
+                ),
+                rule="cross_link_book_lead_only",
+            ))
 
     return issues
 

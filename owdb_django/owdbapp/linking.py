@@ -17,6 +17,7 @@ from .models import (
     PodcastEpisode,
     Promotion,
     Special,
+    Stable,
     Title,
     Venue,
     VideoGame,
@@ -77,6 +78,10 @@ def _build_url(obj) -> Optional[str]:
         if obj.slug:
             return reverse("special_detail_slug", args=[obj.slug])
         return reverse("special_detail", args=[obj.pk])
+    if isinstance(obj, Stable):
+        if obj.slug:
+            return reverse("stable_detail_slug", args=[obj.slug])
+        return reverse("stable_detail", args=[obj.pk])
     return None
 
 
@@ -445,12 +450,45 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
             wrestler_items.append(_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "", meta=meta))
         sections.append({"label": "Featured Wrestlers", "items": wrestler_items})
 
+        # Stables belonging to this promotion.
+        stables = obj.get_stables(limit=limit)
+        stable_items = []
+        for stable in stables:
+            year_text = str(stable.formed_year) if stable.formed_year else ""
+            stable_items.append(_make_item(stable, year=year_text))
+        sections.append({"label": "Stables", "items": stable_items})
+
         games = obj.video_games.all()[:limit]
         game_items = []
         for game in games:
             year_text = str(game.release_year) if game.release_year else ""
             game_items.append(_make_item(game, year=year_text))
         sections.append({"label": "Video Games", "items": game_items})
+
+        # Books / specials / podcasts derived from the roster.
+        books = obj.get_books(limit=limit)
+        book_items = []
+        for book in books:
+            meta = []
+            if book.author:
+                meta.append(_meta_text(book.author))
+            year_text = str(book.publication_year) if book.publication_year else ""
+            book_items.append(_make_item(book, year=year_text, meta=meta))
+        sections.append({"label": "Books", "items": book_items})
+
+        specials = obj.get_specials(limit=limit)
+        special_items = []
+        for special in specials:
+            year_text = str(special.release_year) if special.release_year else ""
+            special_items.append(_make_item(special, year=year_text))
+        sections.append({"label": "Documentaries & Specials", "items": special_items})
+
+        podcasts = obj.get_podcasts(limit=limit)
+        podcast_items = []
+        for podcast in podcasts:
+            year_text = str(podcast.launch_year) if podcast.launch_year else ""
+            podcast_items.append(_make_item(podcast, year=year_text))
+        sections.append({"label": "Podcasts", "items": podcast_items})
 
         venues = obj.get_venues(limit=limit)
         venue_items = []
@@ -504,6 +542,33 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
             event_items.append(_make_item(event, year=_year_from_date(event.date), meta=meta))
         sections.append({"label": "Events/PPVs", "items": event_items})
 
+        # Cross-linked media derived from this title's champions. Every
+        # link is grounded in the matches_won.title M2M chain — accuracy
+        # contract is preserved.
+        books = obj.get_books(limit=limit)
+        book_items = []
+        for book in books:
+            meta = []
+            if book.author:
+                meta.append(_meta_text(book.author))
+            year_text = str(book.publication_year) if book.publication_year else ""
+            book_items.append(_make_item(book, year=year_text, meta=meta))
+        sections.append({"label": "Books", "items": book_items})
+
+        specials = obj.get_specials(limit=limit)
+        special_items = []
+        for special in specials:
+            year_text = str(special.release_year) if special.release_year else ""
+            special_items.append(_make_item(special, year=year_text))
+        sections.append({"label": "Documentaries & Specials", "items": special_items})
+
+        games = obj.get_video_games(limit=limit)
+        game_items = []
+        for game in games:
+            year_text = str(game.release_year) if game.release_year else ""
+            game_items.append(_make_item(game, year=year_text))
+        sections.append({"label": "Video Games", "items": game_items})
+
     elif isinstance(obj, Match):
         if obj.event:
             sections.append({"label": "Event", "items": [_make_item(obj.event, year=_year_from_date(obj.event.date))]})
@@ -522,6 +587,15 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
         promo_items = [_make_item(promo, year=str(promo.founded_year) if promo.founded_year else "") for promo in promotions]
         sections.append({"label": "Promotions", "items": promo_items})
 
+        # Direct wrestler roster (M2M, populated by the games ingest
+        # pipeline). Distinct from "champions" or other derived lists.
+        wrestlers = obj.wrestlers.all()[:limit]
+        wrestler_items = [
+            _make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "")
+            for wrestler in wrestlers
+        ]
+        sections.append({"label": "Featured Wrestlers", "items": wrestler_items})
+
     elif isinstance(obj, Podcast):
         wrestlers = obj.related_wrestlers.all()[:limit]
         wrestler_items = [_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "") for wrestler in wrestlers]
@@ -539,10 +613,147 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
         wrestler_items = [_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "") for wrestler in wrestlers]
         sections.append({"label": "Featuring Wrestlers", "items": wrestler_items})
 
+        related_ids = list(obj.related_wrestlers.values_list("id", flat=True))
+        # Derived promotions — round-2 fix: require ≥3 matches in the
+        # promotion for the bridging wrestler, matching
+        # Promotion.canonical_roster_ids. Without this, a book about one
+        # wrestler surfaces every promotion that wrestler ever had a
+        # single match in.
+        from django.db.models import Count, Q
+        promotions = (
+            Promotion.objects
+            .filter(events__matches__wrestlers__in=related_ids)
+            .annotate(
+                _bridge_match_count=Count(
+                    "events__matches",
+                    filter=Q(events__matches__wrestlers__in=related_ids),
+                ),
+            )
+            .filter(_bridge_match_count__gte=Promotion.CANONICAL_ROSTER_MIN_MATCHES)
+            .distinct()
+            .order_by("name")[:limit]
+        )
+        promo_items = [
+            _make_item(promo, year=str(promo.founded_year) if promo.founded_year else "")
+            for promo in promotions
+        ]
+        sections.append({"label": "Promotions", "items": promo_items})
+
+        # Derived stables — any stable whose members include any of
+        # this book's related wrestlers. Stable membership is a
+        # curator-attested M2M, so single overlap is enough grounding.
+        stables = (
+            Stable.objects
+            .filter(members__in=related_ids)
+            .distinct()
+            .order_by("name")[:limit]
+        )
+        stable_items = [
+            _make_item(stable, year=str(stable.formed_year) if stable.formed_year else "")
+            for stable in stables
+        ]
+        sections.append({"label": "Stables", "items": stable_items})
+
     elif isinstance(obj, Special):
         wrestlers = obj.related_wrestlers.all()[:limit]
         wrestler_items = [_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "") for wrestler in wrestlers]
         sections.append({"label": "Featuring Wrestlers", "items": wrestler_items})
+
+        related_ids = list(obj.related_wrestlers.values_list("id", flat=True))
+        from django.db.models import Count, Q
+        promotions = (
+            Promotion.objects
+            .filter(events__matches__wrestlers__in=related_ids)
+            .annotate(
+                _bridge_match_count=Count(
+                    "events__matches",
+                    filter=Q(events__matches__wrestlers__in=related_ids),
+                ),
+            )
+            .filter(_bridge_match_count__gte=Promotion.CANONICAL_ROSTER_MIN_MATCHES)
+            .distinct()
+            .order_by("name")[:limit]
+        )
+        promo_items = [
+            _make_item(promo, year=str(promo.founded_year) if promo.founded_year else "")
+            for promo in promotions
+        ]
+        sections.append({"label": "Promotions", "items": promo_items})
+
+        stables = (
+            Stable.objects
+            .filter(members__in=related_ids)
+            .distinct()
+            .order_by("name")[:limit]
+        )
+        stable_items = [
+            _make_item(stable, year=str(stable.formed_year) if stable.formed_year else "")
+            for stable in stables
+        ]
+        sections.append({"label": "Stables", "items": stable_items})
+
+    elif isinstance(obj, Stable):
+        # Direct relations first.
+        if obj.promotion:
+            sections.append({"label": "Promotion", "items": [_make_item(obj.promotion)]})
+
+        leaders = obj.leaders.all()[:limit]
+        leader_items = [
+            _make_item(w, year=str(w.debut_year) if w.debut_year else "")
+            for w in leaders
+        ]
+        sections.append({"label": "Leaders", "items": leader_items})
+
+        members = obj.members.all()[:limit]
+        member_items = [
+            _make_item(w, year=str(w.debut_year) if w.debut_year else "")
+            for w in members
+        ]
+        sections.append({"label": "Members", "items": member_items})
+
+        # Titles won as a team — already grounded in matches_won.title.
+        titles = obj.get_titles_won()[:limit]
+        title_items = []
+        for title in titles:
+            meta = []
+            if title.promotion:
+                meta.append(_meta_text(title.promotion.name, _build_url(title.promotion)))
+            year_text = str(title.debut_year) if title.debut_year else ""
+            title_items.append(_make_item(title, year=year_text, meta=meta))
+        sections.append({"label": "Titles", "items": title_items})
+
+        # Cross-linked media derived from members — same single-M2M-hop
+        # derivation as Promotion/Title. No invented links.
+        books = obj.get_books(limit=limit)
+        book_items = []
+        for book in books:
+            meta = []
+            if book.author:
+                meta.append(_meta_text(book.author))
+            year_text = str(book.publication_year) if book.publication_year else ""
+            book_items.append(_make_item(book, year=year_text, meta=meta))
+        sections.append({"label": "Books", "items": book_items})
+
+        specials = obj.get_specials(limit=limit)
+        special_items = []
+        for special in specials:
+            year_text = str(special.release_year) if special.release_year else ""
+            special_items.append(_make_item(special, year=year_text))
+        sections.append({"label": "Documentaries & Specials", "items": special_items})
+
+        games = obj.get_video_games(limit=limit)
+        game_items = []
+        for game in games:
+            year_text = str(game.release_year) if game.release_year else ""
+            game_items.append(_make_item(game, year=year_text))
+        sections.append({"label": "Video Games", "items": game_items})
+
+        podcasts = obj.get_podcasts(limit=limit)
+        podcast_items = []
+        for podcast in podcasts:
+            year_text = str(podcast.launch_year) if podcast.launch_year else ""
+            podcast_items.append(_make_item(podcast, year=year_text))
+        sections.append({"label": "Podcasts", "items": podcast_items})
 
     elif isinstance(obj, Venue):
         events = obj.events.order_by("-date")[:limit]

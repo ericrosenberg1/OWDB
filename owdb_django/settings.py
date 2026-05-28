@@ -3,6 +3,14 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load .env (project-root) into os.environ for local dev. In docker-compose
+# the env is loaded by the compose runtime, so this is a no-op there.
+try:
+    from dotenv import load_dotenv
+    load_dotenv(BASE_DIR / ".env", override=False)
+except ImportError:
+    pass
+
 # =============================================================================
 # Core Settings
 # =============================================================================
@@ -88,6 +96,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # FIRST: bounce www.* hosts to the bare-domain canonical with 301.
+    # Short-circuits the rest of the stack before sessions / CSRF run.
+    'owdb_django.middleware.CanonicalHostMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # Serve static files efficiently
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -120,23 +131,38 @@ TEMPLATES = [
 WSGI_APPLICATION = 'owdb_django.wsgi.application'
 
 # =============================================================================
-# Database Configuration (PostgreSQL only)
+# Database Configuration
+# Production / Docker: PostgreSQL. Local dev (APP_ENV=development without DB_HOST
+# pointing at a live postgres): falls back to db.sqlite3 in repo root.
 # =============================================================================
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'owdb'),
-        'USER': os.getenv('DB_USER', 'owdb'),
-        'PASSWORD': os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '5432'),
-        'CONN_MAX_AGE': 60,  # Connection pooling
-        'OPTIONS': {
-            'connect_timeout': 10,
-        },
+# SQLite by default (low-traffic OK); set DB_ENGINE=postgres in env to flip.
+# The previous form forced SQLite-only-in-dev, which made shipping the dev
+# corpus straight into the NUC's first deploy harder than it needed to be.
+USE_SQLITE = os.getenv('DB_ENGINE', 'sqlite').lower() != 'postgres'
+
+if USE_SQLITE:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME', 'owdb'),
+            'USER': os.getenv('DB_USER', 'owdb'),
+            'PASSWORD': os.getenv('DB_PASSWORD', ''),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '5432'),
+            'CONN_MAX_AGE': 60,  # Connection pooling
+            'OPTIONS': {
+                'connect_timeout': 10,
+            },
+        }
+    }
 
 # =============================================================================
 # Cache Configuration (Redis)
@@ -144,17 +170,26 @@ DATABASES = {
 
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': REDIS_URL,
-        'KEY_PREFIX': 'owdb',
+# Local dev (SQLite mode) skips Redis to keep setup minimal — uses locmem cache
+# and DB-backed sessions instead.
+if USE_SQLITE:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'owdb-local',
+        }
     }
-}
-
-# Use Redis for sessions
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'default'
+    SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+            'KEY_PREFIX': 'owdb',
+        }
+    }
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+    SESSION_CACHE_ALIAS = 'default'
 
 # =============================================================================
 # Celery Configuration
@@ -291,48 +326,37 @@ CELERY_BEAT_SCHEDULE = {
         'args': (15,),
     },
     # ==========================================================================
-    # WrestleBot 2.0 - Autonomous Data Enhancement
-    # Priority order: ACCURACY > QUALITY > COMPREHENSIVENESS
+    # WrestleBot v3 — accuracy-first autonomous pipeline
+    # Single cycle: discover -> fetch -> extract -> persist -> generate -> verify
+    # Self-correcting on rejections; no human supervision needed.
     # ==========================================================================
-    #
-    # ACCURACY (highest priority) - Clean and verify existing data
-    'wrestlebot-match-cleanup': {
-        'task': 'owdb_django.owdbapp.tasks.wrestlebot_match_cleanup',
-        'schedule': 3600.0,  # Every hour (was 6 hours)
-        'kwargs': {'dry_run': False, 'limit': 2000},
+    # Legacy `wrestlebot_cycle` retired 2026-05 — Good Ol' JR now owns its
+    # entire job, with the accuracy contract gate the legacy path lacked.
+    # Keeping the entry commented for one more release cycle in case we
+    # need to roll back; will delete next pass.
+    # 'wrestlebot-cycle': {
+    #     'task': 'owdb_django.wrestlebot.tasks.wrestlebot_cycle',
+    #     'schedule': 600.0,
+    # },
+
+    # Good Ol' JR — Jim Ross — building the most comprehensive wrestling
+    # database ever assembled. Sonnet 4.6 · ~25-30 tool calls per session.
+    'wrestlebot-jr-agent': {
+        'task': 'owdb_django.wrestlebot.tasks.jr_agent_cycle',
+        'schedule': 1800.0,  # Every 30 minutes
     },
-    'wrestlebot-synthetic-cleanup': {
-        'task': 'owdb_django.owdbapp.tasks.wrestlebot_synthetic_cleanup',
-        'schedule': 21600.0,  # Every 6 hours (was 24 hours)
-        'kwargs': {'dry_run': False},
+    # Earl Hebner — accuracy auditor + rule improver. 100% accuracy first.
+    # Opus 4.5 for the deeper "rule-wrong vs data-wrong" reasoning; runs
+    # less often because audit work is cheap to backlog.
+    'wrestlebot-earl-agent': {
+        'task': 'owdb_django.wrestlebot.tasks.earl_agent_cycle',
+        'schedule': 6 * 3600.0,  # Every 6 hours
     },
-    'wrestlebot-verification': {
-        'task': 'owdb_django.owdbapp.tasks.wrestlebot_verification_cycle',
-        'schedule': 1800.0,  # Every 30 minutes - verify data against sources
-        'args': (15,),  # batch size
-    },
-    #
-    # QUALITY (medium priority) - Enrich and improve existing entries
-    'wrestlebot-enrichment': {
-        'task': 'owdb_django.owdbapp.tasks.wrestlebot_enrichment_cycle',
-        'schedule': 1800.0,  # Every 30 minutes (was 1 hour)
-        'args': (15,),  # batch size
-    },
-    'wrestlebot-images': {
-        'task': 'owdb_django.owdbapp.tasks.wrestlebot_image_cycle',
-        'schedule': 7200.0,  # Every 2 hours (was 4 hours)
-        'args': (15,),  # batch size
-    },
-    #
-    # COMPREHENSIVENESS (lower priority) - Add new entries
-    'wrestlebot-discovery': {
-        'task': 'owdb_django.owdbapp.tasks.wrestlebot_discovery_cycle',
-        'schedule': 3600.0,  # Every hour (was 2 hours)
-        'args': (10,),  # batch size
-    },
-    'wrestlebot-master': {
-        'task': 'owdb_django.owdbapp.tasks.wrestlebot_master',
-        'schedule': 900.0,  # Every 15 minutes (was 30 minutes)
+    # Al Snow — interlinking + graph improvement. The training-coach
+    # mentality: rotates through the roster, makes every entry better.
+    'wrestlebot-al-agent': {
+        'task': 'owdb_django.wrestlebot.tasks.al_agent_cycle',
+        'schedule': 1800.0,  # Every 30 minutes
     },
     # ==========================================================================
     # TV Episode Tracking - TMDB is source of truth for episodes

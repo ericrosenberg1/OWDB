@@ -20,8 +20,8 @@ from __future__ import annotations
 import logging
 import re
 from datetime import date, datetime
-from typing import Optional, Tuple
-from urllib.parse import quote, unquote, urlparse
+from typing import Optional
+from urllib.parse import quote
 
 from bs4 import BeautifulSoup
 
@@ -103,16 +103,32 @@ class WikipediaAdapter(SourceAdapter):
 
     # ---------------------------------------------------------------- extract
 
-    def extract_wrestler(self, raw_content: str) -> Optional[WrestlerFields]:
+    def extract_wrestler(
+        self,
+        raw_content: str,
+        article_title: Optional[str] = None,
+    ) -> Optional[WrestlerFields]:
         """
         Parse a Wikipedia HTML page into typed WrestlerFields.
 
         Returns None if no infobox is present (not a structured wrestler page).
+
+        When `article_title` is provided, also computes `best_known_as` from
+        the article's lede ("better known by his ring name X") or by stripping
+        a Wikipedia disambig suffix ("Rikishi (wrestler)" → "Rikishi"). The
+        persist layer prefers this over the article title for display.
         """
         if not raw_content:
             return None
 
         soup = BeautifulSoup(raw_content, "lxml")
+
+        # Pull best_known_as BEFORE we destructively strip noise from the
+        # infobox — the lede paragraph lives in the article body and is
+        # untouched by infobox cleanup, but we keep the order anyway.
+        best_known = None
+        if article_title:
+            best_known = _best_known_as_from_article(soup, article_title)
 
         # Wrestler pages typically use Template:Infobox professional wrestler,
         # which renders as table.infobox.vcard. Some use plain table.infobox.
@@ -151,6 +167,9 @@ class WikipediaAdapter(SourceAdapter):
         # If we didn't capture even a name, treat the page as a non-wrestler.
         if fields.name is None and not fields.populated_fields():
             return None
+
+        if best_known:
+            fields.best_known_as = best_known
 
         return fields
 
@@ -1604,3 +1623,127 @@ class WikipediaAdapter(SourceAdapter):
         if not fields.populated_fields():
             return None
         return fields
+
+
+# ----------------------------------------------------------------------------
+# Best-known-as parser
+# ----------------------------------------------------------------------------
+#
+# Wikipedia wrestler articles are titled inconsistently from a fan's
+# perspective. Editors pick whichever name has the most weight for that
+# article — sometimes the ring name ("Triple H"), sometimes the legal name
+# ("Matt Bloom"), sometimes a real name with a disambig suffix
+# ("Glenn Jacobs" lives at "Kane (wrestler)"). For display in OWDB, we want
+# the name fans actually know — "Mr. Perfect", not "Curt Hennig"; "Rikishi",
+# not "Rikishi (wrestler)".
+#
+# Two signals, in priority order:
+#   1. The article's lede paragraph almost always contains one of:
+#        "better known by his ring name X"
+#        "also known by the ring name X"
+#        "best known under the ring names X and Y"
+#        "known professionally as X"
+#      The first ring name in this phrase is the wrestler's best-known
+#      identity. (When there's no such phrase — Matt Bloom, John Cena — the
+#      article title is already the best display name.)
+#   2. As a fallback, strip a Wikipedia disambig suffix like "(wrestler)"
+#      from the article title. These suffixes exist only to disambiguate
+#      articles, not because fans say "Rikishi (wrestler)".
+
+# Allow "Mr. Perfect" / "St. Patrick" style internal periods by rejecting
+# the period as a sentence stop only when preceded by a known abbreviation.
+_BEST_KNOWN_PERIOD_STOP = (
+    r"(?<!Mr)(?<!Mrs)(?<!Ms)(?<!Dr)(?<!Jr)(?<!Sr)(?<!St)"
+    r"\.\s*(?:[A-Z]|$)"
+)
+
+# Variant 1: "better/also/best known [professionally] (as | by/under his ring name) X"
+_BEST_KNOWN_LEDE_RE = re.compile(
+    r"""
+    \b(?:better|also|best)\s+known\s+
+    (?:professionally\s+)?
+    (?:
+        as
+      | (?:by|under)\s+(?:his|her|their|the)\s+(?:ring|stage)\s+names?
+    )
+    \s+
+    ['"“‘]?\s*
+    (?P<name>[A-ZÀ-ÖØ-Þa-zà-öø-þ][^,(]*?)
+    \s*['"”’]?
+    (?:,|\s*\(or\b|""" + _BEST_KNOWN_PERIOD_STOP + r"""|\s+(?:is|was|who|were)\b|$)
+    """,
+    re.X,
+)
+
+# Variant 2: "known professionally as X" (no "better"/"also"/"best" prefix)
+_BEST_KNOWN_PROFESSIONAL_RE = re.compile(
+    r"""
+    \bknown\s+professionally\s+as\s+
+    ['"“‘]?\s*
+    (?P<name>[A-ZÀ-ÖØ-Þa-zà-öø-þ][^,(]*?)
+    \s*['"”’]?
+    (?:,|\s*\(or\b|""" + _BEST_KNOWN_PERIOD_STOP + r"""|\s+(?:is|was|who|were)\b|$)
+    """,
+    re.X,
+)
+
+# Wikipedia disambig suffixes we'll strip for display. Conservative list —
+# only the ones observed on wrestler articles. Other parentheticals
+# ("(born 1972)", "(Maryland)") carry information and should stay.
+_DISAMBIG_SUFFIX_RE = re.compile(
+    r"\s*\((?:wrestler|professional wrestler|wrestler born \d{4})\)\s*$",
+    re.I,
+)
+
+
+def _first_lede_paragraph(soup) -> Optional[str]:
+    """Return the first long <p> in the article body, or None."""
+    body = soup.find("div", class_="mw-parser-output") or soup
+    for p in body.find_all("p", recursive=True):
+        # Skip <p> tags that live inside the infobox or a sidebar table.
+        if p.find_parent("table"):
+            continue
+        text = p.get_text(" ", strip=True)
+        if len(text) > 50:
+            return text
+    return None
+
+
+def _ring_name_from_lede(lede: str) -> Optional[str]:
+    """Extract the first ring name from a "better known as" phrase, if any."""
+    for rx in (_BEST_KNOWN_LEDE_RE, _BEST_KNOWN_PROFESSIONAL_RE):
+        m = rx.search(lede)
+        if not m:
+            continue
+        name = m.group("name").strip().strip('"“”‘’\'').rstrip(".").strip()
+        # "his ring names X and Y" / "X, Y, and Z" — first is the most famous.
+        for sep in (" and ", ", "):
+            if sep in name:
+                name = name.split(sep, 1)[0].strip()
+        if 2 <= len(name) <= 80:
+            return name
+    return None
+
+
+def _best_known_as_from_article(soup, article_title: str) -> Optional[FieldSnippet]:
+    """
+    Compute the wrestler's best-known display name, or None if the article
+    title is already the best name. See module-level comment block.
+    """
+    lede = _first_lede_paragraph(soup)
+    if lede:
+        name = _ring_name_from_lede(lede)
+        if name and name.lower() != article_title.lower():
+            return FieldSnippet(
+                value=name,
+                snippet=lede[:240],
+                confidence=92,
+            )
+    stripped = _DISAMBIG_SUFFIX_RE.sub("", article_title).strip()
+    if stripped and stripped != article_title:
+        return FieldSnippet(
+            value=stripped,
+            snippet=f"(article title disambig stripped: {article_title!r} -> {stripped!r})",
+            confidence=88,
+        )
+    return None

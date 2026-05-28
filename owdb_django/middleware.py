@@ -2,6 +2,45 @@
 Custom middleware for OWDB.
 """
 from django.conf import settings
+from django.http import HttpResponsePermanentRedirect
+
+
+class CanonicalHostMiddleware:
+    """
+    Enforce `wrestlingdb.org` as the canonical host: 301-redirect every
+    `www.*` request to its bare-domain equivalent.
+
+    Cloudflare's Single Redirect / Page Rules features would do this at
+    the edge without an origin round-trip, but the cloudflared-issued
+    zone token only grants DNS edit — not Rulesets / Page Rules. Doing
+    it at the Django layer is one extra hop for www traffic (which is
+    tiny relative to apex), and keeps the redirect rule in version
+    control next to the rest of the routing logic.
+
+    Lives BEFORE SecurityMiddleware in the MIDDLEWARE list so it short-
+    circuits the rest of the stack with a 301 — saves the cost of
+    session lookup, CSRF parsing, etc. on what is by definition a
+    throwaway request.
+    """
+
+    _WWW_PREFIX = "www."
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        host = request.get_host().lower()
+        # `get_host()` strips the port for production hosts; in dev it
+        # may include `:8000`. Either way, only redirect when the host
+        # part starts with `www.`.
+        host_only = host.split(":", 1)[0]
+        if host_only.startswith(self._WWW_PREFIX):
+            canonical = host_only[len(self._WWW_PREFIX):]
+            # Preserve scheme, path, and query string.
+            scheme = "https" if request.is_secure() else "http"
+            target = f"{scheme}://{canonical}{request.get_full_path()}"
+            return HttpResponsePermanentRedirect(target)
+        return self.get_response(request)
 
 
 class ContentSecurityPolicyMiddleware:

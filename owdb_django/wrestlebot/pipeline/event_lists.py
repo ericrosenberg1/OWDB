@@ -445,7 +445,7 @@ def _get_or_create_promotion(promotion_key: str):
     stuck at verification_state='candidate'.
     """
     from owdb_django.owdbapp.models import Promotion
-    from ..models import FieldProvenance, SourceFetch
+    from ..models import SourceFetch
 
     name = PROMOTION_NAME_MAP.get(promotion_key, promotion_key.upper())
     obj, was_created = Promotion.objects.get_or_create(name=name)
@@ -533,7 +533,7 @@ def ingest_ppv_list(promotion_key: str) -> dict:
     if not extracted:
         return {"error": "no events extracted from page", "resolved_title": resolved}
 
-    from owdb_django.owdbapp.models import Event, Venue
+    from owdb_django.owdbapp.models import Event
     from . import accuracy_contract
     from ._provenance import bulk_synthetic_provenance
 

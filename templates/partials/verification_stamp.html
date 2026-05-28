@@ -1,0 +1,51 @@
+{% comment %}
+Verification stamp shown at the bottom of entity detail pages.
+
+Surfaces the sources WrestleBot pulled data from. Sources with permissive
+licensing (Wikipedia CC BY-SA, Wikidata CC0) are named and linked; everything
+else is referred to generically as "External wrestling database" — we
+deliberately do not display third-party trademarked names or logos.
+
+Required context (provided by `{% verification_stamp entity %}`):
+  sources         — ordered list of dicts: {source, display_name, homepage, url, fetched_at, kind}
+  total           — int, len(sources)
+  verified_count  — int, count where kind == "verified"
+{% endcomment %}
+
+{% if total > 0 %}
+<aside class="verification-stamp" aria-label="Data sources">
+    <h4 class="verification-stamp__title">
+        Verified from {{ total }} source{{ total|pluralize }}
+        {% if verified_count and linked_count %}
+            <span class="verification-stamp__subnote">
+                ({{ verified_count }} fully extracted, {{ linked_count }} linked)
+            </span>
+        {% endif %}
+    </h4>
+    <ul class="verification-stamp__list">
+        {% for source in sources %}
+            <li class="verification-stamp__item verification-stamp__item--{{ source.kind }}">
+                <span class="verification-stamp__source">
+                    {% if source.homepage %}
+                        <a href="{{ source.homepage }}" rel="noopener noreferrer" target="_blank">{{ source.display_name }}</a>
+                    {% else %}
+                        {{ source.display_name }}
+                    {% endif %}
+                </span>
+                {% if source.url %}
+                    &middot;
+                    <a class="verification-stamp__link" href="{{ source.url }}" rel="noopener noreferrer" target="_blank">view source</a>
+                {% endif %}
+                {% if source.fetched_at %}
+                    <span class="verification-stamp__date" title="Last fetched {{ source.fetched_at|date:'Y-m-d H:i' }}">
+                        &middot; fetched {{ source.fetched_at|date:"Y-m-d" }}
+                    </span>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+    <p class="verification-stamp__note">
+        Data is extracted and cross-checked across these sources. Every fact stored on this page traces back to one of them.
+    </p>
+</aside>
+{% endif %}

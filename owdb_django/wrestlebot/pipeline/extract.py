@@ -9,6 +9,7 @@ returns the same WrestlerFields.
 from __future__ import annotations
 
 import logging
+import urllib.parse
 from typing import Optional
 
 from django.utils import timezone
@@ -36,6 +37,16 @@ def _adapter_for_source(source: str) -> Optional[SourceAdapter]:
         return WikidataAdapter()
     # Future: profightdb, tmdb, etc.
     return None
+
+
+def _wikipedia_article_title(url: str) -> Optional[str]:
+    """Recover the Wikipedia article title from a /wiki/<title> URL."""
+    if not url or "/wiki/" not in url:
+        return None
+    encoded = url.split("/wiki/", 1)[1].split("#", 1)[0].split("?", 1)[0]
+    if not encoded:
+        return None
+    return urllib.parse.unquote(encoded).replace("_", " ")
 
 
 def extract_wrestler(fetch: SourceFetch) -> Optional[WrestlerFields]:
@@ -106,7 +117,10 @@ def _run_extract(fetch: SourceFetch, entity_type: str):
 
     try:
         if entity_type == "wrestler":
-            fields = adapter.extract_wrestler(fetch.raw_content)
+            fields = adapter.extract_wrestler(
+                fetch.raw_content,
+                article_title=_wikipedia_article_title(fetch.url),
+            )
         elif entity_type == "event":
             fields = adapter.extract_event(fetch.raw_content)
         elif entity_type == "venue":

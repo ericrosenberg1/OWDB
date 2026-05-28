@@ -17,7 +17,6 @@ directly is a bug — accuracy_contract.audit_persistence() catches it.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 

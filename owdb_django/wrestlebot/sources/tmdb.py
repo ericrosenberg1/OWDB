@@ -144,6 +144,7 @@ def get_movie_details(tmdb_id: int) -> Optional[dict]:
 
 
 if __name__ == "__main__":  # pragma: no cover
-    import json, sys
+    import json
+    import sys
     q = " ".join(sys.argv[1:]) or "WWE Raw"
     print(json.dumps(search_wrestling(q, limit=3), indent=2, default=str))

@@ -15,7 +15,7 @@ from unittest import mock
 from django.test import TestCase
 
 from owdb_django.owdbapp.models import (
-    ExternalRanking, ExternalRankingEntry, Wrestler,
+    ExternalRankingEntry, Wrestler,
 )
 from owdb_django.wrestlebot.pipeline import pwi
 from owdb_django.wrestlebot.pipeline.pwi import PWIEntry

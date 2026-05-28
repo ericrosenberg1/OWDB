@@ -18,7 +18,6 @@ Later sessions can:
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from django.db import transaction
 from django.utils import timezone
@@ -176,7 +175,6 @@ def resolve_wrestler_mentions_to_wrestlers(wrestler_id: int) -> dict:
     Returns {"resolved": N, "skipped": M}.
     """
     from owdb_django.owdbapp.models import Wrestler
-    from urllib.parse import quote
 
     mentions = EntityMention.objects.filter(
         source_entity_type="wrestler",
@@ -266,7 +264,6 @@ def resolve_all_mentions_to_events() -> dict:
     """Same sweep as wrestlers, but for events."""
     from urllib.parse import unquote as _unquote
     from owdb_django.wrestlebot.models import SourceFetch
-    from owdb_django.owdbapp.models import Event
 
     # Events don't have a wikipedia_url column, but we can recover their
     # canonical title from the Wikipedia SourceFetch.url.

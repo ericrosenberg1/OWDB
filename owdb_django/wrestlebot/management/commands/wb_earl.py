@@ -31,9 +31,6 @@ class Command(BaseCommand):
                             help="Just print the rule score table and exit.")
 
     def handle(self, *args, **options):
-        from owdb_django.wrestlebot.models import (
-            EarlObservation, RuleScore, RuleSuggestion,
-        )
 
         if options["observations"]:
             self._print_observations()

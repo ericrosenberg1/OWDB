@@ -142,7 +142,7 @@ class Command(BaseCommand):
 
             result = persister(fetch.candidate_name, fields, fetch)
             if result is None:
-                self.stdout.write(self.style.WARNING(f"    persist returned None"))
+                self.stdout.write(self.style.WARNING("    persist returned None"))
                 skipped += 1
                 continue
 

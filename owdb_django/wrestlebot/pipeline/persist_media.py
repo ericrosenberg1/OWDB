@@ -23,7 +23,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
 
-from ..models import FieldProvenance, SourceFetch
+from ..models import SourceFetch
 from ..sources.base import (
     ActionFigureFields, BookFields, PodcastFields,
     ThemeSongFields, VideoGameFields,

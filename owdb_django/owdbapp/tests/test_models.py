@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 
 from ..models import (
-    Wrestler, Promotion, Event, Match, Title, Venue,
+    Wrestler, Promotion, Event, Venue,
     UserProfile, APIKey, EmailVerificationToken
 )
 

@@ -27,10 +27,10 @@
                     {% include "partials/linked_from.html" with sections=linked_sections %}
                 {% endwith %}
 
-                <!-- Members Section -->
+                <!-- Members Section — auto-hides entirely when empty. -->
+                {% if members %}
                 <div class="detail-section">
                     <h3>Members</h3>
-                    {% if members %}
                     <div class="member-grid">
                         {% for wrestler in members %}
                         <a href="{% url 'wrestler_detail' wrestler.pk %}" class="member-card">
@@ -47,10 +47,8 @@
                         </a>
                         {% endfor %}
                     </div>
-                    {% else %}
-                    <p class="text-muted">No members listed yet.</p>
-                    {% endif %}
                 </div>
+                {% endif %}
 
                 <!-- Related Events -->
                 {% if events %}
@@ -101,8 +99,10 @@
                             <dd><span class="status-badge active">Active</span></dd>
                             {% endif %}
 
+                            {% if members.count %}
                             <dt>Members</dt>
                             <dd>{{ members.count }}</dd>
+                            {% endif %}
                         </dl>
                     </div>
                 </div>

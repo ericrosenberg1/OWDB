@@ -67,7 +67,7 @@ class Command(BaseCommand):
 
     def _backfill_events(self, *, limit: int, dry: bool) -> int:
         from owdb_django.owdbapp.models import Event
-        from owdb_django.wrestlebot.models import FieldProvenance, SourceFetch
+        from owdb_django.wrestlebot.models import FieldProvenance
         from owdb_django.wrestlebot.pipeline import accuracy_contract
         from owdb_django.wrestlebot.pipeline._provenance import bulk_synthetic_provenance
 

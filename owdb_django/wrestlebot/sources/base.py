@@ -16,8 +16,7 @@ audit. This is the structural backbone of the accuracy-first guarantee.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from datetime import date
+from dataclasses import dataclass
 from typing import Optional
 
 
@@ -59,6 +58,13 @@ class WrestlerFields:
     name: Optional[FieldSnippet] = None
     real_name: Optional[FieldSnippet] = None
     aliases: Optional[FieldSnippet] = None
+    # The wrestler's best-known display name, drawn from the article's lede
+    # ("better known by his ring name X") or by stripping a Wikipedia
+    # disambig suffix ("Rikishi (wrestler)" → "Rikishi"). The persist
+    # layer uses this in place of the article title for `Wrestler.name`
+    # when it differs from the title. None means the article title is
+    # already the best display name.
+    best_known_as: Optional[FieldSnippet] = None
     birth_date: Optional[FieldSnippet] = None
     death_date: Optional[FieldSnippet] = None
     debut_year: Optional[FieldSnippet] = None
@@ -76,7 +82,8 @@ class WrestlerFields:
         """Return {field_name: FieldSnippet} for all set fields."""
         out: dict[str, FieldSnippet] = {}
         for attr in (
-            "name", "real_name", "aliases", "birth_date", "death_date",
+            "name", "real_name", "aliases", "best_known_as",
+            "birth_date", "death_date",
             "debut_year", "retirement_year", "nationality", "hometown",
             "height", "weight", "finishers", "signature_moves", "trained_by",
             "roles",
@@ -362,12 +369,22 @@ class SourceAdapter(ABC):
         """Fetch a wrestler's page. Returns None if not found / not allowed."""
 
     @abstractmethod
-    def extract_wrestler(self, raw_content: str) -> Optional[WrestlerFields]:
+    def extract_wrestler(
+        self,
+        raw_content: str,
+        article_title: Optional[str] = None,
+    ) -> Optional[WrestlerFields]:
         """
         Parse raw fetched content into a WrestlerFields struct.
 
         Pure function. Should never do I/O. Should return None if the content
         is not a valid wrestler page (e.g., disambiguation, redirect, error).
+
+        `article_title` (optional) is the canonical source-side title of the
+        page (Wikipedia article title, Cagematch profile name, etc.). Adapters
+        may use it to compute fields whose meaning depends on what was queried
+        — e.g. `best_known_as`, which only makes sense relative to the article
+        title we'd otherwise queue. None means "skip those fields."
         """
 
     # Optional: subclasses may implement the same fetch/extract pair for

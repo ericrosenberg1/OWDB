@@ -1,0 +1,87 @@
+# NUC-targeted docker-compose override.
+#
+# Use:
+#   docker compose -f docker-compose.yml -f docker-compose.nuc.yml up -d --build
+#
+# Diffs from the base compose:
+#   * Strips `db` + `celery` + `redis` services for the first cut. SQLite
+#     holds the 346-wrestler corpus; the public site reads from it. Agents
+#     (JR/Al/Earl) stay on the Mac for now — they don't need to run on
+#     the public host. Adds Postgres/Celery back in v2 of this deploy.
+#   * Removes the host port mapping `8000:8000` on `web` — the NUC already
+#     has a docker container on :8000 (something else). Public access
+#     comes via the cloudflared tunnel on the docker network only.
+#   * SQLite lives on a host bind mount at ./data/db.sqlite3 so it survives
+#     `docker compose down` and can be backed up by rsync.
+#   * Adds `cloudflared` running the wrestlingdb tunnel.
+
+services:
+  # Disable the Postgres + Redis + Celery services from the base compose.
+  # docker-compose supports `profiles` for opt-in services, but the simpler
+  # path here is to override their image with the no-op `tianon/true` and
+  # let them exit immediately. Even cleaner — set `deploy.replicas: 0`,
+  # which `docker compose` honors as "don't start this service".
+  db:
+    deploy:
+      replicas: 0
+  redis:
+    deploy:
+      replicas: 0
+  celery:
+    deploy:
+      replicas: 0
+
+  web:
+    # Reset the env block to the NUC subset — SQLite, no Postgres, no Redis.
+    # `env_file: .env` is inherited from base. We override only the values
+    # that change.
+    environment:
+      APP_ENV: production
+      DB_ENGINE: sqlite
+      DEBUG: "0"
+      ALLOWED_HOSTS: wrestlingdb.org,www.wrestlingdb.org
+    # No public port — only the docker network reaches us. cloudflared
+    # service below talks to `http://web:8000` by container name.
+    ports: !reset []
+    # Drop the depends_on on db + redis since we just neutralised them.
+    depends_on: !reset []
+    # SQLite + provenance audit DB lives on a host bind mount so it
+    # survives rebuilds and can be rsync'd in/out for backups.
+    volumes:
+      - ./data:/app/data
+      - ./data/db.sqlite3:/app/db.sqlite3
+      - static_files:/app/static_collected
+    # Override the base command: skip setup_celery_schedule (no celery),
+    # run migrations + collectstatic + gunicorn.
+    # NOTE: `|` (literal scalar) keeps newlines + indentation intact so
+    # the gunicorn invocation stays on a single shell line. `>` folded
+    # incorrectly when gunicorn flags wrapped to a second indented line.
+    command:
+      - sh
+      - -c
+      - |
+        echo 'Running migrations…'
+        python manage.py migrate --noinput
+        echo 'Collecting static files…'
+        python manage.py collectstatic --noinput --clear
+        echo 'Starting Gunicorn…'
+        exec gunicorn --bind 0.0.0.0:8000 --workers 3 --threads 2 --worker-class gthread --access-logfile - --error-logfile - --timeout 60 owdb_django.wsgi:application
+
+  # ---------------------------------------------------------------------------
+  # Cloudflared — terminates the tunnel; proxies to `web` on the docker net.
+  # ---------------------------------------------------------------------------
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    # The tunnel's credentials JSON lives at /etc/cloudflared/<uuid>.json
+    # and the config at /etc/cloudflared/config.yml. cert.pem is bundled
+    # too — newer cloudflared images look for it even when credentials-file
+    # is set in config.yml. TUNNEL_ORIGIN_CERT points at it explicitly so
+    # the default-path search doesn't fail.
+    environment:
+      TUNNEL_ORIGIN_CERT: /etc/cloudflared/cert.pem
+    volumes:
+      - ./cloudflared:/etc/cloudflared:ro
+    command: tunnel --config /etc/cloudflared/config.yml run wrestlingdb
+    depends_on:
+      - web

@@ -33,7 +33,6 @@ from owdb_django.wrestlebot.pipeline.bio import (
     generate_and_verify_for_promotion,
     generate_and_verify_for_venue,
     generate_and_verify_with_retry,
-    generate_bio_for_wrestler,
 )
 from owdb_django.wrestlebot.pipeline.verify import verify_bio
 

@@ -112,7 +112,7 @@ class EventModelTest(TestCase):
             venue=self.venue,
             date=timezone.now().date()
         )
-        self.assertEqual(str(event), "WrestleMania 40")
+        self.assertEqual(str(event), f"WrestleMania 40 ({timezone.now().year})")
 
 
 class UserProfileModelTest(TestCase):
@@ -132,7 +132,7 @@ class UserProfileModelTest(TestCase):
             email_verified=False,
             can_contribute=False
         )
-        self.assertEqual(str(profile), "testuser's profile")
+        self.assertEqual(str(profile), "Profile for testuser")
         self.assertFalse(profile.email_verified)
 
 

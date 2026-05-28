@@ -131,6 +131,9 @@ owdb_django/owdbapp/wrestlingdb.code-workspace
 # =============================================================================
 *.md
 !README.md
+!SENTRY.md
+!.github/**
+!CLAUDE.md
 
 # =============================================================================
 # Secrets and deployment-specific config (never commit)

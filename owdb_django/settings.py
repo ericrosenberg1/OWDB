@@ -658,3 +658,27 @@ WRESTLEBOT = {
     # Pause between operations (milliseconds)
     'PAUSE_BETWEEN_OPERATIONS_MS': 500,
 }
+
+
+# =============================================================================
+# SENTRY — error + performance monitoring
+# =============================================================================
+try:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=os.getenv(
+            'SENTRY_DSN',
+            'https://3527ae5df926c7d32962395ce6dbb143@o4507525754060800.ingest.us.sentry.io/4511429590056960',
+        ),
+        environment=APP_ENV,
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=float(os.getenv('SENTRY_TRACES_SAMPLE_RATE', '0.2')),
+        profiles_sample_rate=float(os.getenv('SENTRY_PROFILES_SAMPLE_RATE', '0.2')),
+        send_default_pii=False,
+        release=os.getenv('SENTRY_RELEASE'),
+    )
+except ImportError:
+    # sentry-sdk not installed — silently skip
+    pass

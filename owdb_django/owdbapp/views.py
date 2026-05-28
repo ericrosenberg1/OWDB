@@ -1108,3 +1108,7 @@ class Hot100HistoryView(ListView):
         return Hot100Ranking.objects.filter(is_published=True).order_by('-year', '-month')
 
 
+# NOTE: A WrestleBot health-check view from origin/main was dropped during
+# the merge — it referenced the legacy in-app `owdbapp.wrestlebot` module
+# that this PR replaces with the standalone `owdb_django.wrestlebot` app.
+# A re-implementation against the new wrestlebot can land as a follow-up.

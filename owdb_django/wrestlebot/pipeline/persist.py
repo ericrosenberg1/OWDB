@@ -103,11 +103,21 @@ def persist_wrestler(
     # Late import to avoid Django app-loading issues.
     from owdb_django.owdbapp.models import Wrestler
 
-    # Best name for the entity: prefer extracted name field, fall back to candidate name.
-    name_snip = fields.name
-    canonical_name = (
-        str(name_snip.value).strip() if name_snip is not None else candidate_name.strip()
-    )
+    # Best name for the entity. Priority order:
+    #   1. `best_known_as` (when the Wikipedia adapter detected a "better
+    #      known as X" phrase in the article's lede, or stripped a disambig
+    #      suffix). This is the display name fans actually use — e.g.
+    #      "Mr. Perfect" rather than the article title "Curt Hennig".
+    #   2. The infobox-extracted `name` field.
+    #   3. The original candidate name that was queued for fetching.
+    used_best_known = False
+    if fields.best_known_as is not None:
+        canonical_name = str(fields.best_known_as.value).strip()
+        used_best_known = True
+    elif fields.name is not None:
+        canonical_name = str(fields.name.value).strip()
+    else:
+        canonical_name = candidate_name.strip()
     if not canonical_name:
         return None
 
@@ -150,17 +160,28 @@ def persist_wrestler(
 
         # Always record FieldProvenance for `name` so the wrestler can
         # pass the accuracy contract (codex round-2 audit: contract was
-        # checking name, persist never recorded it).
+        # checking name, persist never recorded it). When best_known_as
+        # drove the canonical_name choice, attach the lede snippet that
+        # supports it as evidence — much stronger than the degenerate
+        # "snippet = the name itself" fallback we use otherwise.
         existing_name_prov = FieldProvenance.objects.filter(
             entity_type="wrestler", entity_id=wrestler.id, field_name="name",
         ).exists()
         if not existing_name_prov:
+            if used_best_known and fields.best_known_as is not None:
+                name_snippet = (
+                    getattr(fields.best_known_as, "snippet", "") or wrestler.name
+                )
+                name_confidence = fields.best_known_as.confidence
+            else:
+                name_snippet = wrestler.name
+                name_confidence = 95  # name from a Wikipedia article title
             record_provenance(
                 entity_type="wrestler", entity_id=wrestler.id,
                 field_name="name", value=wrestler.name,
                 source_fetch=source_fetch,
-                snippet=wrestler.name,
-                confidence=95,  # 95 — name from a Wikipedia article title
+                snippet=name_snippet,
+                confidence=name_confidence,
             )
             provenance_rows += 1
 

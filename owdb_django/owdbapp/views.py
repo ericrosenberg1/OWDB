@@ -1,13 +1,12 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST, require_http_methods
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.decorators.http import require_http_methods
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.views.generic import ListView, DetailView, TemplateView
-from django.db.models import Q, Count
+from django.db.models import Q
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
@@ -32,7 +31,6 @@ from .models import (
     UserProfile,
     EmailVerificationToken,
     Hot100Ranking,
-    Hot100Entry,
 )
 
 
@@ -758,7 +756,7 @@ And that's the bottom line, 'cause OWDB said so!
                     fail_silently=False,
                 )
                 messages.success(request, 'Account created! Please check your email to verify your account.')
-            except Exception as e:
+            except Exception:
                 messages.warning(request, 'Account created, but we could not send verification email. Please contact support.')
 
             # Log user in but they won't be able to contribute until verified
@@ -856,7 +854,7 @@ And that's the bottom line, 'cause OWDB said so!
             fail_silently=False,
         )
         messages.success(request, 'Verification email sent! Please check your inbox.')
-    except Exception as e:
+    except Exception:
         messages.error(request, 'Failed to send verification email. Please try again later.')
 
     return redirect('verification_pending')
@@ -1014,7 +1012,6 @@ class Hot100HistoryView(ListView):
 # WrestleBot Health Check
 # =============================================================================
 
-from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 
 
@@ -1033,7 +1030,6 @@ def wrestlebot_health(request):
     Accessible at: /wrestlebot/health/
     """
     from .wrestlebot import get_wrestlebot
-    from .wrestlebot.models import WrestleBotStats, WrestleBotActivity
 
     try:
         bot = get_wrestlebot()

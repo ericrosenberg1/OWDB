@@ -41,7 +41,7 @@ class Command(BaseCommand):
         total_created += created
         total_linked += linked
 
-        self.stdout.write(self.style.SUCCESS(f'\n=== COMPLETE ==='))
+        self.stdout.write(self.style.SUCCESS('\n=== COMPLETE ==='))
         self.stdout.write(f'Books created: {total_created}')
         self.stdout.write(f'Wrestler links: {total_linked}')
         self.stdout.write(f'Total books in DB: {Book.objects.count()}')

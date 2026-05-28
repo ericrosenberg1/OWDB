@@ -8,8 +8,7 @@ Usage:
     python manage.py cleanup_data --dry-run
 """
 from django.core.management.base import BaseCommand
-from django.db.models import Q
-from owdb_django.owdbapp.models import Wrestler, Promotion, Title, Event, Match, Venue, Stable
+from owdb_django.owdbapp.models import Wrestler, Promotion
 
 
 class Command(BaseCommand):
@@ -43,7 +42,7 @@ class Command(BaseCommand):
         total_deleted += deleted
         total_fixed += fixed
 
-        self.stdout.write(self.style.SUCCESS(f'\n=== CLEANUP COMPLETE ==='))
+        self.stdout.write(self.style.SUCCESS('\n=== CLEANUP COMPLETE ==='))
         self.stdout.write(f'Total entries deleted: {total_deleted}')
         self.stdout.write(f'Total entries fixed: {total_fixed}')
 

@@ -30,3 +30,4 @@ requests>=2.32
 beautifulsoup4>=4.13
 lxml>=5.3
 feedparser>=6.0  # RSS feed parsing for news sources
+sentry-sdk[django]>=2.18

@@ -11,7 +11,7 @@ Usage:
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.utils.text import slugify
-from owdb_django.owdbapp.models import Wrestler, Promotion, Stable, Title, Event, Match
+from owdb_django.owdbapp.models import Wrestler
 
 
 class Command(BaseCommand):
@@ -367,7 +367,7 @@ class Command(BaseCommand):
         if batch == 0 or batch == 167:
             total_updated += self.enrich_misc_entries_batch_2()
 
-        self.stdout.write(self.style.SUCCESS(f'\n=== ENRICHMENT COMPLETE ==='))
+        self.stdout.write(self.style.SUCCESS('\n=== ENRICHMENT COMPLETE ==='))
         self.stdout.write(f'Total wrestlers updated: {total_updated}')
         self.stdout.write(f'Total wrestlers in DB: {Wrestler.objects.count()}')
 

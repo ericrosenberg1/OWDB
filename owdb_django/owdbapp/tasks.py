@@ -4,7 +4,6 @@ from django.core.cache import cache
 from django.db.models import Count
 
 import logging
-import random
 
 logger = logging.getLogger(__name__)
 
@@ -712,7 +711,6 @@ def fetch_wrestler_images(self, batch_size: int = 20, refresh_old: bool = True):
         from .models import Wrestler
         from .scrapers import WikimediaCommonsClient
         from .services import get_image_cache_service
-        from django.db.models import Q
         from django.utils import timezone
         from datetime import timedelta
 
@@ -1154,8 +1152,7 @@ def generate_hot100_ranking(self, year: int = None, month: int = None, publish: 
         publish: Whether to publish the ranking immediately
     """
     from django.utils import timezone
-    from datetime import date
-    from .models import Hot100Calculator, Hot100Ranking
+    from .models import Hot100Calculator
 
     try:
         # Default to previous month
@@ -1596,7 +1593,6 @@ def backfill_show_episodes(self, show_id: int, year: int = None):
         show_id: ID of the TVShow to backfill
         year: Optional specific year to backfill (all years if None)
     """
-    from datetime import date
 
     from .models import TVShow
     from .scrapers.tv_episodes import TVEpisodeScraper

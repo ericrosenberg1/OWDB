@@ -8,16 +8,13 @@ Usage:
     python manage.py import_podcast_rss --match-guests    # Try to match guests to wrestlers
 """
 
-import re
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from email.utils import parsedate_to_datetime
 from urllib.request import urlopen, Request
-from urllib.error import URLError
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from django.utils.text import slugify
 
 from owdb_django.owdbapp.models import Podcast, PodcastEpisode, Wrestler
 

@@ -8,7 +8,7 @@ Usage:
 """
 from django.core.management.base import BaseCommand
 from owdb_django.owdbapp.models import (
-    Wrestler, Promotion, Title, Stable
+    Wrestler, Stable
 )
 
 

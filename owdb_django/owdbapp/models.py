@@ -681,7 +681,6 @@ class Wrestler(ImageMixin, TimeStampedModel):
 
     def get_video_games(self):
         """Get video games this wrestler appears in (via promotions)."""
-        from django.db.models import Q
         # Get promotions this wrestler worked for
         promo_ids = self.matches.values_list('event__promotion_id', flat=True).distinct()
         return VideoGame.objects.filter(promotions__in=promo_ids).distinct().order_by('-release_year')
@@ -783,7 +782,6 @@ class Wrestler(ImageMixin, TimeStampedModel):
         3. Recently created (fresher data sources)
         """
         from django.db.models import Case, When, Value, IntegerField, Q
-        from django.db.models.functions import Coalesce
 
         # Prioritize records that have Wikipedia URLs but missing data
         return cls.objects.annotate(
@@ -1377,13 +1375,17 @@ class EmailVerificationToken(TimeStampedModel):
 
     @classmethod
     def generate_token(cls):
-        """Generate a secure verification token."""
-        return secrets.token_urlsafe(32)
+        """Generate a secure verification token (64 hex chars = 32 bytes)."""
+        return secrets.token_hex(32)
 
     @property
     def is_valid(self):
         """Check if the token is still valid (not expired and not used)."""
         return not self.used and self.expires_at > timezone.now()
+
+    def is_expired(self):
+        """Check if the token has passed its expiry time."""
+        return self.expires_at <= timezone.now()
 
 
 class APIKey(TimeStampedModel):
@@ -1410,8 +1412,17 @@ class APIKey(TimeStampedModel):
 
     @classmethod
     def generate_key(cls):
-        """Generate a secure API key."""
-        return secrets.token_urlsafe(32)
+        """Generate a secure API key (40 hex chars = 20 bytes)."""
+        return secrets.token_hex(20)
+
+    def check_rate_limit(self):
+        """Return True if this key is within its daily request limit.
+
+        Free tier: 1000 requests/day. Paid tier: unlimited.
+        """
+        if self.is_paid:
+            return True
+        return self.requests_today < 1000
 
     def reset_daily_count(self):
         """Reset the daily request count."""
@@ -1580,8 +1591,7 @@ class Hot100Calculator:
         Returns list of dicts with wrestler_id and score components.
         """
         from datetime import date
-        from django.db.models import Count, Q, Sum, Avg, F
-        from django.db.models.functions import Coalesce
+        from django.db.models import Count, Q
 
         # Get date range for this month
         start_date = date(self.year, self.month, 1)
@@ -1728,7 +1738,6 @@ class Hot100Calculator:
         if not self._previous_ranking:
             return 0
         # Opponents who were in last month's Hot 100
-        from django.db.models import Avg
         opponent_ranks = Hot100Entry.objects.filter(
             ranking=self._previous_ranking,
             wrestler__matches__wrestlers=wrestler

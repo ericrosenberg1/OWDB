@@ -6,10 +6,9 @@ Improves existing database entries by adding missing data from external sources.
 
 import logging
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
-from django.db.models import Count, Q
-from django.utils import timezone
+from django.db.models import Q
 
 from .scoring import CompletenessScorer, ScoreBreakdown
 

@@ -131,7 +131,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Hulk Hogan', 'King Kong Bundy'], 'winner': 'Hulk Hogan', 'title': 'WWF Championship', 'match_type': 'Steel Cage Match'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania 2')
+            self.stdout.write('  + WrestleMania 2')
             events_added += 1
 
         # WrestleMania IV (1988)
@@ -148,7 +148,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Demolition', 'Strike Force'], 'winner': 'Demolition', 'title': 'WWF Tag Team Championship', 'match_type': 'Tag Title Match'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania IV')
+            self.stdout.write('  + WrestleMania IV')
             events_added += 1
 
         # WrestleMania V (1989)
@@ -165,7 +165,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Demolition', 'Powers of Pain'], 'winner': 'Demolition', 'title': 'WWF Tag Team Championship', 'match_type': 'Tag Title Match'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania V')
+            self.stdout.write('  + WrestleMania V')
             events_added += 1
 
         # WrestleMania VII (1991)
@@ -182,7 +182,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Undertaker', 'Jimmy Snuka'], 'winner': 'Undertaker', 'match_type': 'Singles Match'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania VII')
+            self.stdout.write('  + WrestleMania VII')
             events_added += 1
 
         # WrestleMania VIII (1992)
@@ -200,7 +200,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Undertaker', 'Jake Roberts'], 'winner': 'Undertaker', 'match_type': 'Singles Match'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania VIII')
+            self.stdout.write('  + WrestleMania VIII')
             events_added += 1
 
         # WrestleMania IX (1993)
@@ -218,7 +218,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Undertaker', 'Giant Gonzalez'], 'winner': 'Undertaker', 'result': 'Disqualification', 'match_type': 'Singles Match'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania IX')
+            self.stdout.write('  + WrestleMania IX')
             events_added += 1
 
         # WrestleMania XI (1995)
@@ -236,7 +236,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Undertaker', 'King Kong Bundy'], 'winner': 'Undertaker', 'match_type': 'Singles Match'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania XI')
+            self.stdout.write('  + WrestleMania XI')
             events_added += 1
 
         # WrestleMania XII (1996)
@@ -253,7 +253,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Undertaker', 'Diesel'], 'winner': 'Undertaker', 'match_type': 'Singles Match'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania XII')
+            self.stdout.write('  + WrestleMania XII')
             events_added += 1
 
         # WrestleMania XIII (1997)
@@ -270,7 +270,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Triple H', 'Goldust'], 'winner': 'Triple H', 'title': 'WWF Intercontinental Championship', 'match_type': 'IC Title Match'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania 13')
+            self.stdout.write('  + WrestleMania 13')
             events_added += 1
 
         # WrestleMania XIV (1998)
@@ -288,7 +288,7 @@ class Command(BaseCommand):
             {'wrestlers': ['The Rock', 'Ken Shamrock'], 'winner': 'Ken Shamrock', 'result': 'Disqualification', 'title': 'WWF Intercontinental Championship', 'match_type': 'IC Title Match'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania XIV')
+            self.stdout.write('  + WrestleMania XIV')
             events_added += 1
 
         # WrestleMania XV (1999)
@@ -306,7 +306,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Undertaker', 'Big Boss Man'], 'winner': 'Undertaker', 'match_type': 'Hell in a Cell'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania XV')
+            self.stdout.write('  + WrestleMania XV')
             events_added += 1
 
         # WrestleMania 2000 (XVI)
@@ -324,7 +324,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Kat', 'Terri'], 'winner': 'Kat', 'match_type': 'Catfight'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania 2000')
+            self.stdout.write('  + WrestleMania 2000')
             events_added += 1
 
         # WrestleMania X8 (2002)
@@ -343,7 +343,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Edge', 'Booker T'], 'winner': 'Edge', 'title': 'WWF Intercontinental Championship', 'match_type': 'IC Title Match'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania X8')
+            self.stdout.write('  + WrestleMania X8')
             events_added += 1
 
         # WrestleMania XX (2004)
@@ -362,7 +362,7 @@ class Command(BaseCommand):
             {'wrestlers': ['John Cena', 'Big Show'], 'winner': 'John Cena', 'title': 'United States Championship', 'match_type': 'US Title Match'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania XX')
+            self.stdout.write('  + WrestleMania XX')
             events_added += 1
 
         # WrestleMania 21 (2005)
@@ -381,7 +381,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Edge', 'Chris Benoit', 'Chris Jericho', 'Christian', 'Kane', 'Shelton Benjamin'], 'winner': 'Edge', 'match_type': 'Money in the Bank Ladder Match', 'about': 'First ever Money in the Bank Ladder Match.'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania 21')
+            self.stdout.write('  + WrestleMania 21')
             events_added += 1
 
         # WrestleMania 24 (2008)
@@ -399,7 +399,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Big Show', 'Floyd Mayweather'], 'winner': 'Floyd Mayweather', 'match_type': 'No DQ Match'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania XXIV')
+            self.stdout.write('  + WrestleMania XXIV')
             events_added += 1
 
         # WrestleMania 26 (2010)
@@ -418,7 +418,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Triple H', 'Sheamus'], 'winner': 'Triple H', 'match_type': 'Singles Match'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania XXVI')
+            self.stdout.write('  + WrestleMania XXVI')
             events_added += 1
 
         # WrestleMania 28 (2012)
@@ -437,7 +437,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Team Johnny', 'Team Teddy'], 'winner': 'Team Johnny', 'match_type': '12-Man Tag Team Match'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania XXVIII')
+            self.stdout.write('  + WrestleMania XXVIII')
             events_added += 1
 
         # WrestleMania 29 (2013)
@@ -455,7 +455,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Alberto Del Rio', 'Jack Swagger'], 'winner': 'Alberto Del Rio', 'title': 'World Heavyweight Championship', 'match_type': 'World Title Match'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania 29')
+            self.stdout.write('  + WrestleMania 29')
             events_added += 1
 
         # WrestleMania 31 (2015)
@@ -474,7 +474,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Daniel Bryan', 'Dolph Ziggler', 'Dean Ambrose', 'R-Truth', 'Stardust', 'Luke Harper', 'Bad News Barrett'], 'winner': 'Daniel Bryan', 'title': 'Intercontinental Championship', 'match_type': 'Ladder Match'},
         ])
         if c:
-            self.stdout.write(f'  + WrestleMania 31')
+            self.stdout.write('  + WrestleMania 31')
             events_added += 1
 
         # SummerSlam 1998
@@ -492,7 +492,7 @@ class Command(BaseCommand):
             {'wrestlers': ['X-Pac', 'Jeff Jarrett'], 'winner': 'X-Pac', 'match_type': 'Hair vs Hair Match'},
         ])
         if c:
-            self.stdout.write(f'  + SummerSlam 1998')
+            self.stdout.write('  + SummerSlam 1998')
             events_added += 1
 
         # SummerSlam 2002
@@ -510,7 +510,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Undertaker', 'Test'], 'winner': 'Undertaker', 'match_type': 'Singles Match'},
         ])
         if c:
-            self.stdout.write(f'  + SummerSlam 2002')
+            self.stdout.write('  + SummerSlam 2002')
             events_added += 1
 
         # Royal Rumble 2000
@@ -528,7 +528,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Chris Jericho', 'Chyna', 'Hardcore Holly'], 'winner': 'Chris Jericho', 'title': 'WWF Intercontinental Championship', 'match_type': 'Triple Threat'},
         ])
         if c:
-            self.stdout.write(f'  + Royal Rumble 2000')
+            self.stdout.write('  + Royal Rumble 2000')
             events_added += 1
 
         # Royal Rumble 2001
@@ -545,7 +545,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Chris Benoit', 'Chris Jericho'], 'winner': 'Chris Benoit', 'title': 'WWF Intercontinental Championship', 'match_type': 'Ladder Match'},
         ])
         if c:
-            self.stdout.write(f'  + Royal Rumble 2001')
+            self.stdout.write('  + Royal Rumble 2001')
             events_added += 1
 
         self.stdout.write(f'\nAdded {events_added} more WWE events')
@@ -568,7 +568,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Road Warriors', 'Ivan Koloff', 'Krusher Khruschev'], 'winner': 'Road Warriors', 'match_type': 'Tag Team Match'},
         ])
         if c:
-            self.stdout.write(f'  + Starrcade 1985')
+            self.stdout.write('  + Starrcade 1985')
             events_added += 1
 
         # Starrcade 1988
@@ -584,7 +584,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Road Warriors', 'Varsity Club'], 'winner': 'Road Warriors', 'match_type': 'Tag Team Match'},
         ])
         if c:
-            self.stdout.write(f'  + Starrcade 1988')
+            self.stdout.write('  + Starrcade 1988')
             events_added += 1
 
         # Great American Bash 1989
@@ -600,7 +600,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Lex Luger', 'Ricky Steamboat'], 'winner': 'Lex Luger', 'title': 'NWA United States Championship', 'match_type': 'US Title Match'},
         ])
         if c:
-            self.stdout.write(f'  + Great American Bash 1989')
+            self.stdout.write('  + Great American Bash 1989')
             events_added += 1
 
         # SuperBrawl 1991
@@ -616,7 +616,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Sting', 'Nikita Koloff'], 'winner': 'Sting', 'match_type': 'Singles Match'},
         ])
         if c:
-            self.stdout.write(f'  + SuperBrawl 1991')
+            self.stdout.write('  + SuperBrawl 1991')
             events_added += 1
 
         # Starrcade 1996
@@ -633,7 +633,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Eddie Guerrero', 'Diamond Dallas Page'], 'winner': 'Eddie Guerrero', 'title': 'WCW United States Championship', 'match_type': 'US Title Match'},
         ])
         if c:
-            self.stdout.write(f'  + Starrcade 1996')
+            self.stdout.write('  + Starrcade 1996')
             events_added += 1
 
         # Spring Stampede 1999
@@ -650,7 +650,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Chris Benoit', 'Dean Malenko'], 'winner': 'Chris Benoit', 'match_type': 'Singles Match'},
         ])
         if c:
-            self.stdout.write(f'  + Spring Stampede 1999')
+            self.stdout.write('  + Spring Stampede 1999')
             events_added += 1
 
         self.stdout.write(f'\nAdded {events_added} more WCW events')
@@ -674,7 +674,7 @@ class Command(BaseCommand):
             {'wrestlers': ['PAC', 'Kenny Omega'], 'winner': 'PAC', 'match_type': 'Singles Match'},
         ])
         if c:
-            self.stdout.write(f'  + All Out 2019')
+            self.stdout.write('  + All Out 2019')
             events_added += 1
 
         # Full Gear 2019
@@ -692,7 +692,7 @@ class Command(BaseCommand):
             {'wrestlers': ['SCU', 'Lucha Brothers', 'Private Party'], 'winner': 'SCU', 'title': 'AEW World Tag Team Championship', 'match_type': 'Triple Threat'},
         ])
         if c:
-            self.stdout.write(f'  + Full Gear 2019')
+            self.stdout.write('  + Full Gear 2019')
             events_added += 1
 
         # Revolution 2020
@@ -710,7 +710,7 @@ class Command(BaseCommand):
             {'wrestlers': ['PAC', 'Orange Cassidy'], 'winner': 'PAC', 'match_type': 'Singles Match'},
         ])
         if c:
-            self.stdout.write(f'  + Revolution 2020')
+            self.stdout.write('  + Revolution 2020')
             events_added += 1
 
         # Full Gear 2021
@@ -729,7 +729,7 @@ class Command(BaseCommand):
             {'wrestlers': ['Lucha Brothers', 'FTR'], 'winner': 'Lucha Brothers', 'title': 'AEW World Tag Team Championship', 'match_type': 'Tag Team Championship'},
         ])
         if c:
-            self.stdout.write(f'  + Full Gear 2021')
+            self.stdout.write('  + Full Gear 2021')
             events_added += 1
 
         self.stdout.write(f'\nAdded {events_added} more AEW events')

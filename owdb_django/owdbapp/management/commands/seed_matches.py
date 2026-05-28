@@ -10,11 +10,9 @@ Usage:
     python manage.py seed_matches --year=1998
 """
 from django.core.management.base import BaseCommand
-from django.utils.text import slugify
-from datetime import date, timedelta
 import random
 from owdb_django.owdbapp.models import (
-    Event, Match, Wrestler, Promotion, Title
+    Event, Match, Wrestler, Title
 )
 
 
@@ -76,7 +74,7 @@ class Command(BaseCommand):
             if processed_events % 500 == 0:
                 self.stdout.write(f'  Processed {processed_events}/{total_events} events, {created_matches} matches...')
 
-        self.stdout.write(self.style.SUCCESS(f'\n=== SEEDING COMPLETE ==='))
+        self.stdout.write(self.style.SUCCESS('\n=== SEEDING COMPLETE ==='))
         self.stdout.write(f'Events processed: {processed_events}')
         self.stdout.write(f'Matches created: {created_matches}')
         self.stdout.write(f'Total matches in DB: {Match.objects.count()}')

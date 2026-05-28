@@ -7,9 +7,9 @@ when rate limits are hit, ensuring continuous data collection without delays.
 
 import logging
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 from enum import Enum
 
 from django.core.cache import cache

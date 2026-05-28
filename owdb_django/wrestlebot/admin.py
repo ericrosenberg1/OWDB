@@ -8,7 +8,14 @@ from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html
 
-from .models import WrestleBotActivity, WrestleBotConfig, WrestleBotStats
+from .models import (
+    WrestleBotActivity,
+    WrestleBotConfig,
+    WrestleBotStats,
+    SourceFetch,
+    FieldProvenance,
+    GeneratedBio,
+)
 
 
 @admin.register(WrestleBotActivity)
@@ -193,4 +200,73 @@ class WrestleBotStatsAdmin(admin.ModelAdmin):
         return False
 
     def has_change_permission(self, request, obj=None):
+        return False
+
+
+# =============================================================================
+# Accuracy-first v3 provenance admin
+# =============================================================================
+
+
+@admin.register(SourceFetch)
+class SourceFetchAdmin(admin.ModelAdmin):
+    list_display = ["id", "source", "candidate_name", "entity_type", "entity_id",
+                    "http_status", "content_length", "fetched_at", "used_at"]
+    list_filter = ["source", "entity_type", "http_status", "fetched_at"]
+    search_fields = ["candidate_name", "url", "content_hash"]
+    readonly_fields = ["fetched_at", "content_hash", "raw_content", "url",
+                       "source", "entity_type", "entity_id", "candidate_name",
+                       "http_status"]
+    date_hierarchy = "fetched_at"
+    ordering = ["-fetched_at"]
+    list_per_page = 50
+
+    def content_length(self, obj):
+        return f"{len(obj.raw_content):,} bytes"
+    content_length.short_description = "Size"
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(FieldProvenance)
+class FieldProvenanceAdmin(admin.ModelAdmin):
+    list_display = ["id", "entity_type", "entity_id", "field_name",
+                    "value_preview", "source_name", "confidence", "extracted_at"]
+    list_filter = ["entity_type", "field_name", "extracted_at"]
+    search_fields = ["value", "field_name"]
+    readonly_fields = ["entity_type", "entity_id", "field_name", "value",
+                       "source_fetch", "confidence", "extracted_at"]
+    date_hierarchy = "extracted_at"
+    ordering = ["-extracted_at"]
+    list_per_page = 100
+
+    def value_preview(self, obj):
+        v = obj.value
+        return v[:80] + ("..." if len(v) > 80 else "")
+    value_preview.short_description = "Value"
+
+    def source_name(self, obj):
+        return obj.source_fetch.source
+    source_name.short_description = "Source"
+    source_name.admin_order_field = "source_fetch__source"
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(GeneratedBio)
+class GeneratedBioAdmin(admin.ModelAdmin):
+    list_display = ["id", "entity_type", "entity_id", "model", "status",
+                    "claims_total", "claims_verified", "generated_at"]
+    list_filter = ["status", "model", "entity_type", "generated_at"]
+    search_fields = ["text"]
+    readonly_fields = ["entity_type", "entity_id", "text", "model", "generated_at",
+                       "source_fetches", "claims_total", "claims_verified",
+                       "claims_unsupported", "input_tokens", "output_tokens"]
+    date_hierarchy = "generated_at"
+    ordering = ["-generated_at"]
+    list_per_page = 50
+
+    def has_add_permission(self, request):
         return False

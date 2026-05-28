@@ -48,6 +48,12 @@ class Migration(migrations.Migration):
                         'verbose_name_plural': 'WrestleBot Activities',
                         'db_table': 'owdbapp_wrestlebotactivity',
                         'ordering': ['-created_at'],
+                        'indexes': [
+                            models.Index(fields=['action_type', 'created_at'], name='owdbapp_wre_action__e6fdcd_idx'),
+                            models.Index(fields=['entity_type', 'entity_id'], name='owdbapp_wre_entity__d2b355_idx'),
+                            models.Index(fields=['source', 'created_at'], name='owdbapp_wre_source_b45889_idx'),
+                            models.Index(fields=['ai_assisted', 'created_at'], name='owdbapp_wre_ai_assi_fc2db8_idx'),
+                        ],
                     },
                 ),
                 migrations.CreateModel(

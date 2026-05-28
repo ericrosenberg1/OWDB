@@ -15,7 +15,6 @@ We only scrape publicly available factual ratings data.
 import logging
 import re
 from typing import Any, Dict, List, Optional
-from urllib.parse import quote, urljoin
 
 from bs4 import BeautifulSoup
 

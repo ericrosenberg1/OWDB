@@ -16,7 +16,7 @@ from django.core.management.base import BaseCommand
 from django.utils.text import slugify
 from datetime import date
 import random
-from owdb_django.owdbapp.models import Event, Promotion, Venue
+from owdb_django.owdbapp.models import Event, Promotion
 
 
 class Command(BaseCommand):

@@ -11,7 +11,6 @@ Usage:
 """
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
-from django.db.models import Count
 from datetime import date
 from owdb_django.owdbapp.models import (
     Event, Match, Wrestler, Promotion, Title, Venue, Stable

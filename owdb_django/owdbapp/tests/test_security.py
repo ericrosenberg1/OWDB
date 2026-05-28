@@ -102,8 +102,9 @@ class InputValidationTest(TestCase):
         special_chars = "<script>alert('xss')</script>"
         response = self.client.get(reverse('wrestlers'), {'q': special_chars})
         self.assertEqual(response.status_code, 200)
-        # XSS payload should be escaped
-        self.assertNotContains(response, "<script>")
+        # XSS payload should not appear raw in the response
+        # (assertNotContains("<script>") would false-positive on any page JS)
+        self.assertNotContains(response, special_chars)
 
     def test_search_handles_sql_injection_attempt(self):
         """Test that search handles SQL injection attempts safely."""

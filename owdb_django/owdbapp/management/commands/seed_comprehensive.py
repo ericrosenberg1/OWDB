@@ -7,9 +7,8 @@ All data is factual information from public sources.
 """
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
-from datetime import date
 from owdb_django.owdbapp.models import (
-    Wrestler, Promotion, Event, Match, Title, Venue,
+    Wrestler, Promotion, Title, Venue,
     VideoGame, Podcast, Book, Special, Stable
 )
 

@@ -7,8 +7,6 @@ uploads them to R2, and returns CDN URLs for serving.
 
 import hashlib
 import logging
-import mimetypes
-import uuid
 from io import BytesIO
 from typing import Optional, Tuple
 from urllib.parse import urlparse

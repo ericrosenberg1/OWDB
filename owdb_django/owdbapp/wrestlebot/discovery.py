@@ -10,7 +10,6 @@ import time
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from django.db.models import Count, Q
-from django.utils.text import slugify
 
 logger = logging.getLogger(__name__)
 

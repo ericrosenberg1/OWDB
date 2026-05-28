@@ -8,9 +8,9 @@ Usage:
 """
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
-from datetime import date, timedelta
+from datetime import date
 from owdb_django.owdbapp.models import (
-    Wrestler, Promotion, Event, Title, Venue, Stable
+    Wrestler, Promotion, Event, Title, Stable
 )
 
 

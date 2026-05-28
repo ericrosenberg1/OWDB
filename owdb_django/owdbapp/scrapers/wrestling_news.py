@@ -21,7 +21,7 @@ import re
 import feedparser
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
-from urllib.parse import quote, urljoin
+from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 

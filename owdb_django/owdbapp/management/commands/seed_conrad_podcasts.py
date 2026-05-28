@@ -12,7 +12,7 @@ from django.utils.text import slugify
 from datetime import datetime, timedelta, timezone
 import random
 from owdb_django.owdbapp.models import (
-    Podcast, PodcastEpisode, Wrestler, Event, Match, Promotion
+    Podcast, PodcastEpisode, Wrestler, Event, Match
 )
 
 
@@ -150,7 +150,7 @@ class Command(BaseCommand):
                     wrestler = Wrestler.objects.create(
                         name=wrestler_name,
                         slug=slugify(wrestler_name),
-                        about=f"Wrestling personality and podcast host"
+                        about="Wrestling personality and podcast host"
                     )
                 podcast.host_wrestlers.add(wrestler)
 

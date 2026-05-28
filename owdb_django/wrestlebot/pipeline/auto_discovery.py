@@ -60,14 +60,28 @@ def _existing_entity_wiki_titles() -> set[str]:
         if t:
             titles.add(t)
 
-    for w in Wrestler.objects.exclude(wikipedia_url="").exclude(wikipedia_url__isnull=True).only("wikipedia_url"):
+    for w in (
+        Wrestler.objects.exclude(wikipedia_url="")
+        .exclude(wikipedia_url__isnull=True)
+        .only("wikipedia_url")
+    ):
         _add(w.wikipedia_url)
-    for p in Promotion.objects.exclude(wikipedia_url="").exclude(wikipedia_url__isnull=True).only("wikipedia_url"):
+    for p in (
+        Promotion.objects.exclude(wikipedia_url="")
+        .exclude(wikipedia_url__isnull=True)
+        .only("wikipedia_url")
+    ):
         _add(p.wikipedia_url)
-    for v in Venue.objects.exclude(wikipedia_url="").exclude(wikipedia_url__isnull=True).only("wikipedia_url"):
+    for v in (
+        Venue.objects.exclude(wikipedia_url="")
+        .exclude(wikipedia_url__isnull=True)
+        .only("wikipedia_url")
+    ):
         _add(v.wikipedia_url)
     for f in SourceFetch.objects.filter(
-        source="wikipedia", entity_type="event", entity_id__isnull=False,
+        source="wikipedia",
+        entity_type="event",
+        entity_id__isnull=False,
     ).only("url"):
         _add(f.url)
     return titles
@@ -88,8 +102,7 @@ def top_unresolved_mentions(limit: int = 50) -> list[tuple[str, int]]:
 
     # Already-fetched candidate names (string match).
     fetched_names = set(
-        SourceFetch.objects
-        .filter(source="wikipedia")
+        SourceFetch.objects.filter(source="wikipedia")
         .values_list("candidate_name", flat=True)
         .distinct()
     )
@@ -99,7 +112,9 @@ def top_unresolved_mentions(limit: int = 50) -> list[tuple[str, int]]:
     existing_titles = _existing_entity_wiki_titles()
 
     counts = Counter()
-    qs = EntityMention.objects.filter(resolved_entity_id__isnull=True).values_list("wiki_link", flat=True)
+    qs = EntityMention.objects.filter(resolved_entity_id__isnull=True).values_list(
+        "wiki_link", flat=True
+    )
     for link in qs:
         if not link:
             continue
@@ -207,6 +222,7 @@ def auto_discover_step(limit: int = 5) -> AutoDiscoveryStats:
         elif entity_type == "promotion":
             from .extract import extract_promotion
             from .persist_event import persist_promotion
+
             fields = extract_promotion(fetch)
             if fields is None:
                 stats.skipped_extract_failed += 1
@@ -219,6 +235,7 @@ def auto_discover_step(limit: int = 5) -> AutoDiscoveryStats:
     # get resolved to entities they newly match — across all entity types.
     try:
         from .linking import resolve_all_mentions
+
         resolve_all_mentions()
     except Exception as e:
         logger.exception("Post-discovery mention sweep failed: %s", e)

@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class JRCycleStats:
     """One JR cycle's outcome — used by Earl to grade rule effectiveness."""
+
     discovered: int = 0
     fetched: int = 0
     extracted: int = 0
@@ -87,15 +88,18 @@ class JR:
     def discover_missing_trainers(self) -> list[str]:
         """Names of trainers referenced by existing wrestlers but absent from DB."""
         from ..pipeline.linking import link_trainers_sweep
+
         result = link_trainers_sweep()
         return result.get("missing_names", []) or []
 
     def discover_notable_wrestlers(self, limit: int = 20) -> list[str]:
         from ..pipeline.discovery import discover_wrestlers
+
         return discover_wrestlers(per_category_limit=3, total_limit=limit)
 
     def discover_top_unresolved_mentions(self, limit: int = 30) -> list[tuple[str, int]]:
         from ..pipeline.auto_discovery import top_unresolved_mentions
+
         return top_unresolved_mentions(limit=limit)
 
     # ----------------------------------------------------------------- fetch
@@ -108,6 +112,7 @@ class JR:
     ) -> list:
         """Fetch source content for a list of candidate names."""
         from ..pipeline import fetch as fetch_mod
+
         method = {
             "wrestler": fetch_mod.fetch_wrestler_candidates,
             "event": fetch_mod.fetch_event_candidates,
@@ -150,7 +155,8 @@ class JR:
         try:
             if discovery_limit > 0 and fetch_limit > 0:
                 stats.discovered = self._stage_discover_and_fetch(
-                    discovery_limit, fetch_limit,
+                    discovery_limit,
+                    fetch_limit,
                 )
             if extract_limit > 0:
                 stats.extracted = self._stage_extract(extract_limit)
@@ -175,9 +181,9 @@ class JR:
 
     def _stage_discover_and_fetch(self, disc_limit: int, fetch_limit: int) -> int:
         from ..models import SourceFetch
+
         fetched = set(
-            SourceFetch.objects.filter(source="wikipedia")
-            .values_list("candidate_name", flat=True)
+            SourceFetch.objects.filter(source="wikipedia").values_list("candidate_name", flat=True)
         )
         out: list[str] = []
         # Priority 1: missing trainers
@@ -206,8 +212,10 @@ class JR:
     def _stage_extract(self, limit: int) -> int:
         """Process unhandled SourceFetch rows across all entity types."""
         from ..models import SourceFetch
+
         pending = SourceFetch.objects.filter(
-            http_status=200, used_at__isnull=True,
+            http_status=200,
+            used_at__isnull=True,
         ).order_by("fetched_at")[:limit]
         count = 0
         for fetch in pending:
@@ -285,6 +293,7 @@ class JR:
         try:
             # Optional path — Wikidata module may not be present in all builds.
             from .. import tasks
+
             return tasks._stage_crossvalidate(limit)  # type: ignore[attr-defined]
         except Exception as e:
             logger.debug("JR cross-validation step unavailable: %s", e)
@@ -300,19 +309,18 @@ class JR:
         if not client.available:
             logger.info("JR bio stage skipped: no Claude credentials")
             return {
-                "bios_attempted": 0, "bios_verified": 0,
-                "bios_rejected": 0, "bios_permanently_rejected": 0,
+                "bios_attempted": 0,
+                "bios_verified": 0,
+                "bios_rejected": 0,
+                "bios_permanently_rejected": 0,
             }
 
         handled = set(
-            GeneratedBio.objects
-            .filter(entity_type="wrestler",
-                    status__in=["verified", "permanently_rejected"])
-            .values_list("entity_id", flat=True)
+            GeneratedBio.objects.filter(
+                entity_type="wrestler", status__in=["verified", "permanently_rejected"]
+            ).values_list("entity_id", flat=True)
         )
-        targets = (
-            Wrestler.objects.exclude(id__in=handled).order_by("id")[:limit]
-        )
+        targets = Wrestler.objects.exclude(id__in=handled).order_by("id")[:limit]
         attempted = verified = rejected = permanent = 0
         for w in targets:
             attempted += 1
@@ -336,6 +344,7 @@ class JR:
 
     def _stage_auto_discover(self, limit: int) -> dict:
         from ..pipeline.auto_discovery import auto_discover_step
+
         stats = auto_discover_step(limit=limit)
         return {
             "auto_discovered": stats.fetched,

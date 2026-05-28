@@ -70,7 +70,9 @@ class MatchRatingsScraper(BaseScraper):
         return None
 
     @retry_on_failure(max_retries=2)
-    def scrape_profightdb_top_rated(self, year: Optional[int] = None, limit: int = 50) -> List[Dict[str, Any]]:
+    def scrape_profightdb_top_rated(
+        self, year: Optional[int] = None, limit: int = 50
+    ) -> List[Dict[str, Any]]:
         """
         Scrape top-rated matches from ProFightDB.
 
@@ -123,7 +125,11 @@ class MatchRatingsScraper(BaseScraper):
                 for cell in cells[:3]:
                     text = self._clean_text(cell.get_text())
                     # Look for wrestler names (skip dates, ratings, etc)
-                    if text and not re.match(r"^\d+\.?\d*$", text) and not re.match(r"\d{4}-\d{2}-\d{2}", text):
+                    if (
+                        text
+                        and not re.match(r"^\d+\.?\d*$", text)
+                        and not re.match(r"\d{4}-\d{2}-\d{2}", text)
+                    ):
                         # Check if it's a link to a wrestler
                         link = cell.find("a", href=re.compile(r"wrestler|worker"))
                         if link or "vs" in text.lower() or "def" in text.lower():
@@ -134,24 +140,32 @@ class MatchRatingsScraper(BaseScraper):
 
                 # Extract rating (usually in a cell by itself)
                 rating = None
-                rating_cell = row.find("td", class_=re.compile("rating|star")) or \
-                              row.find("td", string=re.compile(r"^\d+\.?\d*$"))
+                rating_cell = row.find("td", class_=re.compile("rating|star")) or row.find(
+                    "td", string=re.compile(r"^\d+\.?\d*$")
+                )
 
                 if rating_cell:
                     rating = self._parse_rating(rating_cell.get_text())
 
                 # Extract date
-                date_cell = row.find("td", string=re.compile(r"\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{4}"))
+                date_cell = row.find(
+                    "td", string=re.compile(r"\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{4}")
+                )
                 date = self._clean_text(date_cell.get_text()) if date_cell else None
 
                 # Extract event name
-                event_cell = row.find("td", class_=re.compile("event")) or \
-                            row.find("a", href=re.compile("event"))
+                event_cell = row.find("td", class_=re.compile("event")) or row.find(
+                    "a", href=re.compile("event")
+                )
                 event = self._clean_text(event_cell.get_text()) if event_cell else None
 
                 match_data = {
                     "source": "profightdb",
-                    "participants": " vs ".join(participants[:2]) if len(participants) >= 2 else participants[0] if participants else None,
+                    "participants": " vs ".join(participants[:2])
+                    if len(participants) >= 2
+                    else participants[0]
+                    if participants
+                    else None,
                     "rating": rating,
                     "date": date,
                     "event": event,
@@ -161,7 +175,9 @@ class MatchRatingsScraper(BaseScraper):
                 # Only add if we have key data
                 if match_data["participants"] and match_data["rating"]:
                     matches.append(match_data)
-                    logger.debug(f"Scraped match: {match_data['participants']} - {match_data['rating']}★")
+                    logger.debug(
+                        f"Scraped match: {match_data['participants']} - {match_data['rating']}★"
+                    )
 
             except Exception as e:
                 logger.warning(f"Failed to parse match row: {e}")
@@ -237,7 +253,9 @@ class MatchRatingsScraper(BaseScraper):
         logger.info(f"Scraped {len(matches)} 5+ star matches from Wikipedia")
         return matches
 
-    def scrape_top_matches(self, years: Optional[List[int]] = None, per_year_limit: int = 20) -> List[Dict[str, Any]]:
+    def scrape_top_matches(
+        self, years: Optional[List[int]] = None, per_year_limit: int = 20
+    ) -> List[Dict[str, Any]]:
         """
         Scrape top-rated matches, optionally filtered by years.
 

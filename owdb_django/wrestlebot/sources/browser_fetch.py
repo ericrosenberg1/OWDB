@@ -76,10 +76,10 @@ def with_browser(
     """
     if not available():
         raise RuntimeError(
-            "Playwright not available. Run `pip install playwright "
-            "&& playwright install chromium`."
+            "Playwright not available. Run `pip install playwright && playwright install chromium`."
         )
     from playwright.sync_api import sync_playwright
+
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True)
         try:
@@ -102,7 +102,7 @@ def fetch_html(
     url: str,
     *,
     wait_selector: Optional[str] = None,
-    wait_state: str = "load",       # 'load' | 'domcontentloaded' | 'networkidle'
+    wait_state: str = "load",  # 'load' | 'domcontentloaded' | 'networkidle'
     timeout_ms: int = 30_000,
     user_agent: str = DEFAULT_UA,
 ) -> Optional[str]:
@@ -169,6 +169,7 @@ def fetch_html_many(urls: list[str], **kw) -> dict[str, Optional[str]]:
 
 if __name__ == "__main__":  # pragma: no cover
     import sys
+
     target = sys.argv[1] if len(sys.argv) > 1 else "https://www.wrestlingdata.com/"
     print(f"available: {available()}")
     html = fetch_html(target, wait_state="networkidle", timeout_ms=20000)

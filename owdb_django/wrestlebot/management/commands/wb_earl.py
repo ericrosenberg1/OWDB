@@ -23,12 +23,17 @@ class Command(BaseCommand):
     help = "Run one Earl audit cycle (verification + self-improving auditor)."
 
     def add_arguments(self, parser):
-        parser.add_argument("--observations", action="store_true",
-                            help="Just print top open observations and exit.")
-        parser.add_argument("--suggestions", action="store_true",
-                            help="Just print pending rule suggestions and exit.")
-        parser.add_argument("--rules", action="store_true",
-                            help="Just print the rule score table and exit.")
+        parser.add_argument(
+            "--observations", action="store_true", help="Just print top open observations and exit."
+        )
+        parser.add_argument(
+            "--suggestions",
+            action="store_true",
+            help="Just print pending rule suggestions and exit.",
+        )
+        parser.add_argument(
+            "--rules", action="store_true", help="Just print the rule score table and exit."
+        )
 
     def handle(self, *args, **options):
 
@@ -43,6 +48,7 @@ class Command(BaseCommand):
             return
 
         from owdb_django.wrestlebot.bots.earl import Earl
+
         earl = Earl()
         self.stdout.write(self.style.SUCCESS(f"\n=== {earl.name} ({earl.role}) ===\n"))
         stats = earl.cycle()
@@ -55,41 +61,43 @@ class Command(BaseCommand):
 
     def _print_observations(self, limit: int = 20):
         from owdb_django.wrestlebot.models import EarlObservation
+
         qs = EarlObservation.objects.filter(status="open").order_by(
-            "-severity", "-times_seen",
+            "-severity",
+            "-times_seen",
         )[:limit]
-        self.stdout.write(self.style.HTTP_INFO(
-            f"\nTop {qs.count()} open observations:"
-        ))
+        self.stdout.write(self.style.HTTP_INFO(f"\nTop {qs.count()} open observations:"))
         for o in qs:
             color = self.style.ERROR if o.severity == "error" else self.style.WARNING
-            self.stdout.write(color(
-                f"  [{o.severity}] {o.rule_id:<25} {o.entity_type}#{o.entity_id} "
-                f"({o.entity_name}): {o.issue_description[:80]}"
-            ))
+            self.stdout.write(
+                color(
+                    f"  [{o.severity}] {o.rule_id:<25} {o.entity_type}#{o.entity_id} "
+                    f"({o.entity_name}): {o.issue_description[:80]}"
+                )
+            )
 
     def _print_suggestions(self, limit: int = 10):
         from owdb_django.wrestlebot.models import RuleSuggestion
+
         qs = RuleSuggestion.objects.filter(status="pending").order_by("-proposed_at")[:limit]
         if not qs.exists():
             return
-        self.stdout.write(self.style.HTTP_INFO(
-            f"\n{qs.count()} pending rule suggestions:"
-        ))
+        self.stdout.write(self.style.HTTP_INFO(f"\n{qs.count()} pending rule suggestions:"))
         for s in qs:
-            self.stdout.write(self.style.WARNING(
-                f"  [#{s.id}] target={s.target_rule_id!r}: {s.description[:100]}"
-            ))
+            self.stdout.write(
+                self.style.WARNING(
+                    f"  [#{s.id}] target={s.target_rule_id!r}: {s.description[:100]}"
+                )
+            )
             if s.rationale:
                 for line in s.rationale.splitlines()[:3]:
                     self.stdout.write(f"        {line}")
 
     def _print_rules(self):
         from owdb_django.wrestlebot.models import RuleScore
+
         qs = RuleScore.objects.order_by("-times_fired")
-        self.stdout.write(self.style.HTTP_INFO(
-            f"\nRule scores ({qs.count()} rules):"
-        ))
+        self.stdout.write(self.style.HTTP_INFO(f"\nRule scores ({qs.count()} rules):"))
         for r in qs:
             enabled = "ENABLED" if r.enabled else "disabled"
             self.stdout.write(

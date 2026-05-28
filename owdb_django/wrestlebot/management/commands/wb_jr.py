@@ -23,21 +23,32 @@ class Command(BaseCommand):
     help = "Run one JR cycle (data-adding bot)."
 
     def add_arguments(self, parser):
-        parser.add_argument("--discovery", type=int, default=5,
-                            help="Discovery batch size (default 5).")
-        parser.add_argument("--fetch", type=int, default=5,
-                            help="Fetch batch size (default 5).")
-        parser.add_argument("--extract", type=int, default=20,
-                            help="Extract batch size (default 20).")
-        parser.add_argument("--crossvalidate", type=int, default=5,
-                            help="Wikidata cross-validation batch (default 5).")
-        parser.add_argument("--bio", type=int, default=5,
-                            help="Bio generation batch size (default 5).")
-        parser.add_argument("--auto-discover", type=int, default=5,
-                            help="Mention-driven auto-discovery batch (default 5).")
+        parser.add_argument(
+            "--discovery", type=int, default=5, help="Discovery batch size (default 5)."
+        )
+        parser.add_argument("--fetch", type=int, default=5, help="Fetch batch size (default 5).")
+        parser.add_argument(
+            "--extract", type=int, default=20, help="Extract batch size (default 20)."
+        )
+        parser.add_argument(
+            "--crossvalidate",
+            type=int,
+            default=5,
+            help="Wikidata cross-validation batch (default 5).",
+        )
+        parser.add_argument(
+            "--bio", type=int, default=5, help="Bio generation batch size (default 5)."
+        )
+        parser.add_argument(
+            "--auto-discover",
+            type=int,
+            default=5,
+            help="Mention-driven auto-discovery batch (default 5).",
+        )
 
     def handle(self, *args, **options):
         from owdb_django.wrestlebot.bots.jr import JR
+
         jr = JR()
         self.stdout.write(self.style.SUCCESS(f"\n=== {jr.name} ({jr.role}) ===\n"))
         stats = jr.cycle(

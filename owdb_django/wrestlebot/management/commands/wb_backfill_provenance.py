@@ -36,12 +36,21 @@ class Command(BaseCommand):
     help = "Generate synthetic FieldProvenance for entities created without it."
 
     def add_arguments(self, parser):
-        parser.add_argument("--dry-run", action="store_true",
-                            help="Report what would be written without writing.")
-        parser.add_argument("--entity-type", type=str, default="",
-                            help="Limit to one entity type (event/venue/match).")
-        parser.add_argument("--limit", type=int, default=10_000,
-                            help="Cap entities processed per type (default 10k).")
+        parser.add_argument(
+            "--dry-run", action="store_true", help="Report what would be written without writing."
+        )
+        parser.add_argument(
+            "--entity-type",
+            type=str,
+            default="",
+            help="Limit to one entity type (event/venue/match).",
+        )
+        parser.add_argument(
+            "--limit",
+            type=int,
+            default=10_000,
+            help="Cap entities processed per type (default 10k).",
+        )
 
     def handle(self, *args, **options):
         dry = options["dry_run"]
@@ -57,9 +66,11 @@ class Command(BaseCommand):
         if not only or only == "match":
             stats["matches"] = self._backfill_matches(limit=limit, dry=dry)
 
-        self.stdout.write(self.style.SUCCESS(
-            f"\n{'DRY RUN — would have written' if dry else 'Wrote'} provenance for:"
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"\n{'DRY RUN — would have written' if dry else 'Wrote'} provenance for:"
+            )
+        )
         for k, n in stats.items():
             self.stdout.write(f"  {k:<12} {n}")
 
@@ -73,9 +84,11 @@ class Command(BaseCommand):
 
         # Events with verified=True but missing required-field provenance.
         # Use the contract's required fields as the trigger.
-        candidates = (Event.objects.filter(verified=True)
-                       .select_related("promotion", "venue")
-                       .order_by("id")[:limit])
+        candidates = (
+            Event.objects.filter(verified=True)
+            .select_related("promotion", "venue")
+            .order_by("id")[:limit]
+        )
 
         # Look for ANY page-level SourceFetch we can cite as origin.
         # If none, create a "manual_backfill" SourceFetch so the row at
@@ -105,7 +118,8 @@ class Command(BaseCommand):
             # Skip fields that already have provenance (don't double-write).
             existing = set(
                 FieldProvenance.objects.filter(
-                    entity_type="event", entity_id=ev.id,
+                    entity_type="event",
+                    entity_id=ev.id,
                 ).values_list("field_name", flat=True)
             )
             to_write = {k: v for k, v in field_values.items() if k not in existing}
@@ -113,14 +127,16 @@ class Command(BaseCommand):
                 continue
 
             snippet_hint = (
-                f"[synthetic back-fill] {ev.name} "
-                f"({ev.date.isoformat() if ev.date else 'no date'})"
+                f"[synthetic back-fill] {ev.name} ({ev.date.isoformat() if ev.date else 'no date'})"
             )
             if not dry:
                 bulk_synthetic_provenance(
-                    entity_type="event", entity_id=ev.id,
-                    field_values=to_write, source_fetch=source_fetch,
-                    snippet_hint=snippet_hint, confidence=70,
+                    entity_type="event",
+                    entity_id=ev.id,
+                    field_values=to_write,
+                    source_fetch=source_fetch,
+                    snippet_hint=snippet_hint,
+                    confidence=70,
                 )
                 state, _ = accuracy_contract.enforce("event", ev)
                 if ev.verification_state != state:
@@ -146,7 +162,8 @@ class Command(BaseCommand):
                 continue
             existing = set(
                 FieldProvenance.objects.filter(
-                    entity_type="venue", entity_id=v.id,
+                    entity_type="venue",
+                    entity_id=v.id,
                 ).values_list("field_name", flat=True)
             )
             field_values = {"name": v.name}
@@ -158,10 +175,12 @@ class Command(BaseCommand):
             snippet_hint = f"[synthetic back-fill] Venue {v.name}"
             if not dry:
                 bulk_synthetic_provenance(
-                    entity_type="venue", entity_id=v.id,
+                    entity_type="venue",
+                    entity_id=v.id,
                     field_values=field_values,
                     source_fetch=backfill_fetch,
-                    snippet_hint=snippet_hint, confidence=70,
+                    snippet_hint=snippet_hint,
+                    confidence=70,
                 )
                 state, _ = accuracy_contract.enforce("venue", v)
                 if v.verification_state != state:
@@ -187,7 +206,8 @@ class Command(BaseCommand):
                 continue
             existing = set(
                 FieldProvenance.objects.filter(
-                    entity_type="match", entity_id=m.id,
+                    entity_type="match",
+                    entity_id=m.id,
                 ).values_list("field_name", flat=True)
             )
             field_values = {}
@@ -202,9 +222,12 @@ class Command(BaseCommand):
             source_fetch = self._find_event_source_fetch(m.event) or backfill_fetch
             if not dry:
                 bulk_synthetic_provenance(
-                    entity_type="match", entity_id=m.id,
-                    field_values=field_values, source_fetch=source_fetch,
-                    snippet_hint=snippet_hint, confidence=70,
+                    entity_type="match",
+                    entity_id=m.id,
+                    field_values=field_values,
+                    source_fetch=source_fetch,
+                    snippet_hint=snippet_hint,
+                    confidence=70,
                 )
                 state, _ = accuracy_contract.enforce("match", m)
                 if m.verification_state != state:
@@ -220,24 +243,33 @@ class Command(BaseCommand):
         if not event:
             return None
         from owdb_django.wrestlebot.models import SourceFetch
+
         # Per-event Wikipedia fetch is the gold standard.
-        sf = (SourceFetch.objects
-              .filter(entity_type="event", entity_id=event.id,
-                      source="wikipedia", http_status=200)
-              .order_by("-fetched_at").first())
+        sf = (
+            SourceFetch.objects.filter(
+                entity_type="event", entity_id=event.id, source="wikipedia", http_status=200
+            )
+            .order_by("-fetched_at")
+            .first()
+        )
         if sf:
             return sf
         # Failing that, the promotion's list-page fetch.
-        return (SourceFetch.objects
-                .filter(entity_type="event", entity_id=0,
-                        source="wikipedia", http_status=200)
-                .order_by("-fetched_at").first())
+        return (
+            SourceFetch.objects.filter(
+                entity_type="event", entity_id=0, source="wikipedia", http_status=200
+            )
+            .order_by("-fetched_at")
+            .first()
+        )
 
     def _get_or_create_backfill_fetch(self):
         """Sentinel SourceFetch row tagged 'manual_backfill' for orphan rows."""
         from owdb_django.wrestlebot.models import SourceFetch
+
         sf, _ = SourceFetch.objects.get_or_create(
-            source="wikipedia", content_hash="manual_backfill_sentinel",
+            source="wikipedia",
+            content_hash="manual_backfill_sentinel",
             defaults=dict(
                 url="https://wrestlingdb.org/internal/manual-backfill",
                 entity_type="event",

@@ -37,7 +37,7 @@ class FieldSnippet:
     """One extracted field plus the source-text snippet it was parsed from."""
 
     value: object  # int, str, date, list, etc. — type depends on field
-    snippet: str   # The raw text fragment that supports `value`
+    snippet: str  # The raw text fragment that supports `value`
     confidence: int = 100  # 0-100. Lower for inferred/derived values.
 
 
@@ -82,10 +82,21 @@ class WrestlerFields:
         """Return {field_name: FieldSnippet} for all set fields."""
         out: dict[str, FieldSnippet] = {}
         for attr in (
-            "name", "real_name", "aliases", "best_known_as",
-            "birth_date", "death_date",
-            "debut_year", "retirement_year", "nationality", "hometown",
-            "height", "weight", "finishers", "signature_moves", "trained_by",
+            "name",
+            "real_name",
+            "aliases",
+            "best_known_as",
+            "birth_date",
+            "death_date",
+            "debut_year",
+            "retirement_year",
+            "nationality",
+            "hometown",
+            "height",
+            "weight",
+            "finishers",
+            "signature_moves",
+            "trained_by",
             "roles",
         ):
             v = getattr(self, attr)
@@ -109,8 +120,13 @@ class PromotionFields:
     def populated_fields(self) -> dict[str, FieldSnippet]:
         out: dict[str, FieldSnippet] = {}
         for attr in (
-            "name", "abbreviation", "founded_year", "closed_year",
-            "website", "headquarters", "founder",
+            "name",
+            "abbreviation",
+            "founded_year",
+            "closed_year",
+            "website",
+            "headquarters",
+            "founder",
         ):
             v = getattr(self, attr)
             if v is not None:
@@ -134,8 +150,14 @@ class EventFields:
     def populated_fields(self) -> dict[str, FieldSnippet]:
         out: dict[str, FieldSnippet] = {}
         for attr in (
-            "name", "date", "promotion_name", "promotion_wiki_link",
-            "venue_name", "venue_wiki_link", "venue_location", "attendance",
+            "name",
+            "date",
+            "promotion_name",
+            "promotion_wiki_link",
+            "venue_name",
+            "venue_wiki_link",
+            "venue_location",
+            "attendance",
         ):
             v = getattr(self, attr)
             if v is not None:
@@ -146,6 +168,7 @@ class EventFields:
 @dataclass
 class TrainingSchoolFields:
     """Typed extraction result for a pro wrestling training school."""
+
     name: Optional[FieldSnippet] = None
     location: Optional[FieldSnippet] = None
     founded_year: Optional[FieldSnippet] = None
@@ -156,8 +179,15 @@ class TrainingSchoolFields:
 
     def populated_fields(self) -> dict[str, FieldSnippet]:
         out: dict[str, FieldSnippet] = {}
-        for attr in ("name", "location", "founded_year", "closed_year",
-                     "founder", "head_trainer", "parent_promotion_wiki_link"):
+        for attr in (
+            "name",
+            "location",
+            "founded_year",
+            "closed_year",
+            "founder",
+            "head_trainer",
+            "parent_promotion_wiki_link",
+        ):
             v = getattr(self, attr)
             if v is not None:
                 out[attr] = v
@@ -167,17 +197,24 @@ class TrainingSchoolFields:
 @dataclass
 class TVShowFields:
     """Typed extraction result for a TV show."""
+
     name: Optional[FieldSnippet] = None
     promotion_wiki_link: Optional[FieldSnippet] = None
     promotion_name: Optional[FieldSnippet] = None
     network: Optional[FieldSnippet] = None
     premiere_year: Optional[FieldSnippet] = None  # int
-    finale_year: Optional[FieldSnippet] = None    # int (null = still running)
+    finale_year: Optional[FieldSnippet] = None  # int (null = still running)
 
     def populated_fields(self) -> dict[str, FieldSnippet]:
         out: dict[str, FieldSnippet] = {}
-        for attr in ("name", "promotion_wiki_link", "promotion_name",
-                     "network", "premiere_year", "finale_year"):
+        for attr in (
+            "name",
+            "promotion_wiki_link",
+            "promotion_name",
+            "network",
+            "premiere_year",
+            "finale_year",
+        ):
             v = getattr(self, attr)
             if v is not None:
                 out[attr] = v
@@ -187,6 +224,7 @@ class TVShowFields:
 @dataclass
 class SpecialFields:
     """Typed extraction result for a documentary, film, or TV special."""
+
     title: Optional[FieldSnippet] = None
     release_year: Optional[FieldSnippet] = None
     type: Optional[FieldSnippet] = None  # 'documentary' / 'movie' / 'tv_special'
@@ -204,6 +242,7 @@ class SpecialFields:
 @dataclass
 class TitleFields:
     """Typed extraction result for a championship/title."""
+
     name: Optional[FieldSnippet] = None
     promotion_wiki_link: Optional[FieldSnippet] = None
     promotion_name: Optional[FieldSnippet] = None
@@ -213,8 +252,14 @@ class TitleFields:
 
     def populated_fields(self) -> dict[str, FieldSnippet]:
         out: dict[str, FieldSnippet] = {}
-        for attr in ("name", "promotion_wiki_link", "promotion_name",
-                     "debut_year", "retirement_year", "title_type"):
+        for attr in (
+            "name",
+            "promotion_wiki_link",
+            "promotion_name",
+            "debut_year",
+            "retirement_year",
+            "title_type",
+        ):
             v = getattr(self, attr)
             if v is not None:
                 out[attr] = v
@@ -224,6 +269,7 @@ class TitleFields:
 @dataclass
 class StableFields:
     """Typed extraction result for a stable/faction."""
+
     name: Optional[FieldSnippet] = None
     promotion_wiki_link: Optional[FieldSnippet] = None
     promotion_name: Optional[FieldSnippet] = None
@@ -234,9 +280,15 @@ class StableFields:
 
     def populated_fields(self) -> dict[str, FieldSnippet]:
         out: dict[str, FieldSnippet] = {}
-        for attr in ("name", "promotion_wiki_link", "promotion_name",
-                     "formed_year", "disbanded_year",
-                     "leader_wiki_links", "member_wiki_links"):
+        for attr in (
+            "name",
+            "promotion_wiki_link",
+            "promotion_name",
+            "formed_year",
+            "disbanded_year",
+            "leader_wiki_links",
+            "member_wiki_links",
+        ):
             v = getattr(self, attr)
             if v is not None:
                 out[attr] = v
@@ -246,6 +298,7 @@ class StableFields:
 @dataclass
 class ActionFigureFields:
     """Typed extraction result for an action figure line or series."""
+
     name: Optional[FieldSnippet] = None
     manufacturer: Optional[FieldSnippet] = None
     start_year: Optional[FieldSnippet] = None
@@ -264,6 +317,7 @@ class ActionFigureFields:
 @dataclass
 class ThemeSongFields:
     """Typed extraction result for a theme/entrance song."""
+
     title: Optional[FieldSnippet] = None
     artist: Optional[FieldSnippet] = None
     artist_wiki_link: Optional[FieldSnippet] = None
@@ -282,6 +336,7 @@ class ThemeSongFields:
 @dataclass
 class BookFields:
     """Typed extraction result for a book."""
+
     title: Optional[FieldSnippet] = None
     author: Optional[FieldSnippet] = None
     author_wiki_link: Optional[FieldSnippet] = None
@@ -291,7 +346,14 @@ class BookFields:
 
     def populated_fields(self) -> dict[str, FieldSnippet]:
         out: dict[str, FieldSnippet] = {}
-        for attr in ("title", "author", "author_wiki_link", "publication_year", "publisher", "isbn"):
+        for attr in (
+            "title",
+            "author",
+            "author_wiki_link",
+            "publication_year",
+            "publisher",
+            "isbn",
+        ):
             v = getattr(self, attr)
             if v is not None:
                 out[attr] = v
@@ -301,6 +363,7 @@ class BookFields:
 @dataclass
 class VideoGameFields:
     """Typed extraction result for a video game."""
+
     name: Optional[FieldSnippet] = None
     release_year: Optional[FieldSnippet] = None
     developer: Optional[FieldSnippet] = None
@@ -319,6 +382,7 @@ class VideoGameFields:
 @dataclass
 class PodcastFields:
     """Typed extraction result for a podcast."""
+
     name: Optional[FieldSnippet] = None
     hosts: Optional[FieldSnippet] = None  # comma-separated
     host_wiki_links: Optional[FieldSnippet] = None  # comma-separated /wiki/X targets

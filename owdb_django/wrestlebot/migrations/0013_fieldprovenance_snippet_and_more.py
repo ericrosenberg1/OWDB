@@ -4,20 +4,26 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('wrestlebot', '0012_alter_agentsession_bot'),
+        ("wrestlebot", "0012_alter_agentsession_bot"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='fieldprovenance',
-            name='snippet',
-            field=models.TextField(blank=True, default='', help_text='The raw source-text fragment that supports `value`. Empty only for back-filled / synthetic provenance.'),
+            model_name="fieldprovenance",
+            name="snippet",
+            field=models.TextField(
+                blank=True,
+                default="",
+                help_text="The raw source-text fragment that supports `value`. Empty only for back-filled / synthetic provenance.",
+            ),
         ),
         migrations.AlterField(
-            model_name='fieldprovenance',
-            name='confidence',
-            field=models.IntegerField(default=100, help_text='0-100. 100 = direct from infobox. Lower if derived/inferred. Synthetic / back-filled provenance lives at 70-85.'),
+            model_name="fieldprovenance",
+            name="confidence",
+            field=models.IntegerField(
+                default=100,
+                help_text="0-100. 100 = direct from infobox. Lower if derived/inferred. Synthetic / back-filled provenance lives at 70-85.",
+            ),
         ),
     ]

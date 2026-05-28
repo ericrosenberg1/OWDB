@@ -50,6 +50,7 @@ _warned_no_key = False
 @dataclass
 class BraveSearchHit:
     """One result row from Brave Search."""
+
     title: str
     url: str
     description: str
@@ -73,9 +74,10 @@ def _read_key_from_keychain() -> Optional[str]:
         return None
     try:
         result = subprocess.run(
-            ["security", "find-generic-password",
-             "-s", KEYCHAIN_SERVICE, "-w"],
-            capture_output=True, text=True, timeout=5,
+            ["security", "find-generic-password", "-s", KEYCHAIN_SERVICE, "-w"],
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -89,6 +91,7 @@ def get_api_key() -> Optional[str]:
     # 1. Django settings
     try:
         from django.conf import settings
+
         key = getattr(settings, "BRAVE_SEARCH_API_KEY", None)
         if key:
             return key
@@ -192,22 +195,26 @@ def search(
         desc = (row.get("description") or "").strip()
         if not link:
             continue
-        hits.append(BraveSearchHit(
-            title=title,
-            url=link,
-            description=desc,
-            age=row.get("age", "") or "",
-            extra={
-                k: row.get(k) for k in ("language", "family_friendly", "page_age")
-                if row.get(k) is not None
-            },
-        ))
+        hits.append(
+            BraveSearchHit(
+                title=title,
+                url=link,
+                description=desc,
+                age=row.get("age", "") or "",
+                extra={
+                    k: row.get(k)
+                    for k in ("language", "family_friendly", "page_age")
+                    if row.get(k) is not None
+                },
+            )
+        )
     return hits
 
 
 # Convenience for shell debugging.
 if __name__ == "__main__":  # pragma: no cover
     import sys
+
     q = " ".join(sys.argv[1:]) or "Hulk Hogan wrestler"
     for h in search(q, count=5):
         print(f"- {h.title}\n  {h.url}\n  {h.description}\n")

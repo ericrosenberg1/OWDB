@@ -58,11 +58,15 @@ class PodcastIndexClient(APIClient):
         api_key: Optional[str] = None,
         api_secret: Optional[str] = None,
     ):
-        self.api_key = api_key or os.getenv("PODCAST_INDEX_API_KEY") or getattr(
-            settings, "PODCAST_INDEX_API_KEY", None
+        self.api_key = (
+            api_key
+            or os.getenv("PODCAST_INDEX_API_KEY")
+            or getattr(settings, "PODCAST_INDEX_API_KEY", None)
         )
-        self.api_secret = api_secret or os.getenv("PODCAST_INDEX_API_SECRET") or getattr(
-            settings, "PODCAST_INDEX_API_SECRET", None
+        self.api_secret = (
+            api_secret
+            or os.getenv("PODCAST_INDEX_API_SECRET")
+            or getattr(settings, "PODCAST_INDEX_API_SECRET", None)
         )
         super().__init__(self.api_key)
 
@@ -163,6 +167,7 @@ class PodcastIndexClient(APIClient):
         if oldest_date:
             try:
                 import datetime
+
                 dt = datetime.datetime.fromtimestamp(oldest_date)
                 launch_year = dt.year
             except (ValueError, OSError, TypeError):
@@ -324,8 +329,10 @@ class ListenNotesClient(APIClient):
     CACHE_TTL = 604800  # 7 days to minimize API calls
 
     def __init__(self, api_key: Optional[str] = None):
-        api_key = api_key or os.getenv("LISTEN_NOTES_API_KEY") or getattr(
-            settings, "LISTEN_NOTES_API_KEY", None
+        api_key = (
+            api_key
+            or os.getenv("LISTEN_NOTES_API_KEY")
+            or getattr(settings, "LISTEN_NOTES_API_KEY", None)
         )
         super().__init__(api_key)
 
@@ -377,6 +384,7 @@ class ListenNotesClient(APIClient):
         if earliest_pub:
             try:
                 import datetime
+
                 dt = datetime.datetime.fromtimestamp(earliest_pub / 1000)
                 launch_year = dt.year
             except (ValueError, OSError, TypeError):
@@ -387,7 +395,9 @@ class ListenNotesClient(APIClient):
             "hosts": podcast.get("publisher_original", ""),
             "launch_year": launch_year,
             "url": podcast.get("website"),
-            "about": podcast.get("description_original", "")[:500] if podcast.get("description_original") else None,
+            "about": podcast.get("description_original", "")[:500]
+            if podcast.get("description_original")
+            else None,
             "source": "listennotes",
             "source_id": podcast.get("id"),
             "source_url": podcast.get("listennotes_url"),

@@ -36,15 +36,20 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--wrestler", type=int, default=None,
+            "--wrestler",
+            type=int,
+            default=None,
             help="Cross-validate one wrestler by id.",
         )
         parser.add_argument(
-            "--limit", type=int, default=30,
+            "--limit",
+            type=int,
+            default=30,
             help="Max wrestlers to process per invocation (default 30).",
         )
         parser.add_argument(
-            "--force", action="store_true",
+            "--force",
+            action="store_true",
             help="Refetch Wikidata even if we already have a wikidata SourceFetch.",
         )
 
@@ -54,7 +59,11 @@ class Command(BaseCommand):
         if options["wrestler"]:
             wrestlers = Wrestler.objects.filter(id=options["wrestler"])
         else:
-            wrestlers = Wrestler.objects.exclude(wikipedia_url="").exclude(wikipedia_url__isnull=True).order_by("id")
+            wrestlers = (
+                Wrestler.objects.exclude(wikipedia_url="")
+                .exclude(wikipedia_url__isnull=True)
+                .order_by("id")
+            )
             wrestlers = wrestlers[: options["limit"]]
 
         adapter = WikidataAdapter()
@@ -63,9 +72,9 @@ class Command(BaseCommand):
         disagreements_total = 0
         no_qid = 0
 
-        self.stdout.write(self.style.SUCCESS(
-            f"\n=== wb_crossvalidate ({len(list(wrestlers))} wrestler(s)) ==="
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(f"\n=== wb_crossvalidate ({len(list(wrestlers))} wrestler(s)) ===")
+        )
         wrestlers = list(wrestlers)  # materialise to allow re-iteration
 
         for w in wrestlers:
@@ -73,10 +82,16 @@ class Command(BaseCommand):
 
             # 1. Skip if we already have a wikidata fetch and not --force
             if not options["force"]:
-                existing = SourceFetch.objects.filter(
-                    source="wikidata", entity_type="wrestler", entity_id=w.id,
-                    http_status=200,
-                ).order_by("-fetched_at").first()
+                existing = (
+                    SourceFetch.objects.filter(
+                        source="wikidata",
+                        entity_type="wrestler",
+                        entity_id=w.id,
+                        http_status=200,
+                    )
+                    .order_by("-fetched_at")
+                    .first()
+                )
                 if existing is not None:
                     fetch = existing
                     self.stdout.write(f"    reusing existing wikidata fetch SourceFetch#{fetch.id}")
@@ -97,9 +112,7 @@ class Command(BaseCommand):
                 continue
 
             populated = fields.populated_fields()
-            self.stdout.write(self.style.SUCCESS(
-                f"    extracted: {sorted(populated.keys())}"
-            ))
+            self.stdout.write(self.style.SUCCESS(f"    extracted: {sorted(populated.keys())}"))
 
             # 3. Persist — this won't overwrite existing values (first-write-wins)
             #    but will write FieldProvenance rows for cross-source tracking.
@@ -113,23 +126,27 @@ class Command(BaseCommand):
             disagreements_total += disagreements
 
             if agreements:
-                self.stdout.write(self.style.SUCCESS(
-                    f"    AGREEMENTS ({agreements}): " +
-                    ", ".join(f"{a.field_name}={a.values[0]!r:.30}" for a in rec["agreements"])
-                ))
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"    AGREEMENTS ({agreements}): "
+                        + ", ".join(
+                            f"{a.field_name}={a.values[0]!r:.30}" for a in rec["agreements"]
+                        )
+                    )
+                )
             if disagreements:
-                self.stdout.write(self.style.ERROR(
-                    f"    DISAGREEMENTS ({disagreements}):"
-                ))
+                self.stdout.write(self.style.ERROR(f"    DISAGREEMENTS ({disagreements}):"))
                 for d in rec["disagreements"]:
                     pairs = "; ".join(f"{s}={v!r:.40}" for s, v in zip(d.sources, d.values))
                     self.stdout.write(self.style.ERROR(f"      {d.field_name}: {pairs}"))
 
-        self.stdout.write(self.style.SUCCESS(
-            f"\nDone. {fetched} fetched / {no_qid} no QID, "
-            f"{agreements_total} field agreement(s), "
-            f"{disagreements_total} disagreement(s)."
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"\nDone. {fetched} fetched / {no_qid} no QID, "
+                f"{agreements_total} field agreement(s), "
+                f"{disagreements_total} disagreement(s)."
+            )
+        )
 
     def _fetch_and_persist(self, wrestler, adapter: WikidataAdapter):
         """Fetch Wikidata for a wrestler and persist a SourceFetch row."""
@@ -154,5 +171,7 @@ class Command(BaseCommand):
             content_hash=hashlib.sha256(result.raw_content.encode("utf-8")).hexdigest(),
             raw_content=result.raw_content,
         )
-        self.stdout.write(f"    fetched {qid} -> SourceFetch#{fetch.id} ({len(result.raw_content):,} bytes)")
+        self.stdout.write(
+            f"    fetched {qid} -> SourceFetch#{fetch.id} ({len(result.raw_content):,} bytes)"
+        )
         return fetch

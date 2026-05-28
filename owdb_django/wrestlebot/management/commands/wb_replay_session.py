@@ -29,26 +29,32 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--session-id", type=int, required=True,
+            "--session-id",
+            type=int,
+            required=True,
             help="AgentSession PK to replay.",
         )
         parser.add_argument(
-            "--apply", action="store_true",
+            "--apply",
+            action="store_true",
             help=(
                 "Actually re-apply the calls (no rollback). Defaults to "
                 "dry-run mode, which rolls back at the end of the replay."
             ),
         )
         parser.add_argument(
-            "--include-done", action="store_true",
+            "--include-done",
+            action="store_true",
             help="Also re-dispatch the terminal `done` call (default: skip).",
         )
         parser.add_argument(
-            "--json", action="store_true",
+            "--json",
+            action="store_true",
             help="Emit the result as JSON (for piping into jq / scripts).",
         )
         parser.add_argument(
-            "--show-diverged-only", action="store_true",
+            "--show-diverged-only",
+            action="store_true",
             help="Only print calls whose result diverged.",
         )
 
@@ -59,19 +65,20 @@ class Command(BaseCommand):
         dry_run = not options["apply"]
         skip_done = not options["include_done"]
 
-        self.stdout.write(self.style.HTTP_INFO(
-            f"\n=== Replay AgentSession #{sid} "
-            f"({'dry-run' if dry_run else 'APPLY'}) ===\n"
-        ))
+        self.stdout.write(
+            self.style.HTTP_INFO(
+                f"\n=== Replay AgentSession #{sid} ({'dry-run' if dry_run else 'APPLY'}) ===\n"
+            )
+        )
 
         try:
             result = replay_session(
-                sid, dry_run=dry_run, skip_done=skip_done,
+                sid,
+                dry_run=dry_run,
+                skip_done=skip_done,
             )
         except Exception as e:
-            self.stderr.write(self.style.ERROR(
-                f"Replay failed: {type(e).__name__}: {e}"
-            ))
+            self.stderr.write(self.style.ERROR(f"Replay failed: {type(e).__name__}: {e}"))
             return
 
         if options["json"]:
@@ -101,10 +108,7 @@ class Command(BaseCommand):
                 marker = "✓ "
             elif c.diverged:
                 marker = "∆ "
-            self.stdout.write(
-                f"{marker}#{c.sequence:>3}  {c.tool_name:<32}  "
-                f"({c.duration_ms} ms)"
-            )
+            self.stdout.write(f"{marker}#{c.sequence:>3}  {c.tool_name:<32}  ({c.duration_ms} ms)")
             if c.diverged or c.new_error:
                 args_compact = json.dumps(c.arguments, default=str)[:120]
                 self.stdout.write(f"        args: {args_compact}")
@@ -121,11 +125,14 @@ class Command(BaseCommand):
 
         self.stdout.write("")
         if dry_run:
-            self.stdout.write(self.style.SUCCESS(
-                "Dry-run complete. No DB changes. "
-                "Pass --apply to re-execute for real."
-            ))
+            self.stdout.write(
+                self.style.SUCCESS(
+                    "Dry-run complete. No DB changes. Pass --apply to re-execute for real."
+                )
+            )
         else:
-            self.stdout.write(self.style.SUCCESS(
-                "Replay applied. Session's final_summary now records the replay."
-            ))
+            self.stdout.write(
+                self.style.SUCCESS(
+                    "Replay applied. Session's final_summary now records the replay."
+                )
+            )

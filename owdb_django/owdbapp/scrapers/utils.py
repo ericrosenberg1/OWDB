@@ -70,15 +70,35 @@ def parse_date(text: str) -> Optional[str]:
     # Pattern-format pairs for date extraction
     patterns = [
         # ISO format: 2020-01-01
-        (r"(\d{4})-(\d{2})-(\d{2})", lambda m: f"{m.group(1)}-{m.group(2)}-{m.group(3)}", "%Y-%m-%d"),
+        (
+            r"(\d{4})-(\d{2})-(\d{2})",
+            lambda m: f"{m.group(1)}-{m.group(2)}-{m.group(3)}",
+            "%Y-%m-%d",
+        ),
         # US format: January 1, 2020
-        (r"(\w+) (\d{1,2}), (\d{4})", lambda m: f"{m.group(1)} {m.group(2)}, {m.group(3)}", "%B %d, %Y"),
+        (
+            r"(\w+) (\d{1,2}), (\d{4})",
+            lambda m: f"{m.group(1)} {m.group(2)}, {m.group(3)}",
+            "%B %d, %Y",
+        ),
         # UK format: 1 January 2020
-        (r"(\d{1,2}) (\w+) (\d{4})", lambda m: f"{m.group(1)} {m.group(2)} {m.group(3)}", "%d %B %Y"),
+        (
+            r"(\d{1,2}) (\w+) (\d{4})",
+            lambda m: f"{m.group(1)} {m.group(2)} {m.group(3)}",
+            "%d %B %Y",
+        ),
         # European format: 01.01.2020
-        (r"(\d{2})\.(\d{2})\.(\d{4})", lambda m: f"{m.group(1)}.{m.group(2)}.{m.group(3)}", "%d.%m.%Y"),
+        (
+            r"(\d{2})\.(\d{2})\.(\d{4})",
+            lambda m: f"{m.group(1)}.{m.group(2)}.{m.group(3)}",
+            "%d.%m.%Y",
+        ),
         # US slash format: 01/01/2020
-        (r"(\d{1,2})/(\d{1,2})/(\d{4})", lambda m: f"{m.group(1)}/{m.group(2)}/{m.group(3)}", "%m/%d/%Y"),
+        (
+            r"(\d{1,2})/(\d{1,2})/(\d{4})",
+            lambda m: f"{m.group(1)}/{m.group(2)}/{m.group(3)}",
+            "%m/%d/%Y",
+        ),
     ]
 
     for pattern, date_builder, date_format in patterns:

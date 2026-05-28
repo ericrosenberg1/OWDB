@@ -56,7 +56,7 @@ RATE_LIMIT_PER_SEC = 1.0 / 2.5
 
 @dataclass
 class UpcomingEvent:
-    promotion_key: str          # "wwe" / "aew" / "njpw" / ...
+    promotion_key: str  # "wwe" / "aew" / "njpw" / ...
     name: str
     event_date: Optional[date]  # parsed local date when available
     event_datetime_iso: str = ""
@@ -79,10 +79,13 @@ class UpcomingEvent:
 
 
 def _http_get(url: str) -> Optional[str]:
-    req = urllib.request.Request(url, headers={
-        "User-Agent": USER_AGENT,
-        "Accept": "text/html,application/xhtml+xml",
-    })
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml",
+        },
+    )
     with rate_limited("upcoming_events", per_second=RATE_LIMIT_PER_SEC):
         try:
             with urllib.request.urlopen(req, timeout=20) as resp:
@@ -137,7 +140,8 @@ def fetch_wwe_upcoming() -> list[UpcomingEvent]:
         # Name — prefer the headline link text.
         name = ""
         for selector in [
-            lambda c: c.find("h2"), lambda c: c.find("h3"),
+            lambda c: c.find("h2"),
+            lambda c: c.find("h3"),
             lambda c: c.find("a", class_=re.compile(r"(title|headline)", re.I)),
             lambda c: c.find("a"),
         ]:
@@ -169,16 +173,18 @@ def fetch_wwe_upcoming() -> list[UpcomingEvent]:
         if key in seen:
             continue
         seen.add(key)
-        out.append(UpcomingEvent(
-            promotion_key="wwe",
-            name=name,
-            event_date=_parse_iso_to_date(iso),
-            event_datetime_iso=iso,
-            venue_name=venue,
-            city=city,
-            country="",
-            source_url=WWE_EVENTS_URL,
-        ))
+        out.append(
+            UpcomingEvent(
+                promotion_key="wwe",
+                name=name,
+                event_date=_parse_iso_to_date(iso),
+                event_datetime_iso=iso,
+                venue_name=venue,
+                city=city,
+                country="",
+                source_url=WWE_EVENTS_URL,
+            )
+        )
     return out
 
 
@@ -226,15 +232,17 @@ def fetch_aew_upcoming() -> list[UpcomingEvent]:
                 venue = t
             elif ("city" in cls or "location" in cls) and not city:
                 city = t
-        out.append(UpcomingEvent(
-            promotion_key="aew",
-            name=name,
-            event_date=_parse_iso_to_date(iso),
-            event_datetime_iso=iso,
-            venue_name=venue,
-            city=city,
-            source_url=AEW_EVENTS_URL,
-        ))
+        out.append(
+            UpcomingEvent(
+                promotion_key="aew",
+                name=name,
+                event_date=_parse_iso_to_date(iso),
+                event_datetime_iso=iso,
+                venue_name=venue,
+                city=city,
+                source_url=AEW_EVENTS_URL,
+            )
+        )
     return out
 
 
@@ -257,8 +265,9 @@ def fetch_njpw_upcoming() -> list[UpcomingEvent]:
         date_el = card.find(class_=re.compile(r"(date|day)", re.I)) or card.find("time")
         if date_el:
             date_text = (date_el.get_text() or "").strip()
-        title_el = (card.find(class_=re.compile(r"(title|name)", re.I))
-                   or card.find(["h2", "h3", "h4", "a"]))
+        title_el = card.find(class_=re.compile(r"(title|name)", re.I)) or card.find(
+            ["h2", "h3", "h4", "a"]
+        )
         name = (title_el.get_text() or "").strip() if title_el else ""
         if not name:
             continue
@@ -272,15 +281,17 @@ def fetch_njpw_upcoming() -> list[UpcomingEvent]:
                 ev_date = None
         venue_el = card.find(class_=re.compile(r"(venue|place|location)", re.I))
         venue = (venue_el.get_text() or "").strip() if venue_el else ""
-        out.append(UpcomingEvent(
-            promotion_key="njpw",
-            name=name,
-            event_date=ev_date,
-            event_datetime_iso="",
-            venue_name=venue,
-            country="Japan",
-            source_url=NJPW_SCHEDULE_URL,
-        ))
+        out.append(
+            UpcomingEvent(
+                promotion_key="njpw",
+                name=name,
+                event_date=ev_date,
+                event_datetime_iso="",
+                venue_name=venue,
+                country="Japan",
+                source_url=NJPW_SCHEDULE_URL,
+            )
+        )
     return out
 
 
@@ -296,10 +307,7 @@ FETCHERS = {
 def fetch_upcoming(promotion_key: str) -> list[UpcomingEvent]:
     fn = FETCHERS.get(promotion_key.lower())
     if not fn:
-        raise ValueError(
-            f"Unknown promotion_key={promotion_key!r}; "
-            f"supported: {sorted(FETCHERS)}"
-        )
+        raise ValueError(f"Unknown promotion_key={promotion_key!r}; supported: {sorted(FETCHERS)}")
     return fn()
 
 
@@ -317,6 +325,7 @@ def fetch_all_upcoming() -> dict[str, list[UpcomingEvent]]:
 
 if __name__ == "__main__":  # pragma: no cover
     import sys
+
     keys = sys.argv[1:] or sorted(FETCHERS)
     for k in keys:
         evs = fetch_upcoming(k)

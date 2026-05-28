@@ -21,7 +21,8 @@ from django.test import SimpleTestCase, TestCase
 from owdb_django.owdbapp.models import Event, Match, Promotion, Wrestler
 from owdb_django.wrestlebot.models import FieldProvenance, SourceFetch
 from owdb_django.wrestlebot.pipeline.match_extract import (
-    extract_matches, persist_matches_for_event,
+    extract_matches,
+    persist_matches_for_event,
 )
 
 
@@ -103,15 +104,24 @@ class OrphanPruneTests(TestCase):
     def setUp(self):
         self.promo = Promotion.objects.create(name="Test Pro")
         self.event = Event.objects.create(
-            name="Test PPV", date=date(2024, 1, 1), promotion=self.promo,
+            name="Test PPV",
+            date=date(2024, 1, 1),
+            promotion=self.promo,
         )
         # Seed wrestlers so participants resolve and match rows reach
         # 'verified' state (incidental — we just don't want the contract
         # enforcer to interact weirdly with our orphan assertions).
         for nm in [
-            "Owen Hart", "Bret Hart", "Razor Ramon", "Diesel",
-            "The Undertaker", "Yokozuna",
-            "Aja Kong", "Bull Nakano", "Manami Toyota", "Akira Hokuto",
+            "Owen Hart",
+            "Bret Hart",
+            "Razor Ramon",
+            "Diesel",
+            "The Undertaker",
+            "Yokozuna",
+            "Aja Kong",
+            "Bull Nakano",
+            "Manami Toyota",
+            "Akira Hokuto",
         ]:
             Wrestler.objects.create(name=nm)
 
@@ -119,8 +129,10 @@ class OrphanPruneTests(TestCase):
         return SourceFetch.objects.create(
             source="wikipedia",
             url=f"https://en.wikipedia.org/wiki/Test_{id(html)}",
-            entity_type="event", entity_id=self.event.id,
-            candidate_name="Test", http_status=200,
+            entity_type="event",
+            entity_id=self.event.id,
+            candidate_name="Test",
+            http_status=200,
             content_hash=f"hash-{id(html)}",
             raw_content=html,
         )
@@ -133,8 +145,7 @@ class OrphanPruneTests(TestCase):
         self.assertEqual(stats1["created"], 3)
         self.assertEqual(stats1["orphans_pruned"], 0)
         self.assertEqual(
-            sorted(Match.objects.filter(event=self.event)
-                   .values_list("match_order", flat=True)),
+            sorted(Match.objects.filter(event=self.event).values_list("match_order", flat=True)),
             [1, 2, 3],
         )
 
@@ -146,8 +157,7 @@ class OrphanPruneTests(TestCase):
         self.assertEqual(stats2["extracted"], 5)
         self.assertEqual(stats2["orphans_pruned"], 1)
         self.assertEqual(
-            sorted(Match.objects.filter(event=self.event)
-                   .values_list("match_order", flat=True)),
+            sorted(Match.objects.filter(event=self.event).values_list("match_order", flat=True)),
             [1, 2, 101, 102, 103],
         )
 
@@ -159,7 +169,8 @@ class OrphanPruneTests(TestCase):
         orphan_id = Match.objects.get(event=self.event, match_order=3).id
         self.assertGreater(
             FieldProvenance.objects.filter(
-                entity_type="match", entity_id=orphan_id,
+                entity_type="match",
+                entity_id=orphan_id,
             ).count(),
             0,
         )
@@ -173,7 +184,8 @@ class OrphanPruneTests(TestCase):
         )
         self.assertEqual(
             FieldProvenance.objects.filter(
-                entity_type="match", entity_id=orphan_id,
+                entity_type="match",
+                entity_id=orphan_id,
             ).count(),
             0,
         )
@@ -182,7 +194,8 @@ class OrphanPruneTests(TestCase):
         # A manually-added Cagematch match at match_order=3 should survive
         # a Wikipedia re-extraction that doesn't include position 3.
         Match.objects.create(
-            event=self.event, match_order=999,
+            event=self.event,
+            match_order=999,
             match_text="Manual entry from Cagematch",
             verification_source="cagematch",
         )

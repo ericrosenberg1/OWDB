@@ -46,6 +46,7 @@ class PPVExtractorSnapshotTests(TestCase):
         from owdb_django.wrestlebot.pipeline.event_lists import (
             extract_ppvs_from_html,
         )
+
         actual = [e.to_dict() for e in extract_ppvs_from_html(self.html, "ecw")]
         self.assertEqual(actual, self.expected)
 
@@ -57,6 +58,7 @@ class PPVExtractorSnapshotTests(TestCase):
         from owdb_django.wrestlebot.pipeline.event_lists import (
             extract_ppvs_from_html,
         )
+
         events = extract_ppvs_from_html(self.html, "ecw")
         for e in events:
             n = (e.name or "").strip()
@@ -85,6 +87,7 @@ class EpisodeExtractorSnapshotTests(TestCase):
         from owdb_django.wrestlebot.pipeline.event_lists import (
             extract_episodes_from_html,
         )
+
         actual = [e.to_dict() for e in extract_episodes_from_html(self.html, "dynamite")]
         self.assertEqual(actual, self.expected)
 
@@ -97,10 +100,12 @@ class EpisodeExtractorSnapshotTests(TestCase):
         from owdb_django.wrestlebot.pipeline.event_lists import (
             extract_episodes_from_html,
         )
+
         eps = extract_episodes_from_html(self.html, "dynamite")
         for ep in eps:
             self.assertIsInstance(
-                ep.episode_number, int,
+                ep.episode_number,
+                int,
                 f"row without numeric episode_number leaked through: {ep!r}",
             )
 
@@ -115,6 +120,7 @@ class EvidenceNonEmptyTests(TestCase):
 
     def _assert_every_snippet_populated(self, spec, html):
         from owdb_django.wrestlebot.sources._schema import extract_tables
+
         rows = extract_tables(html, spec)
         self.assertGreater(len(rows), 0)
         for inst, snippets in rows:
@@ -126,12 +132,15 @@ class EvidenceNonEmptyTests(TestCase):
 
     def test_ppv_snippets_populated(self):
         from owdb_django.wrestlebot.pipeline.event_lists import _ppv_spec
+
         self._assert_every_snippet_populated(
-            _ppv_spec("ecw"), _load_html("wiki_ppv_ecw.html.gz"),
+            _ppv_spec("ecw"),
+            _load_html("wiki_ppv_ecw.html.gz"),
         )
 
     def test_episode_snippets_populated(self):
         from owdb_django.wrestlebot.pipeline.event_lists import _episode_spec
+
         self._assert_every_snippet_populated(
             _episode_spec("dynamite"),
             _load_html("wiki_episodes_dynamite.html.gz"),
@@ -139,8 +148,10 @@ class EvidenceNonEmptyTests(TestCase):
 
     def test_champion_snippets_populated(self):
         from owdb_django.wrestlebot.pipeline.title_history import _CHAMPION_SPEC
+
         self._assert_every_snippet_populated(
-            _CHAMPION_SPEC, _load_html("wiki_title_ecw.html.gz"),
+            _CHAMPION_SPEC,
+            _load_html("wiki_title_ecw.html.gz"),
         )
 
 
@@ -153,6 +164,7 @@ class TitleHistoryExtractorSnapshotTests(TestCase):
         from owdb_django.wrestlebot.pipeline.title_history import (
             extract_champions_from_html,
         )
+
         champs, raw_count = extract_champions_from_html(self.html)
         self.assertEqual(
             {"champions": champs, "raw_count_seen": raw_count},
@@ -168,6 +180,7 @@ class TitleHistoryExtractorSnapshotTests(TestCase):
         from owdb_django.wrestlebot.pipeline.title_history import (
             extract_champions_from_html,
         )
+
         champs, _ = extract_champions_from_html(self.html)
         # No champion entry should look like a championship or section name.
         for name in champs:
@@ -195,6 +208,7 @@ class ChampionLinkTargetTests(TestCase):
         from owdb_django.wrestlebot.pipeline.title_history import (
             extract_champions_from_html,
         )
+
         champs, raw_count = extract_champions_from_html(self.html)
         self.assertEqual(
             {"champions": champs, "raw_count_seen": raw_count},
@@ -211,23 +225,26 @@ class ChampionLinkTargetTests(TestCase):
         from owdb_django.wrestlebot.pipeline.title_history import (
             extract_champions_from_html,
         )
+
         champs, _ = extract_champions_from_html(self.html)
         champ_set = set(champs)
 
         # Each pair: (display text we MUST NOT queue, link target we MUST queue).
         for display, link_target in [
-            ("Mr. Perfect",       "Curt Hennig"),
+            ("Mr. Perfect", "Curt Hennig"),
             ("The Texas Tornado", "Kerry Von Erich"),
-            ("The Mountie",       "Jacques Rougeau"),
-            ("The Godfather",     "The Godfather (wrestler)"),
-            ("Rikishi",           "Rikishi (wrestler)"),
+            ("The Mountie", "Jacques Rougeau"),
+            ("The Godfather", "The Godfather (wrestler)"),
+            ("Rikishi", "Rikishi (wrestler)"),
         ]:
             self.assertNotIn(
-                display, champ_set,
+                display,
+                champ_set,
                 f"display text {display!r} leaked through — would fetch disambig page",
             )
             self.assertIn(
-                link_target, champ_set,
+                link_target,
+                champ_set,
                 f"link target {link_target!r} missing — anchor href was not followed",
             )
 

@@ -115,13 +115,15 @@ def fetch_pwi_list(list_kind: str, year: int) -> list[PWIEntry]:
             prev = _to_int(cells[3].get_text(" ", strip=True)) if len(cells) > 3 else None
             diff = _to_int(cells[4].get_text(" ", strip=True)) if len(cells) > 4 else None
             notes = cells[5].get_text(" ", strip=True) if len(cells) > 5 else ""
-            out.append(PWIEntry(
-                position=position,
-                wrestler_name=wrestler_name,
-                previous_year_position=prev,
-                difference=diff,
-                notes=notes[:500],
-            ))
+            out.append(
+                PWIEntry(
+                    position=position,
+                    wrestler_name=wrestler_name,
+                    previous_year_position=prev,
+                    difference=diff,
+                    notes=notes[:500],
+                )
+            )
             seen_positions.add(position)
     out.sort(key=lambda e: e.position)
     return out
@@ -134,14 +136,21 @@ def ingest_pwi_list(list_kind: str, year: int) -> dict:
     """
     import hashlib
     from owdb_django.owdbapp.models import (
-        ExternalRanking, ExternalRankingEntry, Wrestler,
+        ExternalRanking,
+        ExternalRankingEntry,
+        Wrestler,
     )
     from ..models import SourceFetch
 
     entries = fetch_pwi_list(list_kind, year)
     if not entries:
-        return {"ranking_id": None, "entries_created": 0, "entries_total": 0,
-                "matched_wrestlers": 0, "error": "fetch returned no entries"}
+        return {
+            "ranking_id": None,
+            "entries_created": 0,
+            "entries_total": 0,
+            "matched_wrestlers": 0,
+            "error": "fetch returned no entries",
+        }
 
     url = PFDB_PWI_URLS[list_kind].format(year=year)
     label = dict(ExternalRanking.LIST_CHOICES).get(list_kind, list_kind)
@@ -159,7 +168,8 @@ def ingest_pwi_list(list_kind: str, year: int) -> dict:
     )
     h = hashlib.sha256(payload.encode("utf-8")).hexdigest()
     source_fetch, _ = SourceFetch.objects.update_or_create(
-        source=source_label, content_hash=h,
+        source=source_label,
+        content_hash=h,
         defaults=dict(
             url=url[:500],
             entity_type="external_ranking",
@@ -171,7 +181,8 @@ def ingest_pwi_list(list_kind: str, year: int) -> dict:
     )
 
     ranking, _ = ExternalRanking.objects.update_or_create(
-        list_kind=list_kind, year=year,
+        list_kind=list_kind,
+        year=year,
         defaults=dict(
             title=f"{label} ({year})",
             source_url=url,
@@ -217,7 +228,8 @@ def ingest_pwi_list(list_kind: str, year: int) -> dict:
         if w is not None:
             defaults["wrestler"] = w
         obj, was_created = ExternalRankingEntry.objects.update_or_create(
-            ranking=ranking, position=e.position,
+            ranking=ranking,
+            position=e.position,
             defaults=defaults,
         )
         if was_created:
@@ -238,10 +250,13 @@ def ingest_pwi_list(list_kind: str, year: int) -> dict:
 
 if __name__ == "__main__":  # pragma: no cover
     import sys
+
     args = sys.argv[1:] or ["pwi_500", "2024"]
     list_kind = args[0]
     year = int(args[1])
     entries = fetch_pwi_list(list_kind, year)
     print(f"{len(entries)} entries in {list_kind} {year}")
     for e in entries[:10]:
-        print(f"  #{e.position:>3}  {e.wrestler_name:<30} prev={e.previous_year_position} diff={e.difference}")
+        print(
+            f"  #{e.position:>3}  {e.wrestler_name:<30} prev={e.previous_year_position} diff={e.difference}"
+        )

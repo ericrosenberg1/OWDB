@@ -28,14 +28,23 @@ class Command(BaseCommand):
     help = "Ensure every PPV event has its match list extracted from Wikipedia."
 
     def add_arguments(self, parser):
-        parser.add_argument("--limit", type=int, default=50,
-                            help="Max events to process per run (default 50).")
-        parser.add_argument("--promotion", type=str, default="",
-                            help="Limit to one promotion slug (e.g. 'wwe', 'aew').")
-        parser.add_argument("--dry-run", action="store_true",
-                            help="Report what would happen without writing.")
-        parser.add_argument("--include-tv", action="store_true",
-                            help="Also process tv_episode events (default: PPVs only).")
+        parser.add_argument(
+            "--limit", type=int, default=50, help="Max events to process per run (default 50)."
+        )
+        parser.add_argument(
+            "--promotion",
+            type=str,
+            default="",
+            help="Limit to one promotion slug (e.g. 'wwe', 'aew').",
+        )
+        parser.add_argument(
+            "--dry-run", action="store_true", help="Report what would happen without writing."
+        )
+        parser.add_argument(
+            "--include-tv",
+            action="store_true",
+            help="Also process tv_episode events (default: PPVs only).",
+        )
 
     def handle(self, *args, **options):
         from owdb_django.owdbapp.models import Event
@@ -48,23 +57,28 @@ class Command(BaseCommand):
             types.append("tv_episode")
 
         # Events without any Match rows yet.
-        qs = (Event.objects
-              .filter(event_type__in=types)
-              .exclude(matches__isnull=False)
-              .distinct()
-              .select_related("promotion", "venue")
-              .order_by("-date"))
+        qs = (
+            Event.objects.filter(event_type__in=types)
+            .exclude(matches__isnull=False)
+            .distinct()
+            .select_related("promotion", "venue")
+            .order_by("-date")
+        )
         if options["promotion"]:
             qs = qs.filter(promotion__slug=options["promotion"])
-        qs = qs[:max(1, options["limit"])]
+        qs = qs[: max(1, options["limit"])]
 
-        self.stdout.write(self.style.SUCCESS(
-            f"\nProcessing {qs.count()} events without matches...\n"
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(f"\nProcessing {qs.count()} events without matches...\n")
+        )
 
-        totals = {"events_processed": 0, "events_with_matches": 0,
-                  "matches_created": 0, "unmatched_participants": 0,
-                  "no_wiki_page": 0}
+        totals = {
+            "events_processed": 0,
+            "events_with_matches": 0,
+            "matches_created": 0,
+            "unmatched_participants": 0,
+            "no_wiki_page": 0,
+        }
 
         import re as _re
 
@@ -97,10 +111,13 @@ class Command(BaseCommand):
             totals["events_processed"] += 1
 
             # Find or fetch the event's Wikipedia article.
-            fetch = (SourceFetch.objects
-                     .filter(entity_type="event", entity_id=event.id,
-                             source="wikipedia", http_status=200)
-                     .order_by("-fetched_at").first())
+            fetch = (
+                SourceFetch.objects.filter(
+                    entity_type="event", entity_id=event.id, source="wikipedia", http_status=200
+                )
+                .order_by("-fetched_at")
+                .first()
+            )
             if not fetch:
                 if options["dry_run"]:
                     self.stdout.write(
@@ -116,10 +133,12 @@ class Command(BaseCommand):
                     if results:
                         break
                 if not results:
-                    self.stdout.write(self.style.WARNING(
-                        f"  no Wikipedia page: Event#{event.id} {event.name[:50]}  "
-                        f"(tried: {tried})"
-                    ))
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"  no Wikipedia page: Event#{event.id} {event.name[:50]}  "
+                            f"(tried: {tried})"
+                        )
+                    )
                     totals["no_wiki_page"] += 1
                     continue
                 fresh = results[0]
@@ -133,8 +152,7 @@ class Command(BaseCommand):
 
             if options["dry_run"]:
                 self.stdout.write(
-                    f"  [dry-run] would extract matches: {event.name} "
-                    f"(SourceFetch#{fetch.id})"
+                    f"  [dry-run] would extract matches: {event.name} (SourceFetch#{fetch.id})"
                 )
                 continue
 
@@ -143,13 +161,16 @@ class Command(BaseCommand):
             # to persist matches. We'd rather have NO matches than 200
             # wrong ones.
             from owdb_django.wrestlebot.pipeline.match_extract import extract_matches
+
             preview = extract_matches(fetch.raw_content)
             if len(preview) > MATCHES_PER_EVENT_SANE_CAP:
-                self.stdout.write(self.style.WARNING(
-                    f"  REFUSED Event#{event.id} {event.name[:50]}  "
-                    f"({len(preview)} matches found — likely an event-brand "
-                    f"disambig page, not a single PPV)"
-                ))
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"  REFUSED Event#{event.id} {event.name[:50]}  "
+                        f"({len(preview)} matches found — likely an event-brand "
+                        f"disambig page, not a single PPV)"
+                    )
+                )
                 # Detach the fetch so future runs don't re-find it.
                 fetch.entity_id = 0
                 fetch.save(update_fields=["entity_id"])
@@ -169,9 +190,7 @@ class Command(BaseCommand):
                 f"  Event#{event.id:>5} {short_name:<55} → {n_created} matches{unmatched_str}"
             )
             if unmatched and len(unmatched) <= 5:
-                self.stdout.write(self.style.WARNING(
-                    f"      unmatched: {', '.join(unmatched)}"
-                ))
+                self.stdout.write(self.style.WARNING(f"      unmatched: {', '.join(unmatched)}"))
 
         self.stdout.write(self.style.SUCCESS("\nDone."))
         for k, v in totals.items():

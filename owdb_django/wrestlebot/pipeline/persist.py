@@ -165,20 +165,22 @@ def persist_wrestler(
         # supports it as evidence — much stronger than the degenerate
         # "snippet = the name itself" fallback we use otherwise.
         existing_name_prov = FieldProvenance.objects.filter(
-            entity_type="wrestler", entity_id=wrestler.id, field_name="name",
+            entity_type="wrestler",
+            entity_id=wrestler.id,
+            field_name="name",
         ).exists()
         if not existing_name_prov:
             if used_best_known and fields.best_known_as is not None:
-                name_snippet = (
-                    getattr(fields.best_known_as, "snippet", "") or wrestler.name
-                )
+                name_snippet = getattr(fields.best_known_as, "snippet", "") or wrestler.name
                 name_confidence = fields.best_known_as.confidence
             else:
                 name_snippet = wrestler.name
                 name_confidence = 95  # name from a Wikipedia article title
             record_provenance(
-                entity_type="wrestler", entity_id=wrestler.id,
-                field_name="name", value=wrestler.name,
+                entity_type="wrestler",
+                entity_id=wrestler.id,
+                field_name="name",
+                value=wrestler.name,
                 source_fetch=source_fetch,
                 snippet=name_snippet,
                 confidence=name_confidence,
@@ -241,6 +243,7 @@ def persist_wrestler(
         # must commit first so accuracy_contract.is_satisfied sees the
         # provenance rows we just wrote.
         from .accuracy_contract import enforce
+
         new_state, _ = enforce("wrestler", wrestler)
         if wrestler.verification_state != new_state:
             wrestler.verification_state = new_state
@@ -254,7 +257,11 @@ def persist_wrestler(
 
     logger.info(
         "Persisted wrestler %r (id=%d, created=%s, wrote=%s, skipped=%s)",
-        canonical_name, wrestler.id, created, fields_written, fields_skipped,
+        canonical_name,
+        wrestler.id,
+        created,
+        fields_written,
+        fields_skipped,
     )
 
     # Side effects beyond field writes — wired here so wb_extract runs them too.
@@ -269,7 +276,9 @@ def persist_wrestler(
     )
 
 
-def _log_source_drift(wrestler, field_name: str, current_value, new_value, source_fetch: SourceFetch) -> None:
+def _log_source_drift(
+    wrestler, field_name: str, current_value, new_value, source_fetch: SourceFetch
+) -> None:
     """
     Wikipedia (or another source) now reports a different value than what
     we previously stored. We deliberately do NOT auto-update — instead log
@@ -281,6 +290,7 @@ def _log_source_drift(wrestler, field_name: str, current_value, new_value, sourc
     """
     try:
         from ..models import WrestleBotActivity
+
         WrestleBotActivity.objects.create(
             action_type="error",
             entity_type="wrestler",
@@ -303,7 +313,11 @@ def _log_source_drift(wrestler, field_name: str, current_value, new_value, sourc
         )
         logger.warning(
             "Source drift on Wrestler#%d.%s: %r -> %r (%s)",
-            wrestler.id, field_name, current_value, new_value, source_fetch.source,
+            wrestler.id,
+            field_name,
+            current_value,
+            new_value,
+            source_fetch.source,
         )
     except Exception as e:
         logger.debug("Couldn't log source drift: %s", e)
@@ -319,6 +333,7 @@ def _post_persist_side_effects(wrestler, source_fetch: SourceFetch) -> None:
     # checks see them (consistency rules look at the cleaned values).
     try:
         from .cleanup import apply_wrestler_cleanup
+
         changes = apply_wrestler_cleanup(wrestler)
         if changes:
             logger.info("Cleaned wrestler#%d fields: %s", wrestler.id, list(changes.keys()))
@@ -330,15 +345,19 @@ def _post_persist_side_effects(wrestler, source_fetch: SourceFetch) -> None:
     if source_fetch.source == "wikipedia":
         try:
             from .external_links import apply_external_links_to_wrestler
+
             ext = apply_external_links_to_wrestler(wrestler, source_fetch.raw_content)
             if ext:
-                logger.info("Picked up external links for wrestler#%d: %s", wrestler.id, list(ext.keys()))
+                logger.info(
+                    "Picked up external links for wrestler#%d: %s", wrestler.id, list(ext.keys())
+                )
         except Exception as e:
             logger.exception("External-link extraction failed for Wrestler#%d: %s", wrestler.id, e)
 
     # 2. EntityMention extraction
     try:
         from .mentions import persist_mentions_for_wrestler
+
         persist_mentions_for_wrestler(wrestler.id, source_fetch)
     except Exception as e:
         logger.exception("Mention extraction failed for Wrestler#%d: %s", wrestler.id, e)
@@ -346,10 +365,13 @@ def _post_persist_side_effects(wrestler, source_fetch: SourceFetch) -> None:
     # 3. Resolve mentions -> Promotion stubs + WrestlerPromotionHistory
     try:
         from .linking import resolve_wrestler_mentions_to_promotions
+
         result = resolve_wrestler_mentions_to_promotions(wrestler.id)
         if result["linked"]:
             logger.info(
-                "Linked Wrestler#%d to %d promotion(s)", wrestler.id, result["linked"],
+                "Linked Wrestler#%d to %d promotion(s)",
+                wrestler.id,
+                result["linked"],
             )
     except Exception as e:
         logger.exception("Promotion linking failed for Wrestler#%d: %s", wrestler.id, e)
@@ -357,10 +379,13 @@ def _post_persist_side_effects(wrestler, source_fetch: SourceFetch) -> None:
     # 4. Resolve mentions to existing wrestlers (Round 4)
     try:
         from .linking import resolve_wrestler_mentions_to_wrestlers
+
         wresult = resolve_wrestler_mentions_to_wrestlers(wrestler.id)
         if wresult["resolved"]:
             logger.info(
-                "Linked Wrestler#%d to %d other wrestler mention(s)", wrestler.id, wresult["resolved"],
+                "Linked Wrestler#%d to %d other wrestler mention(s)",
+                wrestler.id,
+                wresult["resolved"],
             )
     except Exception as e:
         logger.exception("Wrestler-mention resolution failed for Wrestler#%d: %s", wrestler.id, e)
@@ -368,10 +393,13 @@ def _post_persist_side_effects(wrestler, source_fetch: SourceFetch) -> None:
     # 5. Trained-by trainer links (Round 4)
     try:
         from .linking import link_trainers_for_wrestler
+
         tresult = link_trainers_for_wrestler(wrestler)
         if tresult["linked"]:
             logger.info(
-                "Linked Wrestler#%d to %d trainer(s)", wrestler.id, tresult["linked"],
+                "Linked Wrestler#%d to %d trainer(s)",
+                wrestler.id,
+                tresult["linked"],
             )
     except Exception as e:
         logger.exception("Trainer linking failed for Wrestler#%d: %s", wrestler.id, e)
@@ -379,6 +407,7 @@ def _post_persist_side_effects(wrestler, source_fetch: SourceFetch) -> None:
     # 6. Consistency checks
     try:
         from .consistency import check_wrestler, log_issues, lower_confidence_for_issues
+
         issues = check_wrestler(wrestler)
         if issues:
             log_issues("wrestler", wrestler.id, wrestler.name, issues)
@@ -390,11 +419,14 @@ def _post_persist_side_effects(wrestler, source_fetch: SourceFetch) -> None:
     # contributed to this wrestler's FieldProvenance rows. Cheap to run.
     try:
         from .reconcile_sources import reconcile_field_provenance
+
         rec = reconcile_field_provenance("wrestler", wrestler.id)
         if rec["agreements"] or rec["disagreements"]:
             logger.info(
                 "Cross-source reconcile for Wrestler#%d: %d agreement(s), %d disagreement(s)",
-                wrestler.id, len(rec["agreements"]), len(rec["disagreements"]),
+                wrestler.id,
+                len(rec["agreements"]),
+                len(rec["disagreements"]),
             )
     except Exception as e:
         logger.exception("Cross-source reconcile failed for Wrestler#%d: %s", wrestler.id, e)

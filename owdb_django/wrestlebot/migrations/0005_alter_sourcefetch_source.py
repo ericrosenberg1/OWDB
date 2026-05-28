@@ -4,15 +4,26 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('wrestlebot', '0004_generatedbio_attempt_number_and_more'),
+        ("wrestlebot", "0004_generatedbio_attempt_number_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='sourcefetch',
-            name='source',
-            field=models.CharField(choices=[('wikipedia', 'Wikipedia'), ('wikidata', 'Wikidata'), ('cagematch', 'Cagematch'), ('profightdb', 'ProFightDB'), ('tmdb', 'TMDB'), ('wikimedia_commons', 'Wikimedia Commons'), ('openlibrary', 'Open Library')], db_index=True, max_length=50),
+            model_name="sourcefetch",
+            name="source",
+            field=models.CharField(
+                choices=[
+                    ("wikipedia", "Wikipedia"),
+                    ("wikidata", "Wikidata"),
+                    ("cagematch", "Cagematch"),
+                    ("profightdb", "ProFightDB"),
+                    ("tmdb", "TMDB"),
+                    ("wikimedia_commons", "Wikimedia Commons"),
+                    ("openlibrary", "Open Library"),
+                ],
+                db_index=True,
+                max_length=50,
+            ),
         ),
     ]

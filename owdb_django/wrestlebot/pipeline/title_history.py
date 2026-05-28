@@ -61,301 +61,348 @@ TITLE_HISTORY_PAGES: dict[str, tuple[str, ...]] = {
     # =======================================================================
     # WWE / WWF — flagship + secondaries + brand-split women's + tag
     # =======================================================================
-    "wwe_championship":             ("List of WWE Champions",),
-    "wwe_universal":                ("List of WWE Universal Champions",),
-    "wwe_intercontinental":         ("List of WWE Intercontinental Champions",),
-    "wwe_united_states":            ("List of WWE United States Champions",),
-    "wwe_womens":                   ("List of WWE Women's Champions",
-                                     "List of WWE Women's Champions (1956-2010)"),
-    "wwe_raw_womens":               ("List of WWE Raw Women's Champions",),
-    "wwe_smackdown_womens":         ("List of WWE SmackDown Women's Champions",),
-    "wwe_womens_tag_team":          ("List of WWE Women's Tag Team Champions",),
-    "wwe_tag_team":                 ("List of WWE Tag Team Champions",),
-    "wwe_world_tag_team":           ("List of WWE World Tag Team Champions",),
-    "wwe_speed":                    ("List of WWE Speed Champions",
-                                     "WWE Speed Championship"),
+    "wwe_championship": ("List of WWE Champions",),
+    "wwe_universal": ("List of WWE Universal Champions",),
+    "wwe_intercontinental": ("List of WWE Intercontinental Champions",),
+    "wwe_united_states": ("List of WWE United States Champions",),
+    "wwe_womens": ("List of WWE Women's Champions", "List of WWE Women's Champions (1956-2010)"),
+    "wwe_raw_womens": ("List of WWE Raw Women's Champions",),
+    "wwe_smackdown_womens": ("List of WWE SmackDown Women's Champions",),
+    "wwe_womens_tag_team": ("List of WWE Women's Tag Team Champions",),
+    "wwe_tag_team": ("List of WWE Tag Team Champions",),
+    "wwe_world_tag_team": ("List of WWE World Tag Team Champions",),
+    "wwe_speed": ("List of WWE Speed Champions", "WWE Speed Championship"),
     # ---- WWE defunct / classic belts -------------------------------------
-    "wwe_european":                 ("List of WWE European Champions",
-                                     "WWE European Championship"),
-    "wwe_hardcore":                 ("List of WWE Hardcore Champions",
-                                     "WWE Hardcore Championship"),
-    "wwe_light_heavyweight":        ("List of WWE Light Heavyweight Champions",
-                                     "WWE Light Heavyweight Championship"),
-    "wwe_cruiserweight":            ("List of WWE Cruiserweight Champions",
-                                     "WWE Cruiserweight Championship"),
-    "wwe_24_7":                     ("List of WWE 24/7 Champions",
-                                     "WWE 24/7 Championship"),
-    "wwe_million_dollar":           ("List of Million Dollar Champions",
-                                     "Million Dollar Championship"),
-
+    "wwe_european": ("List of WWE European Champions", "WWE European Championship"),
+    "wwe_hardcore": ("List of WWE Hardcore Champions", "WWE Hardcore Championship"),
+    "wwe_light_heavyweight": (
+        "List of WWE Light Heavyweight Champions",
+        "WWE Light Heavyweight Championship",
+    ),
+    "wwe_cruiserweight": ("List of WWE Cruiserweight Champions", "WWE Cruiserweight Championship"),
+    "wwe_24_7": ("List of WWE 24/7 Champions", "WWE 24/7 Championship"),
+    "wwe_million_dollar": ("List of Million Dollar Champions", "Million Dollar Championship"),
     # =======================================================================
     # NXT — WWE's developmental brand has its own deep lineage
     # =======================================================================
-    "nxt_championship":             ("List of NXT Champions",
-                                     "NXT Championship"),
-    "nxt_north_american":           ("List of NXT North American Champions",
-                                     "NXT North American Championship"),
-    "nxt_womens":                   ("List of NXT Women's Champions",
-                                     "NXT Women's Championship"),
-    "nxt_womens_north_american":    ("List of NXT Women's North American Champions",
-                                     "NXT Women's North American Championship"),
-    "nxt_tag_team":                 ("List of NXT Tag Team Champions",
-                                     "NXT Tag Team Championship"),
-    "nxt_uk":                       ("List of NXT UK Champions",
-                                     "NXT United Kingdom Championship",
-                                     "NXT UK Championship"),
-    "nxt_uk_womens":                ("List of NXT UK Women's Champions",
-                                     "NXT UK Women's Championship"),
-    "nxt_uk_tag_team":              ("List of NXT UK Tag Team Champions",
-                                     "NXT UK Tag Team Championship"),
-
+    "nxt_championship": ("List of NXT Champions", "NXT Championship"),
+    "nxt_north_american": (
+        "List of NXT North American Champions",
+        "NXT North American Championship",
+    ),
+    "nxt_womens": ("List of NXT Women's Champions", "NXT Women's Championship"),
+    "nxt_womens_north_american": (
+        "List of NXT Women's North American Champions",
+        "NXT Women's North American Championship",
+    ),
+    "nxt_tag_team": ("List of NXT Tag Team Champions", "NXT Tag Team Championship"),
+    "nxt_uk": (
+        "List of NXT UK Champions",
+        "NXT United Kingdom Championship",
+        "NXT UK Championship",
+    ),
+    "nxt_uk_womens": ("List of NXT UK Women's Champions", "NXT UK Women's Championship"),
+    "nxt_uk_tag_team": ("List of NXT UK Tag Team Champions", "NXT UK Tag Team Championship"),
     # =======================================================================
     # WCW — historic Atlanta lineage that fed the Monday Night Wars
     # =======================================================================
-    "wcw_world_heavyweight":        ("List of WCW World Heavyweight Champions",),
-    "wcw_united_states":            ("List of WCW United States Heavyweight Champions",),
-    "wcw_world_television":         ("List of WCW World Television Champions",),
-    "wcw_tag_team":                 ("List of WCW World Tag Team Champions",
-                                     "WCW World Tag Team Championship"),
-    "wcw_cruiserweight":            ("List of WCW Cruiserweight Champions",
-                                     "WCW Cruiserweight Championship"),
-    "wcw_hardcore":                 ("List of WCW Hardcore Champions",
-                                     "WCW Hardcore Championship"),
-    "wcw_international":            ("List of WCW International World Heavyweight Champions",
-                                     "WCW International World Heavyweight Championship"),
-    "wcw_light_heavyweight":        ("List of WCW Light Heavyweight Champions",
-                                     "WCW Light Heavyweight Championship"),
-    "wcw_womens":                   ("List of WCW Women's Champions",
-                                     "WCW Women's Championship"),
-
+    "wcw_world_heavyweight": ("List of WCW World Heavyweight Champions",),
+    "wcw_united_states": ("List of WCW United States Heavyweight Champions",),
+    "wcw_world_television": ("List of WCW World Television Champions",),
+    "wcw_tag_team": ("List of WCW World Tag Team Champions", "WCW World Tag Team Championship"),
+    "wcw_cruiserweight": ("List of WCW Cruiserweight Champions", "WCW Cruiserweight Championship"),
+    "wcw_hardcore": ("List of WCW Hardcore Champions", "WCW Hardcore Championship"),
+    "wcw_international": (
+        "List of WCW International World Heavyweight Champions",
+        "WCW International World Heavyweight Championship",
+    ),
+    "wcw_light_heavyweight": (
+        "List of WCW Light Heavyweight Champions",
+        "WCW Light Heavyweight Championship",
+    ),
+    "wcw_womens": ("List of WCW Women's Champions", "WCW Women's Championship"),
     # =======================================================================
     # ECW — Philadelphia hardcore lineage
     # =======================================================================
-    "ecw_world":                    ("List of ECW World Heavyweight Champions",),
-    "ecw_world_television":         ("List of ECW World Television Champions",
-                                     "ECW World Television Championship"),
-    "ecw_world_tag_team":           ("List of ECW World Tag Team Champions",
-                                     "ECW World Tag Team Championship"),
-    "ecw_ftw":                      ("List of FTW Champions",
-                                     "FTW Championship"),
-
+    "ecw_world": ("List of ECW World Heavyweight Champions",),
+    "ecw_world_television": (
+        "List of ECW World Television Champions",
+        "ECW World Television Championship",
+    ),
+    "ecw_world_tag_team": (
+        "List of ECW World Tag Team Champions",
+        "ECW World Tag Team Championship",
+    ),
+    "ecw_ftw": ("List of FTW Champions", "FTW Championship"),
     # =======================================================================
     # AEW — full active singles + tag + trios + ROH belts (AEW owns ROH)
     # =======================================================================
-    "aew_world":                    ("List of AEW World Champions",
-                                     "AEW World Championship"),
-    "aew_womens_world":             ("List of AEW Women's World Champions",
-                                     "AEW Women's World Championship"),
-    "aew_tnt":                      ("List of AEW TNT Champions",
-                                     "AEW TNT Championship"),
-    "aew_tbs":                      ("List of AEW TBS Champions",
-                                     "AEW TBS Championship"),
-    "aew_international":            ("List of AEW International Champions",
-                                     "AEW International Championship",
-                                     "AEW All-Atlantic Championship"),
-    "aew_continental":              ("List of AEW Continental Champions",
-                                     "AEW Continental Championship",
-                                     "AEW Continental Classic"),
-    "aew_world_tag_team":           ("List of AEW World Tag Team Champions",
-                                     "AEW World Tag Team Championship"),
-    "aew_world_trios":              ("List of AEW World Trios Champions",
-                                     "AEW World Trios Championship"),
-
+    "aew_world": ("List of AEW World Champions", "AEW World Championship"),
+    "aew_womens_world": ("List of AEW Women's World Champions", "AEW Women's World Championship"),
+    "aew_tnt": ("List of AEW TNT Champions", "AEW TNT Championship"),
+    "aew_tbs": ("List of AEW TBS Champions", "AEW TBS Championship"),
+    "aew_international": (
+        "List of AEW International Champions",
+        "AEW International Championship",
+        "AEW All-Atlantic Championship",
+    ),
+    "aew_continental": (
+        "List of AEW Continental Champions",
+        "AEW Continental Championship",
+        "AEW Continental Classic",
+    ),
+    "aew_world_tag_team": (
+        "List of AEW World Tag Team Champions",
+        "AEW World Tag Team Championship",
+    ),
+    "aew_world_trios": ("List of AEW World Trios Champions", "AEW World Trios Championship"),
     # =======================================================================
     # TNA / Impact — Nashville + Orlando + Impact era
     # =======================================================================
-    "tna_world":                    ("List of TNA World Heavyweight Champions",
-                                     "TNA World Championship",
-                                     "TNA World Heavyweight Championship"),
-    "tna_knockouts":                ("List of TNA Knockouts Champions",
-                                     "TNA Knockouts Championship"),
-    "tna_x_division":               ("List of TNA X Division Champions",
-                                     "TNA X Division Championship",
-                                     "Impact X Division Championship"),
-    "tna_tag_team":                 ("List of TNA World Tag Team Champions",
-                                     "TNA World Tag Team Championship"),
-    "tna_knockouts_tag":            ("List of TNA Knockouts Tag Team Champions",
-                                     "TNA Knockouts Tag Team Championship"),
-    "tna_digital_media":            ("List of Impact Digital Media Champions",
-                                     "Impact Digital Media Championship"),
-
+    "tna_world": (
+        "List of TNA World Heavyweight Champions",
+        "TNA World Championship",
+        "TNA World Heavyweight Championship",
+    ),
+    "tna_knockouts": ("List of TNA Knockouts Champions", "TNA Knockouts Championship"),
+    "tna_x_division": (
+        "List of TNA X Division Champions",
+        "TNA X Division Championship",
+        "Impact X Division Championship",
+    ),
+    "tna_tag_team": ("List of TNA World Tag Team Champions", "TNA World Tag Team Championship"),
+    "tna_knockouts_tag": (
+        "List of TNA Knockouts Tag Team Champions",
+        "TNA Knockouts Tag Team Championship",
+    ),
+    "tna_digital_media": (
+        "List of Impact Digital Media Champions",
+        "Impact Digital Media Championship",
+    ),
     # =======================================================================
     # NWA — historic + current lineage; ~100 champions across the decades
     # =======================================================================
-    "nwa_world_heavyweight":        ("List of NWA World Heavyweight Champions",),
-    "nwa_world_tag_team":           ("List of NWA World Tag Team Champions",
-                                     "NWA World Tag Team Championship"),
-    "nwa_world_television":         ("List of NWA World Television Champions",
-                                     "NWA World Television Championship"),
-    "nwa_world_junior":             ("List of NWA World Junior Heavyweight Champions",
-                                     "NWA World Junior Heavyweight Championship"),
-    "nwa_worlds_womens":            ("List of NWA Worlds Women's Champions",
-                                     "NWA World Women's Championship"),
-    "nwa_united_states":            ("List of NWA United States Heavyweight Champions",
-                                     "NWA United States Heavyweight Championship"),
-
+    "nwa_world_heavyweight": ("List of NWA World Heavyweight Champions",),
+    "nwa_world_tag_team": (
+        "List of NWA World Tag Team Champions",
+        "NWA World Tag Team Championship",
+    ),
+    "nwa_world_television": (
+        "List of NWA World Television Champions",
+        "NWA World Television Championship",
+    ),
+    "nwa_world_junior": (
+        "List of NWA World Junior Heavyweight Champions",
+        "NWA World Junior Heavyweight Championship",
+    ),
+    "nwa_worlds_womens": ("List of NWA Worlds Women's Champions", "NWA World Women's Championship"),
+    "nwa_united_states": (
+        "List of NWA United States Heavyweight Champions",
+        "NWA United States Heavyweight Championship",
+    ),
     # =======================================================================
     # AWA — Minneapolis-based; Verne Gagne's promotion (1960-1991)
     # =======================================================================
-    "awa_world_heavyweight":        ("List of AWA World Heavyweight Champions",
-                                     "AWA World Heavyweight Championship"),
-    "awa_world_tag_team":           ("List of AWA World Tag Team Champions",
-                                     "AWA World Tag Team Championship"),
-    "awa_world_womens":             ("List of AWA World Women's Champions",
-                                     "AWA World Women's Championship"),
-
+    "awa_world_heavyweight": (
+        "List of AWA World Heavyweight Champions",
+        "AWA World Heavyweight Championship",
+    ),
+    "awa_world_tag_team": (
+        "List of AWA World Tag Team Champions",
+        "AWA World Tag Team Championship",
+    ),
+    "awa_world_womens": ("List of AWA World Women's Champions", "AWA World Women's Championship"),
     # =======================================================================
     # World Class / WCCW — Dallas territory; the Von Erichs
     # =======================================================================
-    "wccw_world_heavyweight":       ("List of WCCW World Heavyweight Champions",
-                                     "WCCW World Heavyweight Championship",
-                                     "NWA American Heavyweight Championship"),
-    "wccw_world_tag_team":          ("List of WCCW World Tag Team Champions",
-                                     "WCCW World Tag Team Championship"),
-    "wccw_world_six_man":           ("WCCW World Six-Man Tag Team Championship",),
-
+    "wccw_world_heavyweight": (
+        "List of WCCW World Heavyweight Champions",
+        "WCCW World Heavyweight Championship",
+        "NWA American Heavyweight Championship",
+    ),
+    "wccw_world_tag_team": (
+        "List of WCCW World Tag Team Champions",
+        "WCCW World Tag Team Championship",
+    ),
+    "wccw_world_six_man": ("WCCW World Six-Man Tag Team Championship",),
     # =======================================================================
     # Mid-South / UWF — Bill Watts' territory
     # =======================================================================
-    "mid_south_north_american":     ("Mid-South North American Heavyweight Championship",
-                                     "List of Mid-South North American Heavyweight Champions"),
-    "uwf_heavyweight":              ("UWF Heavyweight Championship",
-                                     "UWF World Heavyweight Championship"),
-
+    "mid_south_north_american": (
+        "Mid-South North American Heavyweight Championship",
+        "List of Mid-South North American Heavyweight Champions",
+    ),
+    "uwf_heavyweight": ("UWF Heavyweight Championship", "UWF World Heavyweight Championship"),
     # =======================================================================
     # Stampede Wrestling — Calgary; the Hart Family's home territory
     # =======================================================================
-    "stampede_north_american":      ("Stampede Wrestling North American Heavyweight Championship",
-                                     "Stampede North American Heavyweight Championship"),
-    "stampede_international_tag":   ("Stampede Wrestling International Tag Team Championship",),
-
+    "stampede_north_american": (
+        "Stampede Wrestling North American Heavyweight Championship",
+        "Stampede North American Heavyweight Championship",
+    ),
+    "stampede_international_tag": ("Stampede Wrestling International Tag Team Championship",),
     # =======================================================================
     # NJPW — New Japan; the marquee Japanese lineage
     # =======================================================================
-    "iwgp_heavyweight":             ("List of IWGP Heavyweight Champions",
-                                     "List of IWGP World Heavyweight Champions",
-                                     "IWGP World Heavyweight Championship"),
-    "iwgp_intercontinental":        ("List of IWGP Intercontinental Champions",
-                                     "IWGP Intercontinental Championship"),
-    "iwgp_jr_heavyweight":          ("List of IWGP Junior Heavyweight Champions",
-                                     "IWGP Junior Heavyweight Championship"),
-    "iwgp_tag_team":                ("List of IWGP Tag Team Champions",
-                                     "IWGP Tag Team Championship"),
-    "iwgp_jr_tag_team":             ("List of IWGP Junior Heavyweight Tag Team Champions",
-                                     "IWGP Junior Heavyweight Tag Team Championship"),
-    "iwgp_united_states":           ("List of IWGP United States Heavyweight Champions",
-                                     "IWGP United States Heavyweight Championship"),
-    "never_openweight":             ("List of NEVER Openweight Champions",
-                                     "NEVER Openweight Championship"),
-    "never_openweight_six_man":     ("NEVER Openweight 6-Man Tag Team Championship",
-                                     "NEVER Openweight Six-Man Tag Team Championship"),
-
+    "iwgp_heavyweight": (
+        "List of IWGP Heavyweight Champions",
+        "List of IWGP World Heavyweight Champions",
+        "IWGP World Heavyweight Championship",
+    ),
+    "iwgp_intercontinental": (
+        "List of IWGP Intercontinental Champions",
+        "IWGP Intercontinental Championship",
+    ),
+    "iwgp_jr_heavyweight": (
+        "List of IWGP Junior Heavyweight Champions",
+        "IWGP Junior Heavyweight Championship",
+    ),
+    "iwgp_tag_team": ("List of IWGP Tag Team Champions", "IWGP Tag Team Championship"),
+    "iwgp_jr_tag_team": (
+        "List of IWGP Junior Heavyweight Tag Team Champions",
+        "IWGP Junior Heavyweight Tag Team Championship",
+    ),
+    "iwgp_united_states": (
+        "List of IWGP United States Heavyweight Champions",
+        "IWGP United States Heavyweight Championship",
+    ),
+    "never_openweight": ("List of NEVER Openweight Champions", "NEVER Openweight Championship"),
+    "never_openweight_six_man": (
+        "NEVER Openweight 6-Man Tag Team Championship",
+        "NEVER Openweight Six-Man Tag Team Championship",
+    ),
     # =======================================================================
     # AJPW — All Japan Pro Wrestling
     # =======================================================================
-    "ajpw_triple_crown":            ("List of Triple Crown Heavyweight Champions",
-                                     "Triple Crown Heavyweight Championship"),
-    "ajpw_world_tag_team":          ("List of World Tag Team Champions (AJPW)",
-                                     "World Tag Team Championship (AJPW)",
-                                     "AJPW World Tag Team Championship"),
-    "ajpw_junior_heavyweight":      ("List of AJPW World Junior Heavyweight Champions",
-                                     "AJPW World Junior Heavyweight Championship",
-                                     "World Junior Heavyweight Championship (AJPW)"),
-    "ajpw_jr_tag_team":             ("AJPW All Asia Tag Team Championship",
-                                     "All Asia Tag Team Championship"),
-
+    "ajpw_triple_crown": (
+        "List of Triple Crown Heavyweight Champions",
+        "Triple Crown Heavyweight Championship",
+    ),
+    "ajpw_world_tag_team": (
+        "List of World Tag Team Champions (AJPW)",
+        "World Tag Team Championship (AJPW)",
+        "AJPW World Tag Team Championship",
+    ),
+    "ajpw_junior_heavyweight": (
+        "List of AJPW World Junior Heavyweight Champions",
+        "AJPW World Junior Heavyweight Championship",
+        "World Junior Heavyweight Championship (AJPW)",
+    ),
+    "ajpw_jr_tag_team": ("AJPW All Asia Tag Team Championship", "All Asia Tag Team Championship"),
     # =======================================================================
     # NOAH — Pro Wrestling Noah
     # =======================================================================
-    "noah_ghc_heavyweight":         ("List of GHC Heavyweight Champions",
-                                     "GHC Heavyweight Championship"),
-    "noah_ghc_jr_heavyweight":      ("List of GHC Junior Heavyweight Champions",
-                                     "GHC Junior Heavyweight Championship"),
-    "noah_ghc_national":            ("GHC National Championship",
-                                     "List of GHC National Champions"),
-    "noah_ghc_tag_team":            ("List of GHC Tag Team Champions",
-                                     "GHC Tag Team Championship"),
-    "noah_ghc_jr_tag_team":         ("List of GHC Junior Heavyweight Tag Team Champions",
-                                     "GHC Junior Heavyweight Tag Team Championship"),
-
+    "noah_ghc_heavyweight": ("List of GHC Heavyweight Champions", "GHC Heavyweight Championship"),
+    "noah_ghc_jr_heavyweight": (
+        "List of GHC Junior Heavyweight Champions",
+        "GHC Junior Heavyweight Championship",
+    ),
+    "noah_ghc_national": ("GHC National Championship", "List of GHC National Champions"),
+    "noah_ghc_tag_team": ("List of GHC Tag Team Champions", "GHC Tag Team Championship"),
+    "noah_ghc_jr_tag_team": (
+        "List of GHC Junior Heavyweight Tag Team Champions",
+        "GHC Junior Heavyweight Tag Team Championship",
+    ),
     # =======================================================================
     # ROH — Ring of Honor (now under AEW ownership)
     # =======================================================================
-    "roh_world":                    ("List of ROH World Champions",
-                                     "ROH World Championship"),
-    "roh_world_television":         ("List of ROH World Television Champions",
-                                     "ROH World Television Championship"),
-    "roh_world_tag_team":           ("List of ROH World Tag Team Champions",
-                                     "ROH World Tag Team Championship"),
-    "roh_world_six_man":            ("List of ROH World Six-Man Tag Team Champions",
-                                     "ROH World Six-Man Tag Team Championship"),
-    "roh_pure":                     ("List of ROH Pure Champions",
-                                     "ROH Pure Championship"),
-    "roh_womens_world":             ("List of ROH Women's World Champions",
-                                     "ROH Women's World Championship"),
-
+    "roh_world": ("List of ROH World Champions", "ROH World Championship"),
+    "roh_world_television": (
+        "List of ROH World Television Champions",
+        "ROH World Television Championship",
+    ),
+    "roh_world_tag_team": (
+        "List of ROH World Tag Team Champions",
+        "ROH World Tag Team Championship",
+    ),
+    "roh_world_six_man": (
+        "List of ROH World Six-Man Tag Team Champions",
+        "ROH World Six-Man Tag Team Championship",
+    ),
+    "roh_pure": ("List of ROH Pure Champions", "ROH Pure Championship"),
+    "roh_womens_world": ("List of ROH Women's World Champions", "ROH Women's World Championship"),
     # =======================================================================
     # CMLL / AAA — Mexican lineages (Lucha Libre)
     # =======================================================================
-    "cmll_world_heavyweight":       ("List of CMLL World Heavyweight Champions",),
-    "cmll_world_tag_team":          ("CMLL World Tag Team Championship",
-                                     "List of CMLL World Tag Team Champions"),
-    "cmll_world_trios":             ("CMLL World Trios Championship",
-                                     "List of CMLL World Trios Champions"),
-    "cmll_world_welterweight":      ("CMLL World Welterweight Championship",
-                                     "List of CMLL World Welterweight Champions"),
-    "cmll_world_middleweight":      ("CMLL World Middleweight Championship",
-                                     "List of CMLL World Middleweight Champions"),
-    "cmll_world_lightweight":       ("CMLL World Lightweight Championship",
-                                     "List of CMLL World Lightweight Champions"),
-    "cmll_world_light_heavyweight": ("CMLL World Light Heavyweight Championship",
-                                     "List of CMLL World Light Heavyweight Champions"),
-    "aaa_mega":                     ("List of AAA Mega Champions",
-                                     "AAA Mega Championship"),
-    "aaa_latin_american":           ("AAA Latin American Championship",
-                                     "List of AAA Latin American Champions"),
-    "aaa_reina_de_reinas":          ("AAA Reina de Reinas Championship",
-                                     "List of AAA Reina de Reinas Champions"),
-    "aaa_world_tag_team":           ("AAA World Tag Team Championship",
-                                     "List of AAA World Tag Team Champions"),
-    "aaa_world_trios":              ("AAA World Trios Championship",
-                                     "List of AAA World Trios Champions"),
-
+    "cmll_world_heavyweight": ("List of CMLL World Heavyweight Champions",),
+    "cmll_world_tag_team": (
+        "CMLL World Tag Team Championship",
+        "List of CMLL World Tag Team Champions",
+    ),
+    "cmll_world_trios": ("CMLL World Trios Championship", "List of CMLL World Trios Champions"),
+    "cmll_world_welterweight": (
+        "CMLL World Welterweight Championship",
+        "List of CMLL World Welterweight Champions",
+    ),
+    "cmll_world_middleweight": (
+        "CMLL World Middleweight Championship",
+        "List of CMLL World Middleweight Champions",
+    ),
+    "cmll_world_lightweight": (
+        "CMLL World Lightweight Championship",
+        "List of CMLL World Lightweight Champions",
+    ),
+    "cmll_world_light_heavyweight": (
+        "CMLL World Light Heavyweight Championship",
+        "List of CMLL World Light Heavyweight Champions",
+    ),
+    "aaa_mega": ("List of AAA Mega Champions", "AAA Mega Championship"),
+    "aaa_latin_american": (
+        "AAA Latin American Championship",
+        "List of AAA Latin American Champions",
+    ),
+    "aaa_reina_de_reinas": (
+        "AAA Reina de Reinas Championship",
+        "List of AAA Reina de Reinas Champions",
+    ),
+    "aaa_world_tag_team": (
+        "AAA World Tag Team Championship",
+        "List of AAA World Tag Team Champions",
+    ),
+    "aaa_world_trios": ("AAA World Trios Championship", "List of AAA World Trios Champions"),
     # =======================================================================
     # Stardom — premier joshi (women's) promotion
     # =======================================================================
-    "stardom_world":                ("World of Stardom Championship",
-                                     "List of World of Stardom Champions"),
-    "stardom_world_wonder":         ("Wonder of Stardom Championship",
-                                     "List of Wonder of Stardom Champions"),
-    "stardom_high_speed":           ("High Speed Championship",
-                                     "List of High Speed Champions"),
-    "stardom_artist_of_stardom":    ("Artist of Stardom Championship",
-                                     "List of Artist of Stardom Champions"),
-    "stardom_goddess_of_stardom":   ("Goddess of Stardom Championship",
-                                     "List of Goddess of Stardom Champions"),
-    "stardom_future_of_stardom":    ("Future of Stardom Championship",
-                                     "List of Future of Stardom Champions"),
-
+    "stardom_world": ("World of Stardom Championship", "List of World of Stardom Champions"),
+    "stardom_world_wonder": (
+        "Wonder of Stardom Championship",
+        "List of Wonder of Stardom Champions",
+    ),
+    "stardom_high_speed": ("High Speed Championship", "List of High Speed Champions"),
+    "stardom_artist_of_stardom": (
+        "Artist of Stardom Championship",
+        "List of Artist of Stardom Champions",
+    ),
+    "stardom_goddess_of_stardom": (
+        "Goddess of Stardom Championship",
+        "List of Goddess of Stardom Champions",
+    ),
+    "stardom_future_of_stardom": (
+        "Future of Stardom Championship",
+        "List of Future of Stardom Champions",
+    ),
     # =======================================================================
     # Other notable indie + international titles
     # =======================================================================
-    "pwg_world":                    ("List of PWG World Champions",
-                                     "PWG World Championship"),
-    "pwg_world_tag_team":           ("PWG World Tag Team Championship",
-                                     "List of PWG World Tag Team Champions"),
-    "mlw_world_heavyweight":        ("List of MLW World Heavyweight Champions",
-                                     "MLW World Heavyweight Championship"),
-    "mlw_national_openweight":      ("MLW National Openweight Championship",),
-    "mlw_world_middleweight":       ("MLW World Middleweight Championship",),
-    "gcw_world":                    ("List of GCW World Champions",
-                                     "GCW World Championship",
-                                     "Game Changer Wrestling World Championship"),
-    "deathmatch_gcw":               ("List of GCW World Title Champions",
-                                     "GCW World Championship"),
-    "njpw_strong_openweight":       ("NJPW Strong Openweight Championship",),
-    "njpw_strong_openweight_tag":   ("NJPW Strong Openweight Tag Team Championship",),
-
+    "pwg_world": ("List of PWG World Champions", "PWG World Championship"),
+    "pwg_world_tag_team": (
+        "PWG World Tag Team Championship",
+        "List of PWG World Tag Team Champions",
+    ),
+    "mlw_world_heavyweight": (
+        "List of MLW World Heavyweight Champions",
+        "MLW World Heavyweight Championship",
+    ),
+    "mlw_national_openweight": ("MLW National Openweight Championship",),
+    "mlw_world_middleweight": ("MLW World Middleweight Championship",),
+    "gcw_world": (
+        "List of GCW World Champions",
+        "GCW World Championship",
+        "Game Changer Wrestling World Championship",
+    ),
+    "deathmatch_gcw": ("List of GCW World Title Champions", "GCW World Championship"),
+    "njpw_strong_openweight": ("NJPW Strong Openweight Championship",),
+    "njpw_strong_openweight_tag": ("NJPW Strong Openweight Tag Team Championship",),
     # =======================================================================
     # Halls of fame — non-belt lineages with lots of notability-validated
     # wrestler names. Treat like a mega-list for discovery purposes.
@@ -369,14 +416,15 @@ TITLE_HISTORY_PAGES: dict[str, tuple[str, ...]] = {
     # *persist* time is already done by the contract; flagging at
     # *queue* time prevents wasted API calls and Earl flag noise.
     # =======================================================================
-    "wwe_hall_of_fame":             ("List of WWE Hall of Fame inductees",),
-    "pwhof":                        ("Professional Wrestling Hall of Fame and Museum",),
-    "wcw_hall_of_fame":             ("WCW Hall of Fame",),
-    "wonf4w_hall_of_fame":          ("Wrestling Observer Newsletter Hall of Fame",),
-    "japanese_wrestling_hof":       ("Wrestling Observer Newsletter Hall of Fame",
-                                     "Tokyo Sports Puroresu Awards"),
-    "lucha_hall_of_fame":           ("WON Hall of Fame",
-                                     "Wrestling Observer Newsletter Hall of Fame"),
+    "wwe_hall_of_fame": ("List of WWE Hall of Fame inductees",),
+    "pwhof": ("Professional Wrestling Hall of Fame and Museum",),
+    "wcw_hall_of_fame": ("WCW Hall of Fame",),
+    "wonf4w_hall_of_fame": ("Wrestling Observer Newsletter Hall of Fame",),
+    "japanese_wrestling_hof": (
+        "Wrestling Observer Newsletter Hall of Fame",
+        "Tokyo Sports Puroresu Awards",
+    ),
+    "lucha_hall_of_fame": ("WON Hall of Fame", "Wrestling Observer Newsletter Hall of Fame"),
 }
 
 
@@ -384,14 +432,16 @@ TITLE_HISTORY_PAGES: dict[str, tuple[str, ...]] = {
 # The discovery loop applies a per-page classification gate before
 # queueing names from these slugs, to avoid creating SourceFetch rows
 # for Bob Uecker / Drew Carey / Pete Rose under `entity_type='wrestler'`.
-_HOF_DISCOVERY_SLUGS = frozenset({
-    "wwe_hall_of_fame",
-    "pwhof",
-    "wcw_hall_of_fame",
-    "wonf4w_hall_of_fame",
-    "japanese_wrestling_hof",
-    "lucha_hall_of_fame",
-})
+_HOF_DISCOVERY_SLUGS = frozenset(
+    {
+        "wwe_hall_of_fame",
+        "pwhof",
+        "wcw_hall_of_fame",
+        "wonf4w_hall_of_fame",
+        "japanese_wrestling_hof",
+        "lucha_hall_of_fame",
+    }
+)
 
 
 # ------------------------------------------------------------------ HTTP
@@ -399,21 +449,29 @@ _HOF_DISCOVERY_SLUGS = frozenset({
 
 def _wiki_parse_page(title: str) -> Optional[dict]:
     params = {
-        "action": "parse", "page": title, "prop": "text",
-        "format": "json", "formatversion": "2",
-        "redirects": "1", "disableeditsection": "true",
+        "action": "parse",
+        "page": title,
+        "prop": "text",
+        "format": "json",
+        "formatversion": "2",
+        "redirects": "1",
+        "disableeditsection": "true",
     }
     url = WIKIPEDIA_API + "?" + urllib.parse.urlencode(params)
-    req = urllib.request.Request(url, headers={
-        "User-Agent": USER_AGENT,
-        "Accept": "application/json",
-        "Accept-Encoding": "gzip, deflate",
-    })
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json",
+            "Accept-Encoding": "gzip, deflate",
+        },
+    )
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             data = resp.read()
             if resp.headers.get("Content-Encoding") == "gzip":
                 import gzip
+
                 data = gzip.decompress(data)
             return json.loads(data.decode("utf-8", errors="replace"))
     except Exception as e:
@@ -428,7 +486,9 @@ def _first_existing(titles: tuple[str, ...]) -> Optional[tuple[str, str]]:
             continue
         resolved = d["parse"].get("title", t)
         text = d["parse"].get("text")
-        html = text if isinstance(text, str) else (text.get("*") if isinstance(text, dict) else None)
+        html = (
+            text if isinstance(text, str) else (text.get("*") if isinstance(text, dict) else None)
+        )
         if html:
             return resolved, html
     return None
@@ -451,34 +511,74 @@ def _first_existing(titles: tuple[str, ...]) -> Optional[tuple[str, str]]:
 
 
 _NON_WRESTLER_NAMES = {
-    "vacated", "vacant", "deactivated", "held up", "retired", "abandoned",
-    "tournament", "abeyance", "n/a", "event", "champion", "champions",
-    "wrestler", "wrestlers", "name", "inductee", "date", "location",
-    "reign", "days", "result",
+    "vacated",
+    "vacant",
+    "deactivated",
+    "held up",
+    "retired",
+    "abandoned",
+    "tournament",
+    "abeyance",
+    "n/a",
+    "event",
+    "champion",
+    "champions",
+    "wrestler",
+    "wrestlers",
+    "name",
+    "inductee",
+    "date",
+    "location",
+    "reign",
+    "days",
+    "result",
     # Round-2 fix: generic concept names that would otherwise pass the
     # display-text gate when they appear in older title-history tables
     # (e.g. historical "Tag team" placeholder rows).
-    "tag team", "tag teams", "stable", "manager", "managers",
-    "promoter", "referee", "announcer", "valet",
+    "tag team",
+    "tag teams",
+    "stable",
+    "manager",
+    "managers",
+    "promoter",
+    "referee",
+    "announcer",
+    "valet",
 }
 _NON_WRESTLER_TOKENS = (
-    "championship", "title", "tournament", "promotion",
-    "association", "federation",
+    "championship",
+    "title",
+    "tournament",
+    "promotion",
+    "association",
+    "federation",
     # Round-2 fix: concept-page suffixes that frequently appear in display
     # text and would slip past the literal-name gate.
-    " (professional wrestling)", " (wrestling)",
+    " (professional wrestling)",
+    " (wrestling)",
 )
 _PAREN_RE = re.compile(r"\s*[\(\[][^)\]]*[\)\]]")
 _CHAMPION_HEADERS = (
-    "champion", "champions", "wrestler", "wrestlers", "name", "inductee",
+    "champion",
+    "champions",
+    "wrestler",
+    "wrestlers",
+    "name",
+    "inductee",
 )
 
 _WIKI_LINK_PREFIX = "/wiki/"
 # Wikipedia namespaces that are never wrestler articles. The action=parse
 # fetcher would still resolve them, but they're never what we want to queue.
 _WIKI_NAMESPACES_TO_SKIP = (
-    "Category:", "File:", "Help:", "Wikipedia:",
-    "Special:", "Template:", "Talk:", "Portal:",
+    "Category:",
+    "File:",
+    "Help:",
+    "Wikipedia:",
+    "Special:",
+    "Template:",
+    "Talk:",
+    "Portal:",
 )
 
 
@@ -516,7 +616,7 @@ def _link_targets_for_name_cell(ctx: dict) -> list[str]:
         href = a["href"]
         if not href.startswith(_WIKI_LINK_PREFIX):
             continue
-        target = href[len(_WIKI_LINK_PREFIX):].split("#", 1)[0].split("?", 1)[0]
+        target = href[len(_WIKI_LINK_PREFIX) :].split("#", 1)[0].split("?", 1)[0]
         if not target:
             continue
         if any(target.startswith(ns) for ns in _WIKI_NAMESPACES_TO_SKIP):
@@ -573,10 +673,7 @@ def _clean_champion_name(text: str, ctx: dict) -> Optional[FieldSnippet]:
     link_target = _link_target_for_name_cell(ctx)
     if link_target and 3 <= len(link_target) <= 80:
         lt_low = link_target.lower()
-        if (
-            lt_low not in _NON_WRESTLER_NAMES
-            and not any(t in lt_low for t in _NON_WRESTLER_TOKENS)
-        ):
+        if lt_low not in _NON_WRESTLER_NAMES and not any(t in lt_low for t in _NON_WRESTLER_TOKENS):
             return FieldSnippet(value=link_target, snippet=text[:200], confidence=95)
     return FieldSnippet(value=s, snippet=text[:200], confidence=85)
 
@@ -652,6 +749,7 @@ def _count_pre_filter_rows(html: str) -> int:
     drops sub-headers — i.e. the legacy `raw_count_seen` denominator.
     """
     from bs4 import BeautifulSoup
+
     soup = BeautifulSoup(html or "", "lxml")
     count = 0
     for table in soup.find_all("table"):
@@ -663,7 +761,8 @@ def _count_pre_filter_rows(html: str) -> int:
             for c in rows[0].find_all(["th", "td"])
         ]
         col_idx = next(
-            (i for i, h in enumerate(headers) if h in _CHAMPION_HEADERS), None,
+            (i for i, h in enumerate(headers) if h in _CHAMPION_HEADERS),
+            None,
         )
         if col_idx is None:
             continue
@@ -689,6 +788,7 @@ def extract_champions_from_html(html: str) -> tuple[list[str], int]:
     Returns (ordered_unique_names, total_rows_seen).
     """
     from bs4 import BeautifulSoup
+
     seen: dict[str, None] = {}  # ordered set
 
     # Pass 1: framework extract (back-compat path).
@@ -708,7 +808,8 @@ def extract_champions_from_html(html: str) -> tuple[list[str], int]:
             for c in rows[0].find_all(["th", "td"])
         ]
         name_col_idx = next(
-            (i for i, h in enumerate(headers) if h in _CHAMPION_HEADERS), None,
+            (i for i, h in enumerate(headers) if h in _CHAMPION_HEADERS),
+            None,
         )
         if name_col_idx is None:
             continue
@@ -802,9 +903,7 @@ def ingest_title_history_discovery(
 
     # One DB-side lookup for the existing wrestler name set, used across
     # all titles to avoid repeated full-table queries.
-    existing_names = {
-        w.name.strip().lower() for w in Wrestler.objects.only("name")
-    }
+    existing_names = {w.name.strip().lower() for w in Wrestler.objects.only("name")}
     existing_aliases = set()
     for w in Wrestler.objects.only("name", "aliases"):
         for a in (getattr(w, "aliases", "") or "").split(","):
@@ -845,7 +944,9 @@ def ingest_title_history_discovery(
         if to_queue:
             try:
                 fetch_wrestler_candidates(
-                    to_queue, force=False, from_hof_discovery=from_hof,
+                    to_queue,
+                    force=False,
+                    from_hof_discovery=from_hof,
                 )
             except TypeError:
                 # Back-compat: older fetch_wrestler_candidates signature
@@ -872,6 +973,7 @@ def ingest_title_history_discovery(
 
 if __name__ == "__main__":  # pragma: no cover
     import sys
+
     args = sys.argv[1:]
     if args:
         f = discover_from_title_history(args[0])
@@ -879,5 +981,7 @@ if __name__ == "__main__":  # pragma: no cover
     else:
         result = discover_from_all_titles()
         for slug, f in result["by_title"].items():
-            print(f"{slug:<30} {f.resolved_wikipedia_title:<55} {len(f.unique_champions)} champions")
+            print(
+                f"{slug:<30} {f.resolved_wikipedia_title:<55} {len(f.unique_champions)} champions"
+            )
         print(f"\nTotal unique names across all titles: {len(result['by_name'])}")

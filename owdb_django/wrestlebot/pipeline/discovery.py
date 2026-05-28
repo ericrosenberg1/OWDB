@@ -72,29 +72,80 @@ WRESTLER_CATEGORIES: tuple[str, ...] = (
 # initial corpus regardless of what categories return.
 NOTABLE_SEED: tuple[str, ...] = (
     # Modern era
-    "Roman Reigns", "Cody Rhodes", "Seth Rollins", "Becky Lynch",
-    "Bianca Belair", "Rhea Ripley", "Jey Uso", "Jimmy Uso",
-    "Sami Zayn", "Kevin Owens", "Sasha Banks", "Charlotte Flair",
-    "Drew McIntyre", "Bayley", "AJ Styles", "Finn Bálor",
+    "Roman Reigns",
+    "Cody Rhodes",
+    "Seth Rollins",
+    "Becky Lynch",
+    "Bianca Belair",
+    "Rhea Ripley",
+    "Jey Uso",
+    "Jimmy Uso",
+    "Sami Zayn",
+    "Kevin Owens",
+    "Sasha Banks",
+    "Charlotte Flair",
+    "Drew McIntyre",
+    "Bayley",
+    "AJ Styles",
+    "Finn Bálor",
     # AEW era
-    "Kenny Omega", "Adam Page", "Jon Moxley", "MJF", "Chris Jericho",
-    "Bryan Danielson", "Will Ospreay", "Toni Storm", "Mercedes Moné",
+    "Kenny Omega",
+    "Adam Page",
+    "Jon Moxley",
+    "MJF",
+    "Chris Jericho",
+    "Bryan Danielson",
+    "Will Ospreay",
+    "Toni Storm",
+    "Mercedes Moné",
     # Modern Japanese
-    "Kazuchika Okada", "Hiroshi Tanahashi", "Tetsuya Naito",
+    "Kazuchika Okada",
+    "Hiroshi Tanahashi",
+    "Tetsuya Naito",
     # Legends
-    "Bret Hart", "Shawn Michaels", "Hulk Hogan", "Stone Cold Steve Austin",
-    "The Rock", "Ric Flair", "Andre the Giant", "Triple H", "Undertaker",
-    "Kane", "Eddie Guerrero", "Chris Benoit", "Owen Hart",
-    "Randy Savage", "Roddy Piper", "Mick Foley", "Edge",
-    "John Cena", "Randy Orton", "Batista", "Rey Mysterio",
-    "Trish Stratus", "Lita", "Chyna",
+    "Bret Hart",
+    "Shawn Michaels",
+    "Hulk Hogan",
+    "Stone Cold Steve Austin",
+    "The Rock",
+    "Ric Flair",
+    "Andre the Giant",
+    "Triple H",
+    "Undertaker",
+    "Kane",
+    "Eddie Guerrero",
+    "Chris Benoit",
+    "Owen Hart",
+    "Randy Savage",
+    "Roddy Piper",
+    "Mick Foley",
+    "Edge",
+    "John Cena",
+    "Randy Orton",
+    "Batista",
+    "Rey Mysterio",
+    "Trish Stratus",
+    "Lita",
+    "Chyna",
     # Classic
-    "Lou Thesz", "Bruno Sammartino", "Verne Gagne", "Harley Race",
-    "Dusty Rhodes", "Terry Funk", "Mil Máscaras", "El Santo",
-    "Antonio Inoki", "Giant Baba", "Rikidozan",
+    "Lou Thesz",
+    "Bruno Sammartino",
+    "Verne Gagne",
+    "Harley Race",
+    "Dusty Rhodes",
+    "Terry Funk",
+    "Mil Máscaras",
+    "El Santo",
+    "Antonio Inoki",
+    "Giant Baba",
+    "Rikidozan",
     # Other notable
-    "Abdullah the Butcher", "Sting", "Goldberg",
-    "Tank Abbott", "Kurt Angle", "Brock Lesnar",
+    "Abdullah the Butcher",
+    "Sting",
+    "Goldberg",
+    "Tank Abbott",
+    "Kurt Angle",
+    "Brock Lesnar",
 )
 
 
@@ -169,8 +220,8 @@ NOTABLE_PROMOTION_SEED: tuple[str, ...] = (
     "WWE NXT",
     "WWE Raw",
     "WWE SmackDown",
-    "WWE ID",                       # WWE's new indie partnership
-    "Lucha Libre AAA Worldwide",    # WWE partner / acquisition
+    "WWE ID",  # WWE's new indie partnership
+    "Lucha Libre AAA Worldwide",  # WWE partner / acquisition
     # Major modern
     "All Elite Wrestling",
     "Ring of Honor",
@@ -198,7 +249,7 @@ NOTABLE_PROMOTION_SEED: tuple[str, ...] = (
     "Wrestling Revolver",
     "Maple Leaf Pro Wrestling",
     # Developmental / regional
-    "Ohio Valley Wrestling",     # OVW
+    "Ohio Valley Wrestling",  # OVW
     "Florida Championship Wrestling",
     "Deep South Wrestling",
     # Historic majors
@@ -222,30 +273,49 @@ NOTABLE_PROMOTION_SEED: tuple[str, ...] = (
 
 NOTABLE_EVENT_SEED: tuple[str, ...] = (
     # Foundational WWE PPVs (most have rich Wikipedia infoboxes)
-    "WrestleMania I", "WrestleMania III", "WrestleMania VI", "WrestleMania X",
-    "WrestleMania X-Seven", "WrestleMania XX", "WrestleMania 30", "WrestleMania 40",
-    "SummerSlam (1988)", "SummerSlam (1992)", "SummerSlam (2002)",
-    "Royal Rumble (1992)", "Royal Rumble (2000)", "Royal Rumble (2007)",
-    "Survivor Series (1987)", "Survivor Series (1990)", "Survivor Series (1996)",
-    "King of the Ring (1996)", "King of the Ring (1998)",
+    "WrestleMania I",
+    "WrestleMania III",
+    "WrestleMania VI",
+    "WrestleMania X",
+    "WrestleMania X-Seven",
+    "WrestleMania XX",
+    "WrestleMania 30",
+    "WrestleMania 40",
+    "SummerSlam (1988)",
+    "SummerSlam (1992)",
+    "SummerSlam (2002)",
+    "Royal Rumble (1992)",
+    "Royal Rumble (2000)",
+    "Royal Rumble (2007)",
+    "Survivor Series (1987)",
+    "Survivor Series (1990)",
+    "Survivor Series (1996)",
+    "King of the Ring (1996)",
+    "King of the Ring (1998)",
     # WCW
-    "Starrcade (1983)", "Starrcade (1989)", "Starrcade (1997)",
+    "Starrcade (1983)",
+    "Starrcade (1989)",
+    "Starrcade (1997)",
     "Bash at the Beach (1996)",
     # ECW
-    "ECW November to Remember (1994)", "ECW Heat Wave (1998)",
+    "ECW November to Remember (1994)",
+    "ECW Heat Wave (1998)",
     # AEW
-    "All Out (2019)", "Double or Nothing (2019)", "Revolution (2020)", "Full Gear (2020)",
-    "AEW All In", "Forbidden Door (2022)",
+    "All Out (2019)",
+    "Double or Nothing (2019)",
+    "Revolution (2020)",
+    "Full Gear (2020)",
+    "AEW All In",
+    "Forbidden Door (2022)",
     # NJPW
-    "Wrestle Kingdom 9", "Wrestle Kingdom 13",
+    "Wrestle Kingdom 9",
+    "Wrestle Kingdom 13",
 )
 
 
 # ---------------------------------------------------------------- venues
 
-VENUE_CATEGORIES: tuple[str, ...] = (
-    "Category:Indoor_arenas_in_the_United_States",
-)
+VENUE_CATEGORIES: tuple[str, ...] = ("Category:Indoor_arenas_in_the_United_States",)
 
 NOTABLE_VENUE_SEED: tuple[str, ...] = (
     "Madison Square Garden",

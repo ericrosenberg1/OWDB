@@ -133,19 +133,24 @@ def verify_bio(
 
     if not snippets:
         logger.warning(
-            "Cannot verify GeneratedBio#%d: source paragraphs no longer available", bio.id,
+            "Cannot verify GeneratedBio#%d: source paragraphs no longer available",
+            bio.id,
         )
         bio.status = "rejected"
         bio.rejection_reason = "No source paragraphs available for verification"
         bio.save()
-        return VerificationResult(bio=bio, verified=False, unsupported=[], input_tokens=0, output_tokens=0)
+        return VerificationResult(
+            bio=bio, verified=False, unsupported=[], input_tokens=0, output_tokens=0
+        )
 
     sentences = _split_sentences(bio.text)
     if not sentences:
         bio.status = "rejected"
         bio.rejection_reason = "Bio text could not be split into sentences"
         bio.save()
-        return VerificationResult(bio=bio, verified=False, unsupported=[], input_tokens=0, output_tokens=0)
+        return VerificationResult(
+            bio=bio, verified=False, unsupported=[], input_tokens=0, output_tokens=0
+        )
 
     # Include the verified-facts block too — it's part of the "ground truth"
     # the bio was allowed to draw from. Works for any entity type because
@@ -156,6 +161,7 @@ def verify_bio(
         facts_block = _format_facts_block(facts)
     else:
         from .bio import _latest_facts_for_entity
+
         facts = _latest_facts_for_entity(bio.entity_type, bio.entity_id)
         # Generic flat format — no need for wrestler-specific label remapping.
         fact_lines = [f"- {k.replace('_', ' ').title()}: {v}" for k, v in sorted(facts.items())]
@@ -194,8 +200,11 @@ def verify_bio(
         bio.claims_unsupported = []
         bio.save()
         return VerificationResult(
-            bio=bio, verified=False, unsupported=[],
-            input_tokens=result.input_tokens, output_tokens=result.output_tokens,
+            bio=bio,
+            verified=False,
+            unsupported=[],
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
         )
 
     bio.claims_total = len(sentences)
@@ -213,7 +222,10 @@ def verify_bio(
 
     logger.info(
         "Verified GeneratedBio#%d (%s): %d/%d claims supported",
-        bio.id, bio.status, bio.claims_verified, bio.claims_total,
+        bio.id,
+        bio.status,
+        bio.claims_verified,
+        bio.claims_total,
     )
 
     return VerificationResult(

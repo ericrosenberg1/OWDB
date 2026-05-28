@@ -27,7 +27,7 @@ def _apply_contract(entity_type: str, entity, source_fetch: SourceFetch):
     """Shared executable-contract gate. See persist_event._apply_contract."""
     state, reasons = accuracy_contract.enforce(entity_type, entity)
     entity.verification_state = state
-    entity.verified = (state == accuracy_contract.VERIFIED)
+    entity.verified = state == accuracy_contract.VERIFIED
     if state == accuracy_contract.VERIFIED:
         if not entity.verification_source:
             entity.verification_source = source_fetch.source
@@ -35,7 +35,10 @@ def _apply_contract(entity_type: str, entity, source_fetch: SourceFetch):
     if reasons:
         logger.info(
             "Contract: %s#%s → %s (%s)",
-            entity_type, entity.id, state, "; ".join(reasons)[:240],
+            entity_type,
+            entity.id,
+            state,
+            "; ".join(reasons)[:240],
         )
     return state, reasons
 
@@ -80,6 +83,7 @@ class StablePersistResult:
 def _resolve_promotion(promo_wiki_link: Optional[str], promo_name: Optional[str]):
     """Resolve a promotion from KNOWN_PROMOTIONS — same logic as event persist."""
     from .linking import KNOWN_PROMOTIONS, _get_or_create_promotion_stub
+
     if promo_wiki_link and promo_wiki_link in KNOWN_PROMOTIONS:
         return _get_or_create_promotion_stub(KNOWN_PROMOTIONS[promo_wiki_link], promo_wiki_link)
     if promo_name and promo_name in KNOWN_PROMOTIONS:
@@ -126,7 +130,9 @@ def persist_title(
         created = False
         if title is None:
             title = Title.objects.create(
-                name=canonical_name, slug=slug, promotion=promotion,
+                name=canonical_name,
+                slug=slug,
+                promotion=promotion,
             )
             created = True
 
@@ -142,9 +148,12 @@ def persist_title(
                 setattr(title, dst_attr, snip.value)
                 fields_written.append(dst_attr)
             record_provenance(
-                entity_type="title", entity_id=title.id,
-                field_name=dst_attr, value=snip.value,
-                source_fetch=source_fetch, confidence=snip.confidence,
+                entity_type="title",
+                entity_id=title.id,
+                field_name=dst_attr,
+                value=snip.value,
+                source_fetch=source_fetch,
+                confidence=snip.confidence,
                 snippet=getattr(snip, "snippet", "") or "",
             )
             provenance_rows += 1
@@ -155,11 +164,13 @@ def persist_title(
         # so the contract sees the required field as covered.
         promo_snip = fields.promotion_wiki_link or fields.promotion_name
         record_provenance(
-            entity_type="title", entity_id=title.id,
-            field_name="promotion", value=promotion.name,
+            entity_type="title",
+            entity_id=title.id,
+            field_name="promotion",
+            value=promotion.name,
             source_fetch=source_fetch,
             snippet=(getattr(promo_snip, "snippet", "") if promo_snip else "")
-                    or f"resolved via KNOWN_PROMOTIONS[{promotion.abbreviation!r}]",
+            or f"resolved via KNOWN_PROMOTIONS[{promotion.abbreviation!r}]",
             confidence=getattr(promo_snip, "confidence", 90) if promo_snip else 90,
         )
         provenance_rows += 1
@@ -180,16 +191,22 @@ def persist_title(
     # Mentions extraction
     try:
         from .mentions import persist_mentions_for_entity
+
         persist_mentions_for_entity("title", title.id, source_fetch)
     except Exception as e:
         logger.exception("Title mention extraction failed: %s", e)
 
     logger.info(
         "Persisted title %r (id=%d, created=%s, promotion=%s, wrote=%s)",
-        canonical_name, title.id, created, promotion.name, fields_written,
+        canonical_name,
+        title.id,
+        created,
+        promotion.name,
+        fields_written,
     )
     return TitlePersistResult(
-        title_id=title.id, created=created,
+        title_id=title.id,
+        created=created,
         promotion_id=promotion.id,
         fields_written=fields_written,
         provenance_rows_created=provenance_rows,
@@ -202,12 +219,16 @@ def persist_title(
 def _link_wrestler_names(wiki_link_csv: Optional[str]) -> list:
     """Resolve a comma-separated list of wiki titles to Wrestler rows."""
     from owdb_django.owdbapp.models import Wrestler
+
     if not wiki_link_csv:
         return []
     names = [n.strip() for n in str(wiki_link_csv).split(",") if n.strip()]
     out = []
     for name in names:
-        w = Wrestler.objects.filter(name=name).first() or Wrestler.objects.filter(name__iexact=name).first()
+        w = (
+            Wrestler.objects.filter(name=name).first()
+            or Wrestler.objects.filter(name__iexact=name).first()
+        )
         if w is not None and w not in out:
             out.append(w)
     return out
@@ -257,9 +278,12 @@ def persist_stable(
                 setattr(stable, dst_attr, snip.value)
                 fields_written.append(dst_attr)
             record_provenance(
-                entity_type="stable", entity_id=stable.id,
-                field_name=dst_attr, value=snip.value,
-                source_fetch=source_fetch, confidence=snip.confidence,
+                entity_type="stable",
+                entity_id=stable.id,
+                field_name=dst_attr,
+                value=snip.value,
+                source_fetch=source_fetch,
+                confidence=snip.confidence,
                 snippet=getattr(snip, "snippet", "") or "",
             )
             provenance_rows += 1
@@ -271,11 +295,13 @@ def persist_stable(
             # rules can see where this link came from.
             promo_snip = fields.promotion_wiki_link or fields.promotion_name
             record_provenance(
-                entity_type="stable", entity_id=stable.id,
-                field_name="promotion", value=promotion.name,
+                entity_type="stable",
+                entity_id=stable.id,
+                field_name="promotion",
+                value=promotion.name,
                 source_fetch=source_fetch,
                 snippet=(getattr(promo_snip, "snippet", "") if promo_snip else "")
-                        or f"resolved via KNOWN_PROMOTIONS[{promotion.abbreviation!r}]",
+                or f"resolved via KNOWN_PROMOTIONS[{promotion.abbreviation!r}]",
                 confidence=getattr(promo_snip, "confidence", 90) if promo_snip else 90,
             )
             provenance_rows += 1
@@ -323,6 +349,7 @@ def persist_stable(
     try:
         from .mentions import persist_mentions_for_entity
         from .linking import resolve_all_mentions_to_wrestlers
+
         persist_mentions_for_entity("stable", stable.id, source_fetch)
         # Resolve mentions for the wrestler↔stable mention graph (queryable
         # via EntityMention; not used to populate Stable.members).
@@ -332,12 +359,16 @@ def persist_stable(
 
     logger.info(
         "Persisted stable %r (id=%d, created=%s, promotion=%s, members=%d, leaders=%d)",
-        canonical_name, stable.id, created,
+        canonical_name,
+        stable.id,
+        created,
         promotion.name if promotion else None,
-        linked_members, linked_leaders,
+        linked_members,
+        linked_leaders,
     )
     return StablePersistResult(
-        stable_id=stable.id, created=created,
+        stable_id=stable.id,
+        created=created,
         promotion_id=promotion.id if promotion else None,
         fields_written=fields_written,
         provenance_rows_created=provenance_rows,
@@ -413,9 +444,12 @@ def persist_training_school(
                 setattr(school, dst_attr, snip.value)
                 fields_written.append(dst_attr)
             record_provenance(
-                entity_type="training_school", entity_id=school.id,
-                field_name=dst_attr, value=snip.value,
-                source_fetch=source_fetch, confidence=snip.confidence,
+                entity_type="training_school",
+                entity_id=school.id,
+                field_name=dst_attr,
+                value=snip.value,
+                source_fetch=source_fetch,
+                confidence=snip.confidence,
                 snippet=getattr(snip, "snippet", "") or "",
             )
             provenance_rows += 1
@@ -446,10 +480,12 @@ def persist_training_school(
         from .linking import resolve_all_mentions_to_wrestlers
         from ..models import EntityMention
         from owdb_django.owdbapp.models import Wrestler
+
         persist_mentions_for_entity("training_school", school.id, source_fetch)
         resolve_all_mentions_to_wrestlers()
         for m in EntityMention.objects.filter(
-            source_fetch=source_fetch, resolved_entity_type="wrestler",
+            source_fetch=source_fetch,
+            resolved_entity_type="wrestler",
         ):
             try:
                 w = Wrestler.objects.get(id=m.resolved_entity_id)
@@ -463,11 +499,15 @@ def persist_training_school(
 
     logger.info(
         "Persisted training_school %r (id=%d, created=%s, parent=%s, trainees=%d)",
-        canonical_name, school.id, created,
-        parent_promotion.name if parent_promotion else None, linked,
+        canonical_name,
+        school.id,
+        created,
+        parent_promotion.name if parent_promotion else None,
+        linked,
     )
     return TrainingSchoolPersistResult(
-        training_school_id=school.id, created=created,
+        training_school_id=school.id,
+        created=created,
         parent_promotion_id=parent_promotion.id if parent_promotion else None,
         fields_written=fields_written,
         provenance_rows_created=provenance_rows,

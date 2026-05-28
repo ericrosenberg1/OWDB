@@ -36,8 +36,12 @@ logger = logging.getLogger(__name__)
 
 # Field-type buckets dictate the comparator used.
 EXACT_FIELDS = {
-    "birth_date", "death_date", "debut_year", "retirement_year",
-    "height", "weight",
+    "birth_date",
+    "death_date",
+    "debut_year",
+    "retirement_year",
+    "height",
+    "weight",
 }
 FUZZY_FIELDS = {"real_name", "hometown", "nationality"}
 SET_FIELDS = {"aliases", "finishers", "trained_by", "signature_moves"}
@@ -70,7 +74,9 @@ def _fuzzy_eq(a: str, b: str) -> bool:
     tokens_b = set(re.findall(r"\w+", nb))
     if not tokens_a or not tokens_b:
         return False
-    smaller, larger = (tokens_a, tokens_b) if len(tokens_a) <= len(tokens_b) else (tokens_b, tokens_a)
+    smaller, larger = (
+        (tokens_a, tokens_b) if len(tokens_a) <= len(tokens_b) else (tokens_b, tokens_a)
+    )
     return smaller.issubset(larger)
 
 
@@ -114,8 +120,7 @@ def reconcile_field_provenance(entity_type: str, entity_id: int) -> dict:
 
     by_field: dict[str, list[FieldProvenance]] = defaultdict(list)
     qs = (
-        FieldProvenance.objects
-        .filter(entity_type=entity_type, entity_id=entity_id)
+        FieldProvenance.objects.filter(entity_type=entity_type, entity_id=entity_id)
         .select_related("source_fetch")
         .order_by("field_name", "extracted_at")
     )
@@ -156,7 +161,9 @@ def reconcile_field_provenance(entity_type: str, entity_id: int) -> dict:
                 break
 
         record = FieldReconcile(
-            field_name=field_name, sources=sources, values=values,
+            field_name=field_name,
+            sources=sources,
+            values=values,
             status=("agree" if all_pairs_agree else "disagree"),
         )
 
@@ -165,7 +172,8 @@ def reconcile_field_provenance(entity_type: str, entity_id: int) -> dict:
             # Side effect: confidence stays 100; log a verify event.
             WrestleBotActivity.objects.create(
                 action_type="verify",
-                entity_type=entity_type, entity_id=entity_id,
+                entity_type=entity_type,
+                entity_id=entity_id,
                 entity_name=entity_name or f"{entity_type}#{entity_id}",
                 source="cross_source_verify",
                 details={
@@ -180,7 +188,8 @@ def reconcile_field_provenance(entity_type: str, entity_id: int) -> dict:
             disagreements.append(record)
             WrestleBotActivity.objects.create(
                 action_type="error",
-                entity_type=entity_type, entity_id=entity_id,
+                entity_type=entity_type,
+                entity_id=entity_id,
                 entity_name=entity_name or f"{entity_type}#{entity_id}",
                 source="cross_source_disagreement",
                 details={
@@ -191,8 +200,8 @@ def reconcile_field_provenance(entity_type: str, entity_id: int) -> dict:
                 ai_assisted=False,
                 success=False,
                 error_message=(
-                    f"Cross-source disagreement on {field_name}: " +
-                    ", ".join(f"{s}={v!r}" for s, v in zip(sources, values))
+                    f"Cross-source disagreement on {field_name}: "
+                    + ", ".join(f"{s}={v!r}" for s, v in zip(sources, values))
                 )[:1000],
             )
 
@@ -208,10 +217,12 @@ def _entity_name(entity_type: str, entity_id: int) -> Optional[str]:
     """Look up the entity's display name for activity log readability."""
     if entity_type == "wrestler":
         from owdb_django.owdbapp.models import Wrestler
+
         w = Wrestler.objects.filter(id=entity_id).only("name").first()
         return w.name if w else None
     if entity_type == "promotion":
         from owdb_django.owdbapp.models import Promotion
+
         p = Promotion.objects.filter(id=entity_id).only("name").first()
         return p.name if p else None
     return None

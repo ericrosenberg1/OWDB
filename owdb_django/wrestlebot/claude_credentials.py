@@ -58,7 +58,7 @@ class OAuthCredentials:
     access_token: str
     refresh_token: str
     expires_at_ms: int  # 0 if unknown
-    source: str         # "macos_keychain" or "credentials_file"
+    source: str  # "macos_keychain" or "credentials_file"
 
     @property
     def is_valid(self) -> bool:
@@ -82,9 +82,7 @@ def _read_from_keychain() -> Optional[OAuthCredentials]:
 
     try:
         result = subprocess.run(
-            ["security", "find-generic-password",
-             "-s", KEYCHAIN_SERVICE,
-             "-w"],
+            ["security", "find-generic-password", "-s", KEYCHAIN_SERVICE, "-w"],
             capture_output=True,
             text=True,
             timeout=5,
@@ -153,11 +151,13 @@ def _refresh_via_endpoint(refresh_token: str) -> Optional[dict]:
     if not refresh_token:
         return None
 
-    body = urllib.parse.urlencode({
-        "grant_type": "refresh_token",
-        "refresh_token": refresh_token,
-        "client_id": ANTHROPIC_OAUTH_CLIENT_ID,
-    }).encode()
+    body = urllib.parse.urlencode(
+        {
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
+            "client_id": ANTHROPIC_OAUTH_CLIENT_ID,
+        }
+    ).encode()
 
     last_error: Optional[Exception] = None
     for endpoint in TOKEN_ENDPOINTS:
@@ -204,22 +204,30 @@ def _write_to_keychain(access_token: str, refresh_token: str, expires_at_ms: int
     if platform.system() != "Darwin":
         return False
 
-    payload = json.dumps({
-        "claudeAiOauth": {
-            "accessToken": access_token,
-            "refreshToken": refresh_token,
-            "expiresAt": expires_at_ms,
-            "scopes": ["user:inference", "user:profile"],
+    payload = json.dumps(
+        {
+            "claudeAiOauth": {
+                "accessToken": access_token,
+                "refreshToken": refresh_token,
+                "expiresAt": expires_at_ms,
+                "scopes": ["user:inference", "user:profile"],
+            }
         }
-    })
+    )
 
     try:
         result = subprocess.run(
-            ["security", "add-generic-password",
-             "-U",  # update if exists
-             "-s", KEYCHAIN_SERVICE,
-             "-a", _current_username(),
-             "-w", payload],
+            [
+                "security",
+                "add-generic-password",
+                "-U",  # update if exists
+                "-s",
+                KEYCHAIN_SERVICE,
+                "-a",
+                _current_username(),
+                "-w",
+                payload,
+            ],
             capture_output=True,
             text=True,
             timeout=5,
@@ -251,6 +259,7 @@ def _write_to_file(access_token: str, refresh_token: str, expires_at_ms: int) ->
 
 def _current_username() -> str:
     import os
+
     return os.environ.get("USER") or os.environ.get("LOGNAME") or ""
 
 

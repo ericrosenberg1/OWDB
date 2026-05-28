@@ -4,68 +4,67 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('owdbapp', '0023_stable_last_verified_stable_verification_source_and_more'),
+        ("owdbapp", "0023_stable_last_verified_stable_verification_source_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='special',
-            name='director',
+            model_name="special",
+            name="director",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='special',
-            name='last_enriched',
+            model_name="special",
+            name="last_enriched",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='special',
-            name='last_verified',
+            model_name="special",
+            name="last_verified",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='special',
-            name='verification_source',
+            model_name="special",
+            name="verification_source",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
         migrations.AddField(
-            model_name='special',
-            name='verified',
+            model_name="special",
+            name="verified",
             field=models.BooleanField(db_index=True, default=False),
         ),
         migrations.AddField(
-            model_name='special',
-            name='wikipedia_url',
+            model_name="special",
+            name="wikipedia_url",
             field=models.URLField(blank=True, max_length=500, null=True),
         ),
         migrations.AddField(
-            model_name='tvshow',
-            name='last_enriched',
+            model_name="tvshow",
+            name="last_enriched",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='tvshow',
-            name='last_verified',
+            model_name="tvshow",
+            name="last_verified",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='tvshow',
-            name='verification_source',
+            model_name="tvshow",
+            name="verification_source",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
         migrations.AddField(
-            model_name='tvshow',
-            name='verified',
+            model_name="tvshow",
+            name="verified",
             field=models.BooleanField(db_index=True, default=False),
         ),
         migrations.AddIndex(
-            model_name='special',
-            index=models.Index(fields=['verified'], name='owdbapp_spe_verifie_306e19_idx'),
+            model_name="special",
+            index=models.Index(fields=["verified"], name="owdbapp_spe_verifie_306e19_idx"),
         ),
         migrations.AddIndex(
-            model_name='tvshow',
-            index=models.Index(fields=['verified'], name='owdbapp_tvs_verifie_8e5cf1_idx'),
+            model_name="tvshow",
+            index=models.Index(fields=["verified"], name="owdbapp_tvs_verifie_8e5cf1_idx"),
         ),
     ]

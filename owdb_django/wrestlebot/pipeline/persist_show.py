@@ -27,7 +27,7 @@ def _apply_contract(entity_type: str, entity, source_fetch: SourceFetch):
     """Same helper as persist_event._apply_contract — keep them in sync."""
     state, reasons = accuracy_contract.enforce(entity_type, entity)
     entity.verification_state = state
-    entity.verified = (state == accuracy_contract.VERIFIED)
+    entity.verified = state == accuracy_contract.VERIFIED
     if state == accuracy_contract.VERIFIED:
         if not entity.verification_source:
             entity.verification_source = source_fetch.source
@@ -35,7 +35,10 @@ def _apply_contract(entity_type: str, entity, source_fetch: SourceFetch):
     if reasons:
         logger.info(
             "Contract: %s#%s → %s (%s)",
-            entity_type, entity.id, state, "; ".join(reasons)[:240],
+            entity_type,
+            entity.id,
+            state,
+            "; ".join(reasons)[:240],
         )
     return state, reasons
 
@@ -104,7 +107,9 @@ def persist_tv_show(
         created = False
         if tv is None:
             tv = TVShow.objects.create(
-                name=canonical_name, slug=slug, promotion=promotion,
+                name=canonical_name,
+                slug=slug,
+                promotion=promotion,
             )
             created = True
 
@@ -120,32 +125,43 @@ def persist_tv_show(
                 setattr(tv, dst_attr, snip.value)
                 fields_written.append(dst_attr)
             record_provenance(
-                entity_type="tv_show", entity_id=tv.id,
-                field_name=dst_attr, value=snip.value,
-                source_fetch=source_fetch, confidence=snip.confidence,
+                entity_type="tv_show",
+                entity_id=tv.id,
+                field_name=dst_attr,
+                value=snip.value,
+                source_fetch=source_fetch,
+                confidence=snip.confidence,
                 snippet=getattr(snip, "snippet", "") or "",
             )
             provenance_rows += 1
 
         if fields.premiere_year is not None and tv.premiere_date is None:
             from datetime import date as _date
+
             tv.premiere_date = _date(fields.premiere_year.value, 1, 1)
             fields_written.append("premiere_date")
             record_provenance(
-                entity_type="tv_show", entity_id=tv.id,
-                field_name="premiere_year", value=fields.premiere_year.value,
-                source_fetch=source_fetch, confidence=fields.premiere_year.confidence,
+                entity_type="tv_show",
+                entity_id=tv.id,
+                field_name="premiere_year",
+                value=fields.premiere_year.value,
+                source_fetch=source_fetch,
+                confidence=fields.premiere_year.confidence,
                 snippet=getattr(fields.premiere_year, "snippet", "") or "",
             )
             provenance_rows += 1
         if fields.finale_year is not None and tv.finale_date is None:
             from datetime import date as _date
+
             tv.finale_date = _date(fields.finale_year.value, 12, 31)
             fields_written.append("finale_date")
             record_provenance(
-                entity_type="tv_show", entity_id=tv.id,
-                field_name="finale_year", value=fields.finale_year.value,
-                source_fetch=source_fetch, confidence=fields.finale_year.confidence,
+                entity_type="tv_show",
+                entity_id=tv.id,
+                field_name="finale_year",
+                value=fields.finale_year.value,
+                source_fetch=source_fetch,
+                confidence=fields.finale_year.confidence,
                 snippet=getattr(fields.finale_year, "snippet", "") or "",
             )
             provenance_rows += 1
@@ -165,17 +181,25 @@ def persist_tv_show(
 
     try:
         from .mentions import persist_mentions_for_entity
+
         persist_mentions_for_entity("tv_show", tv.id, source_fetch)
     except Exception as e:
         logger.exception("TVShow mention extraction failed: %s", e)
 
     logger.info(
         "Persisted tv_show %r (id=%d, created=%s, promotion=%s, wrote=%s)",
-        canonical_name, tv.id, created, promotion.name, fields_written,
+        canonical_name,
+        tv.id,
+        created,
+        promotion.name,
+        fields_written,
     )
     return TVShowPersistResult(
-        tv_show_id=tv.id, created=created, promotion_id=promotion.id,
-        fields_written=fields_written, provenance_rows_created=provenance_rows,
+        tv_show_id=tv.id,
+        created=created,
+        promotion_id=promotion.id,
+        fields_written=fields_written,
+        provenance_rows_created=provenance_rows,
     )
 
 
@@ -216,9 +240,12 @@ def persist_special(
                 setattr(sp, dst_attr, snip.value)
                 fields_written.append(dst_attr)
             record_provenance(
-                entity_type="special", entity_id=sp.id,
-                field_name=dst_attr, value=snip.value,
-                source_fetch=source_fetch, confidence=snip.confidence,
+                entity_type="special",
+                entity_id=sp.id,
+                field_name=dst_attr,
+                value=snip.value,
+                source_fetch=source_fetch,
+                confidence=snip.confidence,
                 snippet=getattr(snip, "snippet", "") or "",
             )
             provenance_rows += 1
@@ -246,10 +273,12 @@ def persist_special(
         from .linking import resolve_all_mentions_to_wrestlers
         from ..models import EntityMention
         from owdb_django.owdbapp.models import Wrestler
+
         persist_mentions_for_entity("special", sp.id, source_fetch)
         resolve_all_mentions_to_wrestlers()
         for m in EntityMention.objects.filter(
-            source_fetch=source_fetch, resolved_entity_type="wrestler",
+            source_fetch=source_fetch,
+            resolved_entity_type="wrestler",
         ):
             try:
                 w = Wrestler.objects.get(id=m.resolved_entity_id)
@@ -263,10 +292,15 @@ def persist_special(
 
     logger.info(
         "Persisted special %r (id=%d, created=%s, wrote=%s, wrestlers=%d)",
-        canonical_title, sp.id, created, fields_written, linked,
+        canonical_title,
+        sp.id,
+        created,
+        fields_written,
+        linked,
     )
     return SpecialPersistResult(
-        special_id=sp.id, created=created,
+        special_id=sp.id,
+        created=created,
         fields_written=fields_written,
         provenance_rows_created=provenance_rows,
         linked_wrestlers=linked,

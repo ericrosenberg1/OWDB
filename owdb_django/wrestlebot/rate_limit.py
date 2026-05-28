@@ -22,6 +22,7 @@ Each ``key`` gets its own bucket — different sources don't share quota.
 Default ``burst=1`` (no bursting) preserves the existing min-interval
 semantics; bumping burst allows short bursts up to that many tokens.
 """
+
 from __future__ import annotations
 
 import logging
@@ -95,10 +96,8 @@ _fallback_next_available: dict[str, float] = {}
 def _resolve_redis_url() -> Optional[str]:
     try:
         from django.conf import settings
-        url = (
-            getattr(settings, "CELERY_BROKER_URL", None)
-            or getattr(settings, "REDIS_URL", None)
-        )
+
+        url = getattr(settings, "CELERY_BROKER_URL", None) or getattr(settings, "REDIS_URL", None)
         if url:
             return url
     except Exception:
@@ -124,6 +123,7 @@ def _get_redis_client():
             return None
         try:
             import redis
+
             client = redis.Redis.from_url(
                 url,
                 socket_timeout=2.0,
@@ -208,9 +208,9 @@ def rate_limited(
             wait = _redis_acquire(client, key, per_second, burst)
         except Exception as e:
             logger.warning(
-                "rate_limit: Redis eval failed for %r (%s); using local "
-                "fallback for this call.",
-                key, e,
+                "rate_limit: Redis eval failed for %r (%s); using local fallback for this call.",
+                key,
+                e,
             )
             wait = _fallback_acquire(key, per_second)
 

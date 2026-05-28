@@ -53,9 +53,10 @@ _warned_no_key = False
 @dataclass
 class TavilySearchHit:
     """One result row from Tavily."""
+
     title: str
     url: str
-    content: str        # snippet — Tavily's `content` is similar to Brave's `description`
+    content: str  # snippet — Tavily's `content` is similar to Brave's `description`
     score: float = 0.0  # 0..1 relevance score from Tavily
     raw_content: str = ""  # Set only if include_raw_content=True
 
@@ -74,8 +75,9 @@ class TavilySearchHit:
 @dataclass
 class TavilyResponse:
     """Full result of a Tavily query (search results + optional answer)."""
+
     query: str
-    answer: str = ""          # LLM-synthesized summary; HINT only, not ground truth
+    answer: str = ""  # LLM-synthesized summary; HINT only, not ground truth
     hits: list[TavilySearchHit] = field(default_factory=list)
     response_time_seconds: float = 0.0
 
@@ -88,9 +90,10 @@ def _read_key_from_keychain() -> Optional[str]:
         return None
     try:
         result = subprocess.run(
-            ["security", "find-generic-password",
-             "-s", KEYCHAIN_SERVICE, "-w"],
-            capture_output=True, text=True, timeout=5,
+            ["security", "find-generic-password", "-s", KEYCHAIN_SERVICE, "-w"],
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -103,6 +106,7 @@ def get_api_key() -> Optional[str]:
     """Resolve a Tavily API key from settings, env, or Keychain."""
     try:
         from django.conf import settings
+
         key = getattr(settings, "TAVILY_API_KEY", None)
         if key:
             return key
@@ -128,7 +132,7 @@ def search(
     *,
     max_results: int = 8,
     search_depth: str = "basic",  # "basic" or "advanced"
-    topic: str = "general",        # "general" or "news"
+    topic: str = "general",  # "general" or "news"
     include_answer: bool = True,
     include_raw_content: bool = False,
     include_domains: Optional[list[str]] = None,
@@ -207,13 +211,15 @@ def search(
         url = (row.get("url") or "").strip()
         if not url:
             continue
-        hits.append(TavilySearchHit(
-            title=(row.get("title") or "").strip(),
-            url=url,
-            content=(row.get("content") or "").strip(),
-            score=float(row.get("score") or 0.0),
-            raw_content=(row.get("raw_content") or "") or "",
-        ))
+        hits.append(
+            TavilySearchHit(
+                title=(row.get("title") or "").strip(),
+                url=url,
+                content=(row.get("content") or "").strip(),
+                score=float(row.get("score") or 0.0),
+                raw_content=(row.get("raw_content") or "") or "",
+            )
+        )
 
     return TavilyResponse(
         query=payload.get("query") or query,
@@ -226,6 +232,7 @@ def search(
 # Convenience for shell debugging.
 if __name__ == "__main__":  # pragma: no cover
     import sys
+
     q = " ".join(sys.argv[1:]) or "Bret Hart wrestler"
     r = search(q, max_results=5)
     if r is None:

@@ -45,14 +45,15 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ReplayCallResult:
     """Outcome for one replayed tool call within a session."""
+
     sequence: int
     tool_name: str
     arguments: dict
-    original_summary: str       # what the call returned in the original run
+    original_summary: str  # what the call returned in the original run
     original_error: str
-    new_summary: str            # what the call returned now
+    new_summary: str  # what the call returned now
     new_error: str
-    diverged: bool              # True iff original vs new differ meaningfully
+    diverged: bool  # True iff original vs new differ meaningfully
     duration_ms: int
 
     def to_dict(self) -> dict:
@@ -72,13 +73,14 @@ class ReplayCallResult:
 @dataclass
 class ReplaySessionResult:
     """Outcome for one whole session replay."""
+
     session_id: int
     bot: str
     dry_run: bool
     total_calls: int
-    new_errors: int               # calls that now error but didn't before
-    fixed_errors: int             # calls that previously errored but now succeed
-    diverged: int                 # any call where the result text changed
+    new_errors: int  # calls that now error but didn't before
+    fixed_errors: int  # calls that previously errored but now succeed
+    diverged: int  # any call where the result text changed
     calls: list[ReplayCallResult] = field(default_factory=list)
 
     def to_dict(self) -> dict:
@@ -97,11 +99,10 @@ class ReplaySessionResult:
 def _resolve_tool_map_for_bot(bot: str) -> dict:
     """Look up which tool registry to dispatch through based on the bot."""
     from .capabilities import CAPABILITIES, resolve_tool_set
+
     cap = CAPABILITIES.get(bot)
     if cap is None:
-        raise ValueError(
-            f"Unknown bot {bot!r}; valid: {sorted(CAPABILITIES)}"
-        )
+        raise ValueError(f"Unknown bot {bot!r}; valid: {sorted(CAPABILITIES)}")
     return resolve_tool_set(cap.tool_set)
 
 
@@ -114,30 +115,38 @@ def _result_text_differs(original: str, new: str) -> bool:
     Generated IDs and timestamps are stripped before comparison — they
     legitimately change between runs and aren't replay-relevant.
     """
+
     def _normalise(s: str):
         try:
             parsed = json.loads(s)
         except (json.JSONDecodeError, TypeError):
             return s.strip()
         return _strip_volatile(parsed)
+
     return _normalise(original) != _normalise(new)
 
 
 _VOLATILE_KEYS = {
-    "id", "fetch_id", "session_id", "called_at", "fetched_at",
-    "started_at", "finished_at", "last_verified", "last_enriched",
-    "image_fetched_at", "created_at", "updated_at", "resolved_at",
+    "id",
+    "fetch_id",
+    "session_id",
+    "called_at",
+    "fetched_at",
+    "started_at",
+    "finished_at",
+    "last_verified",
+    "last_enriched",
+    "image_fetched_at",
+    "created_at",
+    "updated_at",
+    "resolved_at",
 }
 
 
 def _strip_volatile(node):
     """Recursively drop fields whose values legitimately change between runs."""
     if isinstance(node, dict):
-        return {
-            k: _strip_volatile(v)
-            for k, v in node.items()
-            if k not in _VOLATILE_KEYS
-        }
+        return {k: _strip_volatile(v) for k, v in node.items() if k not in _VOLATILE_KEYS}
     if isinstance(node, list):
         return [_strip_volatile(x) for x in node]
     return node
@@ -178,11 +187,7 @@ def replay_session(
     session = AgentSession.objects.get(pk=session_id)
     tool_map = _resolve_tool_map_for_bot(session.bot)
 
-    calls = list(
-        AgentToolCall.objects
-        .filter(session=session)
-        .order_by("sequence")
-    )
+    calls = list(AgentToolCall.objects.filter(session=session).order_by("sequence"))
 
     result = ReplaySessionResult(
         session_id=session.id,
@@ -228,17 +233,19 @@ def replay_session(
             if diverged:
                 result.diverged += 1
 
-            result.calls.append(ReplayCallResult(
-                sequence=call.sequence,
-                tool_name=call.tool_name,
-                arguments=args,
-                original_summary=call.result_summary or "",
-                original_error=call.error or "",
-                new_summary=new_summary,
-                new_error=new_error,
-                diverged=diverged,
-                duration_ms=duration_ms,
-            ))
+            result.calls.append(
+                ReplayCallResult(
+                    sequence=call.sequence,
+                    tool_name=call.tool_name,
+                    arguments=args,
+                    original_summary=call.result_summary or "",
+                    original_error=call.error or "",
+                    new_summary=new_summary,
+                    new_error=new_error,
+                    diverged=diverged,
+                    duration_ms=duration_ms,
+                )
+            )
 
     if dry_run:
         _run_with_rollback()
@@ -246,20 +253,23 @@ def replay_session(
         _run_calls()
 
     logger.info(
-        "Replay session #%s (%s): %d calls, %d diverged, %d new errors, "
-        "%d fixed. dry_run=%s",
-        session.id, session.bot, result.total_calls, result.diverged,
-        result.new_errors, result.fixed_errors, dry_run,
+        "Replay session #%s (%s): %d calls, %d diverged, %d new errors, %d fixed. dry_run=%s",
+        session.id,
+        session.bot,
+        result.total_calls,
+        result.diverged,
+        result.new_errors,
+        result.fixed_errors,
+        dry_run,
     )
 
     # Annotate the source AgentSession (not in dry-run mode) so Earl's
     # audit can see which sessions have been replayed.
     if not dry_run:
         session.final_summary = (
-            (session.final_summary or "")
-            + f"\n\n[REPLAYED {timezone.now().isoformat()}: "
-              f"{result.total_calls} calls, {result.diverged} diverged, "
-              f"{result.new_errors} new errors, {result.fixed_errors} fixed]"
+            (session.final_summary or "") + f"\n\n[REPLAYED {timezone.now().isoformat()}: "
+            f"{result.total_calls} calls, {result.diverged} diverged, "
+            f"{result.new_errors} new errors, {result.fixed_errors} fixed]"
         )[:65_000]
         session.save(update_fields=["final_summary"])
 

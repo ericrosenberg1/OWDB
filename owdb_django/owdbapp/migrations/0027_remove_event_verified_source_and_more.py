@@ -14,9 +14,8 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('owdbapp', '0026_externalranking_externalrankingentry_and_more'),
+        ("owdbapp", "0026_externalranking_externalrankingentry_and_more"),
     ]
 
     operations = [
@@ -24,16 +23,18 @@ class Migration(migrations.Migration):
             database_operations=[],
             state_operations=[
                 migrations.RemoveField(
-                    model_name='event',
-                    name='verified_source',
+                    model_name="event",
+                    name="verified_source",
                 ),
                 migrations.AddField(
-                    model_name='event',
-                    name='verification_source',
+                    model_name="event",
+                    name="verification_source",
                     field=models.CharField(
-                        blank=True, db_column='verified_source',
-                        help_text='Source used for verification',
-                        max_length=50, null=True,
+                        blank=True,
+                        db_column="verified_source",
+                        help_text="Source used for verification",
+                        max_length=50,
+                        null=True,
                     ),
                 ),
             ],

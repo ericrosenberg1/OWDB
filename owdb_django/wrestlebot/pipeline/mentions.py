@@ -24,11 +24,22 @@ logger = logging.getLogger(__name__)
 # Patterns we deliberately exclude — Wikipedia infrastructure pages that are
 # never standalone entities in our DB.
 EXCLUDED_WIKI_PREFIXES = (
-    "Help:", "Special:", "Wikipedia:", "Portal:", "Category:", "File:",
-    "Template:", "Talk:", "User:", "Image:", "Module:",
+    "Help:",
+    "Special:",
+    "Wikipedia:",
+    "Portal:",
+    "Category:",
+    "File:",
+    "Template:",
+    "Talk:",
+    "User:",
+    "Image:",
+    "Module:",
 )
 # Disambiguation suffixes we strip — e.g. "Calgary,_Alberta" -> "Calgary, Alberta"
-_DISAMBIG_RE = re.compile(r"_\((?:disambiguation|wrestler|wrestling|wrestling_promotion|wrestler\)\b)")
+_DISAMBIG_RE = re.compile(
+    r"_\((?:disambiguation|wrestler|wrestling|wrestling_promotion|wrestler\)\b)"
+)
 
 
 def _normalize_wiki_link(href: str) -> str:
@@ -38,7 +49,7 @@ def _normalize_wiki_link(href: str) -> str:
     """
     if not href.startswith("/wiki/"):
         return ""
-    name = href[len("/wiki/"):]
+    name = href[len("/wiki/") :]
     name = name.split("#", 1)[0].split("?", 1)[0]  # strip fragment / query
     name = unquote(name)
     name = name.replace("_", " ")
@@ -156,7 +167,10 @@ def persist_mentions_for_entity(
 
     logger.info(
         "Extracted %d mention(s) for %s#%d (SourceFetch#%d)",
-        created, entity_type, entity_id, fetch.id,
+        created,
+        entity_type,
+        entity_id,
+        fetch.id,
     )
     return created
 

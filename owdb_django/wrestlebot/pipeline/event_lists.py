@@ -54,15 +54,9 @@ PPV_LIST_PAGES: dict[str, tuple[str, ...]] = {
         "List of WWE pay-per-view and livestreaming supercards",
         "List of WWE pay-per-view events",
     ),
-    "wcw": (
-        "List of WCW pay-per-view events",
-    ),
-    "ecw": (
-        "List of ECW pay-per-view events",
-    ),
-    "aew": (
-        "List of AEW pay-per-view events",
-    ),
+    "wcw": ("List of WCW pay-per-view events",),
+    "ecw": ("List of ECW pay-per-view events",),
+    "aew": ("List of AEW pay-per-view events",),
     "tna": (
         "List of TNA pay-per-view events",
         "List of Impact Wrestling pay-per-view events",
@@ -71,15 +65,9 @@ PPV_LIST_PAGES: dict[str, tuple[str, ...]] = {
         "List of NJPW pay-per-view events",
         "List of New Japan Pro-Wrestling pay-per-view events",
     ),
-    "ajpw": (
-        "List of All Japan Pro Wrestling pay-per-view events",
-    ),
-    "roh": (
-        "List of Ring of Honor pay-per-view events",
-    ),
-    "noah": (
-        "List of Pro Wrestling Noah events",
-    ),
+    "ajpw": ("List of All Japan Pro Wrestling pay-per-view events",),
+    "roh": ("List of Ring of Honor pay-per-view events",),
+    "noah": ("List of Pro Wrestling Noah events",),
 }
 
 
@@ -87,15 +75,14 @@ PPV_LIST_PAGES: dict[str, tuple[str, ...]] = {
 # child articles ("List of WWE Raw episodes (2024)"). We try the umbrella
 # first, then fall back to per-year ingestion.
 EPISODE_LIST_PAGES: dict[str, tuple[str, ...]] = {
-    "raw":       ("List of WWE Raw episodes",),
+    "raw": ("List of WWE Raw episodes",),
     "smackdown": ("List of WWE SmackDown episodes",),
-    "nitro":     ("List of WCW Monday Nitro episodes",),
-    "ecw_tv":    ("List of ECW (WWE) episodes",
-                  "List of ECW on Sci-Fi episodes"),
-    "dynamite":  ("List of AEW Dynamite episodes",),
+    "nitro": ("List of WCW Monday Nitro episodes",),
+    "ecw_tv": ("List of ECW (WWE) episodes", "List of ECW on Sci-Fi episodes"),
+    "dynamite": ("List of AEW Dynamite episodes",),
     "collision": ("List of AEW Collision episodes",),
-    "nxt":       ("List of WWE NXT episodes",),
-    "impact":    ("List of Impact! episodes",),
+    "nxt": ("List of WWE NXT episodes",),
+    "impact": ("List of Impact! episodes",),
 }
 
 
@@ -114,16 +101,20 @@ def _http_parse_page(title: str) -> Optional[dict]:
         "disableeditsection": "true",
     }
     url = WIKIPEDIA_API + "?" + urllib.parse.urlencode(params)
-    req = urllib.request.Request(url, headers={
-        "User-Agent": USER_AGENT,
-        "Accept": "application/json",
-        "Accept-Encoding": "gzip, deflate",
-    })
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json",
+            "Accept-Encoding": "gzip, deflate",
+        },
+    )
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             data = resp.read()
             if resp.headers.get("Content-Encoding") == "gzip":
                 import gzip
+
                 data = gzip.decompress(data)
             return json.loads(data.decode("utf-8", errors="replace"))
     except Exception as e:
@@ -139,7 +130,9 @@ def _first_existing_page(titles: tuple[str, ...]) -> Optional[tuple[str, str]]:
             continue
         resolved = data["parse"].get("title", t)
         text = data["parse"].get("text")
-        html = text if isinstance(text, str) else (text.get("*") if isinstance(text, dict) else None)
+        html = (
+            text if isinstance(text, str) else (text.get("*") if isinstance(text, dict) else None)
+        )
         if html:
             return resolved, html
     return None
@@ -168,10 +161,30 @@ def _first_existing_page(titles: tuple[str, ...]) -> Optional[tuple[str, str]]:
 
 
 _MONTHS = {
-    "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
-    "july": 7, "august": 8, "september": 9, "october": 10, "november": 11, "december": 12,
-    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "jun": 6, "jul": 7, "aug": 8,
-    "sep": 9, "sept": 9, "oct": 10, "nov": 11, "dec": 12,
+    "january": 1,
+    "february": 2,
+    "march": 3,
+    "april": 4,
+    "may": 5,
+    "june": 6,
+    "july": 7,
+    "august": 8,
+    "september": 9,
+    "october": 10,
+    "november": 11,
+    "december": 12,
+    "jan": 1,
+    "feb": 2,
+    "mar": 3,
+    "apr": 4,
+    "jun": 6,
+    "jul": 7,
+    "aug": 8,
+    "sep": 9,
+    "sept": 9,
+    "oct": 10,
+    "nov": 11,
+    "dec": 12,
 }
 
 
@@ -184,7 +197,8 @@ def _clean_event_date(text: str, ctx: dict) -> Optional[FieldSnippet]:
         try:
             return FieldSnippet(
                 value=date(int(m.group(1)), int(m.group(2)), int(m.group(3))),
-                snippet=text[:200], confidence=98,
+                snippet=text[:200],
+                confidence=98,
             )
         except ValueError:
             return None
@@ -197,7 +211,8 @@ def _clean_event_date(text: str, ctx: dict) -> Optional[FieldSnippet]:
                 if y:
                     return FieldSnippet(
                         value=date(int(y), mo, int(m.group(2))),
-                        snippet=text[:200], confidence=95,
+                        snippet=text[:200],
+                        confidence=95,
                     )
             except (ValueError, TypeError):
                 pass
@@ -208,7 +223,8 @@ def _clean_event_date(text: str, ctx: dict) -> Optional[FieldSnippet]:
             try:
                 return FieldSnippet(
                     value=date(int(m.group(3)), mo, int(m.group(1))),
-                    snippet=text[:200], confidence=95,
+                    snippet=text[:200],
+                    confidence=95,
                 )
             except ValueError:
                 return None
@@ -243,10 +259,7 @@ def _headers_of(table) -> list[str]:
     rows = table.find_all("tr")
     if not rows:
         return []
-    return [
-        (c.get_text(" ", strip=True) or "").lower()
-        for c in rows[0].find_all(["th", "td"])
-    ]
+    return [(c.get_text(" ", strip=True) or "").lower() for c in rows[0].find_all(["th", "td"])]
 
 
 def _is_ppv_table(table) -> bool:
@@ -254,8 +267,7 @@ def _is_ppv_table(table) -> bool:
     if len(headers) < 3:
         return False
     joined = " | ".join(headers)
-    return ("date" in joined and "event" in joined
-            and ("venue" in joined or "location" in joined))
+    return "date" in joined and "event" in joined and ("venue" in joined or "location" in joined)
 
 
 def _is_episode_table(table) -> bool:
@@ -265,8 +277,7 @@ def _is_episode_table(table) -> bool:
     if not ("no." in headers[0] or "#" == headers[0].strip() or "episode" in headers[0]):
         return False
     joined = " | ".join(headers)
-    return ("date" in joined
-            and ("venue" in joined or "city" in joined or "location" in joined))
+    return "date" in joined and ("venue" in joined or "city" in joined or "location" in joined)
 
 
 def _keep_real_ppv_row(ctx: dict) -> bool:
@@ -336,12 +347,12 @@ def _ppv_spec(promotion_key: str) -> TableExtractorSpec:
         result_dataclass=ExtractedEvent,
         table_filter=_is_ppv_table,
         columns={
-            "promotion_key":   ("__inject__",),  # populated by context_resolver
-            "date":            ("date",),
-            "name":            ("event",),
-            "venue_name":      ("venue",),
-            "location":        ("location", "city"),
-            "attendance":      ("attendance",),
+            "promotion_key": ("__inject__",),  # populated by context_resolver
+            "date": ("date",),
+            "name": ("event",),
+            "venue_name": ("venue",),
+            "location": ("location", "city"),
+            "attendance": ("attendance",),
             "main_event_text": ("main event", "final match", "headline"),
         },
         cleaners={
@@ -354,7 +365,7 @@ def _ppv_spec(promotion_key: str) -> TableExtractorSpec:
         },
         row_filter=_keep_real_ppv_row,
         context_resolvers={
-            "year_context":  resolve_year_from_preceding_heading,
+            "year_context": resolve_year_from_preceding_heading,
             "promotion_key": lambda _t: promotion_key,
         },
         required_fields=("name",),
@@ -366,23 +377,23 @@ def _episode_spec(show_key: str) -> TableExtractorSpec:
         result_dataclass=ExtractedEpisode,
         table_filter=_is_episode_table,
         columns={
-            "show_key":       ("__inject__",),
+            "show_key": ("__inject__",),
             "episode_number": ("no.", "#", "episode"),
-            "air_date":       ("air date", "original air date", "date"),
-            "venue_name":     ("venue", "arena"),
-            "city":           ("city", "location"),
-            "notes":          ("notes", "main event", "headline"),
+            "air_date": ("air date", "original air date", "date"),
+            "venue_name": ("venue", "arena"),
+            "city": ("city", "location"),
+            "notes": ("notes", "main event", "headline"),
         },
         cleaners={
             "episode_number": _clean_episode_number,
-            "air_date":       _clean_event_date,
-            "venue_name":     clean_text,
-            "city":           clean_text,
-            "notes":          clean_text,
+            "air_date": _clean_event_date,
+            "venue_name": clean_text,
+            "city": clean_text,
+            "notes": clean_text,
         },
         context_resolvers={
             "year_context": resolve_year_from_preceding_heading,
-            "show_key":     lambda _t: show_key,
+            "show_key": lambda _t: show_key,
         },
         required_fields=("episode_number",),
     )
@@ -411,7 +422,8 @@ def extract_episodes_from_html(html: str, show_key: str) -> list[ExtractedEpisod
 
 
 PROMOTION_NAME_MAP = {
-    "wwe": "WWE", "wcw": "World Championship Wrestling",
+    "wwe": "WWE",
+    "wcw": "World Championship Wrestling",
     "ecw": "Extreme Championship Wrestling",
     "aew": "All Elite Wrestling",
     "tna": "Total Nonstop Action Wrestling",
@@ -425,9 +437,13 @@ PROMOTION_NAME_MAP = {
 # Each TV show belongs to a promotion — needed when creating Event rows
 # for individual episodes.
 _SHOW_TO_PROMOTION = {
-    "raw": "wwe", "smackdown": "wwe", "nxt": "wwe", "ecw_tv": "wwe",
+    "raw": "wwe",
+    "smackdown": "wwe",
+    "nxt": "wwe",
+    "ecw_tv": "wwe",
     "nitro": "wcw",
-    "dynamite": "aew", "collision": "aew",
+    "dynamite": "aew",
+    "collision": "aew",
     "impact": "tna",
 }
 
@@ -452,6 +468,7 @@ def _get_or_create_promotion(promotion_key: str):
     if was_created:
         try:
             from ._provenance import record_provenance
+
             sf, _ = SourceFetch.objects.get_or_create(
                 source="event_lists_registry",
                 content_hash=f"event_lists_promotion_{promotion_key}"[:64],
@@ -461,9 +478,7 @@ def _get_or_create_promotion(promotion_key: str):
                     entity_id=obj.id,
                     candidate_name=name[:255],
                     http_status=200,
-                    raw_content=(
-                        f"event_lists.PROMOTION_NAME_MAP[{promotion_key!r}] = {name!r}"
-                    ),
+                    raw_content=(f"event_lists.PROMOTION_NAME_MAP[{promotion_key!r}] = {name!r}"),
                 ),
             )
             if sf.entity_id != obj.id:
@@ -481,31 +496,40 @@ def _get_or_create_promotion(promotion_key: str):
             )
         except Exception as e:
             logger.warning(
-                "Couldn't record name-provenance for promotion %s: %s", name, e,
+                "Couldn't record name-provenance for promotion %s: %s",
+                name,
+                e,
             )
     return obj
 
 
-def _record_list_page_fetch(resolved_title: str, html: str,
-                            promotion_key: str | None = None) -> "SourceFetch":
+def _record_list_page_fetch(
+    resolved_title: str, html: str, promotion_key: str | None = None
+) -> "SourceFetch":
     """Persist the Wikipedia list page as a single SourceFetch row."""
     import hashlib
     from urllib.parse import quote
     from ..models import SourceFetch
+
     url = f"https://en.wikipedia.org/wiki/{quote(resolved_title.replace(' ', '_'))}"
     h = hashlib.sha256((html or "").encode("utf-8")).hexdigest()
     # Reuse an existing identical fetch if content hash matches — avoids
     # duplicate SourceFetch rows when this command is re-run.
-    existing = SourceFetch.objects.filter(
-        source="wikipedia", content_hash=h,
-    ).order_by("-fetched_at").first()
+    existing = (
+        SourceFetch.objects.filter(
+            source="wikipedia",
+            content_hash=h,
+        )
+        .order_by("-fetched_at")
+        .first()
+    )
     if existing:
         return existing
     return SourceFetch.objects.create(
         source="wikipedia",
         url=url[:500],
-        entity_type="event",   # the rows persisted from this page are events
-        entity_id=0,           # 0 = page-level fetch, not bound to a single entity
+        entity_type="event",  # the rows persisted from this page are events
+        entity_id=0,  # 0 = page-level fetch, not bound to a single entity
         candidate_name=resolved_title[:255],
         http_status=200,
         content_hash=h,
@@ -549,7 +573,8 @@ def ingest_ppv_list(promotion_key: str) -> dict:
         venue_obj = None
         if e.venue_name:
             venue_obj = _get_or_create_venue_stub(
-                name=e.venue_name, city=e.location,
+                name=e.venue_name,
+                city=e.location,
                 source_fetch=source_fetch,
             )
 
@@ -559,7 +584,7 @@ def ingest_ppv_list(promotion_key: str) -> dict:
         defaults = dict(
             venue=venue_obj,
             event_type="ppv",
-            verified=True,                          # back-compat boolean
+            verified=True,  # back-compat boolean
             verification_source="wikipedia",
         )
         if e.attendance is not None:
@@ -594,7 +619,8 @@ def ingest_ppv_list(promotion_key: str) -> dict:
         if e.main_event_text:
             field_values["about"] = e.main_event_text[:500]
         bulk_synthetic_provenance(
-            entity_type="event", entity_id=obj.id,
+            entity_type="event",
+            entity_id=obj.id,
             field_values=field_values,
             source_fetch=source_fetch,
             snippet_hint=snippet_hint,
@@ -665,14 +691,22 @@ def _get_or_create_venue_stub(*, name: str, city: str, source_fetch) -> "Venue":
         verification_state="provisional",
     )
     record_provenance(
-        entity_type="venue", entity_id=venue.id, field_name="name",
-        value=name, snippet=name, confidence=80,
+        entity_type="venue",
+        entity_id=venue.id,
+        field_name="name",
+        value=name,
+        snippet=name,
+        confidence=80,
         source_fetch=source_fetch,
     )
     if city_norm:
         record_provenance(
-            entity_type="venue", entity_id=venue.id, field_name="location",
-            value=city_norm, snippet=city_norm, confidence=80,
+            entity_type="venue",
+            entity_id=venue.id,
+            field_name="location",
+            value=city_norm,
+            snippet=city_norm,
+            confidence=80,
             source_fetch=source_fetch,
         )
     return venue
@@ -699,15 +733,22 @@ def ingest_episode_list(show_key: str) -> dict:
     from ._provenance import bulk_synthetic_provenance
 
     show_name_map = {
-        "raw": "WWE Raw", "smackdown": "WWE SmackDown",
-        "nitro": "WCW Monday Nitro", "ecw_tv": "ECW on Sci-Fi",
-        "dynamite": "AEW Dynamite", "collision": "AEW Collision",
-        "nxt": "WWE NXT", "impact": "Impact!",
+        "raw": "WWE Raw",
+        "smackdown": "WWE SmackDown",
+        "nitro": "WCW Monday Nitro",
+        "ecw_tv": "ECW on Sci-Fi",
+        "dynamite": "AEW Dynamite",
+        "collision": "AEW Collision",
+        "nxt": "WWE NXT",
+        "impact": "Impact!",
     }
     tv_show_name = show_name_map.get(show_key, show_key.upper())
     tv_show, tv_show_created = TVShow.objects.get_or_create(name=tv_show_name)
-    promotion = (tv_show.promotion if getattr(tv_show, "promotion_id", None)
-                 else _get_or_create_promotion(_show_to_promotion(show_key)))
+    promotion = (
+        tv_show.promotion
+        if getattr(tv_show, "promotion_id", None)
+        else _get_or_create_promotion(_show_to_promotion(show_key))
+    )
 
     source_fetch = _record_list_page_fetch(resolved, html, _show_to_promotion(show_key))
 
@@ -716,6 +757,7 @@ def ingest_episode_list(show_key: str) -> dict:
     if tv_show_created:
         try:
             from ._provenance import record_provenance
+
             record_provenance(
                 entity_type="tv_show",
                 entity_id=tv_show.id,
@@ -733,7 +775,8 @@ def ingest_episode_list(show_key: str) -> dict:
         except Exception as e:
             logger.warning(
                 "Couldn't backfill provenance for tv_show %s: %s",
-                tv_show_name, e,
+                tv_show_name,
+                e,
             )
     created = updated = 0
     for ep in extracted:
@@ -743,7 +786,9 @@ def ingest_episode_list(show_key: str) -> dict:
         venue_obj = None
         if ep.venue_name:
             venue_obj = _get_or_create_venue_stub(
-                name=ep.venue_name, city=ep.city, source_fetch=source_fetch,
+                name=ep.venue_name,
+                city=ep.city,
+                source_fetch=source_fetch,
             )
         ep_name = f"{show_name_map.get(show_key, show_key)} — {ep.air_date.isoformat()}"
 
@@ -783,7 +828,8 @@ def ingest_episode_list(show_key: str) -> dict:
         if ep.notes:
             field_values["about"] = ep.notes[:500]
         bulk_synthetic_provenance(
-            entity_type="event", entity_id=obj.id,
+            entity_type="event",
+            entity_id=obj.id,
             field_values=field_values,
             source_fetch=source_fetch,
             snippet_hint=snippet_hint,
@@ -810,6 +856,7 @@ def ingest_episode_list(show_key: str) -> dict:
 
 if __name__ == "__main__":  # pragma: no cover
     import sys
+
     args = sys.argv[1:] or ["wwe"]
     for key in args:
         if key in PPV_LIST_PAGES:

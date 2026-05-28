@@ -4,63 +4,62 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('owdbapp', '0022_actionfigure_themesong'),
+        ("owdbapp", "0022_actionfigure_themesong"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='stable',
-            name='last_verified',
+            model_name="stable",
+            name="last_verified",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='stable',
-            name='verification_source',
+            model_name="stable",
+            name="verification_source",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
         migrations.AddField(
-            model_name='stable',
-            name='verified',
+            model_name="stable",
+            name="verified",
             field=models.BooleanField(db_index=True, default=False),
         ),
         migrations.AddField(
-            model_name='title',
-            name='last_enriched',
+            model_name="title",
+            name="last_enriched",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='title',
-            name='last_verified',
+            model_name="title",
+            name="last_verified",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='title',
-            name='title_type',
+            model_name="title",
+            name="title_type",
             field=models.CharField(blank=True, db_index=True, max_length=50, null=True),
         ),
         migrations.AddField(
-            model_name='title',
-            name='verification_source',
+            model_name="title",
+            name="verification_source",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
         migrations.AddField(
-            model_name='title',
-            name='verified',
+            model_name="title",
+            name="verified",
             field=models.BooleanField(db_index=True, default=False),
         ),
         migrations.AddField(
-            model_name='title',
-            name='wikipedia_url',
+            model_name="title",
+            name="wikipedia_url",
             field=models.URLField(blank=True, max_length=500, null=True),
         ),
         migrations.AddIndex(
-            model_name='stable',
-            index=models.Index(fields=['verified'], name='owdbapp_sta_verifie_3a58b8_idx'),
+            model_name="stable",
+            index=models.Index(fields=["verified"], name="owdbapp_sta_verifie_3a58b8_idx"),
         ),
         migrations.AddIndex(
-            model_name='title',
-            index=models.Index(fields=['verified'], name='owdbapp_tit_verifie_397362_idx'),
+            model_name="title",
+            index=models.Index(fields=["verified"], name="owdbapp_tit_verifie_397362_idx"),
         ),
     ]

@@ -74,15 +74,17 @@ def _warn_cloudflare_once():
 @dataclass
 class WDSearchHit:
     """One search result row."""
+
     name: str
     url: str
-    type: str = ""        # "wrestler" | "promotion" | "event" | "venue" | "other"
-    extra: str = ""       # parenthetical context if WD includes it
+    type: str = ""  # "wrestler" | "promotion" | "event" | "venue" | "other"
+    extra: str = ""  # parenthetical context if WD includes it
 
 
 @dataclass
 class WDProfileSummary:
     """Summary of a wrestler / promotion / event profile."""
+
     name: str
     url: str
     fields: dict = field(default_factory=dict)  # raw label -> value pairs
@@ -100,14 +102,17 @@ class WDProfileSummary:
 
     def to_dict(self) -> dict:
         return {
-            "name": self.name, "url": self.url,
+            "name": self.name,
+            "url": self.url,
             "fields": dict(self.fields),
             "debut_date": self.debut_date,
             "death_date": self.death_date,
             "height_cm": self.height_cm,
             "weight_kg": self.weight_kg,
             "matches_total": self.matches_total,
-            "wins": self.wins, "losses": self.losses, "draws": self.draws,
+            "wins": self.wins,
+            "losses": self.losses,
+            "draws": self.draws,
             "nicknames": self.nicknames,
             "promotions": self.promotions,
             "raw_snippet": self.raw_snippet[:500],
@@ -118,12 +123,15 @@ class WDProfileSummary:
 
 
 def _http_get(url: str, timeout: float = 20.0) -> Optional[str]:
-    req = urllib.request.Request(url, headers={
-        "User-Agent": USER_AGENT,
-        "Accept": "text/html,application/xhtml+xml",
-        "Accept-Encoding": "gzip, deflate",
-        "Accept-Language": "en-US,en;q=0.9",
-    })
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept-Language": "en-US,en;q=0.9",
+        },
+    )
     with rate_limited("wrestlingdata", per_second=RATE_LIMIT_PER_SEC):
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -131,6 +139,7 @@ def _http_get(url: str, timeout: float = 20.0) -> Optional[str]:
                 # Handle gzip if the server returns it.
                 if resp.headers.get("Content-Encoding") == "gzip":
                     import gzip
+
                     data = gzip.decompress(data)
                 return data.decode("utf-8", errors="replace")
         except urllib.error.HTTPError as e:
@@ -285,6 +294,7 @@ def fetch_wrestler_profile(url: str) -> Optional[WDProfileSummary]:
 if __name__ == "__main__":  # pragma: no cover
     import json
     import sys
+
     args = sys.argv[1:] or ["Bret Hart"]
     hits = search(args[0], limit=3)
     for h in hits:

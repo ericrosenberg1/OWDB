@@ -16,6 +16,7 @@ from owdb_django.middleware import CanonicalHostMiddleware
 def _passthrough(request):
     """Sentinel response when middleware lets the request through."""
     from django.http import HttpResponse
+
     return HttpResponse("passed-through")
 
 
@@ -26,8 +27,7 @@ class CanonicalHostMiddlewareTests(TestCase):
 
     @override_settings(ALLOWED_HOSTS=["wrestlingdb.org", "www.wrestlingdb.org"])
     def test_www_apex_redirects_to_bare(self):
-        request = self.factory.get("/", HTTP_HOST="www.wrestlingdb.org",
-                                   secure=True)
+        request = self.factory.get("/", HTTP_HOST="www.wrestlingdb.org", secure=True)
         response = self.mw(request)
         self.assertEqual(response.status_code, 301)
         self.assertEqual(response["Location"], "https://wrestlingdb.org/")
@@ -37,21 +37,21 @@ class CanonicalHostMiddlewareTests(TestCase):
         request = self.factory.get(
             "/wrestler/bret-hart/",
             data={"tab": "matches", "page": "2"},
-            HTTP_HOST="www.wrestlingdb.org", secure=True,
+            HTTP_HOST="www.wrestlingdb.org",
+            secure=True,
         )
         response = self.mw(request)
         self.assertEqual(response.status_code, 301)
         # Query string comes back url-encoded; check both keys present.
-        self.assertTrue(response["Location"].startswith(
-            "https://wrestlingdb.org/wrestler/bret-hart/?"
-        ))
+        self.assertTrue(
+            response["Location"].startswith("https://wrestlingdb.org/wrestler/bret-hart/?")
+        )
         self.assertIn("tab=matches", response["Location"])
         self.assertIn("page=2", response["Location"])
 
     @override_settings(ALLOWED_HOSTS=["wrestlingdb.org", "www.wrestlingdb.org"])
     def test_apex_request_falls_through(self):
-        request = self.factory.get("/", HTTP_HOST="wrestlingdb.org",
-                                   secure=True)
+        request = self.factory.get("/", HTTP_HOST="wrestlingdb.org", secure=True)
         response = self.mw(request)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, b"passed-through")
@@ -59,8 +59,7 @@ class CanonicalHostMiddlewareTests(TestCase):
     @override_settings(ALLOWED_HOSTS=["www.wrestlingdb.org", "wrestlingdb.org"])
     def test_case_insensitive_host_match(self):
         # Browsers / curl sometimes send uppercase host headers.
-        request = self.factory.get("/", HTTP_HOST="WWW.WrestlingDB.org",
-                                   secure=True)
+        request = self.factory.get("/", HTTP_HOST="WWW.WrestlingDB.org", secure=True)
         response = self.mw(request)
         self.assertEqual(response.status_code, 301)
         self.assertEqual(response["Location"], "https://wrestlingdb.org/")
@@ -77,8 +76,7 @@ class CanonicalHostMiddlewareTests(TestCase):
         # Middleware isn't hardcoded to wrestlingdb.org — it strips the
         # `www.` prefix from whatever host comes in. Tested with
         # example.com to prove the rule isn't domain-coupled.
-        request = self.factory.get("/foo", HTTP_HOST="www.example.com",
-                                   secure=True)
+        request = self.factory.get("/foo", HTTP_HOST="www.example.com", secure=True)
         response = self.mw(request)
         self.assertEqual(response.status_code, 301)
         self.assertEqual(response["Location"], "https://example.com/foo")
@@ -87,9 +85,9 @@ class CanonicalHostMiddlewareTests(TestCase):
     def test_non_www_subdomain_falls_through(self):
         # Subdomains that aren't `www.*` (like images.wrestlingdb.org)
         # must NOT be touched — they have their own purpose.
-        request = self.factory.get("/wrestlers/79/profile.jpg",
-                                   HTTP_HOST="images.wrestlingdb.org",
-                                   secure=True)
+        request = self.factory.get(
+            "/wrestlers/79/profile.jpg", HTTP_HOST="images.wrestlingdb.org", secure=True
+        )
         response = self.mw(request)
         self.assertEqual(response.status_code, 200)
 

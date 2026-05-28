@@ -22,22 +22,25 @@ class Command(BaseCommand):
     help = "Ingest event-history list pages from Wikipedia (PPVs + selected episode lists)."
 
     def add_arguments(self, parser):
-        parser.add_argument("--ppvs", action="store_true",
-                            help="Ingest the PPV/supercard list pages.")
-        parser.add_argument("--episodes", action="store_true",
-                            help="Ingest the TV episode list pages (limited coverage; "
-                                 "Raw/SmackDown/Nitro go via TMDB).")
-        parser.add_argument("--all", action="store_true",
-                            help="Run both PPV and episode passes.")
-        parser.add_argument("--promotion", type=str, default="",
-                            help="Limit to one promotion key.")
-        parser.add_argument("--show", type=str, default="",
-                            help="Limit to one show key.")
+        parser.add_argument(
+            "--ppvs", action="store_true", help="Ingest the PPV/supercard list pages."
+        )
+        parser.add_argument(
+            "--episodes",
+            action="store_true",
+            help="Ingest the TV episode list pages (limited coverage; "
+            "Raw/SmackDown/Nitro go via TMDB).",
+        )
+        parser.add_argument("--all", action="store_true", help="Run both PPV and episode passes.")
+        parser.add_argument("--promotion", type=str, default="", help="Limit to one promotion key.")
+        parser.add_argument("--show", type=str, default="", help="Limit to one show key.")
 
     def handle(self, *args, **options):
         from owdb_django.wrestlebot.pipeline.event_lists import (
-            ingest_ppv_list, ingest_episode_list,
-            PPV_LIST_PAGES, EPISODE_LIST_PAGES,
+            ingest_ppv_list,
+            ingest_episode_list,
+            PPV_LIST_PAGES,
+            EPISODE_LIST_PAGES,
         )
 
         do_ppvs = options["all"] or options["ppvs"] or not options["episodes"]
@@ -56,7 +59,7 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.WARNING(f"  {k}: {stats['error']}"))
                     continue
                 self.stdout.write(
-                    f"  {k:<6} {stats.get('resolved_title','?')[:50]:<55} "
+                    f"  {k:<6} {stats.get('resolved_title', '?')[:50]:<55} "
                     f"extracted={stats['extracted']:>4}  created={stats['created']:>4}  "
                     f"updated={stats['updated']:>3}"
                 )
@@ -76,7 +79,7 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.WARNING(f"  {k}: {stats['error']}"))
                     continue
                 self.stdout.write(
-                    f"  {k:<10} {stats.get('resolved_title','?')[:50]:<52} "
+                    f"  {k:<10} {stats.get('resolved_title', '?')[:50]:<52} "
                     f"extracted={stats['extracted']:>4}  created={stats['created']:>4}  "
                     f"updated={stats['updated']:>3}"
                 )

@@ -63,16 +63,28 @@ KNOWN_PROMOTIONS: dict[str, dict[str, str]] = {
     # Defunct historicals
     "World Championship Wrestling": {"name": "World Championship Wrestling", "abbreviation": "WCW"},
     "WCW": {"name": "World Championship Wrestling", "abbreviation": "WCW"},
-    "Extreme Championship Wrestling": {"name": "Extreme Championship Wrestling", "abbreviation": "ECW"},
+    "Extreme Championship Wrestling": {
+        "name": "Extreme Championship Wrestling",
+        "abbreviation": "ECW",
+    },
     "ECW": {"name": "Extreme Championship Wrestling", "abbreviation": "ECW"},
     "Stampede Wrestling": {"name": "Stampede Wrestling", "abbreviation": "Stampede"},
-    "American Wrestling Association": {"name": "American Wrestling Association", "abbreviation": "AWA"},
+    "American Wrestling Association": {
+        "name": "American Wrestling Association",
+        "abbreviation": "AWA",
+    },
     "AWA": {"name": "American Wrestling Association", "abbreviation": "AWA"},
     "National Wrestling Alliance": {"name": "National Wrestling Alliance", "abbreviation": "NWA"},
     "NWA": {"name": "National Wrestling Alliance", "abbreviation": "NWA"},
     "Mid-South Wrestling": {"name": "Mid-South Wrestling", "abbreviation": "Mid-South"},
-    "World Class Championship Wrestling": {"name": "World Class Championship Wrestling", "abbreviation": "WCCW"},
-    "Universal Wrestling Federation (Bill Watts)": {"name": "Universal Wrestling Federation", "abbreviation": "UWF"},
+    "World Class Championship Wrestling": {
+        "name": "World Class Championship Wrestling",
+        "abbreviation": "WCCW",
+    },
+    "Universal Wrestling Federation (Bill Watts)": {
+        "name": "Universal Wrestling Federation",
+        "abbreviation": "UWF",
+    },
     # WWE sub-brands often appear as separate links
     "WWE NXT": {"name": "WWE NXT", "abbreviation": "NXT"},
     "WWE Raw": {"name": "WWE Raw (brand)", "abbreviation": "Raw"},
@@ -153,7 +165,8 @@ def _get_or_create_promotion_stub(spec: dict[str, str], wiki_link: str):
         except Exception as e:  # never let provenance fail block creation
             logger.warning(
                 "Couldn't record name-provenance for promotion stub %s: %s",
-                canonical_name, e,
+                canonical_name,
+                e,
             )
     else:
         # Backfill the wikipedia_url if missing.
@@ -194,6 +207,7 @@ def resolve_wrestler_mentions_to_wrestlers(wrestler_id: int) -> dict:
         if "/wiki/" in url:
             title = url.split("/wiki/", 1)[1].split("#", 1)[0]
             from urllib.parse import unquote as _unquote
+
             title = _unquote(title).replace("_", " ")
             if title and w.id != wrestler_id:  # don't resolve to self
                 wiki_to_wrestler[title] = w.id
@@ -231,7 +245,11 @@ def resolve_all_mentions_to_wrestlers() -> dict:
 
     # Build wiki-title -> wrestler_id index once.
     wiki_to_wrestler: dict[str, int] = {}
-    for w in Wrestler.objects.exclude(wikipedia_url="").exclude(wikipedia_url__isnull=True).only("id", "wikipedia_url"):
+    for w in (
+        Wrestler.objects.exclude(wikipedia_url="")
+        .exclude(wikipedia_url__isnull=True)
+        .only("id", "wikipedia_url")
+    ):
         url = w.wikipedia_url or ""
         if "/wiki/" in url:
             title = url.split("/wiki/", 1)[1].split("#", 1)[0]
@@ -268,11 +286,9 @@ def resolve_all_mentions_to_events() -> dict:
     # Events don't have a wikipedia_url column, but we can recover their
     # canonical title from the Wikipedia SourceFetch.url.
     wiki_to_event: dict[str, int] = {}
-    fetches = (
-        SourceFetch.objects
-        .filter(source="wikipedia", entity_type="event", entity_id__isnull=False)
-        .only("entity_id", "url")
-    )
+    fetches = SourceFetch.objects.filter(
+        source="wikipedia", entity_type="event", entity_id__isnull=False
+    ).only("entity_id", "url")
     for f in fetches:
         if "/wiki/" in f.url:
             title = f.url.split("/wiki/", 1)[1].split("#", 1)[0]
@@ -307,7 +323,11 @@ def resolve_all_mentions_to_venues() -> dict:
     from owdb_django.owdbapp.models import Venue
 
     wiki_to_venue: dict[str, int] = {}
-    for v in Venue.objects.exclude(wikipedia_url="").exclude(wikipedia_url__isnull=True).only("id", "wikipedia_url"):
+    for v in (
+        Venue.objects.exclude(wikipedia_url="")
+        .exclude(wikipedia_url__isnull=True)
+        .only("id", "wikipedia_url")
+    ):
         url = v.wikipedia_url or ""
         if "/wiki/" in url:
             title = url.split("/wiki/", 1)[1].split("#", 1)[0]
@@ -412,7 +432,8 @@ def link_trainers_for_wrestler(wrestler) -> dict:
             missing += 1
             continue
         _, was_new = TrainerRelationship.objects.get_or_create(
-            trainee=wrestler, trainer=trainer,
+            trainee=wrestler,
+            trainer=trainer,
         )
         if was_new:
             linked += 1
@@ -474,7 +495,9 @@ def resolve_wrestler_mentions_to_promotions(wrestler_id: int) -> dict:
 
             # Create the link if not present. v3.0 doesn't infer years.
             existing = WrestlerPromotionHistory.objects.filter(
-                wrestler=wrestler, promotion=promo, start_year__isnull=True,
+                wrestler=wrestler,
+                promotion=promo,
+                start_year__isnull=True,
             ).first()
             if existing is None:
                 WrestlerPromotionHistory.objects.create(
@@ -489,7 +512,9 @@ def resolve_wrestler_mentions_to_promotions(wrestler_id: int) -> dict:
             mention.resolved_entity_type = "promotion"
             mention.resolved_entity_id = promo.id
             mention.resolved_at = timezone.now()
-            mention.save(update_fields=["resolved_entity_type", "resolved_entity_id", "resolved_at"])
+            mention.save(
+                update_fields=["resolved_entity_type", "resolved_entity_id", "resolved_at"]
+            )
             resolved += 1
 
     return {"resolved": resolved, "linked": linked, "skipped": skipped}

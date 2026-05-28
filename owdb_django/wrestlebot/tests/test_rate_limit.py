@@ -39,7 +39,8 @@ class RateLimiterConcurrencyTests(SimpleTestCase):
         def worker():
             for _ in range(per_thread):
                 with rate_limit.rate_limited(
-                    "limiter-concurrency-test", per_second=per_second,
+                    "limiter-concurrency-test",
+                    per_second=per_second,
                 ):
                     now = time.monotonic()
                     with ts_lock:
@@ -47,8 +48,7 @@ class RateLimiterConcurrencyTests(SimpleTestCase):
 
         # Force the in-process fallback path so the test is hermetic.
         # The Redis path is exercised separately below via a fake client.
-        with mock.patch.object(rate_limit, "_get_redis_client",
-                               return_value=None):
+        with mock.patch.object(rate_limit, "_get_redis_client", return_value=None):
             threads = [threading.Thread(target=worker) for _ in range(n_threads)]
             for t in threads:
                 t.start()
@@ -60,7 +60,8 @@ class RateLimiterConcurrencyTests(SimpleTestCase):
         for i in range(1, len(timestamps)):
             gap = timestamps[i] - timestamps[i - 1]
             self.assertGreaterEqual(
-                gap, min_gap,
+                gap,
+                min_gap,
                 f"Saw a {gap * 1000:.1f}ms gap between acquires {i - 1} and "
                 f"{i}; limiter at {per_second}/s must enforce "
                 f">= {min_gap * 1000:.1f}ms.",
@@ -68,19 +69,17 @@ class RateLimiterConcurrencyTests(SimpleTestCase):
 
     def test_distinct_keys_do_not_share_quota(self):
         per_second = 0.5  # 2-second interval; obvious if shared.
-        with mock.patch.object(rate_limit, "_get_redis_client",
-                               return_value=None):
+        with mock.patch.object(rate_limit, "_get_redis_client", return_value=None):
             t0 = time.monotonic()
-            with rate_limit.rate_limited("limiter-key-A",
-                                         per_second=per_second):
+            with rate_limit.rate_limited("limiter-key-A", per_second=per_second):
                 pass
-            with rate_limit.rate_limited("limiter-key-B",
-                                         per_second=per_second):
+            with rate_limit.rate_limited("limiter-key-B", per_second=per_second):
                 pass
             elapsed = time.monotonic() - t0
 
         self.assertLess(
-            elapsed, 1.0,
+            elapsed,
+            1.0,
             f"Distinct keys took {elapsed:.3f}s; should be near-zero. "
             "Keys appear to share a bucket.",
         )
@@ -96,8 +95,7 @@ class RateLimiterRedisPathTests(SimpleTestCase):
         fake_client = mock.MagicMock()
         fake_client.eval.return_value = b"0"
 
-        with mock.patch.object(rate_limit, "_get_redis_client",
-                               return_value=fake_client):
+        with mock.patch.object(rate_limit, "_get_redis_client", return_value=fake_client):
             with rate_limit.rate_limited("musicbrainz", per_second=1.0):
                 pass
 
@@ -113,11 +111,9 @@ class RateLimiterRedisPathTests(SimpleTestCase):
         fake_client = mock.MagicMock()
         fake_client.eval.side_effect = RuntimeError("connection reset")
 
-        with mock.patch.object(rate_limit, "_get_redis_client",
-                               return_value=fake_client):
+        with mock.patch.object(rate_limit, "_get_redis_client", return_value=fake_client):
             # Must not raise; should silently fall back to the local limiter.
-            with rate_limit.rate_limited("limiter-recovery-test",
-                                         per_second=100.0):
+            with rate_limit.rate_limited("limiter-recovery-test", per_second=100.0):
                 pass
 
 

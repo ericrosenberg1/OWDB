@@ -43,7 +43,9 @@ def _detect_claude_code_version() -> str:
         try:
             result = subprocess.run(
                 [cmd, "--version"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if result.returncode == 0 and result.stdout.strip():
                 version = result.stdout.strip().split()[0]
@@ -76,9 +78,7 @@ OAUTH_BETA_HEADERS = (
 # OAuth requests must start the system prompt with this exact text block, or
 # Anthropic's edge rejects them as "not Claude Code". The real instructions
 # follow as a second block.
-CLAUDE_CODE_SYSTEM_PREFIX = (
-    "You are Claude Code, Anthropic's official CLI for Claude."
-)
+CLAUDE_CODE_SYSTEM_PREFIX = "You are Claude Code, Anthropic's official CLI for Claude."
 
 # Fallback Claude Code version when `claude --version` isn't on PATH. Must be
 # kept reasonably current — Anthropic rejects stale-version OAuth traffic.
@@ -135,6 +135,7 @@ def discover_credential() -> Optional[Credential]:
     # 2. Native Claude Code credentials (Keychain / file), with auto-refresh.
     try:
         from . import claude_credentials
+
         token = claude_credentials.get_active_access_token()
         if token:
             return Credential(token=token, is_oauth=True, source="claude_code_credentials")
@@ -218,12 +219,14 @@ class ClaudeClient:
             }
             logger.info(
                 "ClaudeClient: using OAuth auth (source=%s, claude-cli/%s)",
-                self.credential.source, version,
+                self.credential.source,
+                version,
             )
         else:
             kwargs["api_key"] = self.credential.token
             logger.info(
-                "ClaudeClient: using API key auth (source=%s)", self.credential.source,
+                "ClaudeClient: using API key auth (source=%s)",
+                self.credential.source,
             )
 
         self._sdk_client = anthropic.Anthropic(**kwargs)

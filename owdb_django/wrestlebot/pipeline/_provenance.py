@@ -39,6 +39,7 @@ def record_provenance(
     Returns the created FieldProvenance instance.
     """
     from ..models import FieldProvenance
+
     return FieldProvenance.objects.create(
         entity_type=entity_type,
         entity_id=entity_id,
@@ -91,6 +92,7 @@ def bulk_synthetic_provenance(
     low (default 75) so Earl can distinguish synthetic from direct provenance.
     """
     from ..models import FieldProvenance
+
     objs = [
         FieldProvenance(
             entity_type=entity_type,
@@ -109,19 +111,22 @@ def bulk_synthetic_provenance(
 
 
 def entity_has_full_provenance(
-    entity_type: str, entity_id: int, required_fields: tuple[str, ...],
+    entity_type: str,
+    entity_id: int,
+    required_fields: tuple[str, ...],
 ) -> bool:
     """
     Return True iff `entity_id` has at least one FieldProvenance row for
     every required field. Used by accuracy_contract to gate `verified=True`.
     """
     from ..models import FieldProvenance
+
     if not required_fields:
         return True
     covered = set(
-        FieldProvenance.objects
-        .filter(entity_type=entity_type, entity_id=entity_id,
-                field_name__in=required_fields)
+        FieldProvenance.objects.filter(
+            entity_type=entity_type, entity_id=entity_id, field_name__in=required_fields
+        )
         .values_list("field_name", flat=True)
         .distinct()
     )

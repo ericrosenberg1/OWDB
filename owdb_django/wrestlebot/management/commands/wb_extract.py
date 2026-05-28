@@ -17,24 +17,40 @@ from django.core.management.base import BaseCommand
 
 from owdb_django.wrestlebot.models import SourceFetch
 from owdb_django.wrestlebot.pipeline.extract import (
-    extract_action_figure, extract_book, extract_event, extract_podcast,
-    extract_promotion, extract_special, extract_stable, extract_theme_song,
-    extract_title, extract_tv_show, extract_venue, extract_video_game,
+    extract_action_figure,
+    extract_book,
+    extract_event,
+    extract_podcast,
+    extract_promotion,
+    extract_special,
+    extract_stable,
+    extract_theme_song,
+    extract_title,
+    extract_tv_show,
+    extract_venue,
+    extract_video_game,
     extract_wrestler,
 )
 from owdb_django.wrestlebot.pipeline.persist import persist_wrestler
 from owdb_django.wrestlebot.pipeline.persist_event import (
-    persist_event, persist_promotion, persist_venue,
+    persist_event,
+    persist_promotion,
+    persist_venue,
 )
 from owdb_django.wrestlebot.pipeline.persist_media import (
-    persist_action_figure, persist_book, persist_podcast,
-    persist_theme_song, persist_video_game,
+    persist_action_figure,
+    persist_book,
+    persist_podcast,
+    persist_theme_song,
+    persist_video_game,
 )
 from owdb_django.wrestlebot.pipeline.persist_title import (
-    persist_stable, persist_title,
+    persist_stable,
+    persist_title,
 )
 from owdb_django.wrestlebot.pipeline.persist_show import (
-    persist_special, persist_tv_show,
+    persist_special,
+    persist_tv_show,
 )
 
 
@@ -44,26 +60,45 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             "--type",
-            choices=["wrestler", "event", "venue", "promotion", "book",
-                     "video_game", "podcast", "action_figure", "theme_song",
-                     "title", "stable", "tv_show", "special", "all"],
+            choices=[
+                "wrestler",
+                "event",
+                "venue",
+                "promotion",
+                "book",
+                "video_game",
+                "podcast",
+                "action_figure",
+                "theme_song",
+                "title",
+                "stable",
+                "tv_show",
+                "special",
+                "all",
+            ],
             default="all",
             help="Filter by SourceFetch.entity_type (default: all).",
         )
         parser.add_argument(
-            "--all", action="store_true",
+            "--all",
+            action="store_true",
             help="Re-extract every SourceFetch, not just unused ones.",
         )
         parser.add_argument(
-            "--fetch", type=int, default=None,
+            "--fetch",
+            type=int,
+            default=None,
             help="Extract a single SourceFetch by id.",
         )
         parser.add_argument(
-            "--limit", type=int, default=100,
+            "--limit",
+            type=int,
+            default=100,
             help="Maximum SourceFetch rows to process (default: 100).",
         )
         parser.add_argument(
-            "--dry-run", action="store_true",
+            "--dry-run",
+            action="store_true",
             help="Print what would be extracted; do not write to DB.",
         )
 
@@ -117,17 +152,21 @@ class Command(BaseCommand):
                 "special": persist_special,
             }.get(etype)
             if extractor is None or persister is None:
-                self.stdout.write(self.style.WARNING(
-                    f"  SourceFetch#{fetch.id} ({etype}) -> no extractor/persister"
-                ))
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"  SourceFetch#{fetch.id} ({etype}) -> no extractor/persister"
+                    )
+                )
                 skipped += 1
                 continue
 
             fields = extractor(fetch)
             if fields is None:
-                self.stdout.write(self.style.WARNING(
-                    f"  SourceFetch#{fetch.id} [{etype}] ({fetch.candidate_name!r}) -> no extractable fields"
-                ))
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"  SourceFetch#{fetch.id} [{etype}] ({fetch.candidate_name!r}) -> no extractable fields"
+                    )
+                )
                 skipped += 1
                 continue
 
@@ -163,12 +202,12 @@ class Command(BaseCommand):
                 or getattr(result, "tv_show_id", None)
                 or getattr(result, "special_id", None)
             )
-            self.stdout.write(self.style.SUCCESS(
-                f"    persisted {etype}#{entity_id} (created={getattr(result, 'created', '?')}, "
-                f"wrote={len(getattr(result, 'fields_written', []))}, "
-                f"provenance_rows={getattr(result, 'provenance_rows_created', 0)})"
-            ))
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"    persisted {etype}#{entity_id} (created={getattr(result, 'created', '?')}, "
+                    f"wrote={len(getattr(result, 'fields_written', []))}, "
+                    f"provenance_rows={getattr(result, 'provenance_rows_created', 0)})"
+                )
+            )
 
-        self.stdout.write(self.style.SUCCESS(
-            f"\nDone. Persisted {wrote}, skipped {skipped}."
-        ))
+        self.stdout.write(self.style.SUCCESS(f"\nDone. Persisted {wrote}, skipped {skipped}."))

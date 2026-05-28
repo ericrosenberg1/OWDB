@@ -44,13 +44,14 @@ RATE_LIMIT_PER_SEC = 1.0 / 1.05
 @dataclass
 class MBRecording:
     """One MusicBrainz recording hit."""
+
     mbid: str
     title: str
     artist: str
     artist_mbids: list[str] = field(default_factory=list)
-    first_release_date: str = ""   # ISO date, may be partial (e.g. "1991-08")
+    first_release_date: str = ""  # ISO date, may be partial (e.g. "1991-08")
     length_ms: int = 0
-    score: int = 0                  # MB's match confidence, 0..100
+    score: int = 0  # MB's match confidence, 0..100
     isrcs: list[str] = field(default_factory=list)
     release_titles: list[str] = field(default_factory=list)
 
@@ -65,15 +66,20 @@ class MBRecording:
             "score": self.score,
             "isrcs": self.isrcs,
             "release_titles": self.release_titles[:5],
-            "musicbrainz_url": f"https://musicbrainz.org/recording/{self.mbid}" if self.mbid else "",
+            "musicbrainz_url": f"https://musicbrainz.org/recording/{self.mbid}"
+            if self.mbid
+            else "",
         }
 
 
 def _http_get_json(url: str, timeout: float = 15.0) -> Optional[dict]:
-    req = urllib.request.Request(url, headers={
-        "User-Agent": USER_AGENT,
-        "Accept": "application/json",
-    })
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json",
+        },
+    )
     with rate_limited("musicbrainz", per_second=RATE_LIMIT_PER_SEC):
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -149,17 +155,19 @@ def search_recordings(
             if mbid:
                 artist_mbids.append(mbid)
         releases = [r.get("title", "") for r in (row.get("releases") or []) if isinstance(r, dict)]
-        out.append(MBRecording(
-            mbid=row.get("id", "") or "",
-            title=row.get("title", "") or "",
-            artist=" & ".join(artist_names),
-            artist_mbids=artist_mbids,
-            first_release_date=row.get("first-release-date", "") or "",
-            length_ms=int(row.get("length") or 0),
-            score=int(row.get("score") or 0),
-            isrcs=list(row.get("isrcs") or []),
-            release_titles=[r for r in releases if r],
-        ))
+        out.append(
+            MBRecording(
+                mbid=row.get("id", "") or "",
+                title=row.get("title", "") or "",
+                artist=" & ".join(artist_names),
+                artist_mbids=artist_mbids,
+                first_release_date=row.get("first-release-date", "") or "",
+                length_ms=int(row.get("length") or 0),
+                score=int(row.get("score") or 0),
+                isrcs=list(row.get("isrcs") or []),
+                release_titles=[r for r in releases if r],
+            )
+        )
     return out
 
 
@@ -168,15 +176,14 @@ def get_recording_by_mbid(mbid: str) -> Optional[dict]:
     if not mbid:
         return None
     url = (
-        f"{MB_BASE}/recording/{urllib.parse.quote(mbid)}"
-        f"?inc=artist-credits+releases+isrcs"
-        f"&fmt=json"
+        f"{MB_BASE}/recording/{urllib.parse.quote(mbid)}?inc=artist-credits+releases+isrcs&fmt=json"
     )
     return _http_get_json(url)
 
 
 if __name__ == "__main__":  # pragma: no cover
     import sys
+
     args = sys.argv[1:] or ["Cult of Personality"]
     title = args[0]
     artist = args[1] if len(args) > 1 else None

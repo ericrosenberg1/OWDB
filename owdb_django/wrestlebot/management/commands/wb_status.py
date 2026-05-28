@@ -26,7 +26,9 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--sample", type=int, default=3,
+            "--sample",
+            type=int,
+            default=3,
             help="How many sample wrestlers to expand with provenance (default: 3).",
         )
 
@@ -39,14 +41,22 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("\n=== WrestleBot v3 Pipeline Status ===\n"))
 
         self.stdout.write("Entity counts:")
-        self.stdout.write(f"  Wrestlers : {Wrestler.objects.count():>6}  "
-                          f"(verified={Wrestler.objects.filter(verified=True).count()})")
-        self.stdout.write(f"  Promotions: {Promotion.objects.count():>6}  "
-                          f"(verified={Promotion.objects.filter(verified=True).count()})")
-        self.stdout.write(f"  Events    : {Event.objects.count():>6}  "
-                          f"(verified={Event.objects.filter(verified=True).count()})")
-        self.stdout.write(f"  Matches   : {Match.objects.count():>6}  "
-                          f"(verified={Match.objects.filter(verified=True).count()})")
+        self.stdout.write(
+            f"  Wrestlers : {Wrestler.objects.count():>6}  "
+            f"(verified={Wrestler.objects.filter(verified=True).count()})"
+        )
+        self.stdout.write(
+            f"  Promotions: {Promotion.objects.count():>6}  "
+            f"(verified={Promotion.objects.filter(verified=True).count()})"
+        )
+        self.stdout.write(
+            f"  Events    : {Event.objects.count():>6}  "
+            f"(verified={Event.objects.filter(verified=True).count()})"
+        )
+        self.stdout.write(
+            f"  Matches   : {Match.objects.count():>6}  "
+            f"(verified={Match.objects.filter(verified=True).count()})"
+        )
 
         self.stdout.write("\nPipeline tables:")
         self.stdout.write(f"  SourceFetch     : {SourceFetch.objects.count():>6}")
@@ -54,11 +64,7 @@ class Command(BaseCommand):
         self.stdout.write(f"  GeneratedBio    : {GeneratedBio.objects.count():>6}")
 
         # Sources breakdown
-        source_counts = (
-            SourceFetch.objects.values("source")
-            .annotate(n=Count("id"))
-            .order_by("-n")
-        )
+        source_counts = SourceFetch.objects.values("source").annotate(n=Count("id")).order_by("-n")
         if source_counts:
             self.stdout.write("\nSourceFetch by source:")
             for row in source_counts:
@@ -66,17 +72,14 @@ class Command(BaseCommand):
 
         # Sample wrestlers with provenance
         if sample_count > 0 and Wrestler.objects.exists():
-            self.stdout.write(self.style.SUCCESS(
-                f"\nSample wrestlers (newest {sample_count}):\n"
-            ))
+            self.stdout.write(self.style.SUCCESS(f"\nSample wrestlers (newest {sample_count}):\n"))
             for w in Wrestler.objects.order_by("-id")[:sample_count]:
                 self.stdout.write(
                     f"  [{w.id}] {w.name}  (verified={w.verified}, "
                     f"source={w.verification_source or '-'})"
                 )
                 provs = (
-                    FieldProvenance.objects
-                    .filter(entity_type="wrestler", entity_id=w.id)
+                    FieldProvenance.objects.filter(entity_type="wrestler", entity_id=w.id)
                     .select_related("source_fetch")
                     .order_by("field_name", "-extracted_at")
                 )

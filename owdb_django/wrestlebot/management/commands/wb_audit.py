@@ -29,25 +29,33 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--wrestler", type=int, default=None,
+            "--wrestler",
+            type=int,
+            default=None,
             help="Audit only one wrestler by id.",
         )
         parser.add_argument(
-            "--fix", action="store_true",
+            "--fix",
+            action="store_true",
             help="Apply safe auto-fixes (field cleanup). Default is dry-run.",
         )
         parser.add_argument(
-            "--stale-days", type=int, default=30,
+            "--stale-days",
+            type=int,
+            default=30,
             help="A SourceFetch older than this is flagged stale (default: 30).",
         )
 
     def handle(self, *args, **options):
         from owdb_django.owdbapp.models import Wrestler
         from owdb_django.wrestlebot.models import (
-            EntityMention, GeneratedBio, SourceFetch,
+            EntityMention,
+            GeneratedBio,
+            SourceFetch,
         )
         from owdb_django.wrestlebot.pipeline.cleanup import (
-            apply_wrestler_cleanup, clean_wrestler_fields,
+            apply_wrestler_cleanup,
+            clean_wrestler_fields,
         )
         from owdb_django.wrestlebot.pipeline.consistency import check_wrestler
 
@@ -64,9 +72,11 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("No wrestlers found."))
             return
 
-        self.stdout.write(self.style.SUCCESS(
-            f"\n=== wb_audit — {len(wrestlers)} wrestler(s) ({'fix' if apply_fixes else 'dry-run'}) ==="
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"\n=== wb_audit — {len(wrestlers)} wrestler(s) ({'fix' if apply_fixes else 'dry-run'}) ==="
+            )
+        )
 
         # Aggregates
         consistency_issues = 0
@@ -82,16 +92,16 @@ class Command(BaseCommand):
             issues_for_this = check_wrestler(w)
             cleanup_changes = clean_wrestler_fields(w)
             primary_fetch = (
-                SourceFetch.objects
-                .filter(entity_type="wrestler", entity_id=w.id, source="wikipedia")
-                .order_by("-fetched_at").first()
+                SourceFetch.objects.filter(
+                    entity_type="wrestler", entity_id=w.id, source="wikipedia"
+                )
+                .order_by("-fetched_at")
+                .first()
             )
             stale = bool(primary_fetch and primary_fetch.fetched_at < stale_cutoff)
-            bio = (
-                GeneratedBio.objects
-                .filter(entity_type="wrestler", entity_id=w.id, status="verified")
-                .exists()
-            )
+            bio = GeneratedBio.objects.filter(
+                entity_type="wrestler", entity_id=w.id, status="verified"
+            ).exists()
 
             interesting = bool(issues_for_this or cleanup_changes or stale or not bio)
             if not interesting:
@@ -104,18 +114,20 @@ class Command(BaseCommand):
                 consistency_issues += len(issues_for_this)
                 for issue in issues_for_this:
                     color = self.style.ERROR if issue.severity == "error" else self.style.WARNING
-                    self.stdout.write(color(
-                        f"      [{issue.severity}] {issue.rule}: {issue.message}"
-                    ))
+                    self.stdout.write(
+                        color(f"      [{issue.severity}] {issue.rule}: {issue.message}")
+                    )
 
             if cleanup_changes:
                 cleanup_pending += 1
                 cleanup_fields += len(cleanup_changes)
                 for field, new_value in cleanup_changes.items():
                     old = getattr(w, field, "")
-                    self.stdout.write(self.style.WARNING(
-                        f"      [cleanup] {field}: {(old or '')[:60]!r} -> {(new_value or '')[:60]!r}"
-                    ))
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"      [cleanup] {field}: {(old or '')[:60]!r} -> {(new_value or '')[:60]!r}"
+                        )
+                    )
                 if apply_fixes:
                     apply_wrestler_cleanup(w)
                     self.stdout.write(self.style.SUCCESS("      -> applied"))
@@ -123,10 +135,12 @@ class Command(BaseCommand):
             if stale and primary_fetch:
                 stale_fetches += 1
                 age_days = (timezone.now() - primary_fetch.fetched_at).days
-                self.stdout.write(self.style.WARNING(
-                    f"      [stale] primary Wikipedia fetch is {age_days}d old "
-                    f"(SourceFetch#{primary_fetch.id})"
-                ))
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"      [stale] primary Wikipedia fetch is {age_days}d old "
+                        f"(SourceFetch#{primary_fetch.id})"
+                    )
+                )
 
             if not bio:
                 missing_bio += 1
@@ -135,22 +149,23 @@ class Command(BaseCommand):
         # Cross-entity consistency: events + venues
         from owdb_django.owdbapp.models import Event, Venue
         from owdb_django.wrestlebot.pipeline.consistency import check_event, check_venue
+
         event_issues = 0
         venue_issues = 0
         for e in Event.objects.all():
             for issue in check_event(e):
                 event_issues += 1
                 color = self.style.ERROR if issue.severity == "error" else self.style.WARNING
-                self.stdout.write(color(
-                    f"  [event#{e.id}] {e.name}: {issue.rule}: {issue.message}"
-                ))
+                self.stdout.write(
+                    color(f"  [event#{e.id}] {e.name}: {issue.rule}: {issue.message}")
+                )
         for v in Venue.objects.all():
             for issue in check_venue(v):
                 venue_issues += 1
                 color = self.style.ERROR if issue.severity == "error" else self.style.WARNING
-                self.stdout.write(color(
-                    f"  [venue#{v.id}] {v.name}: {issue.rule}: {issue.message}"
-                ))
+                self.stdout.write(
+                    color(f"  [venue#{v.id}] {v.name}: {issue.rule}: {issue.message}")
+                )
 
         # Cross-cutting stats
         mention_total = EntityMention.objects.count()
@@ -159,6 +174,7 @@ class Command(BaseCommand):
 
         # Source drift events (Wikipedia changed under us)
         from owdb_django.wrestlebot.models import WrestleBotActivity
+
         drift_events = WrestleBotActivity.objects.filter(source="source_drift")
         if wrestler_id is not None:
             drift_events = drift_events.filter(entity_id=wrestler_id)
@@ -168,20 +184,26 @@ class Command(BaseCommand):
         xs_disagree = WrestleBotActivity.objects.filter(source="cross_source_disagreement").count()
 
         if drift_count:
-            self.stdout.write(self.style.WARNING(
-                f"\n  Source drift events ({drift_count} — Wikipedia changed after our extract):"
-            ))
+            self.stdout.write(
+                self.style.WARNING(
+                    f"\n  Source drift events ({drift_count} — Wikipedia changed after our extract):"
+                )
+            )
             for ev in drift_events.order_by("-created_at")[:5]:
                 d = ev.details or {}
-                self.stdout.write(self.style.WARNING(
-                    f"    [{ev.entity_type}#{ev.entity_id}] {ev.entity_name}  "
-                    f"{d.get('field')}: stored={d.get('stored_value', '')!r:.40} -> new={d.get('new_source_value', '')!r:.40}"
-                ))
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"    [{ev.entity_type}#{ev.entity_id}] {ev.entity_name}  "
+                        f"{d.get('field')}: stored={d.get('stored_value', '')!r:.40} -> new={d.get('new_source_value', '')!r:.40}"
+                    )
+                )
 
         if xs_disagree:
-            self.stdout.write(self.style.ERROR(
-                f"\n  Cross-source disagreements: {xs_disagree} — review WrestleBotActivity for details"
-            ))
+            self.stdout.write(
+                self.style.ERROR(
+                    f"\n  Cross-source disagreements: {xs_disagree} — review WrestleBotActivity for details"
+                )
+            )
 
         self.stdout.write(self.style.SUCCESS("\n=== summary ==="))
         self.stdout.write(
@@ -193,7 +215,9 @@ class Command(BaseCommand):
             f"  cleanup:            {cleanup_fields} field change(s) across {cleanup_pending} wrestler(s)"
             + (" — APPLIED" if apply_fixes else " — dry-run (re-run with --fix)")
         )
-        self.stdout.write(f"  stale fetches:      {stale_fetches} wrestler(s) need re-fetch (>{stale_days}d)")
+        self.stdout.write(
+            f"  stale fetches:      {stale_fetches} wrestler(s) need re-fetch (>{stale_days}d)"
+        )
         self.stdout.write(f"  source drift:       {drift_count} field change(s) flagged for review")
         self.stdout.write(f"  cross-source dis:   {xs_disagree} disagreement(s) between sources")
         self.stdout.write(f"  no-bio:             {missing_bio} wrestler(s) without a verified bio")

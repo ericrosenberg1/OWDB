@@ -4,59 +4,58 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('owdbapp', '0019_trainerrelationship'),
+        ("owdbapp", "0019_trainerrelationship"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='venue',
-            name='about',
+            model_name="venue",
+            name="about",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='venue',
-            name='city',
+            model_name="venue",
+            name="city",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='venue',
-            name='country',
+            model_name="venue",
+            name="country",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='venue',
-            name='last_enriched',
+            model_name="venue",
+            name="last_enriched",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='venue',
-            name='last_verified',
+            model_name="venue",
+            name="last_verified",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='venue',
-            name='opened_year',
+            model_name="venue",
+            name="opened_year",
             field=models.IntegerField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='venue',
-            name='verification_source',
+            model_name="venue",
+            name="verification_source",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
         migrations.AddField(
-            model_name='venue',
-            name='verified',
+            model_name="venue",
+            name="verified",
             field=models.BooleanField(db_index=True, default=False),
         ),
         migrations.AddField(
-            model_name='venue',
-            name='wikipedia_url',
+            model_name="venue",
+            name="wikipedia_url",
             field=models.URLField(blank=True, max_length=500, null=True),
         ),
         migrations.AddIndex(
-            model_name='venue',
-            index=models.Index(fields=['verified'], name='owdbapp_ven_verifie_89576f_idx'),
+            model_name="venue",
+            index=models.Index(fields=["verified"], name="owdbapp_ven_verifie_89576f_idx"),
         ),
     ]

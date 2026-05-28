@@ -67,9 +67,7 @@ class Command(BaseCommand):
             return
 
         self.stdout.write(
-            self.style.HTTP_INFO(
-                f"Starting scrape: {data_type} from {source} (limit: {limit})"
-            )
+            self.style.HTTP_INFO(f"Starting scrape: {data_type} from {source} (limit: {limit})")
         )
 
         try:
@@ -80,12 +78,18 @@ class Command(BaseCommand):
             )
 
             self.stdout.write(self.style.SUCCESS("\nScraping complete!"))
-            self.stdout.write(f"  Wrestlers: {results['wrestlers_scraped']} scraped, "
-                            f"{results['wrestlers_imported']} imported")
-            self.stdout.write(f"  Promotions: {results['promotions_scraped']} scraped, "
-                            f"{results['promotions_imported']} imported")
-            self.stdout.write(f"  Events: {results['events_scraped']} scraped, "
-                            f"{results['events_imported']} imported")
+            self.stdout.write(
+                f"  Wrestlers: {results['wrestlers_scraped']} scraped, "
+                f"{results['wrestlers_imported']} imported"
+            )
+            self.stdout.write(
+                f"  Promotions: {results['promotions_scraped']} scraped, "
+                f"{results['promotions_imported']} imported"
+            )
+            self.stdout.write(
+                f"  Events: {results['events_scraped']} scraped, "
+                f"{results['events_imported']} imported"
+            )
 
         except Exception as e:
             raise CommandError(f"Scraping failed: {e}")
@@ -104,18 +108,12 @@ class Command(BaseCommand):
             rate_limits = source_stats.get("rate_limits", {})
 
             minute = rate_limits.get("minute", {})
-            self.stdout.write(
-                f"  Per minute: {minute.get('current', 0)}/{minute.get('limit', 0)}"
-            )
+            self.stdout.write(f"  Per minute: {minute.get('current', 0)}/{minute.get('limit', 0)}")
 
             hour = rate_limits.get("hour", {})
-            self.stdout.write(
-                f"  Per hour:   {hour.get('current', 0)}/{hour.get('limit', 0)}"
-            )
+            self.stdout.write(f"  Per hour:   {hour.get('current', 0)}/{hour.get('limit', 0)}")
 
             day = rate_limits.get("day", {})
-            self.stdout.write(
-                f"  Per day:    {day.get('current', 0)}/{day.get('limit', 0)}"
-            )
+            self.stdout.write(f"  Per day:    {day.get('current', 0)}/{day.get('limit', 0)}")
 
         self.stdout.write("\n")

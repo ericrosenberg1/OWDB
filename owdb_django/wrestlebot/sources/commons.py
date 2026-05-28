@@ -30,7 +30,8 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from .wikidata import (
-    USER_AGENT, WIKIDATA_ENTITY_URL,
+    USER_AGENT,
+    WIKIDATA_ENTITY_URL,
     resolve_qid_for_wikipedia_title,
 )
 
@@ -42,8 +43,8 @@ COMMONS_API = "https://commons.wikimedia.org/w/api.php"
 COMMONS_FILE_PAGE = "https://commons.wikimedia.org/wiki/File:{filename}"
 
 P_IMAGE = "P18"
-P_LOGO = "P154"        # used for promotion logos
-P_SIGNATURE = "P109"   # signatures (occasionally useful)
+P_LOGO = "P154"  # used for promotion logos
+P_SIGNATURE = "P109"  # signatures (occasionally useful)
 
 
 # Whitelist of licenses we can legally use on a public commercial-ish site.
@@ -54,36 +55,36 @@ P_SIGNATURE = "P109"   # signatures (occasionally useful)
 # code stored in `image_license` on the entity.
 ALLOWED_LICENSES = {
     # Public domain / CC0
-    "pd":                "pd",
-    "public domain":     "pd",
-    "public-domain":     "pd",
-    "publicdomain":      "pd",
-    "cc0":               "cc0",
-    "cc-zero":           "cc0",
-    "cczero":            "cc0",
+    "pd": "pd",
+    "public domain": "pd",
+    "public-domain": "pd",
+    "publicdomain": "pd",
+    "cc0": "cc0",
+    "cc-zero": "cc0",
+    "cczero": "cc0",
     # CC-BY family (attribution required, commercial use OK)
-    "cc-by-1.0":         "cc-by",
-    "cc-by-2.0":         "cc-by",
-    "cc-by-2.5":         "cc-by",
-    "cc-by-3.0":         "cc-by",
-    "cc-by-3.0-us":      "cc-by",
-    "cc-by-4.0":         "cc-by",
+    "cc-by-1.0": "cc-by",
+    "cc-by-2.0": "cc-by",
+    "cc-by-2.5": "cc-by",
+    "cc-by-3.0": "cc-by",
+    "cc-by-3.0-us": "cc-by",
+    "cc-by-4.0": "cc-by",
     # CC-BY-SA family (attribution + share-alike)
-    "cc-by-sa-1.0":      "cc-by-sa",
-    "cc-by-sa-2.0":      "cc-by-sa",
-    "cc-by-sa-2.5":      "cc-by-sa",
-    "cc-by-sa-3.0":      "cc-by-sa",
-    "cc-by-sa-3.0-us":   "cc-by-sa",
-    "cc-by-sa-4.0":      "cc-by-sa",
+    "cc-by-sa-1.0": "cc-by-sa",
+    "cc-by-sa-2.0": "cc-by-sa",
+    "cc-by-sa-2.5": "cc-by-sa",
+    "cc-by-sa-3.0": "cc-by-sa",
+    "cc-by-sa-3.0-us": "cc-by-sa",
+    "cc-by-sa-4.0": "cc-by-sa",
 }
 
 
 # Licenses that LOOK like CC but include restrictions we cannot honor.
 EXPLICITLY_BLOCKED_LICENSES = {
-    "cc-by-nc",     # NonCommercial
+    "cc-by-nc",  # NonCommercial
     "cc-by-nc-sa",
     "cc-by-nc-nd",
-    "cc-by-nd",     # NoDerivs (we resize/crop, so we make derivatives)
+    "cc-by-nd",  # NoDerivs (we resize/crop, so we make derivatives)
     "cc-by-nd-nc",
     "non-free",
     "fair-use",
@@ -93,10 +94,13 @@ EXPLICITLY_BLOCKED_LICENSES = {
 
 def _http_get_json(url: str, timeout: float = 10.0) -> Optional[dict]:
     try:
-        req = Request(url, headers={
-            "User-Agent": USER_AGENT,
-            "Accept": "application/json",
-        })
+        req = Request(
+            url,
+            headers={
+                "User-Agent": USER_AGENT,
+                "Accept": "application/json",
+            },
+        )
         with urlopen(req, timeout=timeout) as resp:
             return json.loads(resp.read().decode("utf-8"))
     except Exception as e:
@@ -171,7 +175,8 @@ def fetch_image_for_qid(qid: str, prop: str = P_IMAGE) -> Optional[dict]:
 
 
 def fetch_image_for_wikipedia_title(
-    title: str, prop: str = P_IMAGE,
+    title: str,
+    prop: str = P_IMAGE,
 ) -> Optional[dict]:
     """
     End-to-end helper: Wikipedia title -> QID -> Commons image URL.
@@ -237,7 +242,15 @@ def _normalize_license(license_str: str) -> str:
     # Trim known regional / port suffixes (.0-us, .0-au, etc.) and retry
     # exact match. We deliberately do NOT do open-ended prefix matching.
     SAFE_SUFFIXES = (
-        "-us", "-au", "-ca", "-uk", "-de", "-fr", "-jp", "-nl", "-es",
+        "-us",
+        "-au",
+        "-ca",
+        "-uk",
+        "-de",
+        "-fr",
+        "-jp",
+        "-nl",
+        "-es",
     )
     for suf in SAFE_SUFFIXES:
         if norm.endswith(suf):
@@ -250,6 +263,7 @@ def _normalize_license(license_str: str) -> str:
 @dataclass
 class CommonsImageMeta:
     """Normalized metadata for one Commons file."""
+
     filename: str
     original_url: str
     thumb_url_400: str
@@ -260,23 +274,23 @@ class CommonsImageMeta:
     mime: str
 
     # License + legal
-    license_code: str            # our canonical: cc0/cc-by/cc-by-sa/pd or ''
-    license_short: str           # 'CC BY-SA 3.0' for display
-    license_url: str             # CC's deed URL
+    license_code: str  # our canonical: cc0/cc-by/cc-by-sa/pd or ''
+    license_short: str  # 'CC BY-SA 3.0' for display
+    license_url: str  # CC's deed URL
     usage_terms: str
     attribution_required: bool
-    artist: str                  # human-readable author (HTML-stripped)
-    credit: str                  # 'Own work', or the source page
+    artist: str  # human-readable author (HTML-stripped)
+    credit: str  # 'Own work', or the source page
     permission: str
 
     # Content
     description: str
     categories: list[str]
-    restrictions: str            # any extra restrictions (rare)
+    restrictions: str  # any extra restrictions (rare)
 
     # Audit signals
-    is_allowed: bool             # True iff license_code in our whitelist AND not blocked
-    rejection_reason: str        # populated iff is_allowed=False
+    is_allowed: bool  # True iff license_code in our whitelist AND not blocked
+    rejection_reason: str  # populated iff is_allowed=False
 
     def attribution_string(self) -> str:
         """
@@ -323,6 +337,7 @@ def fetch_image_metadata(filename: str) -> Optional[CommonsImageMeta]:
         return None
 
     em = info.get("extmetadata", {}) or {}
+
     def _v(key: str) -> str:
         node = em.get(key) or {}
         return _strip_html(node.get("value", "")) if isinstance(node, dict) else ""
@@ -335,9 +350,9 @@ def fetch_image_metadata(filename: str) -> Optional[CommonsImageMeta]:
     # the *normalised* form here so e.g. "CC BY-NC 4.0" (spaces) is
     # caught the same as "cc-by-nc-4.0".
     _norm_raw = (
-        _re.sub(r"-+", "-",
-                raw_license.strip().lower().replace(" ", "-").replace("_", "-"))
-        if raw_license else ""
+        _re.sub(r"-+", "-", raw_license.strip().lower().replace(" ", "-").replace("_", "-"))
+        if raw_license
+        else ""
     )
     rejection: str = ""
     if not raw_license:
@@ -440,7 +455,9 @@ def resolve_commons_category_for_qid(qid: str) -> Optional[str]:
 
 
 def fetch_commons_category_files(
-    category: str, *, limit: int = 50,
+    category: str,
+    *,
+    limit: int = 50,
 ) -> list[str]:
     """
     Enumerate every File: member of a Commons category.
@@ -488,16 +505,27 @@ def fetch_commons_category_files(
         # OGG audio, PDFs, etc. We accept the common image types here so
         # the caller doesn't waste an API call on a clearly-wrong file.
         lower = fname.lower()
-        if not any(lower.endswith(ext) for ext in (
-            ".jpg", ".jpeg", ".png", ".gif", ".webp", ".tiff", ".tif",
-        )):
+        if not any(
+            lower.endswith(ext)
+            for ext in (
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".gif",
+                ".webp",
+                ".tiff",
+                ".tif",
+            )
+        ):
             continue
         out.append(fname)
     return out
 
 
 def fetch_wikipedia_body_image_filenames(
-    title: str, *, limit: int = 30,
+    title: str,
+    *,
+    limit: int = 30,
 ) -> list[str]:
     """
     Enumerate every image embedded in a Wikipedia article (lead + body).
@@ -519,7 +547,7 @@ def fetch_wikipedia_body_image_filenames(
     pages = (data.get("query") or {}).get("pages") or {}
     out: list[str] = []
     for _, page in pages.items():
-        for entry in (page.get("images") or []):
+        for entry in page.get("images") or []:
             t = (entry.get("title") or "").strip()
             if not t.lower().startswith("file:"):
                 continue
@@ -529,9 +557,18 @@ def fetch_wikipedia_body_image_filenames(
             # Same image-extension filter as the category enumerator —
             # avoids burning a metadata call on Edit-pencil-blue.svg etc.
             lower = fname.lower()
-            if not any(lower.endswith(ext) for ext in (
-                ".jpg", ".jpeg", ".png", ".gif", ".webp", ".tiff", ".tif",
-            )):
+            if not any(
+                lower.endswith(ext)
+                for ext in (
+                    ".jpg",
+                    ".jpeg",
+                    ".png",
+                    ".gif",
+                    ".webp",
+                    ".tiff",
+                    ".tif",
+                )
+            ):
                 continue
             # Wikipedia chrome appears on every page — skip the
             # well-known ornamental files so we don't waste API calls.
@@ -547,9 +584,14 @@ def fetch_wikipedia_body_image_filenames(
 # We blacklist them so the body-image enumerator doesn't waste a metadata
 # round-trip — these never depict the subject.
 _WIKIPEDIA_CHROME_FILENAMES = {
-    "Commons-logo.svg", "Wiki letter w.svg", "Wiki letter w cropped.svg",
-    "Question book-new.svg", "Editing icon.svg", "Edit-clear.svg",
-    "Symbol category class.svg", "Symbol portal class.svg",
+    "Commons-logo.svg",
+    "Wiki letter w.svg",
+    "Wiki letter w cropped.svg",
+    "Question book-new.svg",
+    "Editing icon.svg",
+    "Edit-clear.svg",
+    "Symbol category class.svg",
+    "Symbol portal class.svg",
     "Symbol star silver.svg",
 }
 
@@ -693,14 +735,20 @@ def categories_contain(meta_categories: list[str], category_name: str) -> bool:
 
 if __name__ == "__main__":  # pragma: no cover
     import sys
+
     name = " ".join(sys.argv[1:]) or "Bret Hart"
     r = fetch_image_for_wikipedia_title(name)
     if not r:
         print(f"no P18 image for {name!r}")
     else:
         meta = fetch_image_metadata(r["filename"])
-        print(json.dumps({"p18_lookup": r, "metadata": meta.__dict__ if meta else None},
-                          indent=2, default=str))
+        print(
+            json.dumps(
+                {"p18_lookup": r, "metadata": meta.__dict__ if meta else None},
+                indent=2,
+                default=str,
+            )
+        )
     # Show the cascade reach too.
     qid = resolve_qid_for_wikipedia_title(name)
     if qid:

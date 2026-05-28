@@ -4,15 +4,22 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('wrestlebot', '0014_alter_entitymention_resolved_entity_type_and_more'),
+        ("wrestlebot", "0014_alter_entitymention_resolved_entity_type_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='agentsession',
-            name='bot',
-            field=models.CharField(choices=[('jr', "Good Ol' JR — data-adding agent (Jim Ross)"), ('earl', 'Earl Hebner — accuracy auditor + rule improver'), ('al', 'Al Snow — interlinking + graph improvement')], db_index=True, max_length=20),
+            model_name="agentsession",
+            name="bot",
+            field=models.CharField(
+                choices=[
+                    ("jr", "Good Ol' JR — data-adding agent (Jim Ross)"),
+                    ("earl", "Earl Hebner — accuracy auditor + rule improver"),
+                    ("al", "Al Snow — interlinking + graph improvement"),
+                ],
+                db_index=True,
+                max_length=20,
+            ),
         ),
     ]

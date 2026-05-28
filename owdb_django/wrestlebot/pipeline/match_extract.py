@@ -42,14 +42,14 @@ logger = logging.getLogger(__name__)
 
 # Outcome markers ordered by specificity — first match wins.
 _OUTCOME_PATTERNS: tuple[tuple[str, str], ...] = (
-    (r"\bby\s+pinfall\b",         "pinfall"),
-    (r"\bby\s+submission\b",      "submission"),
+    (r"\bby\s+pinfall\b", "pinfall"),
+    (r"\bby\s+submission\b", "submission"),
     (r"\bby\s+disqualification\b", "dq"),
-    (r"\bby\s+countout\b",         "count_out"),
-    (r"\bby\s+count[\s-]?out\b",   "count_out"),
-    (r"\bby\s+knockout\b",         "knockout"),
-    (r"\bby\s+forfeit\b",          "forfeit"),
-    (r"\bno[\s-]?contest\b",       "no_contest"),
+    (r"\bby\s+countout\b", "count_out"),
+    (r"\bby\s+count[\s-]?out\b", "count_out"),
+    (r"\bby\s+knockout\b", "knockout"),
+    (r"\bby\s+forfeit\b", "forfeit"),
+    (r"\bno[\s-]?contest\b", "no_contest"),
     (r"\b(time-?limit\s+draw|fought to a draw|drew)\b", "draw"),
 )
 
@@ -57,19 +57,20 @@ _OUTCOME_PATTERNS: tuple[tuple[str, str], ...] = (
 @dataclass
 class ExtractedMatch:
     """One match parsed from a Wikipedia event Results table."""
-    card_position: int                 # 1 = opener, max = main event
-    raw_text: str                       # full 'Results' cell text
-    stipulation: str = ""               # value from the Stipulations column
-    duration_text: str = ""             # raw 'Times' column value
+
+    card_position: int  # 1 = opener, max = main event
+    raw_text: str  # full 'Results' cell text
+    stipulation: str = ""  # value from the Stipulations column
+    duration_text: str = ""  # raw 'Times' column value
     duration_seconds: Optional[int] = None
     # Sides: list of name lists. For singles, [[A], [B]] and a winner index.
     # For multi-team, [[A1, A2], [B1, B2]] etc.
     sides: list[list[str]] = field(default_factory=list)
     winning_side: Optional[int] = None  # 0 = first side won, 1 = second, etc.
-    outcome_type: str = ""              # pinfall / submission / dq / ...
-    title_at_stake: str = ""            # title name if extractable
+    outcome_type: str = ""  # pinfall / submission / dq / ...
+    title_at_stake: str = ""  # title name if extractable
     title_changed: bool = False
-    is_dark: bool = False               # row prefixed with 'D' = dark match
+    is_dark: bool = False  # row prefixed with 'D' = dark match
 
     def to_dict(self) -> dict:
         return {
@@ -98,11 +99,11 @@ def _parse_duration(s: str) -> Optional[int]:
     if not parts:
         return None
     nums = [int(p) for p in parts]
-    if len(nums) == 1:           # bare number — assume minutes
+    if len(nums) == 1:  # bare number — assume minutes
         return nums[0] * 60
-    if len(nums) == 2:           # mm:ss
+    if len(nums) == 2:  # mm:ss
         return nums[0] * 60 + nums[1]
-    if len(nums) >= 3:           # hh:mm:ss
+    if len(nums) >= 3:  # hh:mm:ss
         return nums[0] * 3600 + nums[1] * 60 + nums[2]
     return None
 
@@ -137,8 +138,13 @@ def _split_names(side_text: str) -> list[str]:
 
 
 _WINNER_VERBS = (
-    "defeated", "beat", "defeats", "pinned", "submitted",
-    "won against", "defeated and ",
+    "defeated",
+    "beat",
+    "defeats",
+    "pinned",
+    "submitted",
+    "won against",
+    "defeated and ",
 )
 
 
@@ -154,7 +160,7 @@ def _split_winner_loser(results_text: str) -> Optional[tuple[str, str]]:
     for verb in _WINNER_VERBS:
         m = re.search(rf"\b{re.escape(verb)}\b", cleaned, re.IGNORECASE)
         if m:
-            return cleaned[:m.start()].strip(), cleaned[m.end():].strip()
+            return cleaned[: m.start()].strip(), cleaned[m.end() :].strip()
     return None
 
 
@@ -165,8 +171,7 @@ def _is_title_match(stipulation: str) -> tuple[bool, str]:
     """
     if not stipulation:
         return False, ""
-    m = re.search(r"for the\s+([A-Z][A-Za-z'\s/]+?(?:Championship|Title)s?\b)",
-                  stipulation)
+    m = re.search(r"for the\s+([A-Z][A-Za-z'\s/]+?(?:Championship|Title)s?\b)", stipulation)
     if m:
         return True, m.group(1).strip()
     return False, ""
@@ -181,8 +186,7 @@ def _looks_like_results_table(table) -> bool:
     if len(rows) < 2:
         return False
     header_cells = [
-        (c.get_text(" ", strip=True) or "").lower()
-        for c in rows[0].find_all(["th", "td"])
+        (c.get_text(" ", strip=True) or "").lower() for c in rows[0].find_all(["th", "td"])
     ]
     if len(header_cells) < 3:
         return False
@@ -261,8 +265,7 @@ def extract_matches(html: str) -> list[ExtractedMatch]:
             wl = _split_winner_loser(results_text)
             if wl:
                 winner_side_text, loser_side_text = wl
-                m.sides = [_split_names(winner_side_text),
-                           _split_names(loser_side_text)]
+                m.sides = [_split_names(winner_side_text), _split_names(loser_side_text)]
                 if any(m.sides):
                     m.winning_side = 0
             else:
@@ -271,7 +274,7 @@ def extract_matches(html: str) -> list[ExtractedMatch]:
                 for sep in (" fought to ", " vs. ", " versus ", " v. "):
                     if sep in results_text.lower():
                         idx = results_text.lower().index(sep)
-                        a, b = results_text[:idx], results_text[idx + len(sep):]
+                        a, b = results_text[:idx], results_text[idx + len(sep) :]
                         m.sides = [_split_names(a), _split_names(b)]
                         break
                 if m.outcome_type in ("draw", "no_contest"):
@@ -299,23 +302,34 @@ def persist_matches_for_event(event, fetch=None) -> dict:
     Returns stats: {extracted, created, updated, skipped, unmatched_names}.
     """
     from owdb_django.owdbapp.models import (
-        Match, MatchParticipant, Wrestler, Title,
+        Match,
+        MatchParticipant,
+        Wrestler,
+        Title,
     )
     from ..models import SourceFetch, FieldProvenance
 
     if fetch is None:
-        fetch = (SourceFetch.objects
-                 .filter(entity_type="event", entity_id=event.id,
-                         source="wikipedia", http_status=200)
-                 .order_by("-fetched_at").first())
+        fetch = (
+            SourceFetch.objects.filter(
+                entity_type="event", entity_id=event.id, source="wikipedia", http_status=200
+            )
+            .order_by("-fetched_at")
+            .first()
+        )
     if not fetch or not fetch.raw_content:
-        return {"extracted": 0, "created": 0, "updated": 0,
-                "skipped": 0, "unmatched_names": [], "error": "no Wikipedia fetch"}
+        return {
+            "extracted": 0,
+            "created": 0,
+            "updated": 0,
+            "skipped": 0,
+            "unmatched_names": [],
+            "error": "no Wikipedia fetch",
+        }
 
     extracted = extract_matches(fetch.raw_content)
     if not extracted:
-        return {"extracted": 0, "created": 0, "updated": 0,
-                "skipped": 0, "unmatched_names": []}
+        return {"extracted": 0, "created": 0, "updated": 0, "skipped": 0, "unmatched_names": []}
 
     # Name lookup table.
     wrestler_by_name: dict[str, Wrestler] = {}
@@ -327,8 +341,7 @@ def persist_matches_for_event(event, fetch=None) -> dict:
                 wrestler_by_name.setdefault(a, w)
 
     title_by_name: dict[str, Title] = {
-        t.name.strip().lower(): t
-        for t in Title.objects.only("id", "name")
+        t.name.strip().lower(): t for t in Title.objects.only("id", "name")
     }
 
     from . import accuracy_contract
@@ -367,7 +380,7 @@ def persist_matches_for_event(event, fetch=None) -> dict:
                 title_changed=em.title_changed,
                 winner=winner_obj,
                 winning_side=em.winning_side,
-                verified=True,                          # back-compat boolean
+                verified=True,  # back-compat boolean
                 verification_source="wikipedia",
             ),
         )
@@ -392,7 +405,8 @@ def persist_matches_for_event(event, fetch=None) -> dict:
                 # Upsert (don't delete+recreate) so future role/entrance-order
                 # corrections survive re-ingest.
                 MatchParticipant.objects.update_or_create(
-                    match=match, wrestler=w,
+                    match=match,
+                    wrestler=w,
                     defaults=dict(
                         side=side_idx,
                         is_winner=(em.winning_side == side_idx),
@@ -405,7 +419,7 @@ def persist_matches_for_event(event, fetch=None) -> dict:
         # up on the match detail page.
         if row_unmatched:
             note = "Unresolved participants: " + ", ".join(row_unmatched)
-            current_about = (match.about or "")
+            current_about = match.about or ""
             if note not in current_about:
                 match.about = (current_about + "\n\n" + note).strip()[:2000]
                 match.save(update_fields=["about"])
@@ -432,7 +446,8 @@ def persist_matches_for_event(event, fetch=None) -> dict:
         if em.title_changed:
             field_values["title_changed"] = True
         bulk_synthetic_provenance(
-            entity_type="match", entity_id=match.id,
+            entity_type="match",
+            entity_id=match.id,
             field_values=field_values,
             source_fetch=fetch,
             snippet_hint=snippet_hint,
@@ -467,14 +482,14 @@ def persist_matches_for_event(event, fetch=None) -> dict:
     orphans_pruned = 0
     if kept_orders:
         orphans = list(
-            Match.objects
-            .filter(event=event, verification_source="wikipedia")
+            Match.objects.filter(event=event, verification_source="wikipedia")
             .exclude(match_order__in=kept_orders)
             .values_list("id", flat=True)
         )
         if orphans:
             FieldProvenance.objects.filter(
-                entity_type="match", entity_id__in=orphans,
+                entity_type="match",
+                entity_id__in=orphans,
             ).delete()
             Match.objects.filter(id__in=orphans).delete()
             orphans_pruned = len(orphans)

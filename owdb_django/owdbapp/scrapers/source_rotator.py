@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class SourceStatus(Enum):
     """Status of a data source."""
+
     AVAILABLE = "available"
     RATE_LIMITED = "rate_limited"
     UNAVAILABLE = "unavailable"
@@ -28,6 +29,7 @@ class SourceStatus(Enum):
 @dataclass
 class SourceState:
     """Tracks the state of a single data source."""
+
     name: str
     priority: int = 1  # Lower = higher priority
     status: SourceStatus = SourceStatus.AVAILABLE
@@ -66,7 +68,9 @@ class SourceState:
         self.consecutive_failures += 1
         if is_fatal or self.consecutive_failures >= 5:
             self.status = SourceStatus.UNAVAILABLE
-            logger.warning(f"Source {self.name} marked unavailable after {self.consecutive_failures} failures")
+            logger.warning(
+                f"Source {self.name} marked unavailable after {self.consecutive_failures} failures"
+            )
         else:
             # Short cooldown after non-fatal failure
             self.status = SourceStatus.COOLDOWN
@@ -105,11 +109,11 @@ class SourceRotator:
             for name, data in cached.items():
                 self.sources[name] = SourceState(
                     name=name,
-                    priority=data.get('priority', 1),
-                    status=SourceStatus(data.get('status', 'available')),
-                    available_at=data.get('available_at'),
-                    consecutive_failures=data.get('consecutive_failures', 0),
-                    requests_made=data.get('requests_made', 0),
+                    priority=data.get("priority", 1),
+                    status=SourceStatus(data.get("status", "available")),
+                    available_at=data.get("available_at"),
+                    consecutive_failures=data.get("consecutive_failures", 0),
+                    requests_made=data.get("requests_made", 0),
                 )
 
     def _save_state(self):
@@ -117,11 +121,11 @@ class SourceRotator:
         data = {}
         for name, state in self.sources.items():
             data[name] = {
-                'priority': state.priority,
-                'status': state.status.value,
-                'available_at': state.available_at,
-                'consecutive_failures': state.consecutive_failures,
-                'requests_made': state.requests_made,
+                "priority": state.priority,
+                "status": state.status.value,
+                "available_at": state.available_at,
+                "consecutive_failures": state.consecutive_failures,
+                "requests_made": state.requests_made,
             }
         cache.set(self._cache_key(), data, timeout=3600)  # 1 hour
 
@@ -144,15 +148,13 @@ class SourceRotator:
         Returns:
             Source name or None if all sources are rate limited/unavailable
         """
-        available = [
-            (name, state) for name, state in self.sources.items()
-            if state.is_available()
-        ]
+        available = [(name, state) for name, state in self.sources.items() if state.is_available()]
 
         if not available:
             # Find the source that will be available soonest
             rate_limited = [
-                (name, state) for name, state in self.sources.items()
+                (name, state)
+                for name, state in self.sources.items()
                 if state.status == SourceStatus.RATE_LIMITED and state.available_at
             ]
             if rate_limited:
@@ -192,12 +194,12 @@ class SourceRotator:
         """Get statistics for all sources."""
         return {
             name: {
-                'status': state.status.value,
-                'available': state.is_available(),
-                'requests_made': state.requests_made,
-                'consecutive_failures': state.consecutive_failures,
-                'available_at': state.available_at.isoformat() if state.available_at else None,
-                'last_success': state.last_success.isoformat() if state.last_success else None,
+                "status": state.status.value,
+                "available": state.is_available(),
+                "requests_made": state.requests_made,
+                "consecutive_failures": state.consecutive_failures,
+                "available_at": state.available_at.isoformat() if state.available_at else None,
+                "last_success": state.last_success.isoformat() if state.last_success else None,
             }
             for name, state in self.sources.items()
         }
@@ -241,7 +243,7 @@ class MultiSourceScraper:
         limit: int = 50,
         merge_results: bool = True,
         max_sources: int = 3,
-        **kwargs
+        **kwargs,
     ) -> List[Dict[str, Any]]:
         """
         Scrape data using available sources with automatic rotation.
@@ -293,10 +295,10 @@ class MultiSourceScraper:
                 error_str = str(e).lower()
 
                 # Check for rate limit indicators
-                if any(ind in error_str for ind in ['rate limit', '429', 'too many requests']):
+                if any(ind in error_str for ind in ["rate limit", "429", "too many requests"]):
                     self.rotator.mark_rate_limited(source_name, cooldown_seconds=300)
                     logger.info(f"Rate limit detected for {source_name}, rotating...")
-                elif any(ind in error_str for ind in ['ssl', 'connection', 'timeout']):
+                elif any(ind in error_str for ind in ["ssl", "connection", "timeout"]):
                     self.rotator.mark_failure(source_name, is_fatal=True)
                 else:
                     self.rotator.mark_failure(source_name)
@@ -321,10 +323,10 @@ def get_wrestler_scraper() -> MultiSourceScraper:
     from .cagematch import CagematchScraper
     from .profightdb import ProFightDBScraper
 
-    scraper = MultiSourceScraper('wrestlers')
-    scraper.register('wikipedia', WikipediaScraper(), priority=1)
-    scraper.register('cagematch', CagematchScraper(), priority=2)
-    scraper.register('profightdb', ProFightDBScraper(), priority=3)
+    scraper = MultiSourceScraper("wrestlers")
+    scraper.register("wikipedia", WikipediaScraper(), priority=1)
+    scraper.register("cagematch", CagematchScraper(), priority=2)
+    scraper.register("profightdb", ProFightDBScraper(), priority=3)
     return scraper
 
 
@@ -333,9 +335,9 @@ def get_promotion_scraper() -> MultiSourceScraper:
     from .wikipedia import WikipediaScraper
     from .cagematch import CagematchScraper
 
-    scraper = MultiSourceScraper('promotions')
-    scraper.register('wikipedia', WikipediaScraper(), priority=1)
-    scraper.register('cagematch', CagematchScraper(), priority=2)
+    scraper = MultiSourceScraper("promotions")
+    scraper.register("wikipedia", WikipediaScraper(), priority=1)
+    scraper.register("cagematch", CagematchScraper(), priority=2)
     return scraper
 
 
@@ -345,8 +347,8 @@ def get_event_scraper() -> MultiSourceScraper:
     from .cagematch import CagematchScraper
     from .profightdb import ProFightDBScraper
 
-    scraper = MultiSourceScraper('events')
-    scraper.register('cagematch', CagematchScraper(), priority=1)  # Cagematch best for events
-    scraper.register('profightdb', ProFightDBScraper(), priority=2)
-    scraper.register('wikipedia', WikipediaScraper(), priority=3)
+    scraper = MultiSourceScraper("events")
+    scraper.register("cagematch", CagematchScraper(), priority=1)  # Cagematch best for events
+    scraper.register("profightdb", ProFightDBScraper(), priority=2)
+    scraper.register("wikipedia", WikipediaScraper(), priority=3)
     return scraper

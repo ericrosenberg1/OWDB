@@ -43,7 +43,7 @@ def _apply_contract(entity_type: str, entity, source_fetch: SourceFetch):
     """
     state, reasons = accuracy_contract.enforce(entity_type, entity)
     entity.verification_state = state
-    entity.verified = (state == accuracy_contract.VERIFIED)
+    entity.verified = state == accuracy_contract.VERIFIED
     if state == accuracy_contract.VERIFIED:
         if not entity.verification_source:
             entity.verification_source = source_fetch.source
@@ -51,7 +51,10 @@ def _apply_contract(entity_type: str, entity, source_fetch: SourceFetch):
     if reasons:
         logger.info(
             "Contract: %s#%s → %s (%s)",
-            entity_type, entity.id, state, "; ".join(reasons)[:240],
+            entity_type,
+            entity.id,
+            state,
+            "; ".join(reasons)[:240],
         )
     return state, reasons
 
@@ -144,7 +147,9 @@ def persist_promotion(
         if promo is None:
             promo = Promotion.objects.filter(slug=slug).first()
         if promo is None and fields.abbreviation:
-            promo = Promotion.objects.filter(abbreviation=str(fields.abbreviation.value)[:50]).first()
+            promo = Promotion.objects.filter(
+                abbreviation=str(fields.abbreviation.value)[:50]
+            ).first()
         created = False
         if promo is None:
             promo = Promotion.objects.create(name=canonical_name, slug=slug)
@@ -162,9 +167,12 @@ def persist_promotion(
                 setattr(promo, dst_attr, snip.value)
                 fields_written.append(dst_attr)
             record_provenance(
-                entity_type="promotion", entity_id=promo.id,
-                field_name=dst_attr, value=snip.value,
-                source_fetch=source_fetch, confidence=snip.confidence,
+                entity_type="promotion",
+                entity_id=promo.id,
+                field_name=dst_attr,
+                value=snip.value,
+                source_fetch=source_fetch,
+                confidence=snip.confidence,
                 snippet=getattr(snip, "snippet", "") or "",
             )
             provenance_rows += 1
@@ -186,18 +194,23 @@ def persist_promotion(
 
     logger.info(
         "Persisted promotion %r (id=%d, created=%s, wrote=%s)",
-        canonical_name, promo.id, created, fields_written,
+        canonical_name,
+        promo.id,
+        created,
+        fields_written,
     )
 
     # Mentions
     try:
         from .mentions import persist_mentions_for_entity
+
         persist_mentions_for_entity("promotion", promo.id, source_fetch)
     except Exception as e:
         logger.exception("Promotion mention extraction failed: %s", e)
 
     return PromotionPersistResult(
-        promotion_id=promo.id, created=created,
+        promotion_id=promo.id,
+        created=created,
         fields_written=fields_written,
         provenance_rows_created=provenance_rows,
     )
@@ -251,9 +264,12 @@ def persist_venue(
                 setattr(venue, dst_attr, snip.value)
                 fields_written.append(dst_attr)
             record_provenance(
-                entity_type="venue", entity_id=venue.id,
-                field_name=dst_attr, value=snip.value,
-                source_fetch=source_fetch, confidence=snip.confidence,
+                entity_type="venue",
+                entity_id=venue.id,
+                field_name=dst_attr,
+                value=snip.value,
+                source_fetch=source_fetch,
+                confidence=snip.confidence,
                 snippet=getattr(snip, "snippet", "") or "",
             )
             provenance_rows += 1
@@ -273,19 +289,24 @@ def persist_venue(
 
     logger.info(
         "Persisted venue %r (id=%d, created=%s, wrote=%s)",
-        canonical_name, venue.id, created, fields_written,
+        canonical_name,
+        venue.id,
+        created,
+        fields_written,
     )
 
     # Mentions in venue prose — usually link to teams that play there but may
     # link to notable events hosted at the venue, useful for auto-discovery.
     try:
         from .mentions import persist_mentions_for_entity
+
         persist_mentions_for_entity("venue", venue.id, source_fetch)
     except Exception as e:
         logger.exception("Venue mention extraction failed: %s", e)
 
     return VenuePersistResult(
-        venue_id=venue.id, created=created,
+        venue_id=venue.id,
+        created=created,
         fields_written=fields_written,
         provenance_rows_created=provenance_rows,
     )
@@ -308,8 +329,18 @@ def _looks_like_multi_venue_mash(name: str) -> bool:
         return False
     if len(name) > 80:
         return True
-    venue_heads = ("Arena", "Coliseum", "Center", "Centre", "Stadium",
-                   "Dome", "Garden", "Memorial", "Pavilion", "Hall")
+    venue_heads = (
+        "Arena",
+        "Coliseum",
+        "Center",
+        "Centre",
+        "Stadium",
+        "Dome",
+        "Garden",
+        "Memorial",
+        "Pavilion",
+        "Hall",
+    )
     head_count = sum(1 for h in venue_heads if h in name)
     return head_count >= 3
 
@@ -340,7 +371,8 @@ def _ensure_venue_stub_from_wiki(
     # had multiple venues and our text extractor mashed them together.
     if _looks_like_multi_venue_mash(name):
         logger.warning(
-            "Skipping multi-venue concatenation %r (probable mash-up)", name[:120],
+            "Skipping multi-venue concatenation %r (probable mash-up)",
+            name[:120],
         )
         return None
 
@@ -352,16 +384,19 @@ def _ensure_venue_stub_from_wiki(
     if venue is not None:
         # Backfill wikipedia_url if we just learned one.
         if wiki_link and not venue.wikipedia_url:
-            venue.wikipedia_url = f"https://en.wikipedia.org/wiki/{wiki_link.replace(' ', '_')}"[:500]
+            venue.wikipedia_url = f"https://en.wikipedia.org/wiki/{wiki_link.replace(' ', '_')}"[
+                :500
+            ]
             venue.save(update_fields=["wikipedia_url"])
         return venue
 
     wikipedia_url = (
-        f"https://en.wikipedia.org/wiki/{wiki_link.replace(' ', '_')}"[:500]
-        if wiki_link else ""
+        f"https://en.wikipedia.org/wiki/{wiki_link.replace(' ', '_')}"[:500] if wiki_link else ""
     )
     venue = Venue.objects.create(
-        name=name, slug=slug, wikipedia_url=wikipedia_url or None,
+        name=name,
+        slug=slug,
+        wikipedia_url=wikipedia_url or None,
     )
 
     # Provenance: record that this stub's name came from the calling
@@ -377,7 +412,7 @@ def _ensure_venue_stub_from_wiki(
                 source_fetch=source_fetch,
                 snippet=name,  # the venue name itself is the snippet
                 confidence=80,  # 80 — name came from an event's infobox,
-                                # not the venue's own Wikipedia page
+                # not the venue's own Wikipedia page
             )
         except Exception as e:
             logger.warning("Couldn't record provenance for venue stub %s: %s", name, e)
@@ -445,12 +480,17 @@ def persist_event(
             event = Event.objects.filter(slug=slug).first()
         if event is None:
             event = Event.objects.filter(
-                promotion=promotion, name=canonical_name, date=event_date,
+                promotion=promotion,
+                name=canonical_name,
+                date=event_date,
             ).first()
         created = False
         if event is None:
             event = Event.objects.create(
-                name=canonical_name, slug=slug, promotion=promotion, date=event_date,
+                name=canonical_name,
+                slug=slug,
+                promotion=promotion,
+                date=event_date,
             )
             created = True
 
@@ -473,15 +513,25 @@ def persist_event(
             fields_written.append("attendance")
 
         # Provenance entries for every captured field.
-        for src_attr in ("name", "date", "venue_name", "venue_wiki_link",
-                         "promotion_name", "promotion_wiki_link", "attendance"):
+        for src_attr in (
+            "name",
+            "date",
+            "venue_name",
+            "venue_wiki_link",
+            "promotion_name",
+            "promotion_wiki_link",
+            "attendance",
+        ):
             snip = getattr(fields, src_attr, None)
             if snip is None:
                 continue
             record_provenance(
-                entity_type="event", entity_id=event.id,
-                field_name=src_attr, value=snip.value,
-                source_fetch=source_fetch, confidence=snip.confidence,
+                entity_type="event",
+                entity_id=event.id,
+                field_name=src_attr,
+                value=snip.value,
+                source_fetch=source_fetch,
+                confidence=snip.confidence,
                 snippet=getattr(snip, "snippet", "") or "",
             )
             provenance_rows += 1
@@ -500,7 +550,9 @@ def persist_event(
 
     logger.info(
         "Persisted event %r (id=%d, created=%s, promotion=%s, venue=%s)",
-        canonical_name, event.id, created,
+        canonical_name,
+        event.id,
+        created,
         promotion.name if promotion else None,
         venue.name if venue else None,
     )
@@ -509,12 +561,14 @@ def persist_event(
     # entities (other wrestlers, related events, other venues).
     try:
         from .mentions import persist_mentions_for_entity
+
         persist_mentions_for_entity("event", event.id, source_fetch)
     except Exception as e:
         logger.exception("Event mention extraction failed: %s", e)
 
     return EventPersistResult(
-        event_id=event.id, created=created,
+        event_id=event.id,
+        created=created,
         venue_id=venue.id if venue else None,
         promotion_id=promotion.id if promotion else None,
         fields_written=fields_written,

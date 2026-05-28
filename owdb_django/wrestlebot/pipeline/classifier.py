@@ -32,109 +32,137 @@ logger = logging.getLogger(__name__)
 # Generic / concept pages that we deliberately never auto-discover.
 # These show up in mentions because Wikipedia articles link to "Pay-per-view"
 # every time they describe a PPV; they're not entities we want in the DB.
-GENERIC_WIKI_TITLES = frozenset({
-    # Concept / vocabulary pages — these get linked from every wrestling
-    # article but they don't represent entities we want to index.
-    "Professional wrestling",
-    "Professional wrestler",
-    "Wrestling promotion",
-    "Wrestling promoter",
-    "Wrestling match",
-    "Pay-per-view",
-    "Card (sports)",
-    "Main event",
-    "Main event (professional wrestling)",
-    "Closed-circuit television",
-    "Sports entertainment",
-    "Professional wrestling match types",
-    "Glossary of professional wrestling terms",
-    "Ring name",
-    "Ring name(s)",
-    "Buyrate",
-    "Singles match",
-    "Tag team",
-    "Tag team match",
-    "Stable (professional wrestling)",
-    "Promo (professional wrestling)",
-    "Heel (professional wrestling)",
-    "Face (professional wrestling)",
-    "Submission hold",
-    "Pinfall",
-    "Disqualification",
-    "Countout",
-    "Championship belt",
-    "Championship (professional wrestling)",
-    "Multi-purpose stadium",
-    "Multi-purpose arena",
-    "Indoor arena",
-    "Hall of fame",
-    "1980s professional wrestling boom",
-    "Monday Night War",
-    "Attitude Era",
-    "Ruthless Aggression Era",
-    "PG Era",
-    # Halls of fame are categories, not entity pages worth indexing.
-    "WWE Hall of Fame",
-    "WCW Hall of Fame",
-    "Professional Wrestling Hall of Fame and Museum",
-    "Wrestling Observer Newsletter Hall of Fame",
-    "Wrestling Observer Newsletter",
-    "WrestleCrap",
-    # Currency / units linked by attendance/revenue paragraphs.
-    "United States dollar",
-    "Pound sterling",
-    "Canadian dollar",
-    "Mexican peso",
-    "Japanese yen",
-    # Sports leagues frequently linked from venue articles.
-    "National Football League",
-    "National Basketball Association",
-    "National Hockey League",
-    "Major League Baseball",
-    # Meta-articles about event franchises (link to specific events, not entities).
-    "WrestleMania",
-    "Royal Rumble",
-    "SummerSlam",
-    "Survivor Series",
-    "Starrcade",
-    "King of the Ring",
-    "Bash at the Beach",
-    "Halloween Havoc",
-    # Brand pages (not entities in our schema)
-    "Raw (WWE brand)",
-    "SmackDown",
-    "NXT (WWE brand)",
-    # Title pages — we don't have a Title pipeline yet. (When we add one,
-    # remove these so they get classified as titles.)
-    "WWE Championship",
-    "WWE Universal Championship",
-    "World Heavyweight Championship (WWE)",
-    "WWE Intercontinental Championship",
-    "WWE United States Championship",
-    "World Tag Team Championship (WWE, 1971–2010)",
-    "WWF Tag Team Championship",
-    "WWE Tag Team Championship",
-    "WWE Women's Championship",
-    "WWE Raw Women's Championship",
-    "WWE SmackDown Women's Championship",
-    "WCW World Heavyweight Championship",
-    "ECW World Heavyweight Championship",
-    "NWA World Heavyweight Championship",
-    "AEW World Championship",
-    "IWGP Heavyweight Championship",
-    "Triple Crown (professional wrestling)",
-    "Grand Slam (professional wrestling)",
-})
+GENERIC_WIKI_TITLES = frozenset(
+    {
+        # Concept / vocabulary pages — these get linked from every wrestling
+        # article but they don't represent entities we want to index.
+        "Professional wrestling",
+        "Professional wrestler",
+        "Wrestling promotion",
+        "Wrestling promoter",
+        "Wrestling match",
+        "Pay-per-view",
+        "Card (sports)",
+        "Main event",
+        "Main event (professional wrestling)",
+        "Closed-circuit television",
+        "Sports entertainment",
+        "Professional wrestling match types",
+        "Glossary of professional wrestling terms",
+        "Ring name",
+        "Ring name(s)",
+        "Buyrate",
+        "Singles match",
+        "Tag team",
+        "Tag team match",
+        "Stable (professional wrestling)",
+        "Promo (professional wrestling)",
+        "Heel (professional wrestling)",
+        "Face (professional wrestling)",
+        "Submission hold",
+        "Pinfall",
+        "Disqualification",
+        "Countout",
+        "Championship belt",
+        "Championship (professional wrestling)",
+        "Multi-purpose stadium",
+        "Multi-purpose arena",
+        "Indoor arena",
+        "Hall of fame",
+        "1980s professional wrestling boom",
+        "Monday Night War",
+        "Attitude Era",
+        "Ruthless Aggression Era",
+        "PG Era",
+        # Halls of fame are categories, not entity pages worth indexing.
+        "WWE Hall of Fame",
+        "WCW Hall of Fame",
+        "Professional Wrestling Hall of Fame and Museum",
+        "Wrestling Observer Newsletter Hall of Fame",
+        "Wrestling Observer Newsletter",
+        "WrestleCrap",
+        # Currency / units linked by attendance/revenue paragraphs.
+        "United States dollar",
+        "Pound sterling",
+        "Canadian dollar",
+        "Mexican peso",
+        "Japanese yen",
+        # Sports leagues frequently linked from venue articles.
+        "National Football League",
+        "National Basketball Association",
+        "National Hockey League",
+        "Major League Baseball",
+        # Meta-articles about event franchises (link to specific events, not entities).
+        "WrestleMania",
+        "Royal Rumble",
+        "SummerSlam",
+        "Survivor Series",
+        "Starrcade",
+        "King of the Ring",
+        "Bash at the Beach",
+        "Halloween Havoc",
+        # Brand pages (not entities in our schema)
+        "Raw (WWE brand)",
+        "SmackDown",
+        "NXT (WWE brand)",
+        # Title pages — we don't have a Title pipeline yet. (When we add one,
+        # remove these so they get classified as titles.)
+        "WWE Championship",
+        "WWE Universal Championship",
+        "World Heavyweight Championship (WWE)",
+        "WWE Intercontinental Championship",
+        "WWE United States Championship",
+        "World Tag Team Championship (WWE, 1971–2010)",
+        "WWF Tag Team Championship",
+        "WWE Tag Team Championship",
+        "WWE Women's Championship",
+        "WWE Raw Women's Championship",
+        "WWE SmackDown Women's Championship",
+        "WCW World Heavyweight Championship",
+        "ECW World Heavyweight Championship",
+        "NWA World Heavyweight Championship",
+        "AEW World Championship",
+        "IWGP Heavyweight Championship",
+        "Triple Crown (professional wrestling)",
+        "Grand Slam (professional wrestling)",
+    }
+)
 
 
 # Specific infobox-row labels that strongly indicate a type. Lower-cased.
-WRESTLER_LABELS = {"real name", "birth name", "ring name", "ring names", "ring name(s)",
-                   "trained by", "billed from", "billed weight", "billed height", "debut"}
+WRESTLER_LABELS = {
+    "real name",
+    "birth name",
+    "ring name",
+    "ring names",
+    "ring name(s)",
+    "trained by",
+    "billed from",
+    "billed weight",
+    "billed height",
+    "debut",
+}
 EVENT_LABELS = {"promotion", "promotions", "tagline", "buyrate", "ppvchron", "attendance"}
-VENUE_LABELS = {"capacity", "address", "owner", "operator", "construction broke ground",
-                "opened", "tenants"}
-PROMOTION_LABELS = {"founded", "founder", "founders", "headquarters", "headquarter",
-                    "owner(s)", "key people", "parent", "industry"}
+VENUE_LABELS = {
+    "capacity",
+    "address",
+    "owner",
+    "operator",
+    "construction broke ground",
+    "opened",
+    "tenants",
+}
+PROMOTION_LABELS = {
+    "founded",
+    "founder",
+    "founders",
+    "headquarters",
+    "headquarter",
+    "owner(s)",
+    "key people",
+    "parent",
+    "industry",
+}
 
 
 def is_generic_wiki_title(wiki_link: str) -> bool:
@@ -181,10 +209,18 @@ def _is_wrestling_relevant(soup: BeautifulSoup) -> bool:
     head_text = " ".join(first_paragraphs)
     head_text_short = head_text[:2000]  # only check the lead, not the whole article
     wrestling_keywords = (
-        "professional wrestling", "professional wrestler", "wrestling promotion",
-        "pro wrestling", "wrestling event", "pay-per-view",
-        "wrestling federation", "pro-wrestling", "wrestling-related",
-        "luchador", "lucha libre", "puroresu",
+        "professional wrestling",
+        "professional wrestler",
+        "wrestling promotion",
+        "pro wrestling",
+        "wrestling event",
+        "pay-per-view",
+        "wrestling federation",
+        "pro-wrestling",
+        "wrestling-related",
+        "luchador",
+        "lucha libre",
+        "puroresu",
     )
     if any(kw in head_text_short for kw in wrestling_keywords):
         return True
@@ -198,7 +234,9 @@ def _is_wrestling_relevant(soup: BeautifulSoup) -> bool:
     return False
 
 
-def _subject_is_wrestling_promotion(soup: BeautifulSoup, article_title: Optional[str] = None) -> bool:
+def _subject_is_wrestling_promotion(
+    soup: BeautifulSoup, article_title: Optional[str] = None
+) -> bool:
     """
     Stricter check: the article's FIRST SENTENCE must describe ITS OWN
     SUBJECT as a wrestling promotion.
@@ -249,10 +287,19 @@ def _subject_is_wrestling_promotion(soup: BeautifulSoup, article_title: Optional
         # "World Championship Wrestling") so we can't use that word as a
         # blocklist marker.
         sub_topic_markers = (
-            "action figure", "video game", "video games", "merchandise",
-            "title history", "championship history", "list of",
-            "trademark", "discography", "filmography", "broadcasters",
-            "pay-per-view", " roster",
+            "action figure",
+            "video game",
+            "video games",
+            "merchandise",
+            "title history",
+            "championship history",
+            "list of",
+            "trademark",
+            "discography",
+            "filmography",
+            "broadcasters",
+            "pay-per-view",
+            " roster",
         )
         if article_title:
             t = article_title.lower()
@@ -305,8 +352,8 @@ def classify_html(raw_html: str, article_title: Optional[str] = None) -> Optiona
     # Score each candidate type by label overlap.
     scores = {
         "wrestler": sum(1 for label in labels if label in WRESTLER_LABELS),
-        "event":    sum(1 for label in labels if label in EVENT_LABELS),
-        "venue":    sum(1 for label in labels if label in VENUE_LABELS),
+        "event": sum(1 for label in labels if label in EVENT_LABELS),
+        "venue": sum(1 for label in labels if label in VENUE_LABELS),
         "promotion": sum(1 for label in labels if label in PROMOTION_LABELS),
     }
     top_type, top_score = max(scores.items(), key=lambda kv: kv[1])

@@ -16,10 +16,20 @@ from django.utils import timezone
 
 from ..models import SourceFetch
 from ..sources.base import (
-    ActionFigureFields, BookFields, EventFields, PodcastFields,
-    PromotionFields, SourceAdapter, SpecialFields, StableFields,
-    ThemeSongFields, TitleFields, TVShowFields,
-    VenueFields, VideoGameFields, WrestlerFields,
+    ActionFigureFields,
+    BookFields,
+    EventFields,
+    PodcastFields,
+    PromotionFields,
+    SourceAdapter,
+    SpecialFields,
+    StableFields,
+    ThemeSongFields,
+    TitleFields,
+    TVShowFields,
+    VenueFields,
+    VideoGameFields,
+    WrestlerFields,
 )
 from ..sources.wikipedia import WikipediaAdapter
 
@@ -31,9 +41,11 @@ def _adapter_for_source(source: str) -> Optional[SourceAdapter]:
         return WikipediaAdapter()
     if source == "cagematch":
         from ..sources.cagematch import CagematchAdapter
+
         return CagematchAdapter()
     if source == "wikidata":
         from ..sources.wikidata import WikidataAdapter
+
         return WikidataAdapter()
     # Future: profightdb, tmdb, etc.
     return None
@@ -157,7 +169,9 @@ def _run_extract(fetch: SourceFetch, entity_type: str):
     if fields is None:
         logger.info(
             "Extraction yielded no fields for SourceFetch#%d (%s, %s)",
-            fetch.id, fetch.candidate_name, entity_type,
+            fetch.id,
+            fetch.candidate_name,
+            entity_type,
         )
         return None
 

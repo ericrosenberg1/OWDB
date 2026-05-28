@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('owdbapp', '0014_add_tvshow_model_and_event_episode_fields'),
+        ("owdbapp", "0014_add_tvshow_model_and_event_episode_fields"),
     ]
 
     operations = [

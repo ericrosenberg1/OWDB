@@ -29,19 +29,32 @@ class Command(BaseCommand):
     help = "Snapshot accuracy + agent + entity health in one block."
 
     def add_arguments(self, parser):
-        parser.add_argument("--tag", type=str, default="",
-                            help="Label this snapshot (printed at the top).")
-        parser.add_argument("--json", action="store_true",
-                            help="Emit machine-readable JSON instead of text.")
+        parser.add_argument(
+            "--tag", type=str, default="", help="Label this snapshot (printed at the top)."
+        )
+        parser.add_argument(
+            "--json", action="store_true", help="Emit machine-readable JSON instead of text."
+        )
 
     def handle(self, *args, **options):
         from owdb_django.owdbapp.models import (
-            Event, Match, MatchParticipant, Venue, Wrestler, Promotion,
-            Title, Stable, TVShow, ExternalRankingEntry,
+            Event,
+            Match,
+            MatchParticipant,
+            Venue,
+            Wrestler,
+            Promotion,
+            Title,
+            Stable,
+            TVShow,
+            ExternalRankingEntry,
         )
         from owdb_django.wrestlebot.models import (
-            FieldProvenance, SourceFetch, EarlObservation,
-            AgentSession, AgentToolCall,
+            FieldProvenance,
+            SourceFetch,
+            EarlObservation,
+            AgentSession,
+            AgentToolCall,
         )
 
         snapshot = {
@@ -74,37 +87,56 @@ class Command(BaseCommand):
             "agents": {
                 "sessions_total": AgentSession.objects.count(),
                 "calls_total": AgentToolCall.objects.count(),
-                "input_tokens_total": AgentSession.objects.aggregate(
-                    s=Sum("input_tokens_used"))["s"] or 0,
-                "output_tokens_total": AgentSession.objects.aggregate(
-                    s=Sum("output_tokens_used"))["s"] or 0,
+                "input_tokens_total": AgentSession.objects.aggregate(s=Sum("input_tokens_used"))[
+                    "s"
+                ]
+                or 0,
+                "output_tokens_total": AgentSession.objects.aggregate(s=Sum("output_tokens_used"))[
+                    "s"
+                ]
+                or 0,
                 "by_bot": [],
             },
             "regression_canaries": {},
         }
 
-        for entity_type in ("event", "match", "venue", "wrestler",
-                            "promotion", "title", "stable", "tv_show"):
+        for entity_type in (
+            "event",
+            "match",
+            "venue",
+            "wrestler",
+            "promotion",
+            "title",
+            "stable",
+            "tv_show",
+        ):
             model = {
-                "event": Event, "match": Match, "venue": Venue,
-                "wrestler": Wrestler, "promotion": Promotion,
-                "title": Title, "stable": Stable, "tv_show": TVShow,
+                "event": Event,
+                "match": Match,
+                "venue": Venue,
+                "wrestler": Wrestler,
+                "promotion": Promotion,
+                "title": Title,
+                "stable": Stable,
+                "tv_show": TVShow,
             }[entity_type]
             by_state = list(
-                model.objects.values("verification_state").annotate(n=Count("id"))
+                model.objects.values("verification_state")
+                .annotate(n=Count("id"))
                 .order_by("verification_state")
             )
             snapshot["verification_state"][entity_type] = {
                 row["verification_state"]: row["n"] for row in by_state
             }
-            snapshot["provenance"]["by_entity_type"][entity_type] = (
-                FieldProvenance.objects.filter(entity_type=entity_type).count()
-            )
+            snapshot["provenance"]["by_entity_type"][entity_type] = FieldProvenance.objects.filter(
+                entity_type=entity_type
+            ).count()
 
         snapshot["earl_observations"]["by_rule"] = list(
             EarlObservation.objects.filter(status="open")
             .values("rule_id", "severity")
-            .annotate(n=Count("id")).order_by("-n")[:15]
+            .annotate(n=Count("id"))
+            .order_by("-n")[:15]
         )
 
         for bot in ("jr", "earl", "al"):
@@ -114,36 +146,39 @@ class Command(BaseCommand):
                 output_t=Sum("output_tokens_used"),
                 calls=Sum("tool_calls_used"),
             )
-            snapshot["agents"]["by_bot"].append({
-                "bot": bot,
-                "sessions": agg["n"] or 0,
-                "calls": agg["calls"] or 0,
-                "input_tokens": agg["input_t"] or 0,
-                "output_tokens": agg["output_t"] or 0,
-            })
+            snapshot["agents"]["by_bot"].append(
+                {
+                    "bot": bot,
+                    "sessions": agg["n"] or 0,
+                    "calls": agg["calls"] or 0,
+                    "input_tokens": agg["input_t"] or 0,
+                    "output_tokens": agg["output_t"] or 0,
+                }
+            )
 
         # Regression canaries — these MUST stay healthy across runs.
         snapshot["regression_canaries"]["verified_without_provenance"] = (
             EarlObservation.objects.filter(
-                status="open", rule_id="verified_without_provenance",
+                status="open",
+                rule_id="verified_without_provenance",
             ).count()
         )
-        snapshot["regression_canaries"]["match_no_participants"] = (
-            EarlObservation.objects.filter(
-                status="open", rule_id="match_no_participants",
-            ).count()
-        )
+        snapshot["regression_canaries"]["match_no_participants"] = EarlObservation.objects.filter(
+            status="open",
+            rule_id="match_no_participants",
+        ).count()
         snapshot["regression_canaries"]["ranking_entry_unresolved"] = (
             EarlObservation.objects.filter(
-                status="open", rule_id="ranking_entry_unresolved",
+                status="open",
+                rule_id="ranking_entry_unresolved",
             ).count()
         )
-        snapshot["regression_canaries"]["events_in_candidate_state"] = (
-            Event.objects.filter(verification_state="candidate").count()
-        )
-        snapshot["regression_canaries"]["matches_in_candidate_state"] = (
-            Match.objects.filter(verification_state="candidate").count()
-        )
+        snapshot["regression_canaries"]["events_in_candidate_state"] = Event.objects.filter(
+            verification_state="candidate"
+        ).count()
+        snapshot["regression_canaries"]["matches_in_candidate_state"] = Match.objects.filter(
+            verification_state="candidate"
+        ).count()
 
         if options["json"]:
             self.stdout.write(json.dumps(snapshot, indent=2, default=str))
@@ -151,9 +186,9 @@ class Command(BaseCommand):
 
         # Pretty text output.
         tag_str = f"[{snapshot['tag']}] " if snapshot["tag"] else ""
-        self.stdout.write(self.style.SUCCESS(
-            f"\n=== {tag_str}OWDB snapshot @ {snapshot['ts']} ===\n"
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(f"\n=== {tag_str}OWDB snapshot @ {snapshot['ts']} ===\n")
+        )
 
         self.stdout.write(self.style.HTTP_INFO("Entities:"))
         for k, v in snapshot["entities"].items():
@@ -169,7 +204,9 @@ class Command(BaseCommand):
         self.stdout.write(self.style.HTTP_INFO("\nProvenance:"))
         self.stdout.write(f"  total rows                  {snapshot['provenance']['total_rows']}")
         self.stdout.write(f"  with snippet                {snapshot['provenance']['with_snippet']}")
-        self.stdout.write(f"  synthetic back-fill         {snapshot['provenance']['synthetic_backfill']}")
+        self.stdout.write(
+            f"  synthetic back-fill         {snapshot['provenance']['synthetic_backfill']}"
+        )
         self.stdout.write(f"  source fetches              {snapshot['source_fetches']}")
 
         self.stdout.write(self.style.HTTP_INFO("\nOpen Earl observations:"))
@@ -178,9 +215,7 @@ class Command(BaseCommand):
         for r in snapshot["earl_observations"]["by_rule"]:
             sev = r["severity"]
             color = self.style.ERROR if sev == "error" else self.style.WARNING
-            self.stdout.write(color(
-                f"  {sev:<8} {r['rule_id']:<35} {r['n']}"
-            ))
+            self.stdout.write(color(f"  {sev:<8} {r['rule_id']:<35} {r['n']}"))
 
         self.stdout.write(self.style.HTTP_INFO("\nAgents:"))
         for row in snapshot["agents"]["by_bot"]:

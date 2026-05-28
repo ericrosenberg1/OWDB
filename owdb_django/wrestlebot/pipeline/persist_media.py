@@ -25,8 +25,11 @@ from django.utils.text import slugify
 
 from ..models import SourceFetch
 from ..sources.base import (
-    ActionFigureFields, BookFields, PodcastFields,
-    ThemeSongFields, VideoGameFields,
+    ActionFigureFields,
+    BookFields,
+    PodcastFields,
+    ThemeSongFields,
+    VideoGameFields,
 )
 from . import accuracy_contract
 from ._provenance import record_provenance
@@ -38,7 +41,7 @@ def _apply_contract(entity_type: str, entity, source_fetch: SourceFetch):
     """Shared executable-contract gate. See persist_event._apply_contract."""
     state, reasons = accuracy_contract.enforce(entity_type, entity)
     entity.verification_state = state
-    entity.verified = (state == accuracy_contract.VERIFIED)
+    entity.verified = state == accuracy_contract.VERIFIED
     if state == accuracy_contract.VERIFIED:
         if not entity.verification_source:
             entity.verification_source = source_fetch.source
@@ -46,7 +49,10 @@ def _apply_contract(entity_type: str, entity, source_fetch: SourceFetch):
     if reasons:
         logger.info(
             "Contract: %s#%s → %s (%s)",
-            entity_type, entity.id, state, "; ".join(reasons)[:240],
+            entity_type,
+            entity.id,
+            state,
+            "; ".join(reasons)[:240],
         )
     return state, reasons
 
@@ -141,9 +147,12 @@ def persist_book(
         # didn't pull a separate title field. Without this row the
         # `book` accuracy contract can't mark the row verified.
         record_provenance(
-            entity_type="book", entity_id=book.id,
-            field_name="title", value=canonical_title,
-            source_fetch=source_fetch, confidence=90,
+            entity_type="book",
+            entity_id=book.id,
+            field_name="title",
+            value=canonical_title,
+            source_fetch=source_fetch,
+            confidence=90,
             snippet=f"Wikipedia article title: {canonical_title}"[:200],
         )
         provenance_rows += 1
@@ -161,9 +170,12 @@ def persist_book(
                 setattr(book, dst_attr, snip.value)
                 fields_written.append(dst_attr)
             record_provenance(
-                entity_type="book", entity_id=book.id,
-                field_name=dst_attr, value=snip.value,
-                source_fetch=source_fetch, confidence=snip.confidence,
+                entity_type="book",
+                entity_id=book.id,
+                field_name=dst_attr,
+                value=snip.value,
+                source_fetch=source_fetch,
+                confidence=snip.confidence,
                 snippet=getattr(snip, "snippet", "") or "",
             )
             provenance_rows += 1
@@ -190,6 +202,7 @@ def persist_book(
     try:
         from .mentions import persist_mentions_for_entity
         from .linking import resolve_all_mentions_to_wrestlers
+
         persist_mentions_for_entity("book", book.id, source_fetch)
         # Resolve immediately so the cross-link step below finds them.
         resolve_all_mentions_to_wrestlers()
@@ -204,10 +217,15 @@ def persist_book(
 
     logger.info(
         "Persisted book %r (id=%d, created=%s, wrote=%s, linked_wrestlers=%d)",
-        canonical_title, book.id, created, fields_written, linked,
+        canonical_title,
+        book.id,
+        created,
+        fields_written,
+        linked,
     )
     return BookPersistResult(
-        book_id=book.id, created=created,
+        book_id=book.id,
+        created=created,
         fields_written=fields_written,
         provenance_rows_created=provenance_rows,
         linked_wrestlers=linked,
@@ -224,6 +242,7 @@ def _link_book_author_to_wrestler(book, fields: BookFields) -> int:
     if fields.author is not None:
         # Author cells can contain "John Doe and Jane Smith"; split on commas/and
         import re as _re
+
         for part in _re.split(r",|\band\b", str(fields.author.value)):
             part = part.strip()
             if part and part not in candidate_names:
@@ -258,7 +277,8 @@ def _link_book_to_mentioned_wrestlers(book, source_fetch: SourceFetch) -> int:
     from owdb_django.owdbapp.models import Wrestler
 
     mentions = EntityMention.objects.filter(
-        source_fetch=source_fetch, resolved_entity_type="wrestler",
+        source_fetch=source_fetch,
+        resolved_entity_type="wrestler",
     )
     counts = Counter(m.resolved_entity_id for m in mentions if m.resolved_entity_id)
     MIN_MENTIONS_FOR_BOOK_LINK = 2
@@ -314,9 +334,12 @@ def persist_video_game(
         # we fetched. Without this row the `video_game` accuracy
         # contract leaves the entity provisional forever.
         record_provenance(
-            entity_type="video_game", entity_id=game.id,
-            field_name="name", value=canonical_name,
-            source_fetch=source_fetch, confidence=90,
+            entity_type="video_game",
+            entity_id=game.id,
+            field_name="name",
+            value=canonical_name,
+            source_fetch=source_fetch,
+            confidence=90,
             snippet=f"Wikipedia article title: {canonical_name}"[:200],
         )
         provenance_rows += 1
@@ -334,9 +357,12 @@ def persist_video_game(
                 setattr(game, dst_attr, snip.value)
                 fields_written.append(dst_attr)
             record_provenance(
-                entity_type="video_game", entity_id=game.id,
-                field_name=dst_attr, value=snip.value,
-                source_fetch=source_fetch, confidence=snip.confidence,
+                entity_type="video_game",
+                entity_id=game.id,
+                field_name=dst_attr,
+                value=snip.value,
+                source_fetch=source_fetch,
+                confidence=snip.confidence,
                 snippet=getattr(snip, "snippet", "") or "",
             )
             provenance_rows += 1
@@ -357,6 +383,7 @@ def persist_video_game(
     try:
         from .mentions import persist_mentions_for_entity
         from .linking import resolve_all_mentions_to_wrestlers
+
         persist_mentions_for_entity("video_game", game.id, source_fetch)
         resolve_all_mentions_to_wrestlers()
     except Exception as e:
@@ -365,10 +392,15 @@ def persist_video_game(
     linked = _link_video_game_to_roster(game, source_fetch)
     logger.info(
         "Persisted video_game %r (id=%d, created=%s, wrote=%s, roster=%d)",
-        canonical_name, game.id, created, fields_written, linked,
+        canonical_name,
+        game.id,
+        created,
+        fields_written,
+        linked,
     )
     return VideoGamePersistResult(
-        video_game_id=game.id, created=created,
+        video_game_id=game.id,
+        created=created,
         fields_written=fields_written,
         provenance_rows_created=provenance_rows,
         linked_wrestlers=linked,
@@ -401,7 +433,8 @@ def _link_video_game_to_roster(game, source_fetch: SourceFetch) -> int:
     from owdb_django.owdbapp.models import Wrestler
 
     mentions = EntityMention.objects.filter(
-        source_fetch=source_fetch, resolved_entity_type="wrestler",
+        source_fetch=source_fetch,
+        resolved_entity_type="wrestler",
     )
     # Count mentions per resolved wrestler. The same wrestler often gets
     # several EntityMention rows from a single article when their name
@@ -468,9 +501,12 @@ def persist_podcast(
                 setattr(podcast, dst_attr, snip.value)
                 fields_written.append(dst_attr)
             record_provenance(
-                entity_type="podcast", entity_id=podcast.id,
-                field_name=dst_attr, value=snip.value,
-                source_fetch=source_fetch, confidence=snip.confidence,
+                entity_type="podcast",
+                entity_id=podcast.id,
+                field_name=dst_attr,
+                value=snip.value,
+                source_fetch=source_fetch,
+                confidence=snip.confidence,
                 snippet=getattr(snip, "snippet", "") or "",
             )
             provenance_rows += 1
@@ -491,6 +527,7 @@ def persist_podcast(
     try:
         from .mentions import persist_mentions_for_entity
         from .linking import resolve_all_mentions_to_wrestlers
+
         persist_mentions_for_entity("podcast", podcast.id, source_fetch)
         resolve_all_mentions_to_wrestlers()
     except Exception as e:
@@ -501,10 +538,16 @@ def persist_podcast(
 
     logger.info(
         "Persisted podcast %r (id=%d, created=%s, wrote=%s, hosts=%d, guests=%d)",
-        canonical_name, podcast.id, created, fields_written, linked_hosts, linked_guests,
+        canonical_name,
+        podcast.id,
+        created,
+        fields_written,
+        linked_hosts,
+        linked_guests,
     )
     return PodcastPersistResult(
-        podcast_id=podcast.id, created=created,
+        podcast_id=podcast.id,
+        created=created,
         fields_written=fields_written,
         provenance_rows_created=provenance_rows,
         linked_hosts=linked_hosts,
@@ -515,15 +558,14 @@ def persist_podcast(
 def _link_podcast_hosts(podcast, fields: PodcastFields) -> int:
     """Resolve host names (and host_wiki_links) to Wrestler -> podcast.host_wrestlers."""
     from owdb_django.owdbapp.models import Wrestler
+
     candidates: list[str] = []
     if fields.host_wiki_links is not None:
         candidates.extend(
             n.strip() for n in str(fields.host_wiki_links.value).split(",") if n.strip()
         )
     if fields.hosts is not None:
-        candidates.extend(
-            n.strip() for n in str(fields.hosts.value).split(",") if n.strip()
-        )
+        candidates.extend(n.strip() for n in str(fields.hosts.value).split(",") if n.strip())
 
     linked = 0
     for name in candidates:
@@ -545,7 +587,8 @@ def _link_podcast_guests(podcast, source_fetch: SourceFetch) -> int:
     from owdb_django.owdbapp.models import Wrestler
 
     mentions = EntityMention.objects.filter(
-        source_fetch=source_fetch, resolved_entity_type="wrestler",
+        source_fetch=source_fetch,
+        resolved_entity_type="wrestler",
     )
     linked = 0
     hosted_ids = set(podcast.host_wrestlers.values_list("id", flat=True))
@@ -622,9 +665,12 @@ def persist_action_figure(
                 setattr(af, dst_attr, snip.value)
                 fields_written.append(dst_attr)
             record_provenance(
-                entity_type="action_figure", entity_id=af.id,
-                field_name=dst_attr, value=snip.value,
-                source_fetch=source_fetch, confidence=snip.confidence,
+                entity_type="action_figure",
+                entity_id=af.id,
+                field_name=dst_attr,
+                value=snip.value,
+                source_fetch=source_fetch,
+                confidence=snip.confidence,
                 snippet=getattr(snip, "snippet", "") or "",
             )
             provenance_rows += 1
@@ -641,11 +687,13 @@ def persist_action_figure(
                     fields_written.append("promotion")
                     linked_promotion = True
                     record_provenance(
-                        entity_type="action_figure", entity_id=af.id,
-                        field_name="promotion", value=promo.name,
+                        entity_type="action_figure",
+                        entity_id=af.id,
+                        field_name="promotion",
+                        value=promo.name,
                         source_fetch=source_fetch,
-                        snippet=getattr(fields.promotion_wiki_link, "snippet", "") or
-                                f"resolved via KNOWN_PROMOTIONS[{promo_link!r}]",
+                        snippet=getattr(fields.promotion_wiki_link, "snippet", "")
+                        or f"resolved via KNOWN_PROMOTIONS[{promo_link!r}]",
                         confidence=fields.promotion_wiki_link.confidence,
                     )
                     provenance_rows += 1
@@ -668,6 +716,7 @@ def persist_action_figure(
     try:
         from .mentions import persist_mentions_for_entity
         from .linking import resolve_all_mentions_to_wrestlers
+
         persist_mentions_for_entity("action_figure", af.id, source_fetch)
         resolve_all_mentions_to_wrestlers()
         linked = _link_action_figure_to_wrestlers(af, source_fetch)
@@ -676,10 +725,16 @@ def persist_action_figure(
 
     logger.info(
         "Persisted action_figure %r (id=%d, created=%s, wrote=%s, wrestlers=%d, promo=%s)",
-        canonical_name, af.id, created, fields_written, linked, linked_promotion,
+        canonical_name,
+        af.id,
+        created,
+        fields_written,
+        linked,
+        linked_promotion,
     )
     return ActionFigurePersistResult(
-        action_figure_id=af.id, created=created,
+        action_figure_id=af.id,
+        created=created,
         fields_written=fields_written,
         provenance_rows_created=provenance_rows,
         linked_wrestlers=linked,
@@ -693,7 +748,8 @@ def _link_action_figure_to_wrestlers(af, source_fetch: SourceFetch) -> int:
     from owdb_django.owdbapp.models import Wrestler
 
     mentions = EntityMention.objects.filter(
-        source_fetch=source_fetch, resolved_entity_type="wrestler",
+        source_fetch=source_fetch,
+        resolved_entity_type="wrestler",
     )
     linked = 0
     for m in mentions:
@@ -765,9 +821,12 @@ def persist_theme_song(
                 setattr(ts, dst_attr, snip.value)
                 fields_written.append(dst_attr)
             record_provenance(
-                entity_type="theme_song", entity_id=ts.id,
-                field_name=dst_attr, value=snip.value,
-                source_fetch=source_fetch, confidence=snip.confidence,
+                entity_type="theme_song",
+                entity_id=ts.id,
+                field_name=dst_attr,
+                value=snip.value,
+                source_fetch=source_fetch,
+                confidence=snip.confidence,
                 snippet=getattr(snip, "snippet", "") or "",
             )
             provenance_rows += 1
@@ -796,6 +855,7 @@ def persist_theme_song(
     try:
         from .mentions import persist_mentions_for_entity
         from .linking import resolve_all_mentions_to_wrestlers
+
         persist_mentions_for_entity("theme_song", ts.id, source_fetch)
         resolve_all_mentions_to_wrestlers()
         linked = _link_theme_song_to_users(ts, source_fetch)
@@ -804,10 +864,15 @@ def persist_theme_song(
 
     logger.info(
         "Persisted theme_song %r (id=%d, created=%s, wrote=%s, wrestlers=%d)",
-        canonical_title, ts.id, created, fields_written, linked,
+        canonical_title,
+        ts.id,
+        created,
+        fields_written,
+        linked,
     )
     return ThemeSongPersistResult(
-        theme_song_id=ts.id, created=created,
+        theme_song_id=ts.id,
+        created=created,
         fields_written=fields_written,
         provenance_rows_created=provenance_rows,
         linked_wrestlers=linked,
@@ -820,7 +885,8 @@ def _link_theme_song_to_users(ts, source_fetch: SourceFetch) -> int:
     from owdb_django.owdbapp.models import Wrestler
 
     mentions = EntityMention.objects.filter(
-        source_fetch=source_fetch, resolved_entity_type="wrestler",
+        source_fetch=source_fetch,
+        resolved_entity_type="wrestler",
     )
     linked = 0
     for m in mentions:

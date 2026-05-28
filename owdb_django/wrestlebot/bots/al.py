@@ -70,11 +70,13 @@ class Al:
     def discover_gaps(self, limit: int = 30):
         """Top unresolved mention names (preview)."""
         from ..pipeline.auto_discovery import top_unresolved_mentions
+
         return top_unresolved_mentions(limit=limit)
 
     def close_trainer_gap(self) -> dict:
         """Sweep wrestlers, surface and link trainer references."""
         from ..pipeline.linking import link_trainers_sweep
+
         return link_trainers_sweep()
 
     def cycle(self, ingest_limit: int = 5) -> AlCycleStats:

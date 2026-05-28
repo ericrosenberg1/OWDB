@@ -19,7 +19,9 @@ from django.test import TestCase
 from django.utils import timezone
 
 from owdb_django.owdbapp.models import (
-    Promotion, Wrestler, WrestlerPromotionHistory,
+    Promotion,
+    Wrestler,
+    WrestlerPromotionHistory,
 )
 from owdb_django.wrestlebot.pipeline.wrestler_linking import (
     wrestlers_due_for_review,
@@ -27,7 +29,6 @@ from owdb_django.wrestlebot.pipeline.wrestler_linking import (
 
 
 class WrestlersDueForReviewTests(TestCase):
-
     def _set_updated_at(self, wrestler, when):
         # Wrestler.updated_at is auto_now=True, so a plain .save() would
         # overwrite it. Bypass via .update() which skips auto_now.
@@ -41,7 +42,9 @@ class WrestlersDueForReviewTests(TestCase):
         )
         promo = Promotion.objects.create(name=f"Promo for {name}")
         WrestlerPromotionHistory.objects.create(
-            wrestler=w, promotion=promo, start_year=2020,
+            wrestler=w,
+            promotion=promo,
+            start_year=2020,
         )
         self._set_updated_at(w, when)
         return w
@@ -67,7 +70,8 @@ class WrestlersDueForReviewTests(TestCase):
         for i in range(30):
             # Older updated_at => they come first in qs (ordered ASC).
             w = self._make_complete(
-                f"Complete {i:02d}", cutoff + timedelta(minutes=i),
+                f"Complete {i:02d}",
+                cutoff + timedelta(minutes=i),
             )
             complete_ids.append(w.id)
 
@@ -85,14 +89,15 @@ class WrestlersDueForReviewTests(TestCase):
         result_ids = [w.id for w in result]
 
         self.assertEqual(
-            len(result), 25,
-            "Should return all 5 incomplete + 20 complete (up to "
-            "`limit` per tier)",
+            len(result),
+            25,
+            "Should return all 5 incomplete + 20 complete (up to `limit` per tier)",
         )
 
         for inc_id in incomplete_ids:
             self.assertIn(
-                inc_id, result_ids,
+                inc_id,
+                result_ids,
                 "Every incomplete wrestler must surface — the old break "
                 "condition could hide them when complete wrestlers "
                 "filled the early queryset",
@@ -100,16 +105,17 @@ class WrestlersDueForReviewTests(TestCase):
 
         result_complete = [i for i in result_ids if i in complete_ids]
         self.assertEqual(
-            len(result_complete), 20,
-            "Exactly `limit` complete wrestlers should ride along for "
-            "the rotation slot",
+            len(result_complete),
+            20,
+            "Exactly `limit` complete wrestlers should ride along for the rotation slot",
         )
 
         # The 20 surfaced complete should be the 20 oldest (most overdue),
         # since qs is ordered by updated_at ASC and the function slices
         # `complete[:limit]`.
         self.assertEqual(
-            result_complete, complete_ids[:20],
+            result_complete,
+            complete_ids[:20],
             "The 20 complete should be the 20 most-overdue (oldest "
             "updated_at) — those are the ones the rotation prioritises",
         )

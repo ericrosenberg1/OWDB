@@ -220,12 +220,12 @@ def _stage_crossvalidate(limit: int) -> int:
 
     # Wrestlers with Wikipedia source but no Wikidata source yet.
     already_xv = set(
-        SourceFetch.objects.filter(source="wikidata", http_status=200)
-        .values_list("entity_id", flat=True)
+        SourceFetch.objects.filter(source="wikidata", http_status=200).values_list(
+            "entity_id", flat=True
+        )
     )
     candidates = (
-        Wrestler.objects
-        .exclude(wikipedia_url="")
+        Wrestler.objects.exclude(wikipedia_url="")
         .exclude(wikipedia_url__isnull=True)
         .exclude(id__in=already_xv)
         .order_by("id")[:limit]
@@ -270,18 +270,21 @@ def _stage_generate_bios(limit: int) -> dict:
     client = ClaudeClient()
     if not client.available:
         logger.info("wrestlebot_cycle bio stage skipped: no Claude credentials")
-        return {"bios_attempted": 0, "bios_verified": 0, "bios_rejected": 0, "bios_permanently_rejected": 0}
+        return {
+            "bios_attempted": 0,
+            "bios_verified": 0,
+            "bios_rejected": 0,
+            "bios_permanently_rejected": 0,
+        }
 
     # Wrestlers already verified or permanently rejected — skip.
     handled_ids = set(
-        GeneratedBio.objects
-        .filter(entity_type="wrestler", status__in=["verified", "permanently_rejected"])
-        .values_list("entity_id", flat=True)
+        GeneratedBio.objects.filter(
+            entity_type="wrestler", status__in=["verified", "permanently_rejected"]
+        ).values_list("entity_id", flat=True)
     )
 
-    targets = (
-        Wrestler.objects.exclude(id__in=handled_ids).order_by("id")[:limit]
-    )
+    targets = Wrestler.objects.exclude(id__in=handled_ids).order_by("id")[:limit]
 
     attempted = 0
     verified = 0
@@ -331,6 +334,7 @@ def jr_agent_cycle(self, max_tool_calls: int = 30):
     schedule stays predictable.
     """
     from .agents.jr_agent import run_jr
+
     try:
         result = run_jr(max_tool_calls=max_tool_calls)
     except Exception as e:
@@ -360,6 +364,7 @@ def al_agent_cycle(self, max_tool_calls: int = 30):
     and surfaces unpolished gems.
     """
     from .agents.al_agent import run_al
+
     try:
         result = run_al(max_tool_calls=max_tool_calls)
     except Exception as e:
@@ -388,6 +393,7 @@ def earl_agent_cycle(self, max_tool_calls: int = 30):
     but still bounded.
     """
     from .agents.earl_agent import run_earl
+
     try:
         result = run_earl(max_tool_calls=max_tool_calls)
     except Exception as e:

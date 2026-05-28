@@ -85,11 +85,19 @@ class Earl:
         Returns the count of new observations created.
         """
         from owdb_django.owdbapp.models import (
-            Event, Venue, Wrestler, Match, ExternalRankingEntry,
+            Event,
+            Venue,
+            Wrestler,
+            Match,
+            ExternalRankingEntry,
         )
         from ..pipeline.consistency import (
-            check_event, check_venue, check_wrestler, check_match,
-            check_provenance_coverage, check_image_legal_use,
+            check_event,
+            check_venue,
+            check_wrestler,
+            check_match,
+            check_provenance_coverage,
+            check_image_legal_use,
         )
 
         new = 0
@@ -100,9 +108,12 @@ class Earl:
             for issue in issues:
                 val = str(getattr(entity, issue.field, "") or "") if issue.field else ""
                 if self._record_observation(
-                    rule_id=issue.rule, severity=issue.severity,
-                    entity_type=entity_type, entity_id=entity.id,
-                    entity_name=entity_name, field_name=issue.field,
+                    rule_id=issue.rule,
+                    severity=issue.severity,
+                    entity_type=entity_type,
+                    entity_id=entity.id,
+                    entity_name=entity_name,
+                    field_name=issue.field,
                     stored_value=val,
                     issue_description=issue.message,
                 ):
@@ -111,33 +122,55 @@ class Earl:
         for w in Wrestler.objects.iterator():
             total += 1
             _record(w, issues=check_wrestler(w), entity_type="wrestler", entity_name=w.name)
-            _record(w, issues=check_provenance_coverage("wrestler", w),
-                    entity_type="wrestler", entity_name=w.name)
-            _record(w, issues=check_image_legal_use("wrestler", w),
-                    entity_type="wrestler", entity_name=w.name)
+            _record(
+                w,
+                issues=check_provenance_coverage("wrestler", w),
+                entity_type="wrestler",
+                entity_name=w.name,
+            )
+            _record(
+                w,
+                issues=check_image_legal_use("wrestler", w),
+                entity_type="wrestler",
+                entity_name=w.name,
+            )
 
         for e in Event.objects.iterator():
             total += 1
             _record(e, issues=check_event(e), entity_type="event", entity_name=e.name)
-            _record(e, issues=check_provenance_coverage("event", e),
-                    entity_type="event", entity_name=e.name)
-            _record(e, issues=check_image_legal_use("event", e),
-                    entity_type="event", entity_name=e.name)
+            _record(
+                e,
+                issues=check_provenance_coverage("event", e),
+                entity_type="event",
+                entity_name=e.name,
+            )
+            _record(
+                e, issues=check_image_legal_use("event", e), entity_type="event", entity_name=e.name
+            )
 
         for v in Venue.objects.iterator():
             total += 1
             _record(v, issues=check_venue(v), entity_type="venue", entity_name=v.name)
-            _record(v, issues=check_provenance_coverage("venue", v),
-                    entity_type="venue", entity_name=v.name)
-            _record(v, issues=check_image_legal_use("venue", v),
-                    entity_type="venue", entity_name=v.name)
+            _record(
+                v,
+                issues=check_provenance_coverage("venue", v),
+                entity_type="venue",
+                entity_name=v.name,
+            )
+            _record(
+                v, issues=check_image_legal_use("venue", v), entity_type="venue", entity_name=v.name
+            )
 
         for m in Match.objects.iterator():
             total += 1
             name = (m.match_text or "")[:80]
             _record(m, issues=check_match(m), entity_type="match", entity_name=name)
-            _record(m, issues=check_provenance_coverage("match", m),
-                    entity_type="match", entity_name=name)
+            _record(
+                m,
+                issues=check_provenance_coverage("match", m),
+                entity_type="match",
+                entity_name=name,
+            )
 
         # ExternalRankingEntry — flag orphans so Al can backfill links.
         for entry in ExternalRankingEntry.objects.select_related("ranking").iterator():
@@ -162,14 +195,24 @@ class Earl:
         return new
 
     def _record_observation(
-        self, *, rule_id: str, severity: str, entity_type: str, entity_id: int,
-        entity_name: str, field_name: str, stored_value: str,
+        self,
+        *,
+        rule_id: str,
+        severity: str,
+        entity_type: str,
+        entity_id: int,
+        entity_name: str,
+        field_name: str,
+        stored_value: str,
         issue_description: str,
     ) -> bool:
         """Upsert an EarlObservation. Returns True if newly created."""
         from ..models import EarlObservation
+
         obs, created = EarlObservation.objects.update_or_create(
-            rule_id=rule_id, entity_type=entity_type, entity_id=entity_id,
+            rule_id=rule_id,
+            entity_type=entity_type,
+            entity_id=entity_id,
             field_name=field_name,
             defaults=dict(
                 severity=severity,
@@ -193,11 +236,7 @@ class Earl:
         from django.db.models import Count
         from ..models import EarlObservation, RuleScore
 
-        rule_fire_counts = (
-            EarlObservation.objects
-            .values("rule_id")
-            .annotate(n=Count("id"))
-        )
+        rule_fire_counts = EarlObservation.objects.values("rule_id").annotate(n=Count("id"))
         touched = 0
         for row in rule_fire_counts:
             score, _ = RuleScore.objects.update_or_create(
@@ -226,17 +265,16 @@ class Earl:
 
         # Pattern 1: rules firing on >=5 entities with status=open are systemic.
         systemic = (
-            EarlObservation.objects
-            .filter(status="open")
+            EarlObservation.objects.filter(status="open")
             .values("rule_id", "severity")
             .annotate(n=Count("id"))
             .filter(n__gte=5)
         )
         for row in systemic:
             sample_ids = list(
-                EarlObservation.objects
-                .filter(rule_id=row["rule_id"], status="open")
-                .values_list("entity_id", flat=True)[:10]
+                EarlObservation.objects.filter(rule_id=row["rule_id"], status="open").values_list(
+                    "entity_id", flat=True
+                )[:10]
             )
             description = (
                 f"Rule {row['rule_id']!r} ({row['severity']}) is firing on "
@@ -246,7 +284,8 @@ class Earl:
             )
             # Don't double-create if a pending suggestion already exists.
             existing = RuleSuggestion.objects.filter(
-                target_rule_id=row["rule_id"], status="pending",
+                target_rule_id=row["rule_id"],
+                status="pending",
             ).first()
             if existing:
                 continue
@@ -257,9 +296,13 @@ class Earl:
                 rationale=description,
                 sample_observations=sample_ids,
             )
-            new_suggestions.append({
-                "id": sug.id, "rule": row["rule_id"], "count": row["n"],
-            })
+            new_suggestions.append(
+                {
+                    "id": sug.id,
+                    "rule": row["rule_id"],
+                    "count": row["n"],
+                }
+            )
 
         return new_suggestions
 
@@ -289,7 +332,9 @@ class Earl:
 
         applied = 0
         candidates = EarlObservation.objects.filter(
-            status="open", rule_id__in=self.AUTO_FIX_RULES, entity_type="wrestler",
+            status="open",
+            rule_id__in=self.AUTO_FIX_RULES,
+            entity_type="wrestler",
         )
         for obs in candidates:
             try:
@@ -327,9 +372,9 @@ class Earl:
 
         # Track how many entities we audited (approximate — by counting open obs)
         from ..models import EarlObservation
+
         stats.entities_audited = (
-            EarlObservation.objects.values("entity_type", "entity_id")
-            .distinct().count()
+            EarlObservation.objects.values("entity_type", "entity_id").distinct().count()
         )
 
         logger.info("Earl cycle done: %s", asdict(stats))

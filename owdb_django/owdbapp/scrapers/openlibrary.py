@@ -243,8 +243,10 @@ class GoogleBooksClient(APIClient):
         import os
         from django.conf import settings as django_settings
 
-        api_key = api_key or os.getenv("GOOGLE_BOOKS_API_KEY") or getattr(
-            django_settings, "GOOGLE_BOOKS_API_KEY", None
+        api_key = (
+            api_key
+            or os.getenv("GOOGLE_BOOKS_API_KEY")
+            or getattr(django_settings, "GOOGLE_BOOKS_API_KEY", None)
         )
         super().__init__(api_key)
 

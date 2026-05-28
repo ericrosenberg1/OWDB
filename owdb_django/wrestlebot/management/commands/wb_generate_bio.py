@@ -42,27 +42,37 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--wrestler", type=int, action="append", default=None,
+            "--wrestler",
+            type=int,
+            action="append",
+            default=None,
             help="Wrestler id(s) to process. Repeat for multiple. Omit = all eligible.",
         )
         parser.add_argument(
-            "--limit", type=int, default=10,
+            "--limit",
+            type=int,
+            default=10,
             help="Max wrestlers to process when --wrestler is not given (default: 10).",
         )
         parser.add_argument(
-            "--verify-only", action="store_true",
+            "--verify-only",
+            action="store_true",
             help="Skip generation; only verify existing pending bios.",
         )
         parser.add_argument(
-            "--no-promote", action="store_true",
+            "--no-promote",
+            action="store_true",
             help="When verified, do NOT copy the bio text to Wrestler.about.",
         )
         parser.add_argument(
-            "--no-retry", action="store_true",
+            "--no-retry",
+            action="store_true",
             help="Disable the 3-pass self-correction loop (single attempt only).",
         )
         parser.add_argument(
-            "--max-attempts", type=int, default=3,
+            "--max-attempts",
+            type=int,
+            default=3,
             help="Max self-correction attempts per wrestler (default: 3).",
         )
         parser.add_argument(
@@ -77,16 +87,20 @@ class Command(BaseCommand):
 
         client = ClaudeClient()
         if not client.available:
-            self.stdout.write(self.style.ERROR(
-                "Claude credentials missing. Set CLAUDE_CODE_OAUTH_TOKEN or "
-                "ANTHROPIC_API_KEY in .env, then re-run."
-            ))
+            self.stdout.write(
+                self.style.ERROR(
+                    "Claude credentials missing. Set CLAUDE_CODE_OAUTH_TOKEN or "
+                    "ANTHROPIC_API_KEY in .env, then re-run."
+                )
+            )
             return
 
-        self.stdout.write(self.style.SUCCESS(
-            f"Using Claude with {client.credential.source} "
-            f"(oauth={client.credential.is_oauth}), model={client.model}\n"
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Using Claude with {client.credential.source} "
+                f"(oauth={client.credential.is_oauth}), model={client.model}\n"
+            )
+        )
 
         if options["verify_only"]:
             # Just re-verify whatever pending bios exist (manual path).
@@ -94,9 +108,9 @@ class Command(BaseCommand):
             if options["wrestler"]:
                 pending_qs = pending_qs.filter(entity_id__in=options["wrestler"])
             pending = list(pending_qs.order_by("id"))
-            self.stdout.write(self.style.HTTP_INFO(
-                f"\n=== verify-only ({len(pending)} bio(s)) ===\n"
-            ))
+            self.stdout.write(
+                self.style.HTTP_INFO(f"\n=== verify-only ({len(pending)} bio(s)) ===\n")
+            )
             v = r = 0
             for bio in pending:
                 vr = verify_bio(bio, client=client)
@@ -126,17 +140,17 @@ class Command(BaseCommand):
                 entity_type="wrestler",
                 status__in=["verified", "permanently_rejected"],
             ).values_list("entity_id", flat=True)
-            wrestlers_qs = (
-                Wrestler.objects.exclude(id__in=handled_ids).order_by("id")
-            )
+            wrestlers_qs = Wrestler.objects.exclude(id__in=handled_ids).order_by("id")
             wrestlers_qs = wrestlers_qs[: options["limit"]]
 
         wrestlers = list(wrestlers_qs)
         max_attempts = 1 if options["no_retry"] else options["max_attempts"]
-        self.stdout.write(self.style.HTTP_INFO(
-            f"\n=== Self-correcting bio pipeline ({len(wrestlers)} wrestler(s), "
-            f"max {max_attempts} attempts each) ===\n"
-        ))
+        self.stdout.write(
+            self.style.HTTP_INFO(
+                f"\n=== Self-correcting bio pipeline ({len(wrestlers)} wrestler(s), "
+                f"max {max_attempts} attempts each) ===\n"
+            )
+        )
 
         verified_count = 0
         rejected_count = 0
@@ -149,27 +163,31 @@ class Command(BaseCommand):
                 continue
             if bio.status == "verified":
                 verified_count += 1
-                self.stdout.write(self.style.SUCCESS(
-                    f"    VERIFIED in {bio.attempt_number} attempt(s) "
-                    f"(mode={bio.generation_mode}, {bio.claims_verified}/{bio.claims_total} claims)"
-                ))
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"    VERIFIED in {bio.attempt_number} attempt(s) "
+                        f"(mode={bio.generation_mode}, {bio.claims_verified}/{bio.claims_total} claims)"
+                    )
+                )
                 if not options["no_promote"]:
                     self._promote(bio)
             elif bio.status == "permanently_rejected":
                 permanent_count += 1
-                self.stdout.write(self.style.ERROR(
-                    f"    PERMANENTLY REJECTED after {bio.attempt_number} attempt(s)"
-                ))
+                self.stdout.write(
+                    self.style.ERROR(
+                        f"    PERMANENTLY REJECTED after {bio.attempt_number} attempt(s)"
+                    )
+                )
             else:
                 rejected_count += 1
-                self.stdout.write(self.style.WARNING(
-                    f"    rejected (status={bio.status})"
-                ))
+                self.stdout.write(self.style.WARNING(f"    rejected (status={bio.status})"))
 
-        self.stdout.write(self.style.SUCCESS(
-            f"\nDone. Verified={verified_count}, "
-            f"Rejected={rejected_count}, Permanent={permanent_count}."
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"\nDone. Verified={verified_count}, "
+                f"Rejected={rejected_count}, Permanent={permanent_count}."
+            )
+        )
 
     @staticmethod
     def _promote(bio: GeneratedBio) -> None:
@@ -199,6 +217,7 @@ class Command(BaseCommand):
             v.save(update_fields=["about", "updated_at"])
         elif bio.entity_type == "promotion":
             from owdb_django.owdbapp.models import Promotion
+
             try:
                 p = Promotion.objects.get(id=bio.entity_id)
             except Promotion.DoesNotExist:
@@ -236,9 +255,9 @@ class Command(BaseCommand):
             qs = qs[: options["limit"]]
 
         targets = list(qs)
-        self.stdout.write(self.style.HTTP_INFO(
-            f"\n=== Bio pipeline ({len(targets)} {entity_type}(s)) ===\n"
-        ))
+        self.stdout.write(
+            self.style.HTTP_INFO(f"\n=== Bio pipeline ({len(targets)} {entity_type}(s)) ===\n")
+        )
 
         verified = 0
         rejected = 0
@@ -250,15 +269,15 @@ class Command(BaseCommand):
                 continue
             if bio.status == "verified":
                 verified += 1
-                self.stdout.write(self.style.SUCCESS(
-                    f"    VERIFIED ({bio.claims_verified}/{bio.claims_total} claims)"
-                ))
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"    VERIFIED ({bio.claims_verified}/{bio.claims_total} claims)"
+                    )
+                )
                 if not options["no_promote"]:
                     self._promote(bio)
             else:
                 rejected += 1
                 self.stdout.write(self.style.WARNING(f"    {bio.status}"))
 
-        self.stdout.write(self.style.SUCCESS(
-            f"\nDone. Verified={verified}, Rejected={rejected}."
-        ))
+        self.stdout.write(self.style.SUCCESS(f"\nDone. Verified={verified}, Rejected={rejected}."))

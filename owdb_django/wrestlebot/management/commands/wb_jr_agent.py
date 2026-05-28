@@ -21,24 +21,37 @@ class Command(BaseCommand):
     help = "Run one Good Ol' JR session (data-adding agent, Jim Ross)."
 
     def add_arguments(self, parser):
-        parser.add_argument("--task", type=str, default="",
-                            help="Goal for this session. If empty, uses default.")
-        parser.add_argument("--max-tool-calls", type=int, default=40,
-                            help="Cap on tool invocations per session (default 40).")
-        parser.add_argument("--max-input-tokens", type=int, default=200_000,
-                            help="Cap on cumulative input tokens (default 200k).")
-        parser.add_argument("--max-iterations", type=int, default=60,
-                            help="Cap on model round-trips (default 60).")
-        parser.add_argument("--model", type=str, default="",
-                            help="Override Claude model (defaults to Sonnet 4.6).")
+        parser.add_argument(
+            "--task", type=str, default="", help="Goal for this session. If empty, uses default."
+        )
+        parser.add_argument(
+            "--max-tool-calls",
+            type=int,
+            default=40,
+            help="Cap on tool invocations per session (default 40).",
+        )
+        parser.add_argument(
+            "--max-input-tokens",
+            type=int,
+            default=200_000,
+            help="Cap on cumulative input tokens (default 200k).",
+        )
+        parser.add_argument(
+            "--max-iterations", type=int, default=60, help="Cap on model round-trips (default 60)."
+        )
+        parser.add_argument(
+            "--model", type=str, default="", help="Override Claude model (defaults to Sonnet 4.6)."
+        )
 
     def handle(self, *args, **options):
         from owdb_django.wrestlebot.agents.jr_agent import run_jr
 
-        self.stdout.write(self.style.SUCCESS(
-            "\n=== Good Ol' JR — Jim Ross — Building the most "
-            "comprehensive wrestling database ever assembled ===\n"
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                "\n=== Good Ol' JR — Jim Ross — Building the most "
+                "comprehensive wrestling database ever assembled ===\n"
+            )
+        )
         result = run_jr(
             task=options["task"] or None,
             max_tool_calls=options["max_tool_calls"],

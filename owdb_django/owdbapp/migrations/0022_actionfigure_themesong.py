@@ -5,60 +5,128 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('owdbapp', '0021_book_last_enriched_book_last_verified_and_more'),
+        ("owdbapp", "0021_book_last_enriched_book_last_verified_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ActionFigure',
+            name="ActionFigure",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('name', models.CharField(db_index=True, max_length=255)),
-                ('slug', models.SlugField(blank=True, max_length=255, unique=True)),
-                ('manufacturer', models.CharField(blank=True, db_index=True, help_text='e.g., Jakks Pacific, Mattel, Hasbro, Jazwares', max_length=255, null=True)),
-                ('start_year', models.IntegerField(blank=True, db_index=True, null=True)),
-                ('end_year', models.IntegerField(blank=True, null=True)),
-                ('about', models.TextField(blank=True, null=True)),
-                ('wikipedia_url', models.URLField(blank=True, max_length=500, null=True)),
-                ('last_enriched', models.DateTimeField(blank=True, null=True)),
-                ('verified', models.BooleanField(db_index=True, default=False)),
-                ('verification_source', models.CharField(blank=True, max_length=50, null=True)),
-                ('last_verified', models.DateTimeField(blank=True, null=True)),
-                ('featured_wrestlers', models.ManyToManyField(blank=True, help_text='Wrestlers featured in this line', related_name='action_figures', to='owdbapp.wrestler')),
-                ('promotion', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='action_figures', to='owdbapp.promotion')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("name", models.CharField(db_index=True, max_length=255)),
+                ("slug", models.SlugField(blank=True, max_length=255, unique=True)),
+                (
+                    "manufacturer",
+                    models.CharField(
+                        blank=True,
+                        db_index=True,
+                        help_text="e.g., Jakks Pacific, Mattel, Hasbro, Jazwares",
+                        max_length=255,
+                        null=True,
+                    ),
+                ),
+                ("start_year", models.IntegerField(blank=True, db_index=True, null=True)),
+                ("end_year", models.IntegerField(blank=True, null=True)),
+                ("about", models.TextField(blank=True, null=True)),
+                ("wikipedia_url", models.URLField(blank=True, max_length=500, null=True)),
+                ("last_enriched", models.DateTimeField(blank=True, null=True)),
+                ("verified", models.BooleanField(db_index=True, default=False)),
+                ("verification_source", models.CharField(blank=True, max_length=50, null=True)),
+                ("last_verified", models.DateTimeField(blank=True, null=True)),
+                (
+                    "featured_wrestlers",
+                    models.ManyToManyField(
+                        blank=True,
+                        help_text="Wrestlers featured in this line",
+                        related_name="action_figures",
+                        to="owdbapp.wrestler",
+                    ),
+                ),
+                (
+                    "promotion",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="action_figures",
+                        to="owdbapp.promotion",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-start_year', 'name'],
-                'indexes': [models.Index(fields=['name'], name='owdbapp_act_name_319078_idx'), models.Index(fields=['manufacturer'], name='owdbapp_act_manufac_cac443_idx'), models.Index(fields=['verified'], name='owdbapp_act_verifie_f20ad5_idx')],
+                "ordering": ["-start_year", "name"],
+                "indexes": [
+                    models.Index(fields=["name"], name="owdbapp_act_name_319078_idx"),
+                    models.Index(fields=["manufacturer"], name="owdbapp_act_manufac_cac443_idx"),
+                    models.Index(fields=["verified"], name="owdbapp_act_verifie_f20ad5_idx"),
+                ],
             },
         ),
         migrations.CreateModel(
-            name='ThemeSong',
+            name="ThemeSong",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('title', models.CharField(db_index=True, max_length=255)),
-                ('slug', models.SlugField(blank=True, max_length=255, unique=True)),
-                ('artist', models.CharField(blank=True, db_index=True, help_text='Performing artist or composer (e.g., Jim Johnston, Living Colour)', max_length=255, null=True)),
-                ('artist_wikipedia_url', models.URLField(blank=True, max_length=500, null=True)),
-                ('release_year', models.IntegerField(blank=True, db_index=True, null=True)),
-                ('album', models.CharField(blank=True, help_text='Album the song appeared on (if any)', max_length=255, null=True)),
-                ('about', models.TextField(blank=True, null=True)),
-                ('wikipedia_url', models.URLField(blank=True, max_length=500, null=True)),
-                ('last_enriched', models.DateTimeField(blank=True, null=True)),
-                ('verified', models.BooleanField(db_index=True, default=False)),
-                ('verification_source', models.CharField(blank=True, max_length=50, null=True)),
-                ('last_verified', models.DateTimeField(blank=True, null=True)),
-                ('used_by_wrestlers', models.ManyToManyField(blank=True, help_text='Wrestlers who used this as entrance music', related_name='theme_songs', to='owdbapp.wrestler')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("title", models.CharField(db_index=True, max_length=255)),
+                ("slug", models.SlugField(blank=True, max_length=255, unique=True)),
+                (
+                    "artist",
+                    models.CharField(
+                        blank=True,
+                        db_index=True,
+                        help_text="Performing artist or composer (e.g., Jim Johnston, Living Colour)",
+                        max_length=255,
+                        null=True,
+                    ),
+                ),
+                ("artist_wikipedia_url", models.URLField(blank=True, max_length=500, null=True)),
+                ("release_year", models.IntegerField(blank=True, db_index=True, null=True)),
+                (
+                    "album",
+                    models.CharField(
+                        blank=True,
+                        help_text="Album the song appeared on (if any)",
+                        max_length=255,
+                        null=True,
+                    ),
+                ),
+                ("about", models.TextField(blank=True, null=True)),
+                ("wikipedia_url", models.URLField(blank=True, max_length=500, null=True)),
+                ("last_enriched", models.DateTimeField(blank=True, null=True)),
+                ("verified", models.BooleanField(db_index=True, default=False)),
+                ("verification_source", models.CharField(blank=True, max_length=50, null=True)),
+                ("last_verified", models.DateTimeField(blank=True, null=True)),
+                (
+                    "used_by_wrestlers",
+                    models.ManyToManyField(
+                        blank=True,
+                        help_text="Wrestlers who used this as entrance music",
+                        related_name="theme_songs",
+                        to="owdbapp.wrestler",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['title'],
-                'indexes': [models.Index(fields=['title'], name='owdbapp_the_title_bca731_idx'), models.Index(fields=['artist'], name='owdbapp_the_artist_f6dcb6_idx'), models.Index(fields=['verified'], name='owdbapp_the_verifie_d3d938_idx')],
+                "ordering": ["title"],
+                "indexes": [
+                    models.Index(fields=["title"], name="owdbapp_the_title_bca731_idx"),
+                    models.Index(fields=["artist"], name="owdbapp_the_artist_f6dcb6_idx"),
+                    models.Index(fields=["verified"], name="owdbapp_the_verifie_d3d938_idx"),
+                ],
             },
         ),
     ]

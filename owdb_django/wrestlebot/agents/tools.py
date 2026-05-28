@@ -73,6 +73,7 @@ def _truncate(s: str, n: int = 2000) -> str:
 def _t_brave_search(query: str, count: int = 10, freshness: Optional[str] = None) -> dict:
     """Run a Brave Web Search."""
     from ..sources import brave_search
+
     hits = brave_search.search(query=query, count=count, freshness=freshness)
     if not hits and not brave_search.available():
         return _err("Brave Search API key not configured (BRAVE_SEARCH_API_KEY).")
@@ -89,6 +90,7 @@ def _t_lookup_wrestler_image(name: str, prop: str = "P18") -> dict:
     license + attribution metadata so the agent can verify legal use before
     assigning."""
     from ..sources import commons
+
     if prop not in ("P18", "P154", "P109"):
         return _err(f"unknown property {prop!r}; use P18 (image), P154 (logo), or P109 (signature)")
     r = commons.fetch_image_for_wikipedia_title(name, prop=prop)
@@ -97,21 +99,23 @@ def _t_lookup_wrestler_image(name: str, prop: str = "P18") -> dict:
     # Also pull full Commons metadata so the agent can see the license.
     meta = commons.fetch_image_metadata(r["filename"])
     if meta is not None:
-        r.update({
-            "license_code": meta.license_code,
-            "license_short": meta.license_short,
-            "artist": meta.artist,
-            "attribution_required": meta.attribution_required,
-            "is_legally_usable": meta.is_allowed,
-            "rejection_reason": meta.rejection_reason,
-            "dimensions": f"{meta.width}x{meta.height}",
-        })
+        r.update(
+            {
+                "license_code": meta.license_code,
+                "license_short": meta.license_short,
+                "artist": meta.artist,
+                "attribution_required": meta.attribution_required,
+                "is_legally_usable": meta.is_allowed,
+                "rejection_reason": meta.rejection_reason,
+                "dimensions": f"{meta.width}x{meta.height}",
+            }
+        )
     return _ok(found=True, **r)
 
 
-def _t_assign_image_to_entity(entity_type: str, entity_id: int,
-                              prop: Optional[str] = None,
-                              force: bool = False) -> dict:
+def _t_assign_image_to_entity(
+    entity_type: str, entity_id: int, prop: Optional[str] = None, force: bool = False
+) -> dict:
     """
     Assign an image to a wrestler/event/promotion/etc. through the full
     accuracy + legal gate. Refuses on:
@@ -125,8 +129,12 @@ def _t_assign_image_to_entity(entity_type: str, entity_id: int,
     from ..pipeline.images import assign_image_to_entity
 
     model_map = {
-        "wrestler": dm.Wrestler, "event": dm.Event, "venue": dm.Venue,
-        "promotion": dm.Promotion, "title": dm.Title, "stable": dm.Stable,
+        "wrestler": dm.Wrestler,
+        "event": dm.Event,
+        "venue": dm.Venue,
+        "promotion": dm.Promotion,
+        "title": dm.Title,
+        "stable": dm.Stable,
         "tv_show": dm.TVShow,
     }
     Model = model_map.get(entity_type)
@@ -141,7 +149,10 @@ def _t_assign_image_to_entity(entity_type: str, entity_id: int,
         return _err(f"unknown prop {prop!r}; valid: P18 (image), P154 (logo), P109 (signature)")
 
     result = assign_image_to_entity(
-        ent, entity_type=entity_type, prop=prop, force=force,
+        ent,
+        entity_type=entity_type,
+        prop=prop,
+        force=force,
     )
     return _ok(**result.to_dict())
 
@@ -153,16 +164,17 @@ def _entity_class_for_image_sweep(entity_type: str):
     Celery beat task all agree on the mapping.
     """
     from owdb_django.owdbapp import models as dm
+
     return {
-        "wrestler":   dm.Wrestler,
-        "promotion":  dm.Promotion,
-        "event":      dm.Event,
-        "venue":      dm.Venue,
-        "title":      dm.Title,
-        "stable":     dm.Stable,
-        "tv_show":    dm.TVShow,
+        "wrestler": dm.Wrestler,
+        "promotion": dm.Promotion,
+        "event": dm.Event,
+        "venue": dm.Venue,
+        "title": dm.Title,
+        "stable": dm.Stable,
+        "tv_show": dm.TVShow,
         "video_game": dm.VideoGame,
-        "book":       dm.Book,
+        "book": dm.Book,
     }.get(entity_type)
 
 
@@ -205,16 +217,12 @@ def _t_assign_images_for_entities_without_images(
     # back to `name` as the Wikipedia title. Build the queryset
     # conditionally so we don't FieldError on the no-wiki-url models.
     qs = Model.objects.filter(image_url__isnull=True)
-    has_wiki_url_field = any(
-        f.name == "wikipedia_url" for f in Model._meta.get_fields()
-    )
+    has_wiki_url_field = any(f.name == "wikipedia_url" for f in Model._meta.get_fields())
     if has_wiki_url_field:
         qs = qs.exclude(wikipedia_url__exact="").exclude(
             wikipedia_url__isnull=True,
         )
-    order_field = "name" if any(
-        f.name == "name" for f in Model._meta.get_fields()
-    ) else "id"
+    order_field = "name" if any(f.name == "name" for f in Model._meta.get_fields()) else "id"
     targets = qs.order_by(order_field)[: int(limit)]
 
     results = []
@@ -225,12 +233,15 @@ def _t_assign_images_for_entities_without_images(
             r = assign_image_to_entity(ent, entity_type=entity_type, force=False)
         except Exception as e:
             logger.exception("image sweep crashed on %s#%s", entity_type, ent.id)
-            results.append({
-                "entity_id": ent.id, "name": ent_name,
-                "success": False,
-                "refusal_reason": f"crashed: {type(e).__name__}: {e}",
-                "considered_count": 0,
-            })
+            results.append(
+                {
+                    "entity_id": ent.id,
+                    "name": ent_name,
+                    "success": False,
+                    "refusal_reason": f"crashed: {type(e).__name__}: {e}",
+                    "considered_count": 0,
+                }
+            )
             refused += 1
             continue
 
@@ -248,25 +259,33 @@ def _t_assign_images_for_entities_without_images(
             ent.image_license = ""
             ent.image_credit = ""
             ent.image_fetched_at = None
-            ent.save(update_fields=[
-                "image_url", "image_source_url", "image_original_url",
-                "image_license", "image_credit", "image_fetched_at",
-            ])
+            ent.save(
+                update_fields=[
+                    "image_url",
+                    "image_source_url",
+                    "image_original_url",
+                    "image_license",
+                    "image_credit",
+                    "image_fetched_at",
+                ]
+            )
 
         if r.success:
             assigned += 1
         else:
             refused += 1
-        results.append({
-            "entity_id": ent.id,
-            "name": ent_name,
-            "success": r.success,
-            "source_path": r.source_path,
-            "identity_confidence": r.identity_confidence,
-            "image_license": r.image_license,
-            "refusal_reason": r.refusal_reason,
-            "considered_count": len(r.considered),
-        })
+        results.append(
+            {
+                "entity_id": ent.id,
+                "name": ent_name,
+                "success": r.success,
+                "source_path": r.source_path,
+                "identity_confidence": r.identity_confidence,
+                "image_license": r.image_license,
+                "refusal_reason": r.refusal_reason,
+                "considered_count": len(r.considered),
+            }
+        )
 
     return _ok(
         entity_type=entity_type,
@@ -280,22 +299,26 @@ def _t_assign_images_for_entities_without_images(
 
 # Back-compat shim: the old wrestler-only tool name keeps working.
 def _t_assign_images_for_wrestlers_without_images(
-    limit: int = 10, dry_run: bool = False,
+    limit: int = 10,
+    dry_run: bool = False,
 ) -> dict:
     return _t_assign_images_for_entities_without_images(
-        entity_type="wrestler", limit=limit, dry_run=dry_run,
+        entity_type="wrestler",
+        limit=limit,
+        dry_run=dry_run,
     )
 
 
-def _t_musicbrainz_search(title: str, artist: Optional[str] = None,
-                          limit: int = 10) -> dict:
+def _t_musicbrainz_search(title: str, artist: Optional[str] = None, limit: int = 10) -> dict:
     from ..sources import musicbrainz
+
     hits = musicbrainz.search_recordings(title, artist=artist, limit=limit)
     return _ok(hits=[h.to_dict() for h in hits], count=len(hits))
 
 
 def _t_tmdb_search(query: str, kind: str = "wrestling", limit: int = 10) -> dict:
     from ..sources import tmdb
+
     if not tmdb.available():
         return _err("TMDB API key not configured (TMDB_API_KEY).")
     if kind == "tv":
@@ -306,14 +329,22 @@ def _t_tmdb_search(query: str, kind: str = "wrestling", limit: int = 10) -> dict
         return _ok(tv=[], movies=rows, count=len(rows))
     # default: wrestling-aware combined search
     combined = tmdb.search_wrestling(query, limit=limit)
-    return _ok(tv=combined.get("tv", []), movies=combined.get("movies", []),
-               count=len(combined.get("tv", [])) + len(combined.get("movies", [])))
+    return _ok(
+        tv=combined.get("tv", []),
+        movies=combined.get("movies", []),
+        count=len(combined.get("tv", [])) + len(combined.get("movies", [])),
+    )
 
 
-def _t_discogs_search(query: str, type: str = "release",
-                     artist: Optional[str] = None,
-                     year: Optional[str] = None, limit: int = 10) -> dict:
+def _t_discogs_search(
+    query: str,
+    type: str = "release",
+    artist: Optional[str] = None,
+    year: Optional[str] = None,
+    limit: int = 10,
+) -> dict:
     from ..sources import discogs
+
     if not discogs.available():
         return _err("Discogs token not configured (DISCOGS_TOKEN).")
     hits = discogs.search(query, type=type, artist=artist, year=year, limit=limit)
@@ -326,18 +357,23 @@ def _t_wrestlingdata_search(query: str, limit: int = 10) -> dict:
     challenge — returns empty until a headless-browser fetcher is wired in.
     """
     from ..sources import wrestlingdata
+
     hits = wrestlingdata.search(query, limit=limit)
     return _ok(
         hits=[{"name": h.name, "url": h.url, "type": h.type} for h in hits],
         count=len(hits),
-        note=("Wrestlingdata.com is Cloudflare-protected; returns empty "
-              "without a headless-browser fetcher. Try profightdb_search instead.")
-              if not hits else "",
+        note=(
+            "Wrestlingdata.com is Cloudflare-protected; returns empty "
+            "without a headless-browser fetcher. Try profightdb_search instead."
+        )
+        if not hits
+        else "",
     )
 
 
 def _t_wrestlingdata_profile(url: str) -> dict:
     from ..sources import wrestlingdata
+
     prof = wrestlingdata.fetch_wrestler_profile(url)
     if prof is None:
         return _err("could not fetch (often Cloudflare-blocked)")
@@ -346,6 +382,7 @@ def _t_wrestlingdata_profile(url: str) -> dict:
 
 def _t_profightdb_search(query: str, limit: int = 10) -> dict:
     from ..sources import profightdb
+
     hits = profightdb.search(query, limit=limit)
     return _ok(
         hits=[{"name": h.name, "url": h.url, "promotion": h.promotion} for h in hits],
@@ -355,6 +392,7 @@ def _t_profightdb_search(query: str, limit: int = 10) -> dict:
 
 def _t_profightdb_profile(url: str) -> dict:
     from ..sources import profightdb
+
     prof = profightdb.fetch_wrestler_profile(url)
     if prof is None:
         return _err("could not fetch profile")
@@ -367,7 +405,7 @@ def _t_profightdb_profile(url: str) -> dict:
 # knob for "what counts as a wrestling news source".
 WRESTLING_NEWS_DOMAINS = (
     # English-language wrestling news / coverage
-    "espn.com",                  # general sports + occasional wrestling editorial
+    "espn.com",  # general sports + occasional wrestling editorial
     "wrestlinginc.com",
     "fightful.com",
     "pwmania.com",
@@ -376,8 +414,8 @@ WRESTLING_NEWS_DOMAINS = (
     "411mania.com",
     "prowrestling.net",
     "wrestlingnewsworld.com",
-    "wrestlingobserver.com",     # mostly paywalled but headlines visible
-    "pwinsider.com",             # premium but headlines visible
+    "wrestlingobserver.com",  # mostly paywalled but headlines visible
+    "pwinsider.com",  # premium but headlines visible
     "voicesofwrestling.com",
     "lastwordonprowrestling.com",
     "cagesideseats.com",
@@ -391,10 +429,13 @@ WRESTLING_NEWS_DOMAINS = (
 )
 
 
-def _t_news_search(query: str, max_results: int = 8,
-                  days: int = 14,
-                  domains: Optional[list] = None,
-                  only_wrestling_sources: bool = True) -> dict:
+def _t_news_search(
+    query: str,
+    max_results: int = 8,
+    days: int = 14,
+    domains: Optional[list] = None,
+    only_wrestling_sources: bool = True,
+) -> dict:
     """
     Wrestling-news search via Tavily's news topic.
 
@@ -404,6 +445,7 @@ def _t_news_search(query: str, max_results: int = 8,
     search the open web instead.
     """
     from ..sources import tavily_search
+
     if only_wrestling_sources and not domains:
         domains = list(WRESTLING_NEWS_DOMAINS)
     r = tavily_search.search(
@@ -426,14 +468,18 @@ def _t_news_search(query: str, max_results: int = 8,
     )
 
 
-def _t_tavily_search(query: str, max_results: int = 8,
-                    search_depth: str = "basic",
-                    include_answer: bool = True,
-                    topic: str = "general",
-                    include_domains: Optional[list] = None,
-                    exclude_domains: Optional[list] = None) -> dict:
+def _t_tavily_search(
+    query: str,
+    max_results: int = 8,
+    search_depth: str = "basic",
+    include_answer: bool = True,
+    topic: str = "general",
+    include_domains: Optional[list] = None,
+    exclude_domains: Optional[list] = None,
+) -> dict:
     """Run a Tavily search (LLM-tuned). Returns hits plus an optional answer hint."""
     from ..sources import tavily_search
+
     r = tavily_search.search(
         query=query,
         max_results=max_results,
@@ -457,6 +503,7 @@ def _t_tavily_search(query: str, max_results: int = 8,
 def _t_wiki_fetch(name: str, entity_type: str = "wrestler", force: bool = False) -> dict:
     """Fetch a Wikipedia page through the standard pipeline."""
     from ..pipeline import fetch as fetch_mod
+
     method = {
         "wrestler": fetch_mod.fetch_wrestler_candidates,
         "event": fetch_mod.fetch_event_candidates,
@@ -477,14 +524,16 @@ def _t_wiki_fetch(name: str, entity_type: str = "wrestler", force: bool = False)
     results = method([name], force=force) or []
     summary = []
     for r in results:
-        summary.append({
-            "candidate_name": getattr(r, "candidate_name", None),
-            "fetch_id": getattr(r, "id", None),
-            "http_status": getattr(r, "http_status", None),
-            "url": getattr(r, "url", None),
-            "entity_type": getattr(r, "entity_type", None),
-            "used_at": str(getattr(r, "used_at", "") or "") or None,
-        })
+        summary.append(
+            {
+                "candidate_name": getattr(r, "candidate_name", None),
+                "fetch_id": getattr(r, "id", None),
+                "http_status": getattr(r, "http_status", None),
+                "url": getattr(r, "url", None),
+                "entity_type": getattr(r, "entity_type", None),
+                "used_at": str(getattr(r, "used_at", "") or "") or None,
+            }
+        )
     return _ok(fetched=summary, count=len(summary))
 
 
@@ -492,6 +541,7 @@ def _t_extract_and_persist(fetch_id: int) -> dict:
     """Run extract+persist on a single SourceFetch row."""
     from ..models import SourceFetch
     from ..bots.jr import JR
+
     try:
         fetch = SourceFetch.objects.get(id=fetch_id)
     except SourceFetch.DoesNotExist:
@@ -513,24 +563,29 @@ def _t_extract_and_persist(fetch_id: int) -> dict:
     )
 
 
-def _t_list_recent_fetches(limit: int = 20, entity_type: Optional[str] = None,
-                          only_unprocessed: bool = False) -> dict:
+def _t_list_recent_fetches(
+    limit: int = 20, entity_type: Optional[str] = None, only_unprocessed: bool = False
+) -> dict:
     from ..models import SourceFetch
+
     qs = SourceFetch.objects.order_by("-fetched_at")
     if entity_type:
         qs = qs.filter(entity_type=entity_type)
     if only_unprocessed:
         qs = qs.filter(used_at__isnull=True, http_status=200)
-    qs = qs[:max(1, min(limit, 100))]
-    rows = [{
-        "id": f.id,
-        "candidate_name": f.candidate_name,
-        "entity_type": f.entity_type,
-        "http_status": f.http_status,
-        "fetched_at": str(f.fetched_at),
-        "used_at": str(f.used_at) if f.used_at else None,
-        "url": f.url,
-    } for f in qs]
+    qs = qs[: max(1, min(limit, 100))]
+    rows = [
+        {
+            "id": f.id,
+            "candidate_name": f.candidate_name,
+            "entity_type": f.entity_type,
+            "http_status": f.http_status,
+            "fetched_at": str(f.fetched_at),
+            "used_at": str(f.used_at) if f.used_at else None,
+            "url": f.url,
+        }
+        for f in qs
+    ]
     return _ok(rows=rows, count=len(rows))
 
 
@@ -573,19 +628,22 @@ def _t_get_entity_summary(entity_type: str, entity_id: int) -> dict:
 
     # Provenance rows for this entity.
     prov_qs = FieldProvenance.objects.filter(
-        entity_type=entity_type, entity_id=entity_id,
+        entity_type=entity_type,
+        entity_id=entity_id,
     ).select_related("source_fetch")[:50]
-    provenance = [{
-        "field": p.field_name,
-        "value": _truncate(p.value, 300),
-        "source": p.source_fetch.source if p.source_fetch else None,
-        "source_url": p.source_fetch.url if p.source_fetch else None,
-        "snippet": _truncate(p.snippet, 300),
-        "confidence": p.confidence,
-    } for p in prov_qs]
+    provenance = [
+        {
+            "field": p.field_name,
+            "value": _truncate(p.value, 300),
+            "source": p.source_fetch.source if p.source_fetch else None,
+            "source_url": p.source_fetch.url if p.source_fetch else None,
+            "snippet": _truncate(p.snippet, 300),
+            "confidence": p.confidence,
+        }
+        for p in prov_qs
+    ]
 
-    return _ok(entity_type=entity_type, entity_id=entity_id,
-               fields=fields, provenance=provenance)
+    return _ok(entity_type=entity_type, entity_id=entity_id, fields=fields, provenance=provenance)
 
 
 def _t_note_finding(note: str, tag: str = "") -> dict:
@@ -601,6 +659,7 @@ def _t_note_finding(note: str, tag: str = "") -> dict:
 
 def _t_discover_missing_trainers() -> dict:
     from ..pipeline.linking import link_trainers_sweep
+
     result = link_trainers_sweep()
     return _ok(
         missing_trainer_names=result.get("missing_names", []),
@@ -610,24 +669,28 @@ def _t_discover_missing_trainers() -> dict:
 
 def _t_discover_notable_wrestlers(limit: int = 20) -> dict:
     from ..pipeline.discovery import discover_wrestlers
+
     names = discover_wrestlers(per_category_limit=3, total_limit=max(1, min(limit, 50)))
     return _ok(candidates=names, count=len(names))
 
 
 def _t_discover_notable_events(limit: int = 20) -> dict:
     from ..pipeline.discovery import discover_events
+
     names = discover_events(per_category_limit=3, total_limit=max(1, min(limit, 50)))
     return _ok(candidates=names, count=len(names))
 
 
 def _t_discover_notable_promotions(limit: int = 30) -> dict:
     from ..pipeline.discovery import discover_promotions
+
     names = discover_promotions(per_category_limit=3, total_limit=max(1, min(limit, 100)))
     return _ok(candidates=names, count=len(names))
 
 
 def _t_discover_notable_podcasts(limit: int = 30) -> dict:
     from ..pipeline.discovery import discover_podcasts
+
     names = discover_podcasts(per_category_limit=5, total_limit=max(1, min(limit, 100)))
     return _ok(candidates=names, count=len(names))
 
@@ -635,29 +698,34 @@ def _t_discover_notable_podcasts(limit: int = 30) -> dict:
 def _t_ingest_ppv_list(promotion_key: str) -> dict:
     """Bulk-ingest all PPVs for a promotion from its Wikipedia list page."""
     from ..pipeline.event_lists import ingest_ppv_list
+
     return _ok(**ingest_ppv_list(promotion_key))
 
 
 def _t_ingest_episode_list(show_key: str) -> dict:
     """Bulk-ingest TV episodes for a show from its Wikipedia list page."""
     from ..pipeline.event_lists import ingest_episode_list
+
     return _ok(**ingest_episode_list(show_key))
 
 
 def _t_discover_notable_venues(limit: int = 20) -> dict:
     from ..pipeline.discovery import discover_venues
+
     names = discover_venues(per_category_limit=3, total_limit=max(1, min(limit, 50)))
     return _ok(candidates=names, count=len(names))
 
 
 def _t_discover_top_mentions(limit: int = 30) -> dict:
     from ..pipeline.auto_discovery import top_unresolved_mentions
+
     rows = top_unresolved_mentions(limit=max(1, min(limit, 200)))
     return _ok(mentions=[{"name": n, "count": c} for n, c in rows], count=len(rows))
 
 
 def _t_auto_discover_mentions(limit: int = 5) -> dict:
     from ..pipeline.auto_discovery import auto_discover_step
+
     stats = auto_discover_step(limit=max(1, min(limit, 20)))
     return _ok(
         fetched=stats.fetched,
@@ -671,6 +739,7 @@ def _t_generate_bio(wrestler_id: int) -> dict:
     from owdb_django.owdbapp.models import Wrestler
     from ..claude_client import ClaudeClient
     from ..pipeline.bio import generate_and_verify_with_retry
+
     try:
         w = Wrestler.objects.get(id=wrestler_id)
     except Wrestler.DoesNotExist:
@@ -696,20 +765,32 @@ def _t_generate_bio(wrestler_id: int) -> dict:
 
 def _t_crossvalidate_wikidata(limit: int = 5) -> dict:
     from ..bots.jr import JR
+
     n = JR()._stage_crossvalidate(max(1, min(limit, 20)))
     return _ok(crossvalidated=n)
 
 
-def _t_run_jr_cycle(discovery: int = 5, fetch: int = 5, extract: int = 20,
-                   crossvalidate: int = 5, bio: int = 5, auto_discover: int = 5) -> dict:
+def _t_run_jr_cycle(
+    discovery: int = 5,
+    fetch: int = 5,
+    extract: int = 20,
+    crossvalidate: int = 5,
+    bio: int = 5,
+    auto_discover: int = 5,
+) -> dict:
     """Run one full legacy JR cycle (escape hatch / catch-up)."""
     from ..bots.jr import JR
+
     stats = JR().cycle(
-        discovery_limit=discovery, fetch_limit=fetch, extract_limit=extract,
-        crossvalidate_limit=crossvalidate, bio_limit=bio,
+        discovery_limit=discovery,
+        fetch_limit=fetch,
+        extract_limit=extract,
+        crossvalidate_limit=crossvalidate,
+        bio_limit=bio,
         auto_discover_limit=auto_discover,
     )
     from dataclasses import asdict
+
     return _ok(stats=asdict(stats))
 
 
@@ -720,33 +801,40 @@ def _t_run_jr_cycle(discovery: int = 5, fetch: int = 5, extract: int = 20,
 
 def _t_audit_all() -> dict:
     from ..bots.earl import Earl
+
     n = Earl().audit_all()
     return _ok(new_observations=n)
 
 
 def _t_apply_safe_fixes() -> dict:
     from ..bots.earl import Earl
+
     n = Earl().apply_safe_fixes()
     return _ok(auto_fixes_applied=n)
 
 
 def _t_score_rules() -> dict:
     from ..bots.earl import Earl
+
     n = Earl().score_rules()
     return _ok(rules_evaluated=n)
 
 
 def _t_detect_patterns() -> dict:
     from ..bots.earl import Earl
+
     new = Earl().detect_patterns()
     return _ok(new_suggestions=new, count=len(new))
 
 
-def _t_list_observations(rule_id: Optional[str] = None,
-                        severity: Optional[str] = None,
-                        status: str = "open",
-                        limit: int = 20) -> dict:
+def _t_list_observations(
+    rule_id: Optional[str] = None,
+    severity: Optional[str] = None,
+    status: str = "open",
+    limit: int = 20,
+) -> dict:
     from ..models import EarlObservation
+
     qs = EarlObservation.objects.all()
     if status:
         qs = qs.filter(status=status)
@@ -754,52 +842,67 @@ def _t_list_observations(rule_id: Optional[str] = None,
         qs = qs.filter(rule_id=rule_id)
     if severity:
         qs = qs.filter(severity=severity)
-    qs = qs.order_by("-severity", "-times_seen")[:max(1, min(limit, 100))]
-    rows = [{
-        "id": o.id,
-        "rule_id": o.rule_id,
-        "severity": o.severity,
-        "entity_type": o.entity_type,
-        "entity_id": o.entity_id,
-        "entity_name": o.entity_name,
-        "field": o.field_name,
-        "value": _truncate(o.stored_value, 200),
-        "issue": _truncate(o.issue_description, 300),
-        "times_seen": o.times_seen,
-        "status": o.status,
-    } for o in qs]
+    qs = qs.order_by("-severity", "-times_seen")[: max(1, min(limit, 100))]
+    rows = [
+        {
+            "id": o.id,
+            "rule_id": o.rule_id,
+            "severity": o.severity,
+            "entity_type": o.entity_type,
+            "entity_id": o.entity_id,
+            "entity_name": o.entity_name,
+            "field": o.field_name,
+            "value": _truncate(o.stored_value, 200),
+            "issue": _truncate(o.issue_description, 300),
+            "times_seen": o.times_seen,
+            "status": o.status,
+        }
+        for o in qs
+    ]
     return _ok(rows=rows, count=len(rows))
 
 
 def _t_list_suggestions(status: str = "pending", limit: int = 20) -> dict:
     from ..models import RuleSuggestion
+
     qs = RuleSuggestion.objects.filter(status=status).order_by("-proposed_at")
-    qs = qs[:max(1, min(limit, 50))]
-    rows = [{
-        "id": s.id,
-        "target_rule_id": s.target_rule_id,
-        "kind": s.kind,
-        "description": _truncate(s.description, 300),
-        "rationale": _truncate(s.rationale, 500),
-        "status": s.status,
-    } for s in qs]
+    qs = qs[: max(1, min(limit, 50))]
+    rows = [
+        {
+            "id": s.id,
+            "target_rule_id": s.target_rule_id,
+            "kind": s.kind,
+            "description": _truncate(s.description, 300),
+            "rationale": _truncate(s.rationale, 500),
+            "status": s.status,
+        }
+        for s in qs
+    ]
     return _ok(rows=rows, count=len(rows))
 
 
 def _t_list_rule_scores(limit: int = 50) -> dict:
     from ..models import RuleScore
-    qs = RuleScore.objects.order_by("-times_fired")[:max(1, min(limit, 200))]
-    rows = [{
-        "rule_id": r.rule_id, "kind": r.kind, "enabled": r.enabled,
-        "times_fired": r.times_fired, "precision": float(r.precision),
-        "last_evaluated": str(r.last_evaluated) if r.last_evaluated else None,
-    } for r in qs]
+
+    qs = RuleScore.objects.order_by("-times_fired")[: max(1, min(limit, 200))]
+    rows = [
+        {
+            "rule_id": r.rule_id,
+            "kind": r.kind,
+            "enabled": r.enabled,
+            "times_fired": r.times_fired,
+            "precision": float(r.precision),
+            "last_evaluated": str(r.last_evaluated) if r.last_evaluated else None,
+        }
+        for r in qs
+    ]
     return _ok(rows=rows, count=len(rows))
 
 
 def _t_update_observation(observation_id: int, status: str, notes: str = "") -> dict:
     """Mark an observation fixed/dismissed/false_positive."""
     from ..models import EarlObservation
+
     if status not in {"open", "fixed", "dismissed", "false_positive"}:
         return _err(f"invalid status={status!r}")
     try:
@@ -808,25 +911,31 @@ def _t_update_observation(observation_id: int, status: str, notes: str = "") -> 
         return _err(f"EarlObservation#{observation_id} not found")
     obs.status = status
     if notes:
-        obs.auto_fix_notes = (obs.auto_fix_notes + "\n" + notes).strip() if obs.auto_fix_notes else notes
+        obs.auto_fix_notes = (
+            (obs.auto_fix_notes + "\n" + notes).strip() if obs.auto_fix_notes else notes
+        )
     obs.save(update_fields=["status", "auto_fix_notes"])
     return _ok(updated=True, observation_id=observation_id, new_status=status)
 
 
 def _t_inspect_provenance(entity_type: str, entity_id: int, field_name: str = "") -> dict:
     from ..models import FieldProvenance
+
     qs = FieldProvenance.objects.filter(entity_type=entity_type, entity_id=entity_id)
     if field_name:
         qs = qs.filter(field_name=field_name)
-    rows = [{
-        "field": p.field_name,
-        "value": _truncate(p.value, 400),
-        "source": p.source_fetch.source if p.source_fetch else None,
-        "source_url": p.source_fetch.url if p.source_fetch else None,
-        "snippet": _truncate(p.snippet, 400),
-        "confidence": p.confidence,
-        "captured_at": str(p.captured_at) if p.captured_at else None,
-    } for p in qs[:50]]
+    rows = [
+        {
+            "field": p.field_name,
+            "value": _truncate(p.value, 400),
+            "source": p.source_fetch.source if p.source_fetch else None,
+            "source_url": p.source_fetch.url if p.source_fetch else None,
+            "snippet": _truncate(p.snippet, 400),
+            "confidence": p.confidence,
+            "captured_at": str(p.captured_at) if p.captured_at else None,
+        }
+        for p in qs[:50]
+    ]
     return _ok(rows=rows, count=len(rows))
 
 
@@ -834,21 +943,21 @@ def _t_extract_matches_for_event(event_id: int) -> dict:
     """Extract Match rows from a stored Wikipedia event fetch."""
     from owdb_django.owdbapp.models import Event
     from ..pipeline.match_extract import persist_matches_for_event
+
     try:
         ev = Event.objects.get(id=event_id)
     except Event.DoesNotExist:
         return _err(f"Event#{event_id} not found")
-    return _ok(event_id=event_id, event_name=ev.name,
-               **persist_matches_for_event(ev))
+    return _ok(event_id=event_id, event_name=ev.name, **persist_matches_for_event(ev))
 
 
 def _t_ingest_pwi(list_kind: str = "pwi_500", year: int = 2024) -> dict:
     """Ingest one PWI ranking list (year + kind) from ProFightDB."""
     from ..pipeline.pwi import ingest_pwi_list, PFDB_PWI_URLS
+
     if list_kind not in PFDB_PWI_URLS:
         return _err(f"unknown list_kind={list_kind!r}; valid: {sorted(PFDB_PWI_URLS)}")
-    return _ok(list_kind=list_kind, year=year,
-               **ingest_pwi_list(list_kind, year))
+    return _ok(list_kind=list_kind, year=year, **ingest_pwi_list(list_kind, year))
 
 
 def _t_done(summary: str = "") -> dict:
@@ -864,8 +973,7 @@ def _t_done(summary: str = "") -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _t_list_unresolved_mentions(source_entity_type: Optional[str] = None,
-                                limit: int = 30) -> dict:
+def _t_list_unresolved_mentions(source_entity_type: Optional[str] = None, limit: int = 30) -> dict:
     """
     Top unresolved mention targets. Optionally filter by where the mention
     was found (e.g., source_entity_type='venue' to focus on mentions inside
@@ -882,14 +990,16 @@ def _t_list_unresolved_mentions(source_entity_type: Optional[str] = None,
 
     fetched_names = set(
         SourceFetch.objects.filter(source="wikipedia")
-        .values_list("candidate_name", flat=True).distinct()
+        .values_list("candidate_name", flat=True)
+        .distinct()
     )
     existing = _existing_entity_wiki_titles()
 
     counts: Counter = Counter()
     sample_sources: dict[str, list[dict]] = {}
-    for m in qs.values("wiki_link", "mention_text",
-                        "source_entity_type", "source_entity_id")[:5000]:
+    for m in qs.values("wiki_link", "mention_text", "source_entity_type", "source_entity_id")[
+        :5000
+    ]:
         link = m["wiki_link"]
         if not link or is_generic_wiki_title(link):
             continue
@@ -899,25 +1009,30 @@ def _t_list_unresolved_mentions(source_entity_type: Optional[str] = None,
         if link not in sample_sources:
             sample_sources[link] = []
         if len(sample_sources[link]) < 3:
-            sample_sources[link].append({
-                "source_type": m["source_entity_type"],
-                "source_id": m["source_entity_id"],
-                "as_text": m["mention_text"],
-            })
+            sample_sources[link].append(
+                {
+                    "source_type": m["source_entity_type"],
+                    "source_id": m["source_entity_id"],
+                    "as_text": m["mention_text"],
+                }
+            )
 
     rows = []
     for link, n in counts.most_common(max(1, min(limit, 200))):
-        rows.append({
-            "wiki_link": link,
-            "count": n,
-            "sampled_from": sample_sources.get(link, []),
-        })
+        rows.append(
+            {
+                "wiki_link": link,
+                "count": n,
+                "sampled_from": sample_sources.get(link, []),
+            }
+        )
     return _ok(rows=rows, count=len(rows))
 
 
 def _t_resolve_all_mentions() -> dict:
     """Re-run the mention-resolver across all entity types."""
     from ..pipeline.linking import resolve_all_mentions
+
     result = resolve_all_mentions()
     return _ok(linked=result)
 
@@ -925,6 +1040,7 @@ def _t_resolve_all_mentions() -> dict:
 def _t_link_trainers_sweep() -> dict:
     """Close the trained-by graph: link wrestlers to trainer entities."""
     from ..pipeline.linking import link_trainers_sweep
+
     result = link_trainers_sweep()
     return _ok(
         linked=result.get("linked", 0),
@@ -938,6 +1054,7 @@ def _t_link_wrestler_promotions(wrestler_id: int) -> dict:
     Wikipedia link hits before creating a link."""
     from owdb_django.owdbapp.models import Wrestler
     from ..pipeline.wrestler_linking import link_wrestler_promotions
+
     try:
         w = Wrestler.objects.get(id=wrestler_id)
     except Wrestler.DoesNotExist:
@@ -949,28 +1066,33 @@ def _t_link_wrestler_promotions(wrestler_id: int) -> dict:
 def _t_link_all_unlinked_wrestlers(limit: int = 20) -> dict:
     """Bulk version: process all wrestlers with <2 promotion links."""
     from ..pipeline.wrestler_linking import link_all_unlinked_wrestlers
+
     return _ok(**link_all_unlinked_wrestlers(limit=max(1, min(limit, 100))))
 
 
-def _t_wrestlers_due_for_review(days_since_review: int = 14,
-                                limit: int = 20) -> dict:
+def _t_wrestlers_due_for_review(days_since_review: int = 14, limit: int = 20) -> dict:
     """Living-database rotation: surface wrestlers whose data hasn't been
     refreshed in N days. Incomplete entries (no bio / no image / no
     promotion links) come first."""
     from ..pipeline.wrestler_linking import wrestlers_due_for_review
+
     rows = wrestlers_due_for_review(
         days_since_review=max(1, days_since_review),
         limit=max(1, min(limit, 200)),
     )
     return _ok(
         count=len(rows),
-        wrestlers=[{
-            "id": w.id, "name": w.name,
-            "updated_at": str(w.updated_at),
-            "has_bio": bool(w.about),
-            "has_image": bool(w.image_url),
-            "promotion_count": w.promotion_history.count(),
-        } for w in rows],
+        wrestlers=[
+            {
+                "id": w.id,
+                "name": w.name,
+                "updated_at": str(w.updated_at),
+                "has_bio": bool(w.about),
+                "has_image": bool(w.image_url),
+                "promotion_count": w.promotion_history.count(),
+            }
+            for w in rows
+        ],
     )
 
 
@@ -980,74 +1102,95 @@ def _t_find_incomplete_wrestlers(limit: int = 20) -> dict:
     completion over new ingest."""
     from django.db.models import Count
     from owdb_django.owdbapp.models import Wrestler
-    qs = (Wrestler.objects
-          .annotate(n_matches=Count("matches", distinct=True),
-                    n_promos=Count("promotion_history", distinct=True))
-          .order_by("id"))
+
+    qs = Wrestler.objects.annotate(
+        n_matches=Count("matches", distinct=True),
+        n_promos=Count("promotion_history", distinct=True),
+    ).order_by("id")
     scored = []
     for w in qs.iterator():
         score = 0
         missing: list[str] = []
         if not w.about:
-            score += 4; missing.append("about")
+            score += 4
+            missing.append("about")
         if not w.image_url:
-            score += 3; missing.append("image")
+            score += 3
+            missing.append("image")
         if w.n_promos == 0:
-            score += 2; missing.append("promotion_history")
+            score += 2
+            missing.append("promotion_history")
         elif w.n_promos < 2:
-            score += 1; missing.append("promotion_history<2")
+            score += 1
+            missing.append("promotion_history<2")
         if w.n_matches == 0:
-            score += 2; missing.append("matches")
+            score += 2
+            missing.append("matches")
         if not getattr(w, "birth_date", None):
-            score += 1; missing.append("birth_date")
+            score += 1
+            missing.append("birth_date")
         if score >= 2:
             scored.append((score, w, missing))
     scored.sort(key=lambda t: -t[0])
-    rows = [{
-        "id": w.id, "name": w.name, "incompleteness_score": s,
-        "missing": miss,
-    } for s, w, miss in scored[:max(1, min(limit, 100))]]
+    rows = [
+        {
+            "id": w.id,
+            "name": w.name,
+            "incompleteness_score": s,
+            "missing": miss,
+        }
+        for s, w, miss in scored[: max(1, min(limit, 100))]
+    ]
     return _ok(count=len(rows), wrestlers=rows)
 
 
-def _t_ingest_title_history(title_slug: Optional[str] = None,
-                           max_unknown_to_queue: int = 15) -> dict:
+def _t_ingest_title_history(
+    title_slug: Optional[str] = None, max_unknown_to_queue: int = 15
+) -> dict:
     """Discover wrestlers from a Wikipedia 'List of X Champions' article.
     Queues unknown champions for ingest via the standard fetch path."""
     from ..pipeline.title_history import (
-        ingest_title_history_discovery, TITLE_HISTORY_PAGES,
+        ingest_title_history_discovery,
+        TITLE_HISTORY_PAGES,
     )
+
     if title_slug and title_slug not in TITLE_HISTORY_PAGES:
-        return _err(
-            f"Unknown title_slug={title_slug!r}; valid: {sorted(TITLE_HISTORY_PAGES)}"
+        return _err(f"Unknown title_slug={title_slug!r}; valid: {sorted(TITLE_HISTORY_PAGES)}")
+    return _ok(
+        **ingest_title_history_discovery(
+            title_slug=title_slug,
+            max_unknown_to_queue=max(1, min(max_unknown_to_queue, 50)),
         )
-    return _ok(**ingest_title_history_discovery(
-        title_slug=title_slug,
-        max_unknown_to_queue=max(1, min(max_unknown_to_queue, 50)),
-    ))
+    )
 
 
-def _t_mentions_for_entity(entity_type: str, entity_id: int,
-                          only_unresolved: bool = False, limit: int = 50) -> dict:
+def _t_mentions_for_entity(
+    entity_type: str, entity_id: int, only_unresolved: bool = False, limit: int = 50
+) -> dict:
     """
     Show what an entity's source content references. Useful for finding
     'unpolished gems' — names this entity mentions that aren't yet in the DB.
     """
     from ..models import EntityMention
+
     qs = EntityMention.objects.filter(
-        source_entity_type=entity_type, source_entity_id=entity_id,
+        source_entity_type=entity_type,
+        source_entity_id=entity_id,
     )
     if only_unresolved:
         qs = qs.filter(resolved_entity_id__isnull=True)
-    qs = qs.order_by("-extracted_at")[:max(1, min(limit, 200))]
-    rows = [{
-        "id": m.id,
-        "mention_text": m.mention_text,
-        "wiki_link": m.wiki_link,
-        "resolved": bool(m.resolved_entity_id),
-        "resolved_entity_type": m.resolved_entity_type,
-        "resolved_entity_id": m.resolved_entity_id,
-    } for m in qs]
+    qs = qs.order_by("-extracted_at")[: max(1, min(limit, 200))]
+    rows = [
+        {
+            "id": m.id,
+            "mention_text": m.mention_text,
+            "wiki_link": m.wiki_link,
+            "resolved": bool(m.resolved_entity_id),
+            "resolved_entity_type": m.resolved_entity_type,
+            "resolved_entity_id": m.resolved_entity_id,
+        }
+        for m in qs
+    ]
     return _ok(rows=rows, count=len(rows))
 
 
@@ -1058,10 +1201,14 @@ def _t_rescan_entity_for_mentions(entity_type: str, entity_id: int) -> dict:
     """
     from ..models import SourceFetch
     from ..pipeline.mentions import persist_mentions_for_entity
-    fetch = (SourceFetch.objects
-             .filter(entity_type=entity_type, entity_id=entity_id,
-                     source="wikipedia", http_status=200)
-             .order_by("-fetched_at").first())
+
+    fetch = (
+        SourceFetch.objects.filter(
+            entity_type=entity_type, entity_id=entity_id, source="wikipedia", http_status=200
+        )
+        .order_by("-fetched_at")
+        .first()
+    )
     if fetch is None:
         return _err(f"no wikipedia SourceFetch found for {entity_type}#{entity_id}")
     # persist_mentions_for_entity's real signature is
@@ -1076,24 +1223,33 @@ def _t_rescan_entity_for_mentions(entity_type: str, entity_id: int) -> dict:
     return _ok(mentions_persisted=n, fetch_id=fetch.id)
 
 
-def _t_list_entities_with_unresolved_mentions(entity_type: str = "wrestler",
-                                              min_count: int = 3,
-                                              limit: int = 20) -> dict:
+def _t_list_entities_with_unresolved_mentions(
+    entity_type: str = "wrestler", min_count: int = 3, limit: int = 20
+) -> dict:
     """
     Find entities whose own prose references many unresolved targets. These
     are the highest-value sources of 'unpolished gems' for Al to focus on.
     """
     from django.db.models import Count
     from ..models import EntityMention
-    qs = (EntityMention.objects
-          .filter(resolved_entity_id__isnull=True,
-                  source_entity_type=entity_type)
-          .values("source_entity_id")
-          .annotate(n=Count("id"))
-          .filter(n__gte=min_count)
-          .order_by("-n"))[:max(1, min(limit, 100))]
-    rows = [{"entity_type": entity_type, "entity_id": r["source_entity_id"],
-              "unresolved_mention_count": r["n"]} for r in qs]
+
+    qs = (
+        EntityMention.objects.filter(
+            resolved_entity_id__isnull=True, source_entity_type=entity_type
+        )
+        .values("source_entity_id")
+        .annotate(n=Count("id"))
+        .filter(n__gte=min_count)
+        .order_by("-n")
+    )[: max(1, min(limit, 100))]
+    rows = [
+        {
+            "entity_type": entity_type,
+            "entity_id": r["source_entity_id"],
+            "unresolved_mention_count": r["n"],
+        }
+        for r in qs
+    ]
     return _ok(rows=rows, count=len(rows))
 
 
@@ -1144,14 +1300,28 @@ SHARED_TOOLS: dict[str, AgentTool] = {
         input_schema={
             "type": "object",
             "properties": {
-                "query": {"type": "string", "description": "News query, e.g. 'WrestleMania 41 results'."},
+                "query": {
+                    "type": "string",
+                    "description": "News query, e.g. 'WrestleMania 41 results'.",
+                },
                 "max_results": {"type": "integer", "minimum": 1, "maximum": 20, "default": 8},
-                "days": {"type": "integer", "minimum": 1, "maximum": 90, "default": 14,
-                          "description": "How many days back to consider (advisory; Tavily news mode is recency-biased)."},
-                "domains": {"type": "array", "items": {"type": "string"},
-                             "description": "Override the curated wrestling-domain filter."},
-                "only_wrestling_sources": {"type": "boolean", "default": True,
-                                            "description": "If true, restrict to wrestling-coverage domains."},
+                "days": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 90,
+                    "default": 14,
+                    "description": "How many days back to consider (advisory; Tavily news mode is recency-biased).",
+                },
+                "domains": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Override the curated wrestling-domain filter.",
+                },
+                "only_wrestling_sources": {
+                    "type": "boolean",
+                    "default": True,
+                    "description": "If true, restrict to wrestling-coverage domains.",
+                },
             },
             "required": ["query"],
         },
@@ -1174,19 +1344,25 @@ SHARED_TOOLS: dict[str, AgentTool] = {
                 "query": {"type": "string", "description": "Search query."},
                 "max_results": {"type": "integer", "minimum": 1, "maximum": 20, "default": 8},
                 "search_depth": {
-                    "type": "string", "enum": ["basic", "advanced"], "default": "basic",
+                    "type": "string",
+                    "enum": ["basic", "advanced"],
+                    "default": "basic",
                     "description": "'advanced' costs more but searches harder.",
                 },
                 "topic": {
-                    "type": "string", "enum": ["general", "news"], "default": "general",
+                    "type": "string",
+                    "enum": ["general", "news"],
+                    "default": "general",
                 },
                 "include_answer": {"type": "boolean", "default": True},
                 "include_domains": {
-                    "type": "array", "items": {"type": "string"},
+                    "type": "array",
+                    "items": {"type": "string"},
                     "description": "Restrict results to these domains.",
                 },
                 "exclude_domains": {
-                    "type": "array", "items": {"type": "string"},
+                    "type": "array",
+                    "items": {"type": "string"},
                     "description": "Drop results from these domains.",
                 },
             },
@@ -1206,16 +1382,34 @@ SHARED_TOOLS: dict[str, AgentTool] = {
         input_schema={
             "type": "object",
             "properties": {
-                "name": {"type": "string", "description": "Wikipedia page title or candidate name."},
+                "name": {
+                    "type": "string",
+                    "description": "Wikipedia page title or candidate name.",
+                },
                 "entity_type": {
                     "type": "string",
-                    "enum": ["wrestler", "event", "venue", "promotion", "book",
-                              "video_game", "podcast", "action_figure", "theme_song",
-                              "title", "stable", "tv_show", "special"],
+                    "enum": [
+                        "wrestler",
+                        "event",
+                        "venue",
+                        "promotion",
+                        "book",
+                        "video_game",
+                        "podcast",
+                        "action_figure",
+                        "theme_song",
+                        "title",
+                        "stable",
+                        "tv_show",
+                        "special",
+                    ],
                     "default": "wrestler",
                 },
-                "force": {"type": "boolean", "default": False,
-                          "description": "Re-fetch even if a cached row exists."},
+                "force": {
+                    "type": "boolean",
+                    "default": False,
+                    "description": "Re-fetch even if a cached row exists.",
+                },
             },
             "required": ["name"],
         },
@@ -1260,9 +1454,22 @@ SHARED_TOOLS: dict[str, AgentTool] = {
             "properties": {
                 "entity_type": {
                     "type": "string",
-                    "enum": ["wrestler", "event", "venue", "promotion", "book",
-                              "video_game", "podcast", "action_figure", "theme_song",
-                              "title", "stable", "tv_show", "special", "training_school"],
+                    "enum": [
+                        "wrestler",
+                        "event",
+                        "venue",
+                        "promotion",
+                        "book",
+                        "video_game",
+                        "podcast",
+                        "action_figure",
+                        "theme_song",
+                        "title",
+                        "stable",
+                        "tv_show",
+                        "special",
+                        "training_school",
+                    ],
                 },
                 "entity_id": {"type": "integer"},
             },
@@ -1312,10 +1519,11 @@ SHARED_TOOLS: dict[str, AgentTool] = {
         input_schema={
             "type": "object",
             "properties": {
-                "list_kind": {"type": "string",
-                              "enum": ["pwi_500", "pwi_female_50",
-                                       "pwi_female_100", "pwi_female_150"],
-                              "default": "pwi_500"},
+                "list_kind": {
+                    "type": "string",
+                    "enum": ["pwi_500", "pwi_female_50", "pwi_female_100", "pwi_female_150"],
+                    "default": "pwi_500",
+                },
                 "year": {"type": "integer", "minimum": 1991, "maximum": 2099},
             },
             "required": ["year"],
@@ -1331,7 +1539,10 @@ SHARED_TOOLS: dict[str, AgentTool] = {
         input_schema={
             "type": "object",
             "properties": {
-                "summary": {"type": "string", "description": "Short summary of what was accomplished."},
+                "summary": {
+                    "type": "string",
+                    "description": "Short summary of what was accomplished.",
+                },
             },
         },
         handler=_t_done,
@@ -1351,7 +1562,9 @@ SHARED_TOOLS: dict[str, AgentTool] = {
             "properties": {
                 "name": {"type": "string", "description": "Wikipedia page title."},
                 "prop": {
-                    "type": "string", "enum": ["P18", "P154", "P109"], "default": "P18",
+                    "type": "string",
+                    "enum": ["P18", "P154", "P109"],
+                    "default": "P18",
                     "description": "P18=image (default), P154=logo, P109=signature.",
                 },
             },
@@ -1379,16 +1592,27 @@ SHARED_TOOLS: dict[str, AgentTool] = {
             "properties": {
                 "entity_type": {
                     "type": "string",
-                    "enum": ["wrestler", "event", "venue", "promotion",
-                              "title", "stable", "tv_show"],
+                    "enum": [
+                        "wrestler",
+                        "event",
+                        "venue",
+                        "promotion",
+                        "title",
+                        "stable",
+                        "tv_show",
+                    ],
                 },
                 "entity_id": {"type": "integer"},
                 "prop": {
-                    "type": "string", "enum": ["P18", "P154", "P109"],
+                    "type": "string",
+                    "enum": ["P18", "P154", "P109"],
                     "description": "Wikidata property; defaults per entity_type.",
                 },
-                "force": {"type": "boolean", "default": False,
-                          "description": "Replace existing image if entity already has one."},
+                "force": {
+                    "type": "boolean",
+                    "default": False,
+                    "description": "Replace existing image if entity already has one.",
+                },
             },
             "required": ["entity_type", "entity_id"],
         },
@@ -1437,9 +1661,17 @@ SHARED_TOOLS: dict[str, AgentTool] = {
             "properties": {
                 "entity_type": {
                     "type": "string",
-                    "enum": ["wrestler", "promotion", "event", "venue",
-                              "title", "stable", "tv_show",
-                              "video_game", "book"],
+                    "enum": [
+                        "wrestler",
+                        "promotion",
+                        "event",
+                        "venue",
+                        "title",
+                        "stable",
+                        "tv_show",
+                        "video_game",
+                        "book",
+                    ],
                     "default": "wrestler",
                 },
                 "limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 10},
@@ -1480,7 +1712,11 @@ SHARED_TOOLS: dict[str, AgentTool] = {
             "type": "object",
             "properties": {
                 "query": {"type": "string"},
-                "kind": {"type": "string", "enum": ["tv", "movie", "wrestling"], "default": "wrestling"},
+                "kind": {
+                    "type": "string",
+                    "enum": ["tv", "movie", "wrestling"],
+                    "default": "wrestling",
+                },
                 "limit": {"type": "integer", "minimum": 1, "maximum": 20, "default": 10},
             },
             "required": ["query"],
@@ -1498,9 +1734,11 @@ SHARED_TOOLS: dict[str, AgentTool] = {
             "type": "object",
             "properties": {
                 "query": {"type": "string"},
-                "type": {"type": "string",
-                          "enum": ["release", "master", "artist", "label"],
-                          "default": "release"},
+                "type": {
+                    "type": "string",
+                    "enum": ["release", "master", "artist", "label"],
+                    "default": "release",
+                },
                 "artist": {"type": "string"},
                 "year": {"type": "string", "description": "Release year filter."},
                 "limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 10},
@@ -1586,7 +1824,9 @@ JR_ONLY_TOOLS: dict[str, AgentTool] = {
         description="Discover notable wrestler candidates from Wikipedia categories.",
         input_schema={
             "type": "object",
-            "properties": {"limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 20}},
+            "properties": {
+                "limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 20}
+            },
         },
         handler=_t_discover_notable_wrestlers,
     ),
@@ -1595,7 +1835,9 @@ JR_ONLY_TOOLS: dict[str, AgentTool] = {
         description="Discover notable event candidates from Wikipedia categories.",
         input_schema={
             "type": "object",
-            "properties": {"limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 20}},
+            "properties": {
+                "limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 20}
+            },
         },
         handler=_t_discover_notable_events,
     ),
@@ -1609,7 +1851,9 @@ JR_ONLY_TOOLS: dict[str, AgentTool] = {
         ),
         input_schema={
             "type": "object",
-            "properties": {"limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 30}},
+            "properties": {
+                "limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 30}
+            },
         },
         handler=_t_discover_notable_promotions,
     ),
@@ -1624,7 +1868,9 @@ JR_ONLY_TOOLS: dict[str, AgentTool] = {
         ),
         input_schema={
             "type": "object",
-            "properties": {"limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 30}},
+            "properties": {
+                "limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 30}
+            },
         },
         handler=_t_discover_notable_podcasts,
     ),
@@ -1664,7 +1910,9 @@ JR_ONLY_TOOLS: dict[str, AgentTool] = {
         description="Discover notable venue candidates from Wikipedia categories.",
         input_schema={
             "type": "object",
-            "properties": {"limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 20}},
+            "properties": {
+                "limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 20}
+            },
         },
         handler=_t_discover_notable_venues,
     ),
@@ -1676,7 +1924,9 @@ JR_ONLY_TOOLS: dict[str, AgentTool] = {
         ),
         input_schema={
             "type": "object",
-            "properties": {"limit": {"type": "integer", "minimum": 1, "maximum": 200, "default": 30}},
+            "properties": {
+                "limit": {"type": "integer", "minimum": 1, "maximum": 200, "default": 30}
+            },
         },
         handler=_t_discover_top_mentions,
     ),
@@ -1740,7 +1990,10 @@ JR_ONLY_TOOLS: dict[str, AgentTool] = {
             "properties": {
                 "title_slug": {"type": "string"},
                 "max_unknown_to_queue": {
-                    "type": "integer", "minimum": 1, "maximum": 50, "default": 15,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50,
+                    "default": 15,
                 },
             },
         },
@@ -1820,9 +2073,11 @@ EARL_ONLY_TOOLS: dict[str, AgentTool] = {
             "properties": {
                 "rule_id": {"type": "string"},
                 "severity": {"type": "string", "enum": ["info", "warning", "error"]},
-                "status": {"type": "string",
-                            "enum": ["open", "fixed", "dismissed", "false_positive"],
-                            "default": "open"},
+                "status": {
+                    "type": "string",
+                    "enum": ["open", "fixed", "dismissed", "false_positive"],
+                    "default": "open",
+                },
                 "limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 20},
             },
         },
@@ -1834,9 +2089,11 @@ EARL_ONLY_TOOLS: dict[str, AgentTool] = {
         input_schema={
             "type": "object",
             "properties": {
-                "status": {"type": "string",
-                            "enum": ["pending", "accepted", "rejected", "applied"],
-                            "default": "pending"},
+                "status": {
+                    "type": "string",
+                    "enum": ["pending", "accepted", "rejected", "applied"],
+                    "default": "pending",
+                },
                 "limit": {"type": "integer", "minimum": 1, "maximum": 50, "default": 20},
             },
         },
@@ -1863,8 +2120,10 @@ EARL_ONLY_TOOLS: dict[str, AgentTool] = {
             "type": "object",
             "properties": {
                 "observation_id": {"type": "integer"},
-                "status": {"type": "string",
-                            "enum": ["open", "fixed", "dismissed", "false_positive"]},
+                "status": {
+                    "type": "string",
+                    "enum": ["open", "fixed", "dismissed", "false_positive"],
+                },
                 "notes": {"type": "string"},
             },
             "required": ["observation_id", "status"],
@@ -1907,9 +2166,21 @@ AL_ONLY_TOOLS: dict[str, AgentTool] = {
             "properties": {
                 "source_entity_type": {
                     "type": "string",
-                    "enum": ["wrestler", "event", "venue", "promotion", "book",
-                              "video_game", "podcast", "action_figure", "theme_song",
-                              "title", "stable", "tv_show", "special"],
+                    "enum": [
+                        "wrestler",
+                        "event",
+                        "venue",
+                        "promotion",
+                        "book",
+                        "video_game",
+                        "podcast",
+                        "action_figure",
+                        "theme_song",
+                        "title",
+                        "stable",
+                        "tv_show",
+                        "special",
+                    ],
                 },
                 "limit": {"type": "integer", "minimum": 1, "maximum": 200, "default": 30},
             },
@@ -2089,20 +2360,21 @@ def dispatch(tool_map: dict[str, AgentTool], name: str, arguments: dict) -> dict
 # to do next — the per-row noise accumulates across many calls and drowns
 # productive context. Cap these aggressively so a 20-call bulk-ingest
 # session stays well under the input-token budget.
-STAT_ONLY_TOOLS = frozenset({
-    "run_jr_cycle",
-    "ingest_title_history",
-    "ingest_episode_list",
-    "ingest_ppv_list",
-    "auto_discover_mentions",
-    "resolve_all_mentions",
-    "link_all_unlinked_wrestlers",
-    "link_trainers_sweep",
-})
+STAT_ONLY_TOOLS = frozenset(
+    {
+        "run_jr_cycle",
+        "ingest_title_history",
+        "ingest_episode_list",
+        "ingest_ppv_list",
+        "auto_discover_mentions",
+        "resolve_all_mentions",
+        "link_all_unlinked_wrestlers",
+        "link_trainers_sweep",
+    }
+)
 
 
-def summarise_result(result: dict, max_chars: int = 2500,
-                     tool_name: Optional[str] = None) -> str:
+def summarise_result(result: dict, max_chars: int = 2500, tool_name: Optional[str] = None) -> str:
     """Pretty-print a result for AgentToolCall.result_summary (truncated JSON).
 
     For tools listed in STAT_ONLY_TOOLS, cap the summary at 200 chars — the

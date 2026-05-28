@@ -45,6 +45,7 @@ def _is_redirect_to_different_subject(url: str, candidate_name: str) -> bool:
     if "/wiki/" not in url:
         return False
     from urllib.parse import unquote
+
     title_in_url = url.split("/wiki/", 1)[1].split("#", 1)[0]
     title_in_url = unquote(title_in_url).replace("_", " ").strip()
     if not title_in_url or not candidate_name:
@@ -59,6 +60,7 @@ def _is_redirect_to_different_subject(url: str, candidate_name: str) -> bool:
 
     # Strip common disambiguation suffixes from both — those are not subject changes.
     import re as _re
+
     disambig_re = _re.compile(
         r"\s*\((?:wrestler|wrestling|professional\s+wrestler|disambiguation|"
         r"film|song|album|book|video\s+game|tv\s+series|tag\s+team|"
@@ -118,8 +120,7 @@ def fetch_cagematch_for_wrestlers(
         # Skip if a recent successful cagematch fetch already exists for this entity.
         if not force:
             recent = (
-                SourceFetch.objects
-                .filter(
+                SourceFetch.objects.filter(
                     source="cagematch",
                     entity_type="wrestler",
                     entity_id=wid,
@@ -130,7 +131,9 @@ def fetch_cagematch_for_wrestlers(
                 .first()
             )
             if recent is not None:
-                logger.debug("Reusing recent cagematch SourceFetch#%d for Wrestler#%d", recent.id, wid)
+                logger.debug(
+                    "Reusing recent cagematch SourceFetch#%d for Wrestler#%d", recent.id, wid
+                )
                 out.append(recent)
                 continue
 
@@ -157,7 +160,9 @@ def fetch_cagematch_for_wrestlers(
         out.append(fetch_row)
         logger.info(
             "Fetched cagematch profile for Wrestler#%d (%s) -> SourceFetch#%d",
-            wid, wrestler.name, fetch_row.id,
+            wid,
+            wrestler.name,
+            fetch_row.id,
         )
 
     return out
@@ -212,8 +217,7 @@ def _fetch_candidates_for_type(
     for name in candidate_names:
         if not force:
             recent = (
-                SourceFetch.objects
-                .filter(
+                SourceFetch.objects.filter(
                     source=adapter.source_name,
                     entity_type=entity_type,
                     candidate_name=name,
@@ -245,8 +249,9 @@ def _fetch_candidates_for_type(
         # article. We refuse to create a duplicate row with a fabricated
         # name — instead reuse the existing fetch.
         existing_with_same_content = (
-            SourceFetch.objects
-            .filter(source=adapter.source_name, content_hash=content_hash, http_status=200)
+            SourceFetch.objects.filter(
+                source=adapter.source_name, content_hash=content_hash, http_status=200
+            )
             .order_by("fetched_at")
             .first()
         )
@@ -254,7 +259,9 @@ def _fetch_candidates_for_type(
             logger.warning(
                 "Skipping %r [%s]: content identical to SourceFetch#%d (%r) — "
                 "Wikipedia redirected to an existing article",
-                name, entity_type, existing_with_same_content.id,
+                name,
+                entity_type,
+                existing_with_same_content.id,
                 existing_with_same_content.candidate_name,
             )
             out.append(existing_with_same_content)
@@ -269,7 +276,10 @@ def _fetch_candidates_for_type(
             logger.warning(
                 "Skipping %r [%s]: Wikipedia redirected to a different subject (%s) — "
                 "refusing to persist as %r",
-                name, entity_type, result.url, name,
+                name,
+                entity_type,
+                result.url,
+                name,
             )
             continue
 
@@ -285,7 +295,10 @@ def _fetch_candidates_for_type(
         out.append(fetch_row)
         logger.info(
             "Fetched %s [%s] on %s -> SourceFetch#%d",
-            name, entity_type, adapter.source_name, fetch_row.id,
+            name,
+            entity_type,
+            adapter.source_name,
+            fetch_row.id,
         )
 
     return out

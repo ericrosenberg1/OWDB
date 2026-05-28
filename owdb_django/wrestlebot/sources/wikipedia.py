@@ -71,25 +71,29 @@ class WikipediaAdapter(SourceAdapter):
         if not title:
             return None
 
-        data = self._scraper._api_request({
-            "action": "parse",
-            "page": title,
-            "prop": "text",
-            "redirects": 1,
-            "disableeditsection": "true",
-        })
+        data = self._scraper._api_request(
+            {
+                "action": "parse",
+                "page": title,
+                "prop": "text",
+                "redirects": 1,
+                "disableeditsection": "true",
+            }
+        )
         if not data or "parse" not in data:
             return None
 
         # The resolved title (after redirects) is in data["parse"]["title"].
         resolved_title = data["parse"].get("title") or title
         text = data["parse"].get("text")
-        html: Optional[str] = text if isinstance(text, str) else (text.get("*") if isinstance(text, dict) else None)
+        html: Optional[str] = (
+            text if isinstance(text, str) else (text.get("*") if isinstance(text, dict) else None)
+        )
         if not html:
             return None
 
         # Skip disambiguation pages. They have a clear marker.
-        if 'disambiguation' in html[:5000].lower() and 'class="disambig"' in html:
+        if "disambiguation" in html[:5000].lower() and 'class="disambig"' in html:
             logger.debug("Skipping disambiguation page: %s", title)
             return None
 
@@ -242,8 +246,14 @@ class WikipediaAdapter(SourceAdapter):
             fields.trained_by = FieldSnippet(value=joined, snippet=snippet)
             return
 
-        if label in ("occupation", "occupations", "other occupation",
-                     "other occupations", "profession", "professions"):
+        if label in (
+            "occupation",
+            "occupations",
+            "other occupation",
+            "other occupations",
+            "profession",
+            "professions",
+        ):
             # Wikipedia's "Occupation(s)" cell on wrestler pages often
             # includes secondary careers: "Wrestler, Commentator, Actor".
             # We detect commentator/announcer/referee/manager/trainer here
@@ -267,7 +277,8 @@ class WikipediaAdapter(SourceAdapter):
                     roles_found.append(tag)
             if len(roles_found) > 1:  # only set if we found something beyond "wrestler"
                 fields.roles = FieldSnippet(
-                    value=", ".join(roles_found), snippet=snippet,
+                    value=", ".join(roles_found),
+                    snippet=snippet,
                 )
             return
 
@@ -355,10 +366,10 @@ class WikipediaAdapter(SourceAdapter):
     # ------------------------------------------------- "Born" / "Died" parsing
 
     _DATE_PATTERNS: tuple[str, ...] = (
-        "%B %d, %Y",        # August 11, 1953
-        "%d %B %Y",         # 11 August 1953
-        "%Y-%m-%d",         # 1953-08-11
-        "%b %d, %Y",        # Aug 11, 1953
+        "%B %d, %Y",  # August 11, 1953
+        "%d %B %Y",  # 11 August 1953
+        "%Y-%m-%d",  # 1953-08-11
+        "%b %d, %Y",  # Aug 11, 1953
     )
 
     def _parse_born(self, fields: WrestlerFields, value: str, snippet: str) -> None:
@@ -519,8 +530,9 @@ class WikipediaAdapter(SourceAdapter):
                 # can create a stub Venue with a wikipedia_url.
                 link = td.find("a", href=True)
                 if link and link.get("href", "").startswith("/wiki/"):
-                    target = link["href"][len("/wiki/"):].split("#", 1)[0]
+                    target = link["href"][len("/wiki/") :].split("#", 1)[0]
                     from urllib.parse import unquote as _unquote
+
                     target = _unquote(target).replace("_", " ")
                     fields.venue_wiki_link = FieldSnippet(value=target, snippet=snippet)
                 continue
@@ -534,8 +546,9 @@ class WikipediaAdapter(SourceAdapter):
                 fields.promotion_name = FieldSnippet(value=value, snippet=snippet)
                 link = td.find("a", href=True)
                 if link and link.get("href", "").startswith("/wiki/"):
-                    target = link["href"][len("/wiki/"):].split("#", 1)[0]
+                    target = link["href"][len("/wiki/") :].split("#", 1)[0]
                     from urllib.parse import unquote as _unquote
+
                     target = _unquote(target).replace("_", " ")
                     fields.promotion_wiki_link = FieldSnippet(value=target, snippet=snippet)
                 continue
@@ -767,10 +780,12 @@ class WikipediaAdapter(SourceAdapter):
                 fields.author = FieldSnippet(value=value, snippet=snippet)
                 link = td.find("a", href=True)
                 if link and link.get("href", "").startswith("/wiki/"):
-                    target = link["href"][len("/wiki/"):].split("#", 1)[0]
+                    target = link["href"][len("/wiki/") :].split("#", 1)[0]
                     from urllib.parse import unquote as _unquote
+
                     fields.author_wiki_link = FieldSnippet(
-                        value=_unquote(target).replace("_", " "), snippet=snippet,
+                        value=_unquote(target).replace("_", " "),
+                        snippet=snippet,
                     )
                 continue
             if label in ("publisher",):
@@ -784,7 +799,9 @@ class WikipediaAdapter(SourceAdapter):
             if label in ("isbn",):
                 m = re.search(r"\d[\d\-Xx]{9,16}", value)
                 if m:
-                    fields.isbn = FieldSnippet(value=m.group(0).replace("-", "")[:20], snippet=snippet)
+                    fields.isbn = FieldSnippet(
+                        value=m.group(0).replace("-", "")[:20], snippet=snippet
+                    )
                 continue
 
         if not fields.populated_fields():
@@ -882,15 +899,17 @@ class WikipediaAdapter(SourceAdapter):
                 fields.hosts = FieldSnippet(value=joined[:255], snippet=snippet)
 
                 from urllib.parse import unquote as _unquote
+
                 wiki_links: list[str] = []
                 for a in td.find_all("a", href=True):
                     href = a.get("href", "")
                     if href.startswith("/wiki/") and "Category:" not in href:
-                        t = href[len("/wiki/"):].split("#", 1)[0]
+                        t = href[len("/wiki/") :].split("#", 1)[0]
                         wiki_links.append(_unquote(t).replace("_", " "))
                 if wiki_links:
                     fields.host_wiki_links = FieldSnippet(
-                        value=", ".join(wiki_links)[:500], snippet=snippet,
+                        value=", ".join(wiki_links)[:500],
+                        snippet=snippet,
                     )
                 continue
             if label in ("started", "launched", "first episode", "original release"):
@@ -933,10 +952,19 @@ class WikipediaAdapter(SourceAdapter):
                     head_text += " " + child.get_text(separator=" ", strip=True).lower()
                     if len(head_text) > 1500:
                         break
-        if not any(kw in head_text for kw in (
-            "professional wrestling", "wrestling promotion", "wrestler",
-            "wwe", "wwf", "wcw", "ecw", "aew",
-        )):
+        if not any(
+            kw in head_text
+            for kw in (
+                "professional wrestling",
+                "wrestling promotion",
+                "wrestler",
+                "wwe",
+                "wwf",
+                "wcw",
+                "ecw",
+                "aew",
+            )
+        ):
             return None
 
         # Subject-check: article's first sentence must describe the SUBJECT
@@ -1002,12 +1030,22 @@ class WikipediaAdapter(SourceAdapter):
 
             # Manufacturer detection — match well-known toy companies.
             if fields.manufacturer is None and first_p:
-                for mfr in ("Jakks Pacific", "Mattel", "Hasbro", "Galoob",
-                            "Jazwares", "LJN", "Toy Biz", "Funko",
-                            "WCT", "Bend-Ems"):
+                for mfr in (
+                    "Jakks Pacific",
+                    "Mattel",
+                    "Hasbro",
+                    "Galoob",
+                    "Jazwares",
+                    "LJN",
+                    "Toy Biz",
+                    "Funko",
+                    "WCT",
+                    "Bend-Ems",
+                ):
                     if mfr in first_p:
                         fields.manufacturer = FieldSnippet(
-                            value=mfr, snippet=f"first paragraph: {first_p[:200]}",
+                            value=mfr,
+                            snippet=f"first paragraph: {first_p[:200]}",
                         )
                         break
 
@@ -1017,13 +1055,21 @@ class WikipediaAdapter(SourceAdapter):
                     href = a.get("href", "")
                     if href.startswith("/wiki/"):
                         from urllib.parse import unquote as _unquote
-                        target = _unquote(href[len("/wiki/"):].split("#", 1)[0]).replace("_", " ")
-                        if target in ("WWE", "World Wrestling Federation", "WCW",
-                                      "World Championship Wrestling", "AEW",
-                                      "All Elite Wrestling", "ECW",
-                                      "Extreme Championship Wrestling"):
+
+                        target = _unquote(href[len("/wiki/") :].split("#", 1)[0]).replace("_", " ")
+                        if target in (
+                            "WWE",
+                            "World Wrestling Federation",
+                            "WCW",
+                            "World Championship Wrestling",
+                            "AEW",
+                            "All Elite Wrestling",
+                            "ECW",
+                            "Extreme Championship Wrestling",
+                        ):
                             fields.promotion_wiki_link = FieldSnippet(
-                                value=target, snippet=f"lead link: {target}",
+                                value=target,
+                                snippet=f"lead link: {target}",
                             )
                             break
 
@@ -1057,8 +1103,14 @@ class WikipediaAdapter(SourceAdapter):
                     if len(head_text) > 1500:
                         break
         wrestling_terms = (
-            "wrestler", "professional wrestling", "wwe", "wwf", "wcw",
-            "entrance theme", "entrance music", "theme song",
+            "wrestler",
+            "professional wrestling",
+            "wwe",
+            "wwf",
+            "wcw",
+            "entrance theme",
+            "entrance music",
+            "theme song",
         )
         if not any(kw in head_text for kw in wrestling_terms):
             return None
@@ -1074,8 +1126,11 @@ class WikipediaAdapter(SourceAdapter):
                         first_sentence = re.split(r"(?<=[.!?])\s+", t, maxsplit=1)[0].lower()
                         break
         song_subject_patterns = (
-            " is a song ", " is a single ", " is the theme",
-            " is an entrance ", " is a theme",
+            " is a song ",
+            " is a single ",
+            " is the theme",
+            " is an entrance ",
+            " is a theme",
         )
         if not any(p in first_sentence for p in song_subject_patterns):
             return None
@@ -1102,7 +1157,10 @@ class WikipediaAdapter(SourceAdapter):
                 link = td.find("a", href=True)
                 if link and link.get("href", "").startswith("/wiki/"):
                     from urllib.parse import unquote as _unquote
-                    target = _unquote(link["href"][len("/wiki/"):].split("#", 1)[0]).replace("_", " ")
+
+                    target = _unquote(link["href"][len("/wiki/") :].split("#", 1)[0]).replace(
+                        "_", " "
+                    )
                     fields.artist_wiki_link = FieldSnippet(value=target, snippet=snippet)
                 continue
             if label in ("released", "release date", "release"):
@@ -1143,10 +1201,15 @@ class WikipediaAdapter(SourceAdapter):
                     head_text += " " + child.get_text(separator=" ", strip=True).lower()
                     if len(head_text) > 1500:
                         break
-        if not any(kw in head_text for kw in (
-            "professional wrestling", "wrestling championship",
-            "wrestler", "wrestling promotion",
-        )):
+        if not any(
+            kw in head_text
+            for kw in (
+                "professional wrestling",
+                "wrestling championship",
+                "wrestler",
+                "wrestling promotion",
+            )
+        ):
             return None
 
         # Subject must be a championship
@@ -1159,7 +1222,9 @@ class WikipediaAdapter(SourceAdapter):
                         first_sentence = re.split(r"(?<=[.!?])\s+", t, maxsplit=1)[0].lower()
                         break
         title_subject_patterns = (
-            "championship", "title", "champion of",
+            "championship",
+            "title",
+            "champion of",
         )
         if not any(p in first_sentence for p in title_subject_patterns):
             return None
@@ -1187,7 +1252,10 @@ class WikipediaAdapter(SourceAdapter):
                 link = td.find("a", href=True)
                 if link and link.get("href", "").startswith("/wiki/"):
                     from urllib.parse import unquote as _unquote
-                    target = _unquote(link["href"][len("/wiki/"):].split("#", 1)[0]).replace("_", " ")
+
+                    target = _unquote(link["href"][len("/wiki/") :].split("#", 1)[0]).replace(
+                        "_", " "
+                    )
                     fields.promotion_wiki_link = FieldSnippet(value=target, snippet=snippet)
                 continue
             if label in ("date established", "established", "introduced", "first awarded"):
@@ -1238,10 +1306,16 @@ class WikipediaAdapter(SourceAdapter):
                     head_text += " " + child.get_text(separator=" ", strip=True).lower()
                     if len(head_text) > 1500:
                         break
-        if not any(kw in head_text for kw in (
-            "professional wrestling", "wrestling stable", "wrestling faction",
-            "wrestler", "wrestling tag team",
-        )):
+        if not any(
+            kw in head_text
+            for kw in (
+                "professional wrestling",
+                "wrestling stable",
+                "wrestling faction",
+                "wrestler",
+                "wrestling tag team",
+            )
+        ):
             return None
 
         # Subject must be a stable/faction/team
@@ -1254,7 +1328,11 @@ class WikipediaAdapter(SourceAdapter):
                         first_sentence = re.split(r"(?<=[.!?])\s+", t, maxsplit=1)[0].lower()
                         break
         stable_subject_patterns = (
-            "stable", "faction", "tag team", "wrestling group", "supergroup",
+            "stable",
+            "faction",
+            "tag team",
+            "wrestling group",
+            "supergroup",
         )
         if not any(p in first_sentence for p in stable_subject_patterns):
             return None
@@ -1283,7 +1361,9 @@ class WikipediaAdapter(SourceAdapter):
                 fields.promotion_name = FieldSnippet(value=value, snippet=snippet)
                 link = td.find("a", href=True)
                 if link and link.get("href", "").startswith("/wiki/"):
-                    target = _unquote(link["href"][len("/wiki/"):].split("#", 1)[0]).replace("_", " ")
+                    target = _unquote(link["href"][len("/wiki/") :].split("#", 1)[0]).replace(
+                        "_", " "
+                    )
                     fields.promotion_wiki_link = FieldSnippet(value=target, snippet=snippet)
                 continue
             if label in ("debut", "formed", "established"):
@@ -1301,11 +1381,12 @@ class WikipediaAdapter(SourceAdapter):
                 for a in td.find_all("a", href=True):
                     href = a.get("href", "")
                     if href.startswith("/wiki/"):
-                        target = _unquote(href[len("/wiki/"):].split("#", 1)[0]).replace("_", " ")
+                        target = _unquote(href[len("/wiki/") :].split("#", 1)[0]).replace("_", " ")
                         wiki_links.append(target)
                 if wiki_links:
                     fields.leader_wiki_links = FieldSnippet(
-                        value=", ".join(wiki_links)[:500], snippet=snippet,
+                        value=", ".join(wiki_links)[:500],
+                        snippet=snippet,
                     )
                 continue
             if label in ("members", "former members"):
@@ -1313,7 +1394,7 @@ class WikipediaAdapter(SourceAdapter):
                 for a in td.find_all("a", href=True):
                     href = a.get("href", "")
                     if href.startswith("/wiki/"):
-                        target = _unquote(href[len("/wiki/"):].split("#", 1)[0]).replace("_", " ")
+                        target = _unquote(href[len("/wiki/") :].split("#", 1)[0]).replace("_", " ")
                         if target not in wiki_links:
                             wiki_links.append(target)
                 if wiki_links:
@@ -1321,7 +1402,8 @@ class WikipediaAdapter(SourceAdapter):
                     existing = fields.member_wiki_links.value if fields.member_wiki_links else ""
                     combined = existing + (", " if existing else "") + ", ".join(wiki_links)
                     fields.member_wiki_links = FieldSnippet(
-                        value=combined[:1500], snippet=snippet,
+                        value=combined[:1500],
+                        snippet=snippet,
                     )
                 continue
 
@@ -1353,10 +1435,16 @@ class WikipediaAdapter(SourceAdapter):
                     head_text += " " + child.get_text(separator=" ", strip=True).lower()
                     if len(head_text) > 1500:
                         break
-        if not any(kw in head_text for kw in (
-            "professional wrestling", "wrestler", "wrestling program",
-            "wrestling television", "wrestling promotion",
-        )):
+        if not any(
+            kw in head_text
+            for kw in (
+                "professional wrestling",
+                "wrestler",
+                "wrestling program",
+                "wrestling television",
+                "wrestling promotion",
+            )
+        ):
             return None
 
         # Subject must be a TV show / series
@@ -1369,9 +1457,13 @@ class WikipediaAdapter(SourceAdapter):
                         first_sentence = re.split(r"(?<=[.!?])\s+", t, maxsplit=1)[0].lower()
                         break
         tv_subject_patterns = (
-            "television program", "television series", "tv series",
-            "television show", "professional wrestling television program",
-            "weekly wrestling", "wrestling program",
+            "television program",
+            "television series",
+            "tv series",
+            "television show",
+            "professional wrestling television program",
+            "weekly wrestling",
+            "wrestling program",
         )
         if not any(p in first_sentence for p in tv_subject_patterns):
             return None
@@ -1394,8 +1486,13 @@ class WikipediaAdapter(SourceAdapter):
                 continue
             snippet = f"{label}: {value}"
 
-            if label in ("network", "original network", "current network",
-                         "channel", "original release on"):
+            if label in (
+                "network",
+                "original network",
+                "current network",
+                "channel",
+                "original release on",
+            ):
                 fields.network = FieldSnippet(value=value[:255], snippet=snippet)
                 continue
             if label in ("original release", "first aired", "release"):
@@ -1411,19 +1508,26 @@ class WikipediaAdapter(SourceAdapter):
 
         # Promotion detection from lead-paragraph wiki-links
         from urllib.parse import unquote as _unquote
+
         if body is not None:
             for a in body.find_all("a", href=True)[:40]:
                 href = a.get("href", "")
                 if href.startswith("/wiki/"):
-                    target = _unquote(href[len("/wiki/"):].split("#", 1)[0]).replace("_", " ")
-                    if target in ("WWE", "World Wrestling Entertainment",
-                                  "World Wrestling Federation",
-                                  "All Elite Wrestling", "AEW",
-                                  "Total Nonstop Action Wrestling",
-                                  "Impact Wrestling", "Ring of Honor",
-                                  "World Championship Wrestling"):
+                    target = _unquote(href[len("/wiki/") :].split("#", 1)[0]).replace("_", " ")
+                    if target in (
+                        "WWE",
+                        "World Wrestling Entertainment",
+                        "World Wrestling Federation",
+                        "All Elite Wrestling",
+                        "AEW",
+                        "Total Nonstop Action Wrestling",
+                        "Impact Wrestling",
+                        "Ring of Honor",
+                        "World Championship Wrestling",
+                    ):
                         fields.promotion_wiki_link = FieldSnippet(
-                            value=target, snippet=f"lead link: {target}",
+                            value=target,
+                            snippet=f"lead link: {target}",
                         )
                         break
 
@@ -1454,10 +1558,19 @@ class WikipediaAdapter(SourceAdapter):
                     head_text += " " + child.get_text(separator=" ", strip=True).lower()
                     if len(head_text) > 1500:
                         break
-        if not any(kw in head_text for kw in (
-            "professional wrestling", "wrestler", "wrestling industry",
-            "wrestling documentary", "wwe", "wwf", "wcw", "aew",
-        )):
+        if not any(
+            kw in head_text
+            for kw in (
+                "professional wrestling",
+                "wrestler",
+                "wrestling industry",
+                "wrestling documentary",
+                "wwe",
+                "wwf",
+                "wcw",
+                "aew",
+            )
+        ):
             return None
 
         # Subject must be a documentary/film/TV special
@@ -1470,10 +1583,18 @@ class WikipediaAdapter(SourceAdapter):
                         first_sentence = re.split(r"(?<=[.!?])\s+", t, maxsplit=1)[0].lower()
                         break
         special_patterns = (
-            "documentary film", "documentary", "biographical film",
-            "drama film", "comedy film", " is a film ", " is a 20",
-            " is an american film", "television film", "tv film",
-            "tv special", "documentary series",
+            "documentary film",
+            "documentary",
+            "biographical film",
+            "drama film",
+            "comedy film",
+            " is a film ",
+            " is a 20",
+            " is an american film",
+            "television film",
+            "tv film",
+            "tv special",
+            "documentary series",
         )
         if not any(p in first_sentence for p in special_patterns):
             return None
@@ -1499,8 +1620,13 @@ class WikipediaAdapter(SourceAdapter):
             if label in ("directed by", "director", "directors"):
                 fields.director = FieldSnippet(value=value[:255], snippet=snippet)
                 continue
-            if label in ("release date", "release dates", "released",
-                         "original release", "first aired"):
+            if label in (
+                "release date",
+                "release dates",
+                "released",
+                "original release",
+                "first aired",
+            ):
                 year = WikipediaAdapter._parse_year(value)
                 if year is not None:
                     fields.release_year = FieldSnippet(value=year, snippet=snippet)
@@ -1546,10 +1672,16 @@ class WikipediaAdapter(SourceAdapter):
                     head_text += " " + child.get_text(separator=" ", strip=True).lower()
                     if len(head_text) > 1500:
                         break
-        if not any(kw in head_text for kw in (
-            "wrestling school", "wrestling academy", "wrestler",
-            "professional wrestling", "training facility",
-        )):
+        if not any(
+            kw in head_text
+            for kw in (
+                "wrestling school",
+                "wrestling academy",
+                "wrestler",
+                "professional wrestling",
+                "training facility",
+            )
+        ):
             return None
 
         first_sentence = ""
@@ -1561,9 +1693,12 @@ class WikipediaAdapter(SourceAdapter):
                         first_sentence = re.split(r"(?<=[.!?])\s+", t, maxsplit=1)[0].lower()
                         break
         school_subject_patterns = (
-            "wrestling school", "wrestling academy",
-            "training school", "wrestling dungeon",
-            "training facility", "developmental territory",
+            "wrestling school",
+            "wrestling academy",
+            "training school",
+            "wrestling dungeon",
+            "training facility",
+            "developmental territory",
             "performance center",
         )
         if not any(p in first_sentence for p in school_subject_patterns):
@@ -1605,8 +1740,14 @@ class WikipediaAdapter(SourceAdapter):
                     if fields.founder is None:
                         fields.founder = FieldSnippet(value=value, snippet=snippet)
                     continue
-                if label in ("head trainer", "trainer", "trainers",
-                             "owner", "owner(s)", "head coach"):
+                if label in (
+                    "head trainer",
+                    "trainer",
+                    "trainers",
+                    "owner",
+                    "owner(s)",
+                    "head coach",
+                ):
                     if fields.head_trainer is None:
                         fields.head_trainer = FieldSnippet(value=value, snippet=snippet)
                     continue
@@ -1614,9 +1755,13 @@ class WikipediaAdapter(SourceAdapter):
                     link = td.find("a", href=True)
                     if link and link.get("href", "").startswith("/wiki/"):
                         from urllib.parse import unquote as _unquote
-                        target = _unquote(link["href"][len("/wiki/"):].split("#", 1)[0]).replace("_", " ")
+
+                        target = _unquote(link["href"][len("/wiki/") :].split("#", 1)[0]).replace(
+                            "_", " "
+                        )
                         fields.parent_promotion_wiki_link = FieldSnippet(
-                            value=target, snippet=snippet,
+                            value=target,
+                            snippet=snippet,
                         )
                     continue
 
@@ -1670,7 +1815,9 @@ _BEST_KNOWN_LEDE_RE = re.compile(
     ['"“‘]?\s*
     (?P<name>[A-ZÀ-ÖØ-Þa-zà-öø-þ][^,(]*?)
     \s*['"”’]?
-    (?:,|\s*\(or\b|""" + _BEST_KNOWN_PERIOD_STOP + r"""|\s+(?:is|was|who|were)\b|$)
+    (?:,|\s*\(or\b|"""
+    + _BEST_KNOWN_PERIOD_STOP
+    + r"""|\s+(?:is|was|who|were)\b|$)
     """,
     re.X,
 )
@@ -1682,7 +1829,9 @@ _BEST_KNOWN_PROFESSIONAL_RE = re.compile(
     ['"“‘]?\s*
     (?P<name>[A-ZÀ-ÖØ-Þa-zà-öø-þ][^,(]*?)
     \s*['"”’]?
-    (?:,|\s*\(or\b|""" + _BEST_KNOWN_PERIOD_STOP + r"""|\s+(?:is|was|who|were)\b|$)
+    (?:,|\s*\(or\b|"""
+    + _BEST_KNOWN_PERIOD_STOP
+    + r"""|\s+(?:is|was|who|were)\b|$)
     """,
     re.X,
 )
@@ -1715,7 +1864,7 @@ def _ring_name_from_lede(lede: str) -> Optional[str]:
         m = rx.search(lede)
         if not m:
             continue
-        name = m.group("name").strip().strip('"“”‘’\'').rstrip(".").strip()
+        name = m.group("name").strip().strip("\"“”‘’'").rstrip(".").strip()
         # "his ring names X and Y" / "X, Y, and Z" — first is the most famous.
         for sep in (" and ", ", "):
             if sep in name:

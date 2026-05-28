@@ -55,7 +55,9 @@ from typing import Iterator, Optional
 from django.utils import timezone
 
 from ..sources.commons import (
-    P_IMAGE, P_LOGO, CommonsImageMeta,
+    P_IMAGE,
+    P_LOGO,
+    CommonsImageMeta,
     categories_contain,
     description_mentions_name,
     fetch_commons_category_files,
@@ -82,19 +84,19 @@ logger = logging.getLogger(__name__)
 # and is far better than nothing.  Once we have any image, the regular
 # floor kicks in so we don't downgrade quality on replacement.
 ENTITY_IMAGE_PROPS = {
-    "wrestler":   {"prop": P_IMAGE,  "min_dim": 200, "min_dim_first_fill": 120},
-    "promotion":  {"prop": P_LOGO,   "min_dim": 100, "min_dim_first_fill": 80},
-    "title":      {"prop": P_IMAGE,  "min_dim": 100, "min_dim_first_fill": 80},
-    "venue":      {"prop": P_IMAGE,  "min_dim": 300, "min_dim_first_fill": 200},
-    "event":      {"prop": P_IMAGE,  "min_dim": 200, "min_dim_first_fill": 150},
-    "stable":     {"prop": P_LOGO,   "min_dim": 100, "min_dim_first_fill": 80},
-    "tv_show":    {"prop": P_LOGO,   "min_dim": 100, "min_dim_first_fill": 80},
+    "wrestler": {"prop": P_IMAGE, "min_dim": 200, "min_dim_first_fill": 120},
+    "promotion": {"prop": P_LOGO, "min_dim": 100, "min_dim_first_fill": 80},
+    "title": {"prop": P_IMAGE, "min_dim": 100, "min_dim_first_fill": 80},
+    "venue": {"prop": P_IMAGE, "min_dim": 300, "min_dim_first_fill": 200},
+    "event": {"prop": P_IMAGE, "min_dim": 200, "min_dim_first_fill": 150},
+    "stable": {"prop": P_LOGO, "min_dim": 100, "min_dim_first_fill": 80},
+    "tv_show": {"prop": P_LOGO, "min_dim": 100, "min_dim_first_fill": 80},
     # Cover art on a Wikipedia article uses P18 (image) — same as
     # wrestlers. Covers tend to be small thumbnails on Commons (often
     # 200-400px); use the relaxed first-fill floor so we don't reject
     # legitimate covers for being modest in size.
-    "video_game": {"prop": P_IMAGE,  "min_dim": 200, "min_dim_first_fill": 150},
-    "book":       {"prop": P_IMAGE,  "min_dim": 200, "min_dim_first_fill": 150},
+    "video_game": {"prop": P_IMAGE, "min_dim": 200, "min_dim_first_fill": 150},
+    "book": {"prop": P_IMAGE, "min_dim": 200, "min_dim_first_fill": 150},
 }
 
 
@@ -102,50 +104,49 @@ ENTITY_IMAGE_PROPS = {
 # anything below this score regardless of license — better to leave the
 # slot empty than ship the wrong person's photo.
 MIN_IDENTITY_CONFIDENCE = {
-    "wrestler":   75,
-    "promotion":  60,  # promotion logos are fungible (just need the right org)
-    "title":      60,
-    "venue":      70,
-    "event":      75,
-    "stable":     70,
-    "tv_show":    60,
+    "wrestler": 75,
+    "promotion": 60,  # promotion logos are fungible (just need the right org)
+    "title": 60,
+    "venue": 70,
+    "event": 75,
+    "stable": 70,
+    "tv_show": 60,
     # Covers carry the game/book TITLE as part of the design — filename
     # match is generally strong. Same floor as wrestlers because a
     # wrong-cover is a real accuracy problem (we'd be claiming THIS
     # game looks like THAT game).
     "video_game": 75,
-    "book":       75,
+    "book": 75,
 }
 
 
 # Identity-score buckets. Documented in the cascade narrative above.
-IDENTITY_P18                  = 100  # Wikidata P18/P154/P109 — curator-attached
-IDENTITY_COMMONS_CAT_NAMED    = 95   # in Commons category AND filename matches
-IDENTITY_COMMONS_CAT          = 85   # in Commons category, filename neutral
-IDENTITY_WIKI_BODY_NAMED      = 75   # body image whose filename or desc mentions subject
-IDENTITY_WIKI_BODY_WEAK       = 60   # body image without name signal — usually rejected
+IDENTITY_P18 = 100  # Wikidata P18/P154/P109 — curator-attached
+IDENTITY_COMMONS_CAT_NAMED = 95  # in Commons category AND filename matches
+IDENTITY_COMMONS_CAT = 85  # in Commons category, filename neutral
+IDENTITY_WIKI_BODY_NAMED = 75  # body image whose filename or desc mentions subject
+IDENTITY_WIKI_BODY_WEAK = 60  # body image without name signal — usually rejected
 
 
 @dataclass
 class ImageCandidate:
     """One candidate image surfaced by the cascade."""
+
     filename: str
-    source_path: str        # "wikidata_p18", "commons_category", "wikipedia_body"
+    source_path: str  # "wikidata_p18", "commons_category", "wikipedia_body"
     identity_confidence: int
     # Optional context the gate uses for additional verification.
-    expected_category: str = ""       # Commons category name we found this in
-    wrestler_name: str = ""           # name we'll match against filename/description
+    expected_category: str = ""  # Commons category name we found this in
+    wrestler_name: str = ""  # name we'll match against filename/description
 
     def __str__(self) -> str:
-        return (
-            f"{self.source_path}:{self.filename!r} "
-            f"(id-conf={self.identity_confidence})"
-        )
+        return f"{self.source_path}:{self.filename!r} (id-conf={self.identity_confidence})"
 
 
 @dataclass
 class ImageAssignment:
     """Result of an `assign_image_to_entity()` call."""
+
     success: bool
     entity_type: str
     entity_id: int
@@ -156,7 +157,7 @@ class ImageAssignment:
     qid: str = ""
     refusal_reason: str = ""
     identity_confidence: int = 0
-    source_path: str = ""              # which cascade step yielded this
+    source_path: str = ""  # which cascade step yielded this
     meta: Optional[CommonsImageMeta] = None
     # Diagnostic: every candidate considered + why it was rejected (if so).
     # Useful for the sweep command's per-wrestler verdict output.
@@ -204,6 +205,7 @@ def _wikipedia_title_for(entity) -> Optional[str]:
     url = _entity_wikipedia_url(entity)
     if url:
         from urllib.parse import unquote
+
         if "/wiki/" in url:
             title = url.split("/wiki/", 1)[1].split("#")[0].split("?")[0]
             return unquote(title).replace("_", " ")
@@ -220,7 +222,8 @@ def _entity_name(entity) -> str:
 
 
 def _violates_minimum_dimensions(
-    meta: CommonsImageMeta, min_dim: int,
+    meta: CommonsImageMeta,
+    min_dim: int,
 ) -> bool:
     if meta.width and meta.height:
         return meta.width < min_dim or meta.height < min_dim
@@ -228,7 +231,9 @@ def _violates_minimum_dimensions(
 
 
 def _build_credit_string(
-    meta: CommonsImageMeta, *, entity_type: str = "",
+    meta: CommonsImageMeta,
+    *,
+    entity_type: str = "",
 ) -> str:
     """
     Attribution text + Commons file-page URL (for legal-review trail).
@@ -276,36 +281,75 @@ def _entity_already_has_image(entity) -> bool:
 # Single-word tokens we tokenise the filename / description into. Multi-word
 # phrases below run a plain substring check against the normalised text.
 _PROMO_ART_SINGLE_WORD_TOKENS = (
-    "poster", "keyart", "presskit", "promotional", "advertisement",
-    "billboard", "wallpaper",
+    "poster",
+    "keyart",
+    "presskit",
+    "promotional",
+    "advertisement",
+    "billboard",
+    "wallpaper",
 )
 
 _PROMO_ART_FILENAME_SUBSTRINGS = (
-    "key art", "press kit", "promo art", "movie poster", "film poster",
+    "key art",
+    "press kit",
+    "promo art",
+    "movie poster",
+    "film poster",
     # Round-2 codex/claude fix: book and video-game cover photographs
     # are usually CC-licensed by the photographer but the cover design
     # underneath is still copyrighted by the publisher / game studio.
-    "box art", "cover art", "dust jacket", "book cover", "video game cover",
-    "game cover", "boxart", "coverart",
+    "box art",
+    "cover art",
+    "dust jacket",
+    "book cover",
+    "video game cover",
+    "game cover",
+    "boxart",
+    "coverart",
 )
 
 _PROMO_ART_DESCRIPTION_PHRASES = (
-    "promotional poster", "promotional artwork", "press kit",
-    "official poster", "event poster", "ppv poster",
-    "promotional artwork for", "promotional material",
-    "movie poster", "film poster", "show poster", "wallpaper for",
-    "the poster for", "poster for the",
+    "promotional poster",
+    "promotional artwork",
+    "press kit",
+    "official poster",
+    "event poster",
+    "ppv poster",
+    "promotional artwork for",
+    "promotional material",
+    "movie poster",
+    "film poster",
+    "show poster",
+    "wallpaper for",
+    "the poster for",
+    "poster for the",
     # Cover-art phrases for book/game guard.
-    "book cover", "dust jacket", "box art", "cover art",
-    "video game cover", "game cover", "official cover",
-    "the cover of", "cover of the",
+    "book cover",
+    "dust jacket",
+    "box art",
+    "cover art",
+    "video game cover",
+    "game cover",
+    "official cover",
+    "the cover of",
+    "cover of the",
 )
 
 _PROMO_ART_CATEGORY_TOKENS = (
-    "posters", "advertisement", "advertisements", "billboards",
-    "promotional material", "press kits", "wallpapers", "keyart",
+    "posters",
+    "advertisement",
+    "advertisements",
+    "billboards",
+    "promotional material",
+    "press kits",
+    "wallpapers",
+    "keyart",
     # Cover-art categories on Commons.
-    "book covers", "video game covers", "box art", "album covers",
+    "book covers",
+    "video game covers",
+    "box art",
+    "album covers",
     "dust jackets",
 )
 
@@ -364,18 +408,14 @@ def is_likely_promotional_art(meta: CommonsImageMeta) -> tuple[bool, str]:
         cat_low = (cat or "").lower()
         for token in _PROMO_ART_CATEGORY_TOKENS:
             if token in cat_low:
-                return True, (
-                    f"Commons category {cat!r} signals promotional artwork"
-                )
+                return True, (f"Commons category {cat!r} signals promotional artwork")
 
     # 3. Description phrases. Use the joined-words form so periods /
     # commas don't break phrases like "official poster for".
     desc_joined, _ = _normalise_with_word_boundaries(meta.description)
     for phrase in _PROMO_ART_DESCRIPTION_PHRASES:
         if phrase in desc_joined:
-            return True, (
-                f"description phrase {phrase!r} signals promotional artwork"
-            )
+            return True, (f"description phrase {phrase!r} signals promotional artwork")
 
     return False, ""
 
@@ -384,7 +424,10 @@ def is_likely_promotional_art(meta: CommonsImageMeta) -> tuple[bool, str]:
 
 
 def find_image_candidates(
-    entity, *, entity_type: str, prop: Optional[str] = None,
+    entity,
+    *,
+    entity_type: str,
+    prop: Optional[str] = None,
 ) -> Iterator[ImageCandidate]:
     """
     Yield candidate images for `entity` in priority order, best first.
@@ -507,9 +550,11 @@ def _evaluate_candidate(
         return None, f"Not an image MIME: {meta.mime!r}", 0
 
     if _violates_minimum_dimensions(meta, min_dim):
-        return None, (
-            f"Image too small: {meta.width}×{meta.height} < {min_dim}px on shortest side"
-        ), 0
+        return (
+            None,
+            (f"Image too small: {meta.width}×{meta.height} < {min_dim}px on shortest side"),
+            0,
+        )
 
     # Attribution gate. Round-2 fix: the literal strings 'unknown' and
     # 'anonymous' are NOT attribution under CC-BY / CC-BY-SA — they
@@ -517,15 +562,25 @@ def _evaluate_candidate(
     # satisfy the license's attribution requirement. Treat these as if
     # the field were empty.
     _NULL_ATTRIBUTION_STRINGS = {
-        "", "unknown", "anonymous", "n/a", "na", "none",
-        "no machine-readable author provided", "self-published",
+        "",
+        "unknown",
+        "anonymous",
+        "n/a",
+        "na",
+        "none",
+        "no machine-readable author provided",
+        "self-published",
     }
     artist_normalized = (meta.artist or "").strip().lower()
     if meta.attribution_required and artist_normalized in _NULL_ATTRIBUTION_STRINGS:
-        return None, (
-            f"License requires attribution but Artist field is "
-            f"{meta.artist!r} (treated as missing)"
-        ), 0
+        return (
+            None,
+            (
+                f"License requires attribution but Artist field is "
+                f"{meta.artist!r} (treated as missing)"
+            ),
+            0,
+        )
 
     # Promotional-art guard. Refuse files whose primary subject is a
     # copyrighted promotional design (poster, keyart, press kit, book
@@ -556,7 +611,8 @@ def _evaluate_candidate(
         # Category-membership bump: a body image that's ALSO in the
         # subject's Commons category is essentially a category hit.
         if candidate.expected_category and categories_contain(
-            meta.categories, candidate.expected_category,
+            meta.categories,
+            candidate.expected_category,
         ):
             final_conf = max(final_conf, IDENTITY_COMMONS_CAT)
             if filename_mentions_name(candidate.filename, candidate.wrestler_name):
@@ -573,21 +629,31 @@ def _evaluate_candidate(
     # Identity threshold check.
     floor = MIN_IDENTITY_CONFIDENCE.get(entity_type, 75)
     if final_conf < floor:
-        return None, (
-            f"Identity confidence {final_conf} below floor {floor} "
-            f"for {entity_type!r}"
-        ), final_conf
+        return (
+            None,
+            (f"Identity confidence {final_conf} below floor {floor} for {entity_type!r}"),
+            final_conf,
+        )
 
     return meta, "", final_conf
 
 
 def _refusal(
-    reason: str, *, entity_type: str, entity_id: int,
-    qid: str = "", meta=None, considered: Optional[list[dict]] = None,
+    reason: str,
+    *,
+    entity_type: str,
+    entity_id: int,
+    qid: str = "",
+    meta=None,
+    considered: Optional[list[dict]] = None,
 ) -> ImageAssignment:
     return ImageAssignment(
-        success=False, entity_type=entity_type, entity_id=entity_id,
-        qid=qid, refusal_reason=reason, meta=meta,
+        success=False,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        qid=qid,
+        refusal_reason=reason,
+        meta=meta,
         considered=considered or [],
     )
 
@@ -596,7 +662,9 @@ def _refusal(
 
 
 def assign_image_to_entity(
-    entity, *, entity_type: str,
+    entity,
+    *,
+    entity_type: str,
     source_fetch=None,
     prop: Optional[str] = None,
     force: bool = False,
@@ -623,7 +691,8 @@ def assign_image_to_entity(
     if not force and _entity_already_has_image(entity):
         return _refusal(
             "Entity already has an image (pass force=True to replace)",
-            entity_type=entity_type, entity_id=entity_id,
+            entity_type=entity_type,
+            entity_id=entity_id,
         )
 
     # Dimension floor: relaxed for first-fill, strict for replacement.
@@ -643,13 +712,15 @@ def assign_image_to_entity(
     if not title:
         return _refusal(
             "No Wikipedia title available for entity",
-            entity_type=entity_type, entity_id=entity_id,
+            entity_type=entity_type,
+            entity_id=entity_id,
         )
     qid = resolve_qid_for_wikipedia_title(title)
     if not qid:
         return _refusal(
             f"Could not resolve Wikidata QID for {title!r}",
-            entity_type=entity_type, entity_id=entity_id,
+            entity_type=entity_type,
+            entity_id=entity_id,
         )
 
     considered: list[dict] = []
@@ -660,19 +731,25 @@ def assign_image_to_entity(
     accepted_conf: int = 0
 
     for candidate in find_image_candidates(
-        entity, entity_type=entity_type, prop=prop,
+        entity,
+        entity_type=entity_type,
+        prop=prop,
     ):
         meta, reason, final_conf = _evaluate_candidate(
-            candidate, entity_type=entity_type, min_dim=min_dim,
+            candidate,
+            entity_type=entity_type,
+            min_dim=min_dim,
         )
-        considered.append({
-            "filename": candidate.filename,
-            "source_path": candidate.source_path,
-            "seed_confidence": candidate.identity_confidence,
-            "final_confidence": final_conf,
-            "accepted": meta is not None,
-            "refusal_reason": reason,
-        })
+        considered.append(
+            {
+                "filename": candidate.filename,
+                "source_path": candidate.source_path,
+                "seed_confidence": candidate.identity_confidence,
+                "final_confidence": final_conf,
+                "accepted": meta is not None,
+                "refusal_reason": reason,
+            }
+        )
         if meta is not None:
             accepted_meta = meta
             accepted_candidate = candidate
@@ -681,18 +758,22 @@ def assign_image_to_entity(
 
     if accepted_meta is None or accepted_candidate is None:
         return _refusal(
-            "No candidate image passed the cascade gates "
-            f"(tried {len(considered)} candidate(s))",
-            entity_type=entity_type, entity_id=entity_id,
-            qid=qid or "", considered=considered,
+            f"No candidate image passed the cascade gates (tried {len(considered)} candidate(s))",
+            entity_type=entity_type,
+            entity_id=entity_id,
+            qid=qid or "",
+            considered=considered,
         )
 
     # ----- Persist + provenance ---------------------------------------
     if not source_fetch:
-        source_fetch = (SourceFetch.objects
-                        .filter(entity_type=entity_type, entity_id=entity_id,
-                                source="wikipedia", http_status=200)
-                        .order_by("-fetched_at").first())
+        source_fetch = (
+            SourceFetch.objects.filter(
+                entity_type=entity_type, entity_id=entity_id, source="wikipedia", http_status=200
+            )
+            .order_by("-fetched_at")
+            .first()
+        )
     if not source_fetch:
         # Fall back to a manual-backfill sentinel so provenance still has
         # something to point at. The sentinel records all the legally-
@@ -725,7 +806,9 @@ def assign_image_to_entity(
         except Exception as e:
             logger.warning(
                 "ImageHistory archive failed for %s#%s: %s",
-                entity_type, entity_id, e,
+                entity_type,
+                entity_id,
+                e,
             )
 
     # Write the four image fields.
@@ -735,10 +818,16 @@ def assign_image_to_entity(
     entity.image_license = accepted_meta.license_code
     entity.image_credit = credit
     entity.image_fetched_at = timezone.now()
-    entity.save(update_fields=[
-        "image_url", "image_source_url", "image_original_url",
-        "image_license", "image_credit", "image_fetched_at",
-    ])
+    entity.save(
+        update_fields=[
+            "image_url",
+            "image_source_url",
+            "image_original_url",
+            "image_license",
+            "image_credit",
+            "image_fetched_at",
+        ]
+    )
 
     # Provenance rows for the four legally-significant fields.
     snippet = (
@@ -750,25 +839,33 @@ def assign_image_to_entity(
         f"Identity conf: {accepted_conf}"
     )[:8000]
     for field_name, value in (
-        ("image_url",         entity.image_url),
-        ("image_source_url",  entity.image_source_url),
-        ("image_license",     entity.image_license),
-        ("image_credit",      entity.image_credit),
+        ("image_url", entity.image_url),
+        ("image_source_url", entity.image_source_url),
+        ("image_license", entity.image_license),
+        ("image_credit", entity.image_credit),
     ):
         if not value:
             continue
         record_provenance(
-            entity_type=entity_type, entity_id=entity_id,
-            field_name=field_name, value=value,
-            snippet=snippet, confidence=accepted_conf,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            field_name=field_name,
+            value=value,
+            snippet=snippet,
+            confidence=accepted_conf,
             source_fetch=source_fetch,
         )
 
     return ImageAssignment(
-        success=True, entity_type=entity_type, entity_id=entity_id,
-        image_url=entity.image_url, image_source_url=entity.image_source_url,
-        image_license=entity.image_license, image_credit=entity.image_credit,
-        qid=qid or "", meta=accepted_meta,
+        success=True,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        image_url=entity.image_url,
+        image_source_url=entity.image_source_url,
+        image_license=entity.image_license,
+        image_credit=entity.image_credit,
+        qid=qid or "",
+        meta=accepted_meta,
         identity_confidence=accepted_conf,
         source_path=accepted_candidate.source_path,
         considered=considered,

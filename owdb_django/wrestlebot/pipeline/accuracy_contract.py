@@ -65,6 +65,7 @@ VALID_STATES = (CANDIDATE, PROVISIONAL, VERIFIED, REJECTED)
 @dataclass(frozen=True)
 class Contract:
     """An accuracy contract for one entity type."""
+
     entity_type: str
     required_fields: tuple[str, ...]
     recommended_fields: tuple[str, ...]
@@ -76,10 +77,13 @@ class Contract:
         If passed=True, entity is eligible for verified state.
         """
         from ..models import FieldProvenance
+
         covered = set(
-            FieldProvenance.objects
-            .filter(entity_type=self.entity_type, entity_id=entity_id,
-                    field_name__in=self.required_fields)
+            FieldProvenance.objects.filter(
+                entity_type=self.entity_type,
+                entity_id=entity_id,
+                field_name__in=self.required_fields,
+            )
             .values_list("field_name", flat=True)
             .distinct()
         )
@@ -214,6 +218,7 @@ def venue_name_not_a_city(venue) -> list[str]:
     is actually a location cell, not a venue.
     """
     import re
+
     name = (venue.name or "").strip()
     if not name:
         return ["Venue has empty name"]
@@ -264,9 +269,7 @@ def enforce(entity_type: str, entity) -> tuple[str, list[str]]:
     # Provenance coverage.
     passed, missing = contract.is_satisfied(entity.id)
     if not passed:
-        reasons.append(
-            f"Missing FieldProvenance for required fields: {', '.join(missing)}"
-        )
+        reasons.append(f"Missing FieldProvenance for required fields: {', '.join(missing)}")
 
     # Forbidden-state checks — these are HARD blockers regardless of
     # provenance coverage.

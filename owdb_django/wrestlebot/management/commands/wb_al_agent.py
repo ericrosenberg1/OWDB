@@ -21,24 +21,36 @@ class Command(BaseCommand):
     help = "Run one Al Snow session (interlinking + graph improvement)."
 
     def add_arguments(self, parser):
-        parser.add_argument("--task", type=str, default="",
-                            help="Goal for this session. If empty, uses default.")
-        parser.add_argument("--max-tool-calls", type=int, default=40,
-                            help="Cap on tool invocations per session (default 40).")
-        parser.add_argument("--max-input-tokens", type=int, default=200_000,
-                            help="Cap on cumulative input tokens (default 200k).")
-        parser.add_argument("--max-iterations", type=int, default=60,
-                            help="Cap on model round-trips (default 60).")
-        parser.add_argument("--model", type=str, default="",
-                            help="Override Claude model (defaults to Sonnet 4.6).")
+        parser.add_argument(
+            "--task", type=str, default="", help="Goal for this session. If empty, uses default."
+        )
+        parser.add_argument(
+            "--max-tool-calls",
+            type=int,
+            default=40,
+            help="Cap on tool invocations per session (default 40).",
+        )
+        parser.add_argument(
+            "--max-input-tokens",
+            type=int,
+            default=200_000,
+            help="Cap on cumulative input tokens (default 200k).",
+        )
+        parser.add_argument(
+            "--max-iterations", type=int, default=60, help="Cap on model round-trips (default 60)."
+        )
+        parser.add_argument(
+            "--model", type=str, default="", help="Override Claude model (defaults to Sonnet 4.6)."
+        )
 
     def handle(self, *args, **options):
         from owdb_django.wrestlebot.agents.al_agent import run_al
 
-        self.stdout.write(self.style.SUCCESS(
-            "\n=== Al Snow — Make every entry better. "
-            "Surface every connection. ===\n"
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                "\n=== Al Snow — Make every entry better. Surface every connection. ===\n"
+            )
+        )
         result = run_al(
             task=options["task"] or None,
             max_tool_calls=options["max_tool_calls"],

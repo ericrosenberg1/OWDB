@@ -18,14 +18,14 @@ register = template.Library()
 # to see on the page. Keeps the editorial voice consistent regardless
 # of which internal scraper slug recorded the provenance.
 SOURCE_DISPLAY_NAMES = {
-    "wikipedia":              "Wikipedia",
-    "wikidata":               "Wikidata",
-    "wikimedia_commons":      "Wikimedia Commons",
-    "cagematch":              "Cagematch",
-    "profightdb":             "ProFightDB",
-    "profightdb_pwi_mirror":  "ProFightDB (PWI ranking mirror)",
-    "tmdb":                   "TMDB",
-    "openlibrary":            "Open Library",
+    "wikipedia": "Wikipedia",
+    "wikidata": "Wikidata",
+    "wikimedia_commons": "Wikimedia Commons",
+    "cagematch": "Cagematch",
+    "profightdb": "ProFightDB",
+    "profightdb_pwi_mirror": "ProFightDB (PWI ranking mirror)",
+    "tmdb": "TMDB",
+    "openlibrary": "Open Library",
 }
 
 
@@ -47,10 +47,12 @@ def sources_used_for(entity_type, entity_id):
         {% endif %}
     """
     from owdb_django.wrestlebot.models import FieldProvenance
-    raw = (FieldProvenance.objects
-           .filter(entity_type=entity_type, entity_id=entity_id)
-           .values_list("source_fetch__source", flat=True)
-           .distinct())
+
+    raw = (
+        FieldProvenance.objects.filter(entity_type=entity_type, entity_id=entity_id)
+        .values_list("source_fetch__source", flat=True)
+        .distinct()
+    )
     seen: set[str] = set()
     out: list[str] = []
     for src in raw:
@@ -69,6 +71,8 @@ def sources_used_for(entity_type, entity_id):
 def field_provenance_count(entity_type, entity_id):
     """Total FieldProvenance rows for this entity. Useful for debug bars."""
     from owdb_django.wrestlebot.models import FieldProvenance
+
     return FieldProvenance.objects.filter(
-        entity_type=entity_type, entity_id=entity_id,
+        entity_type=entity_type,
+        entity_id=entity_id,
     ).count()

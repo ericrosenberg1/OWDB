@@ -5,27 +5,48 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('owdbapp', '0018_create_missing_m2m_tables'),
+        ("owdbapp", "0018_create_missing_m2m_tables"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='TrainerRelationship',
+            name="TrainerRelationship",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('notes', models.CharField(blank=True, max_length=255, null=True)),
-                ('trainee', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='trainer_relationships', to='owdbapp.wrestler')),
-                ('trainer', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='trainee_relationships', to='owdbapp.wrestler')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("notes", models.CharField(blank=True, max_length=255, null=True)),
+                (
+                    "trainee",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="trainer_relationships",
+                        to="owdbapp.wrestler",
+                    ),
+                ),
+                (
+                    "trainer",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="trainee_relationships",
+                        to="owdbapp.wrestler",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Trainer relationship',
-                'verbose_name_plural': 'Trainer relationships',
-                'indexes': [models.Index(fields=['trainee'], name='owdbapp_tra_trainee_cd0012_idx'), models.Index(fields=['trainer'], name='owdbapp_tra_trainer_8f7114_idx')],
-                'unique_together': {('trainee', 'trainer')},
+                "verbose_name": "Trainer relationship",
+                "verbose_name_plural": "Trainer relationships",
+                "indexes": [
+                    models.Index(fields=["trainee"], name="owdbapp_tra_trainee_cd0012_idx"),
+                    models.Index(fields=["trainer"], name="owdbapp_tra_trainer_8f7114_idx"),
+                ],
+                "unique_together": {("trainee", "trainer")},
             },
         ),
     ]

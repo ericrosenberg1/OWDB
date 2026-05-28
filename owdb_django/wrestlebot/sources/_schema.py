@@ -79,10 +79,10 @@ logger = logging.getLogger(__name__)
 
 # Type aliases — these are just for readability. The functions themselves
 # are duck-typed; nothing enforces these signatures statically.
-TableFilter   = Callable[[Any], bool]                       # bs4.Tag → bool
-RowFilter     = Callable[[dict], bool]                      # row-context dict → bool
-CellCleaner   = Callable[[str, dict], Optional[FieldSnippet]]
-ContextResolver = Callable[[Any], Any]                      # bs4.Tag → resolved value
+TableFilter = Callable[[Any], bool]  # bs4.Tag → bool
+RowFilter = Callable[[dict], bool]  # row-context dict → bool
+CellCleaner = Callable[[str, dict], Optional[FieldSnippet]]
+ContextResolver = Callable[[Any], Any]  # bs4.Tag → resolved value
 
 
 # -----------------------------------------------------------------------------
@@ -137,10 +137,7 @@ def _header_cells(table) -> list[str]:
     rows = table.find_all("tr")
     if not rows:
         return []
-    return [
-        (c.get_text(" ", strip=True) or "").lower()
-        for c in rows[0].find_all(["th", "td"])
-    ]
+    return [(c.get_text(" ", strip=True) or "").lower() for c in rows[0].find_all(["th", "td"])]
 
 
 def _column_index(headers: list[str], needles: tuple[str, ...]) -> Optional[int]:
@@ -226,9 +223,7 @@ def extract_tables(
             # cell, to disambiguate "Mr. Perfect" → /wiki/Curt_Hennig — use
             # `__cells__` + `__col_index__` to grab their own cell tag.
             raw_ctx: dict = {
-                "__cell_texts__": tuple(
-                    c.get_text(" ", strip=True) or "" for c in cells
-                ),
+                "__cell_texts__": tuple(c.get_text(" ", strip=True) or "" for c in cells),
                 "__cells__": tuple(cells),
                 "__col_index__": dict(col_index),
             }
@@ -267,10 +262,11 @@ def extract_tables(
                         )
                     continue
                 try:
-                    snip = cleaner(raw_value if isinstance(raw_value, str) else str(raw_value), raw_ctx)
+                    snip = cleaner(
+                        raw_value if isinstance(raw_value, str) else str(raw_value), raw_ctx
+                    )
                 except Exception as e:
-                    logger.debug("schema: cleaner(%s) raised on %r: %s",
-                                 fname, raw_value, e)
+                    logger.debug("schema: cleaner(%s) raised on %r: %s", fname, raw_value, e)
                     snip = None
                 if snip is not None:
                     snippets[fname] = snip
@@ -285,13 +281,13 @@ def extract_tables(
             # by convention we pass the raw value (matches the legacy
             # ExtractedEvent / ExtractedEpisode shape).
             try:
-                instance = spec.result_dataclass(
-                    **{k: v.value for k, v in snippets.items()}
-                )
+                instance = spec.result_dataclass(**{k: v.value for k, v in snippets.items()})
             except TypeError as e:
                 logger.warning(
                     "schema: %s rejected fields %s: %s",
-                    spec.result_dataclass.__name__, sorted(snippets), e,
+                    spec.result_dataclass.__name__,
+                    sorted(snippets),
+                    e,
                 )
                 continue
             out.append((instance, snippets))
@@ -306,9 +302,18 @@ def extract_tables(
 
 _ISO_DATE_RE = re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b")
 _MONTH_NAMES = {
-    "january": 1, "february": 2, "march": 3, "april": 4,
-    "may": 5, "june": 6, "july": 7, "august": 8,
-    "september": 9, "october": 10, "november": 11, "december": 12,
+    "january": 1,
+    "february": 2,
+    "march": 3,
+    "april": 4,
+    "may": 5,
+    "june": 6,
+    "july": 7,
+    "august": 8,
+    "september": 9,
+    "october": 10,
+    "november": 11,
+    "december": 12,
 }
 
 
@@ -318,6 +323,7 @@ def clean_iso_or_natural_date(text: str, ctx: dict) -> Optional[FieldSnippet]:
     ('April 6, 2024'). Returns a `datetime.date` value.
     """
     from datetime import date as _date
+
     if not text:
         return None
     text = text.strip()
@@ -327,7 +333,8 @@ def clean_iso_or_natural_date(text: str, ctx: dict) -> Optional[FieldSnippet]:
         try:
             return FieldSnippet(
                 value=_date(int(m.group(1)), int(m.group(2)), int(m.group(3))),
-                snippet=text[:200], confidence=98,
+                snippet=text[:200],
+                confidence=98,
             )
         except ValueError:
             return None
@@ -336,7 +343,8 @@ def clean_iso_or_natural_date(text: str, ctx: dict) -> Optional[FieldSnippet]:
     m = re.search(
         r"(January|February|March|April|May|June|July|August|"
         r"September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})",
-        text, re.I,
+        text,
+        re.I,
     )
     if m:
         try:
@@ -346,7 +354,8 @@ def clean_iso_or_natural_date(text: str, ctx: dict) -> Optional[FieldSnippet]:
                     _MONTH_NAMES[m.group(1).lower()],
                     int(m.group(2)),
                 ),
-                snippet=text[:200], confidence=92,
+                snippet=text[:200],
+                confidence=92,
             )
         except ValueError:
             return None
@@ -439,7 +448,7 @@ def wikitable_with_headers(*required_substrings: str) -> TableFilter:
     required = tuple(s.lower() for s in required_substrings)
 
     def _f(table) -> bool:
-        cls = (table.get("class") or [])
+        cls = table.get("class") or []
         if not any("wikitable" in c for c in cls):
             return False
         headers = _header_cells(table)
@@ -447,4 +456,5 @@ def wikitable_with_headers(*required_substrings: str) -> TableFilter:
             return False
         joined = " | ".join(headers)
         return all(s in joined for s in required)
+
     return _f

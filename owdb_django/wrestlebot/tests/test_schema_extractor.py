@@ -97,7 +97,12 @@ def _skip_location_continuation(ctx: dict) -> bool:
         return False  # blank name = drop
     if "," in name and len(name) < 80:
         suffix = name.split(",")[-1].strip()
-        if suffix and suffix[0].isupper() and len(suffix) <= 30 and suffix.replace(" ", "").isalpha():
+        if (
+            suffix
+            and suffix[0].isupper()
+            and len(suffix) <= 30
+            and suffix.replace(" ", "").isalpha()
+        ):
             return False
     return True
 
@@ -108,15 +113,15 @@ class TableExtractorTests(TestCase):
             result_dataclass=_Event,
             table_filter=wikitable_with_headers("date", "event", "venue"),
             columns={
-                "date":         ("date",),
-                "name":         ("event",),
-                "venue_name":   ("venue",),
-                "attendance":   ("attendance",),
+                "date": ("date",),
+                "name": ("event",),
+                "venue_name": ("venue",),
+                "attendance": ("attendance",),
                 "year_context": ("__heading_year__",),
             },
             cleaners={
-                "date":       clean_iso_or_natural_date,
-                "name":       clean_text,
+                "date": clean_iso_or_natural_date,
+                "name": clean_text,
                 "venue_name": clean_text,
                 "attendance": clean_attendance,
             },
@@ -181,8 +186,9 @@ class TableExtractorTests(TestCase):
             for field_name in ("date", "name", "venue_name", "attendance"):
                 value = getattr(inst, field_name)
                 if value not in (None, "", 0):
-                    self.assertIn(field_name, snippets,
-                                  f"missing snippet for {field_name!r} in row {inst!r}")
+                    self.assertIn(
+                        field_name, snippets, f"missing snippet for {field_name!r} in row {inst!r}"
+                    )
                     self.assertIsInstance(snippets[field_name], FieldSnippet)
                     # Snippet text must be non-empty so the contract can quote it.
                     self.assertTrue(snippets[field_name].snippet)

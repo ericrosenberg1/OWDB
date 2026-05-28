@@ -74,7 +74,8 @@ class JRExtractMarksFetchUsedOnFailureTests(TestCase):
         self.assertEqual(second, 0)
         fetch.refresh_from_db()
         self.assertEqual(
-            fetch.used_at, first_used_at,
+            fetch.used_at,
+            first_used_at,
             "used_at should not be re-stamped — the row should have been "
             "filtered out of the pending queue on the second pass",
         )

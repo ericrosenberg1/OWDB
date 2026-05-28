@@ -47,6 +47,7 @@ RATE_LIMIT_PER_SEC = 1.0 / 2.0
 @dataclass
 class PFDBSearchHit:
     """One search-result row."""
+
     name: str
     url: str
     promotion: str = ""  # PFDB shows current-promotion in parens after the name
@@ -55,6 +56,7 @@ class PFDBSearchHit:
 @dataclass
 class PFDBProfile:
     """A wrestler profile summary."""
+
     name: str
     url: str
     fields: dict = field(default_factory=dict)
@@ -71,7 +73,8 @@ class PFDBProfile:
 
     def to_dict(self) -> dict:
         return {
-            "name": self.name, "url": self.url,
+            "name": self.name,
+            "url": self.url,
             "fields": dict(self.fields),
             "real_name": self.real_name,
             "date_of_birth": self.date_of_birth,
@@ -90,11 +93,14 @@ class PFDBProfile:
 
 
 def _http_get(url: str, timeout: float = 20.0) -> Optional[str]:
-    req = urllib.request.Request(url, headers={
-        "User-Agent": USER_AGENT,
-        "Accept": "text/html,application/xhtml+xml",
-        "Accept-Language": "en-US,en;q=0.9",
-    })
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml",
+            "Accept-Language": "en-US,en;q=0.9",
+        },
+    )
     with rate_limited("profightdb", per_second=RATE_LIMIT_PER_SEC):
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -124,9 +130,7 @@ def search(query: str, limit: int = 10) -> list[PFDBSearchHit]:
     """
     if not query or not query.strip():
         return []
-    query_tokens = {
-        t.lower() for t in re.findall(r"[a-zA-Z0-9']{3,}", query)
-    }
+    query_tokens = {t.lower() for t in re.findall(r"[a-zA-Z0-9']{3,}", query)}
     if not query_tokens:
         return []
     url = PFDB_SEARCH.format(q=urllib.parse.quote_plus(query.strip()))
@@ -181,8 +185,14 @@ def _to_int(s: str) -> Optional[int]:
 # the regex uses the next-label-or-end as a terminator, so listing them
 # left-to-right means each value stops at the next label.
 _PFDB_LABELS = (
-    "Name", "Preferred Name", "Date Of Birth", "Place of Birth",
-    "Nationality", "Gender", "Matches", "Ring Name(s)",
+    "Name",
+    "Preferred Name",
+    "Date Of Birth",
+    "Place of Birth",
+    "Nationality",
+    "Gender",
+    "Matches",
+    "Ring Name(s)",
 )
 
 
@@ -259,13 +269,14 @@ def fetch_wrestler_profile(url: str) -> Optional[PFDBProfile]:
     if ring_raw:
         profile.ring_names = [n.strip() for n in re.split(r"[,/;]", ring_raw) if n.strip()][:20]
 
-    profile.raw_snippet = (tables[0].get_text(" ", strip=True)[:2000] if tables else "")
+    profile.raw_snippet = tables[0].get_text(" ", strip=True)[:2000] if tables else ""
     return profile
 
 
 if __name__ == "__main__":  # pragma: no cover
     import json
     import sys
+
     args = sys.argv[1:] or ["Bret Hart"]
     hits = search(args[0], limit=3)
     print(f"{len(hits)} hits:")

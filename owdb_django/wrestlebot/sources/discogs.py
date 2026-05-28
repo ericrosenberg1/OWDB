@@ -51,8 +51,9 @@ _warned_no_token = False
 @dataclass
 class DiscogsHit:
     """One Discogs search hit (release/master/artist)."""
+
     discogs_id: int
-    type: str         # 'release' | 'master' | 'artist'
+    type: str  # 'release' | 'master' | 'artist'
     title: str
     year: str = ""
     label: str = ""
@@ -89,9 +90,10 @@ def _read_token_from_keychain() -> Optional[str]:
         return None
     try:
         result = subprocess.run(
-            ["security", "find-generic-password",
-             "-s", KEYCHAIN_SERVICE, "-w"],
-            capture_output=True, text=True, timeout=5,
+            ["security", "find-generic-password", "-s", KEYCHAIN_SERVICE, "-w"],
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -103,6 +105,7 @@ def _read_token_from_keychain() -> Optional[str]:
 def get_token() -> Optional[str]:
     try:
         from django.conf import settings
+
         token = getattr(settings, "DISCOGS_TOKEN", None)
         if token:
             return token
@@ -121,8 +124,9 @@ def available() -> bool:
 # ---------------------------------------------------------------- HTTP
 
 
-def _http_get_json(path: str, params: Optional[dict] = None,
-                  timeout: float = 15.0) -> Optional[dict]:
+def _http_get_json(
+    path: str, params: Optional[dict] = None, timeout: float = 15.0
+) -> Optional[dict]:
     global _warned_no_token
     token = get_token()
     if not token:
@@ -137,10 +141,13 @@ def _http_get_json(path: str, params: Optional[dict] = None,
     qs = dict(params or {})
     qs["token"] = token
     url = f"{DISCOGS_BASE}{path}?{urllib.parse.urlencode(qs)}"
-    req = urllib.request.Request(url, headers={
-        "User-Agent": USER_AGENT,
-        "Accept": "application/json",
-    })
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json",
+        },
+    )
     with rate_limited("discogs", per_second=RATE_LIMIT_PER_SEC):
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -167,7 +174,7 @@ def _http_get_json(path: str, params: Optional[dict] = None,
 
 def search(
     query: str,
-    type: str = "release",   # 'release' | 'master' | 'artist' | 'label'
+    type: str = "release",  # 'release' | 'master' | 'artist' | 'label'
     artist: Optional[str] = None,
     year: Optional[str] = None,
     limit: int = 10,
@@ -191,20 +198,24 @@ def search(
     for r in data.get("results", []) or []:
         if not isinstance(r, dict):
             continue
-        out.append(DiscogsHit(
-            discogs_id=int(r.get("id") or 0),
-            type=r.get("type", "") or "",
-            title=r.get("title", "") or "",
-            year=str(r.get("year") or ""),
-            label=", ".join(r.get("label") or []) if isinstance(r.get("label"), list) else (r.get("label") or ""),
-            catno=r.get("catno", "") or "",
-            country=r.get("country", "") or "",
-            formats=list(r.get("format") or []),
-            genre=list(r.get("genre") or []),
-            style=list(r.get("style") or []),
-            thumb_url=r.get("thumb", "") or "",
-            discogs_url=f"https://www.discogs.com{r.get('uri','')}" if r.get("uri") else "",
-        ))
+        out.append(
+            DiscogsHit(
+                discogs_id=int(r.get("id") or 0),
+                type=r.get("type", "") or "",
+                title=r.get("title", "") or "",
+                year=str(r.get("year") or ""),
+                label=", ".join(r.get("label") or [])
+                if isinstance(r.get("label"), list)
+                else (r.get("label") or ""),
+                catno=r.get("catno", "") or "",
+                country=r.get("country", "") or "",
+                formats=list(r.get("format") or []),
+                genre=list(r.get("genre") or []),
+                style=list(r.get("style") or []),
+                thumb_url=r.get("thumb", "") or "",
+                discogs_url=f"https://www.discogs.com{r.get('uri', '')}" if r.get("uri") else "",
+            )
+        )
     return out
 
 
@@ -217,6 +228,7 @@ def get_release(release_id: int) -> Optional[dict]:
 
 if __name__ == "__main__":  # pragma: no cover
     import sys
+
     q = " ".join(sys.argv[1:]) or "WWE The Music Vol 1"
     hits = search(q, limit=5)
     print(f"{len(hits)} hits for {q!r}:")

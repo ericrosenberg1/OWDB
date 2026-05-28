@@ -61,8 +61,8 @@ def _resolve_first_existing_title(title_fallbacks: tuple[str, ...]) -> Optional[
         # returns the canonical title in `result.parse.title`.
         resolved = d["parse"].get("title", cand)
         text = d["parse"].get("text")
-        html = text if isinstance(text, str) else (
-            text.get("*") if isinstance(text, dict) else None
+        html = (
+            text if isinstance(text, str) else (text.get("*") if isinstance(text, dict) else None)
         )
         if not html:
             continue
@@ -124,11 +124,16 @@ def _looks_like_video_game_article(html: str, article_title: str) -> bool:
     # already came from a curated seed catalog, so a positive match here
     # is high signal.
     return any(
-        p in lead_text for p in (
-            "is a video game", "is a wrestling video game",
-            "is an upcoming video game", "is a fighting game",
-            "is a sports video game", "is a professional wrestling video game",
-            "is a 2d professional wrestling", "is a 3d professional wrestling",
+        p in lead_text
+        for p in (
+            "is a video game",
+            "is a wrestling video game",
+            "is an upcoming video game",
+            "is a fighting game",
+            "is a sports video game",
+            "is a professional wrestling video game",
+            "is a 2d professional wrestling",
+            "is a 3d professional wrestling",
         )
     )
 
@@ -175,11 +180,14 @@ def ingest_games_discovery(
         # Already-in-db check: if a VideoGame with this exact canonical
         # title or matching wikipedia_url already exists, no need to
         # re-queue.
-        existing = VideoGame.objects.filter(
-            name__iexact=resolved,
-        ).first() or VideoGame.objects.filter(
-            wikipedia_url__icontains=resolved.replace(" ", "_"),
-        ).first()
+        existing = (
+            VideoGame.objects.filter(
+                name__iexact=resolved,
+            ).first()
+            or VideoGame.objects.filter(
+                wikipedia_url__icontains=resolved.replace(" ", "_"),
+            ).first()
+        )
 
         if existing is not None:
             out[s] = {
@@ -201,7 +209,9 @@ def ingest_games_discovery(
         except Exception as e:
             logger.warning(
                 "games_discovery: fetch failed for %r (%s): %s",
-                s, resolved, e,
+                s,
+                resolved,
+                e,
             )
             queued = 0
 
@@ -220,7 +230,8 @@ def ingest_games_discovery(
         if grand_queued >= max_unknown_to_queue:
             logger.info(
                 "games_discovery: queue cap (%d) reached after %d slugs",
-                max_unknown_to_queue, list(out).index(s) + 1,
+                max_unknown_to_queue,
+                list(out).index(s) + 1,
             )
             break
 

@@ -31,7 +31,10 @@ SOURCE_DISPLAY = {
     "cagematch": {"name": "External wrestling database", "homepage": None},
     "profightdb": {"name": "External wrestling database", "homepage": None},
     "tmdb": {"name": "TMDB", "homepage": "https://www.themoviedb.org/"},
-    "wikimedia_commons": {"name": "Wikimedia Commons", "homepage": "https://commons.wikimedia.org/"},
+    "wikimedia_commons": {
+        "name": "Wikimedia Commons",
+        "homepage": "https://commons.wikimedia.org/",
+    },
 }
 
 
@@ -61,11 +64,9 @@ def verification_stamp(entity):
     except Exception:
         return {"sources": [], "total": 0}
 
-    fetches = (
-        SourceFetch.objects
-        .filter(entity_type=entity_type, entity_id=entity.id, http_status=200)
-        .order_by("source", "-fetched_at")
-    )
+    fetches = SourceFetch.objects.filter(
+        entity_type=entity_type, entity_id=entity.id, http_status=200
+    ).order_by("source", "-fetched_at")
     # One entry per source (the latest successful fetch).
     by_source: dict[str, dict] = {}
     for f in fetches:
@@ -93,7 +94,9 @@ def verification_stamp(entity):
         ):
             url = getattr(entity, attr, None)
             if url and source_key not in by_source:
-                display = SOURCE_DISPLAY.get(source_key, {"name": "External source", "homepage": None})
+                display = SOURCE_DISPLAY.get(
+                    source_key, {"name": "External source", "homepage": None}
+                )
                 by_source[source_key] = {
                     "source": source_key,
                     "display_name": display["name"],
@@ -125,5 +128,6 @@ def verification_short(entity) -> str:
     n = data["total"]
     if n == 0:
         return ""
-    return mark_safe(f"<small class='verification-short'>Verified from {n} source"
-                     f"{'s' if n != 1 else ''}</small>")
+    return mark_safe(
+        f"<small class='verification-short'>Verified from {n} source{'s' if n != 1 else ''}</small>"
+    )

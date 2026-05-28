@@ -5,51 +5,116 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('wrestlebot', '0010_rulescore_rulesuggestion_earlobservation'),
+        ("wrestlebot", "0010_rulescore_rulesuggestion_earlobservation"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='AgentSession',
+            name="AgentSession",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('bot', models.CharField(choices=[('jr', 'JR — data-adding bot'), ('earl', 'Earl — verification + self-improving auditor')], db_index=True, max_length=20)),
-                ('task', models.TextField(help_text='Human-readable goal for this session')),
-                ('model', models.CharField(default='claude-sonnet-4-6', max_length=100)),
-                ('started_at', models.DateTimeField(auto_now_add=True, db_index=True)),
-                ('finished_at', models.DateTimeField(blank=True, null=True)),
-                ('max_tool_calls', models.PositiveIntegerField(default=50)),
-                ('max_input_tokens', models.PositiveIntegerField(default=200000)),
-                ('tool_calls_used', models.PositiveIntegerField(default=0)),
-                ('input_tokens_used', models.PositiveIntegerField(default=0)),
-                ('output_tokens_used', models.PositiveIntegerField(default=0)),
-                ('outcome', models.CharField(choices=[('running', 'In progress'), ('completed', 'Completed successfully'), ('budget_exceeded', 'Hit budget cap'), ('error', 'Errored out'), ('stopped', 'Stopped early by caller')], db_index=True, default='running', max_length=20)),
-                ('final_summary', models.TextField(blank=True, default='', help_text="Agent's own summary of what it accomplished")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "bot",
+                    models.CharField(
+                        choices=[
+                            ("jr", "JR — data-adding bot"),
+                            ("earl", "Earl — verification + self-improving auditor"),
+                        ],
+                        db_index=True,
+                        max_length=20,
+                    ),
+                ),
+                ("task", models.TextField(help_text="Human-readable goal for this session")),
+                ("model", models.CharField(default="claude-sonnet-4-6", max_length=100)),
+                ("started_at", models.DateTimeField(auto_now_add=True, db_index=True)),
+                ("finished_at", models.DateTimeField(blank=True, null=True)),
+                ("max_tool_calls", models.PositiveIntegerField(default=50)),
+                ("max_input_tokens", models.PositiveIntegerField(default=200000)),
+                ("tool_calls_used", models.PositiveIntegerField(default=0)),
+                ("input_tokens_used", models.PositiveIntegerField(default=0)),
+                ("output_tokens_used", models.PositiveIntegerField(default=0)),
+                (
+                    "outcome",
+                    models.CharField(
+                        choices=[
+                            ("running", "In progress"),
+                            ("completed", "Completed successfully"),
+                            ("budget_exceeded", "Hit budget cap"),
+                            ("error", "Errored out"),
+                            ("stopped", "Stopped early by caller"),
+                        ],
+                        db_index=True,
+                        default="running",
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "final_summary",
+                    models.TextField(
+                        blank=True,
+                        default="",
+                        help_text="Agent's own summary of what it accomplished",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-started_at'],
-                'indexes': [models.Index(fields=['bot', 'outcome'], name='wrestlebot__bot_ba9fe7_idx'), models.Index(fields=['-started_at'], name='wrestlebot__started_1493f8_idx')],
+                "ordering": ["-started_at"],
+                "indexes": [
+                    models.Index(fields=["bot", "outcome"], name="wrestlebot__bot_ba9fe7_idx"),
+                    models.Index(fields=["-started_at"], name="wrestlebot__started_1493f8_idx"),
+                ],
             },
         ),
         migrations.CreateModel(
-            name='AgentToolCall',
+            name="AgentToolCall",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('sequence', models.PositiveIntegerField(help_text='0-based call order within session')),
-                ('tool_name', models.CharField(db_index=True, max_length=100)),
-                ('arguments', models.JSONField(blank=True, default=dict)),
-                ('result_summary', models.TextField(blank=True, default='', help_text='Truncated result text for human inspection')),
-                ('error', models.TextField(blank=True, default='')),
-                ('duration_ms', models.PositiveIntegerField(default=0)),
-                ('called_at', models.DateTimeField(auto_now_add=True, db_index=True)),
-                ('session', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='tool_calls', to='wrestlebot.agentsession')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "sequence",
+                    models.PositiveIntegerField(help_text="0-based call order within session"),
+                ),
+                ("tool_name", models.CharField(db_index=True, max_length=100)),
+                ("arguments", models.JSONField(blank=True, default=dict)),
+                (
+                    "result_summary",
+                    models.TextField(
+                        blank=True,
+                        default="",
+                        help_text="Truncated result text for human inspection",
+                    ),
+                ),
+                ("error", models.TextField(blank=True, default="")),
+                ("duration_ms", models.PositiveIntegerField(default=0)),
+                ("called_at", models.DateTimeField(auto_now_add=True, db_index=True)),
+                (
+                    "session",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="tool_calls",
+                        to="wrestlebot.agentsession",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['session', 'sequence'],
-                'indexes': [models.Index(fields=['tool_name'], name='wrestlebot__tool_na_5a469c_idx'), models.Index(fields=['session', 'sequence'], name='wrestlebot__session_bb7a09_idx')],
-                'unique_together': {('session', 'sequence')},
+                "ordering": ["session", "sequence"],
+                "indexes": [
+                    models.Index(fields=["tool_name"], name="wrestlebot__tool_na_5a469c_idx"),
+                    models.Index(
+                        fields=["session", "sequence"], name="wrestlebot__session_bb7a09_idx"
+                    ),
+                ],
+                "unique_together": {("session", "sequence")},
             },
         ),
     ]

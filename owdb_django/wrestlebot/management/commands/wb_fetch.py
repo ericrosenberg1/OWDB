@@ -48,31 +48,50 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "names", nargs="*",
+            "names",
+            nargs="*",
             help="Names to fetch (positional). Omit and use --discover to enumerate.",
         )
         parser.add_argument(
             "--type",
-            choices=["wrestler", "event", "venue", "promotion", "book",
-                     "video_game", "podcast", "action_figure", "theme_song",
-                     "title", "stable", "tv_show", "special"],
+            choices=[
+                "wrestler",
+                "event",
+                "venue",
+                "promotion",
+                "book",
+                "video_game",
+                "podcast",
+                "action_figure",
+                "theme_song",
+                "title",
+                "stable",
+                "tv_show",
+                "special",
+            ],
             default="wrestler",
             help="Entity type to fetch (default: wrestler).",
         )
         parser.add_argument(
-            "--discover", action="store_true",
+            "--discover",
+            action="store_true",
             help="Run discovery first to populate the candidate list.",
         )
         parser.add_argument(
-            "--total", type=int, default=10,
+            "--total",
+            type=int,
+            default=10,
             help="When using --discover, max total candidates (default: 10).",
         )
         parser.add_argument(
-            "--per-category", type=int, default=3,
+            "--per-category",
+            type=int,
+            default=3,
             help="When using --discover, max per category (default: 3).",
         )
         parser.add_argument(
-            "--force", action="store_true",
+            "--force",
+            action="store_true",
             help="Refetch even if a recent SourceFetch already exists.",
         )
 
@@ -99,15 +118,15 @@ class Command(BaseCommand):
                 )
             else:
                 discovered = []
-            self.stdout.write(self.style.SUCCESS(
-                f"Discovered {len(discovered)} {entity_type} candidate(s)"
-            ))
+            self.stdout.write(
+                self.style.SUCCESS(f"Discovered {len(discovered)} {entity_type} candidate(s)")
+            )
             names.extend(discovered)
 
         if not names:
-            self.stdout.write(self.style.WARNING(
-                "No names given. Pass names as args, or use --discover."
-            ))
+            self.stdout.write(
+                self.style.WARNING("No names given. Pass names as args, or use --discover.")
+            )
             return
 
         # Deduplicate while preserving order.
@@ -144,9 +163,9 @@ class Command(BaseCommand):
         else:
             fetches = []
 
-        self.stdout.write(self.style.SUCCESS(
-            f"Done. {len(fetches)} SourceFetch rows ready (created or reused)."
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(f"Done. {len(fetches)} SourceFetch rows ready (created or reused).")
+        )
         for f in fetches:
             self.stdout.write(
                 f"  SourceFetch#{f.id}  {f.source}  {f.candidate_name!r}  "

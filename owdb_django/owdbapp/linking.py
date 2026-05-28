@@ -171,19 +171,11 @@ def build_linked_from_summary(obj, limit: int = 5) -> str:
             obj.matches.values_list("event__name", flat=True).distinct(), limit
         )
         titles, titles_more = _limit_objects(obj.get_titles_won(), limit)
-        podcasts, podcasts_more = _limit_values(
-            obj.podcasts.values_list("name", flat=True), limit
-        )
-        books, books_more = _limit_values(
-            obj.books.values_list("title", flat=True), limit
-        )
-        specials, specials_more = _limit_values(
-            obj.specials.values_list("title", flat=True), limit
-        )
+        podcasts, podcasts_more = _limit_values(obj.podcasts.values_list("name", flat=True), limit)
+        books, books_more = _limit_values(obj.books.values_list("title", flat=True), limit)
+        specials, specials_more = _limit_values(obj.specials.values_list("title", flat=True), limit)
         games, games_more = _limit_values(
-            VideoGame.objects.filter(
-                promotions__events__matches__wrestlers=obj
-            )
+            VideoGame.objects.filter(promotions__events__matches__wrestlers=obj)
             .distinct()
             .values_list("name", flat=True),
             limit,
@@ -211,9 +203,7 @@ def build_linked_from_summary(obj, limit: int = 5) -> str:
             obj.events.values_list("matches__wrestlers__name", flat=True).distinct(),
             limit,
         )
-        games, games_more = _limit_values(
-            obj.video_games.values_list("name", flat=True), limit
-        )
+        games, games_more = _limit_values(obj.video_games.values_list("name", flat=True), limit)
         venues, venues_more = _limit_values(
             obj.events.values_list("venue__name", flat=True).distinct(), limit
         )
@@ -272,11 +262,7 @@ def build_linked_from_summary(obj, limit: int = 5) -> str:
             obj.wrestlers.values_list("name", flat=True), limit
         )
         event_name = [obj.event.name] if obj.event else []
-        promotion = (
-            [obj.event.promotion.name]
-            if obj.event and obj.event.promotion
-            else []
-        )
+        promotion = [obj.event.promotion.name] if obj.event and obj.event.promotion else []
         title = [obj.title.name] if obj.title else []
 
         sources.extend(
@@ -394,7 +380,9 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
             meta = []
             if episode.podcast:
                 meta.append(_meta_text(episode.podcast.name, _build_url(episode.podcast)))
-            podcast_items.append(_make_item(episode, year=_year_from_date(episode.published_date), meta=meta))
+            podcast_items.append(
+                _make_item(episode, year=_year_from_date(episode.published_date), meta=meta)
+            )
         sections.append({"label": "Podcast Appearances", "items": podcast_items})
 
         books = obj.get_books()[:limit]
@@ -447,7 +435,13 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
             meta = []
             if getattr(wrestler, "match_count", None) is not None:
                 meta.append(_meta_text(f"{wrestler.match_count} matches"))
-            wrestler_items.append(_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "", meta=meta))
+            wrestler_items.append(
+                _make_item(
+                    wrestler,
+                    year=str(wrestler.debut_year) if wrestler.debut_year else "",
+                    meta=meta,
+                )
+            )
         sections.append({"label": "Featured Wrestlers", "items": wrestler_items})
 
         # Stables belonging to this promotion.
@@ -506,7 +500,10 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
             sections.append({"label": "Venue", "items": [_make_item(obj.venue)]})
 
         wrestlers = obj.get_all_wrestlers()[:limit]
-        wrestler_items = [_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "") for wrestler in wrestlers]
+        wrestler_items = [
+            _make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "")
+            for wrestler in wrestlers
+        ]
         sections.append({"label": "Wrestlers", "items": wrestler_items})
 
         titles = obj.get_titles_defended()[:limit]
@@ -515,7 +512,9 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
             meta = []
             if title.promotion:
                 meta.append(_meta_text(title.promotion.name, _build_url(title.promotion)))
-            title_items.append(_make_item(title, year=str(title.debut_year) if title.debut_year else "", meta=meta))
+            title_items.append(
+                _make_item(title, year=str(title.debut_year) if title.debut_year else "", meta=meta)
+            )
         sections.append({"label": "Titles Defended", "items": title_items})
 
     elif isinstance(obj, Title):
@@ -525,7 +524,9 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
         champions = obj.get_all_champions()[:limit]
         champion_items = []
         for champion in champions:
-            champion_items.append(_make_item(champion, year=str(champion.debut_year) if champion.debut_year else ""))
+            champion_items.append(
+                _make_item(champion, year=str(champion.debut_year) if champion.debut_year else "")
+            )
         sections.append({"label": "Champions", "items": champion_items})
 
         events = (
@@ -571,20 +572,41 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
 
     elif isinstance(obj, Match):
         if obj.event:
-            sections.append({"label": "Event", "items": [_make_item(obj.event, year=_year_from_date(obj.event.date))]})
+            sections.append(
+                {
+                    "label": "Event",
+                    "items": [_make_item(obj.event, year=_year_from_date(obj.event.date))],
+                }
+            )
         if obj.event and obj.event.promotion:
             sections.append({"label": "Promotion", "items": [_make_item(obj.event.promotion)]})
 
         participants = obj.wrestlers.all()[:limit]
-        participant_items = [_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "") for wrestler in participants]
+        participant_items = [
+            _make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "")
+            for wrestler in participants
+        ]
         sections.append({"label": "Participants", "items": participant_items})
 
         if obj.title:
-            sections.append({"label": "Title On The Line", "items": [_make_item(obj.title, year=str(obj.title.debut_year) if obj.title.debut_year else "")]})
+            sections.append(
+                {
+                    "label": "Title On The Line",
+                    "items": [
+                        _make_item(
+                            obj.title,
+                            year=str(obj.title.debut_year) if obj.title.debut_year else "",
+                        )
+                    ],
+                }
+            )
 
     elif isinstance(obj, VideoGame):
         promotions = obj.promotions.all()[:limit]
-        promo_items = [_make_item(promo, year=str(promo.founded_year) if promo.founded_year else "") for promo in promotions]
+        promo_items = [
+            _make_item(promo, year=str(promo.founded_year) if promo.founded_year else "")
+            for promo in promotions
+        ]
         sections.append({"label": "Promotions", "items": promo_items})
 
         # Direct wrestler roster (M2M, populated by the games ingest
@@ -598,19 +620,28 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
 
     elif isinstance(obj, Podcast):
         wrestlers = obj.related_wrestlers.all()[:limit]
-        wrestler_items = [_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "") for wrestler in wrestlers]
+        wrestler_items = [
+            _make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "")
+            for wrestler in wrestlers
+        ]
         sections.append({"label": "Featuring Wrestlers", "items": wrestler_items})
 
     elif isinstance(obj, PodcastEpisode):
         if obj.podcast:
             sections.append({"label": "Podcast", "items": [_make_item(obj.podcast)]})
         guests = obj.guests.all()[:limit]
-        guest_items = [_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "") for wrestler in guests]
+        guest_items = [
+            _make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "")
+            for wrestler in guests
+        ]
         sections.append({"label": "Guests", "items": guest_items})
 
     elif isinstance(obj, Book):
         wrestlers = obj.related_wrestlers.all()[:limit]
-        wrestler_items = [_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "") for wrestler in wrestlers]
+        wrestler_items = [
+            _make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "")
+            for wrestler in wrestlers
+        ]
         sections.append({"label": "Featuring Wrestlers", "items": wrestler_items})
 
         related_ids = list(obj.related_wrestlers.values_list("id", flat=True))
@@ -620,9 +651,9 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
         # wrestler surfaces every promotion that wrestler ever had a
         # single match in.
         from django.db.models import Count, Q
+
         promotions = (
-            Promotion.objects
-            .filter(events__matches__wrestlers__in=related_ids)
+            Promotion.objects.filter(events__matches__wrestlers__in=related_ids)
             .annotate(
                 _bridge_match_count=Count(
                     "events__matches",
@@ -642,12 +673,7 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
         # Derived stables — any stable whose members include any of
         # this book's related wrestlers. Stable membership is a
         # curator-attested M2M, so single overlap is enough grounding.
-        stables = (
-            Stable.objects
-            .filter(members__in=related_ids)
-            .distinct()
-            .order_by("name")[:limit]
-        )
+        stables = Stable.objects.filter(members__in=related_ids).distinct().order_by("name")[:limit]
         stable_items = [
             _make_item(stable, year=str(stable.formed_year) if stable.formed_year else "")
             for stable in stables
@@ -656,14 +682,17 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
 
     elif isinstance(obj, Special):
         wrestlers = obj.related_wrestlers.all()[:limit]
-        wrestler_items = [_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "") for wrestler in wrestlers]
+        wrestler_items = [
+            _make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "")
+            for wrestler in wrestlers
+        ]
         sections.append({"label": "Featuring Wrestlers", "items": wrestler_items})
 
         related_ids = list(obj.related_wrestlers.values_list("id", flat=True))
         from django.db.models import Count, Q
+
         promotions = (
-            Promotion.objects
-            .filter(events__matches__wrestlers__in=related_ids)
+            Promotion.objects.filter(events__matches__wrestlers__in=related_ids)
             .annotate(
                 _bridge_match_count=Count(
                     "events__matches",
@@ -680,12 +709,7 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
         ]
         sections.append({"label": "Promotions", "items": promo_items})
 
-        stables = (
-            Stable.objects
-            .filter(members__in=related_ids)
-            .distinct()
-            .order_by("name")[:limit]
-        )
+        stables = Stable.objects.filter(members__in=related_ids).distinct().order_by("name")[:limit]
         stable_items = [
             _make_item(stable, year=str(stable.formed_year) if stable.formed_year else "")
             for stable in stables
@@ -699,15 +723,13 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
 
         leaders = obj.leaders.all()[:limit]
         leader_items = [
-            _make_item(w, year=str(w.debut_year) if w.debut_year else "")
-            for w in leaders
+            _make_item(w, year=str(w.debut_year) if w.debut_year else "") for w in leaders
         ]
         sections.append({"label": "Leaders", "items": leader_items})
 
         members = obj.members.all()[:limit]
         member_items = [
-            _make_item(w, year=str(w.debut_year) if w.debut_year else "")
-            for w in members
+            _make_item(w, year=str(w.debut_year) if w.debut_year else "") for w in members
         ]
         sections.append({"label": "Members", "items": member_items})
 
@@ -771,7 +793,11 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
             meta = []
             if getattr(promo, "event_count", None) is not None:
                 meta.append(_meta_text(f"{promo.event_count} events"))
-            promo_items.append(_make_item(promo, year=str(promo.founded_year) if promo.founded_year else "", meta=meta))
+            promo_items.append(
+                _make_item(
+                    promo, year=str(promo.founded_year) if promo.founded_year else "", meta=meta
+                )
+            )
         sections.append({"label": "Promotions", "items": promo_items})
 
         wrestlers = obj.get_wrestlers(limit=limit)
@@ -780,7 +806,13 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
             meta = []
             if getattr(wrestler, "appearance_count", None) is not None:
                 meta.append(_meta_text(f"{wrestler.appearance_count} appearances"))
-            wrestler_items.append(_make_item(wrestler, year=str(wrestler.debut_year) if wrestler.debut_year else "", meta=meta))
+            wrestler_items.append(
+                _make_item(
+                    wrestler,
+                    year=str(wrestler.debut_year) if wrestler.debut_year else "",
+                    meta=meta,
+                )
+            )
         sections.append({"label": "Performing Wrestlers", "items": wrestler_items})
 
     return [section for section in sections if section.get("items")]

@@ -45,8 +45,7 @@ def _compact_tool_result_content(content) -> str:
     if isinstance(content, list):
         # Anthropic SDK sometimes models content as [{"type":"text","text":...}]
         text = "".join(
-            b.get("text", "") for b in content
-            if isinstance(b, dict) and b.get("type") == "text"
+            b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text"
         )
     elif isinstance(content, str):
         text = content
@@ -64,7 +63,8 @@ def _compact_tool_result_content(content) -> str:
 
     if isinstance(data, dict):
         scalars = {
-            k: v for k, v in data.items()
+            k: v
+            for k, v in data.items()
             if isinstance(v, bool)
             or isinstance(v, (int, float))
             or (isinstance(v, str) and len(v) < 40)
@@ -117,9 +117,9 @@ class AgentRunResult:
 
 def run_agent(
     *,
-    bot: str,                       # "jr" or "earl"
-    task: str,                      # the goal for this run
-    tools: dict[str, AgentTool],    # JR_TOOLS or EARL_TOOLS
+    bot: str,  # "jr" or "earl"
+    task: str,  # the goal for this run
+    tools: dict[str, AgentTool],  # JR_TOOLS or EARL_TOOLS
     system_prompt: str,
     max_tool_calls: int = 50,
     max_input_tokens: int = 200_000,
@@ -154,9 +154,12 @@ def run_agent(
         session.finished_at = timezone.now()
         session.save()
         return AgentRunResult(
-            session_id=session.id, outcome="error",
+            session_id=session.id,
+            outcome="error",
             final_summary=session.final_summary,
-            tool_calls_used=0, input_tokens_used=0, output_tokens_used=0,
+            tool_calls_used=0,
+            input_tokens_used=0,
+            output_tokens_used=0,
         )
 
     anthropic_tools = build_anthropic_tools(tools)
@@ -270,24 +273,30 @@ def run_agent(
                 )
                 session.tool_calls_used = sequence
 
-                next_user_blocks.append({
-                    "type": "tool_result",
-                    "tool_use_id": tool_use_id,
-                    "content": result_text,
-                    # Match the error_text branch above: opaque dicts (no
-                    # "ok" key) count as errors so the model sees them as
-                    # such on the next turn.
-                    "is_error": not result.get("ok", False),
-                })
+                next_user_blocks.append(
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": tool_use_id,
+                        "content": result_text,
+                        # Match the error_text branch above: opaque dicts (no
+                        # "ok" key) count as errors so the model sees them as
+                        # such on the next turn.
+                        "is_error": not result.get("ok", False),
+                    }
+                )
 
                 if tool_name == "done":
                     final_summary = result.get("summary") or any_text or final_summary
                     outcome = "completed"
 
             # Save updated counters between iterations.
-            session.save(update_fields=[
-                "tool_calls_used", "input_tokens_used", "output_tokens_used",
-            ])
+            session.save(
+                update_fields=[
+                    "tool_calls_used",
+                    "input_tokens_used",
+                    "output_tokens_used",
+                ]
+            )
 
             # If `done` was called, exit BEFORE sending another model turn.
             if outcome == "completed" and any(
@@ -324,8 +333,11 @@ def run_agent(
 
     logger.info(
         "Agent session #%d finished: outcome=%s calls=%d tokens=in:%d out:%d",
-        session.id, outcome,
-        session.tool_calls_used, session.input_tokens_used, session.output_tokens_used,
+        session.id,
+        outcome,
+        session.tool_calls_used,
+        session.input_tokens_used,
+        session.output_tokens_used,
     )
 
     return AgentRunResult(

@@ -4,15 +4,22 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('wrestlebot', '0011_agentsession_agenttoolcall'),
+        ("wrestlebot", "0011_agentsession_agenttoolcall"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='agentsession',
-            name='bot',
-            field=models.CharField(choices=[('jr', 'JR — data-adding bot'), ('earl', 'Earl — verification + self-improving auditor'), ('al', 'Al — interlinking + graph-gap closer')], db_index=True, max_length=20),
+            model_name="agentsession",
+            name="bot",
+            field=models.CharField(
+                choices=[
+                    ("jr", "JR — data-adding bot"),
+                    ("earl", "Earl — verification + self-improving auditor"),
+                    ("al", "Al — interlinking + graph-gap closer"),
+                ],
+                db_index=True,
+                max_length=20,
+            ),
         ),
     ]

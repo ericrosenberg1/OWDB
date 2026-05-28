@@ -150,9 +150,19 @@ def _format_facts_block(facts: dict[str, str]) -> str:
         return "(none)"
     # Stable, human-readable ordering for the prompt.
     order = [
-        "real_name", "aliases", "birth_date", "death_date", "nationality",
-        "hometown", "height", "weight", "debut_year", "retirement_year",
-        "trained_by", "finishers", "signature_moves",
+        "real_name",
+        "aliases",
+        "birth_date",
+        "death_date",
+        "nationality",
+        "hometown",
+        "height",
+        "weight",
+        "debut_year",
+        "retirement_year",
+        "trained_by",
+        "finishers",
+        "signature_moves",
     ]
     # Disambiguation: a few field names look like one thing but mean another.
     # "Hometown" comes from Wikipedia's "Billed from" infobox — it's the wrestler's
@@ -179,10 +189,8 @@ def _format_facts_block(facts: dict[str, str]) -> str:
 def _latest_facts_for_wrestler(wrestler_id: int) -> dict[str, str]:
     """Latest provenance value per field for this wrestler."""
     facts: dict[str, str] = {}
-    provs = (
-        FieldProvenance.objects
-        .filter(entity_type="wrestler", entity_id=wrestler_id)
-        .order_by("field_name", "-extracted_at")
+    provs = FieldProvenance.objects.filter(entity_type="wrestler", entity_id=wrestler_id).order_by(
+        "field_name", "-extracted_at"
     )
     seen: set[str] = set()
     for p in provs:
@@ -196,8 +204,9 @@ def _latest_facts_for_wrestler(wrestler_id: int) -> dict[str, str]:
 def _primary_source_fetch(wrestler_id: int) -> Optional[SourceFetch]:
     """Pick the SourceFetch we'll feed to the LLM. v3.0 = Wikipedia only."""
     return (
-        SourceFetch.objects
-        .filter(entity_type="wrestler", entity_id=wrestler_id, source="wikipedia", http_status=200)
+        SourceFetch.objects.filter(
+            entity_type="wrestler", entity_id=wrestler_id, source="wikipedia", http_status=200
+        )
         .order_by("-fetched_at")
         .first()
     )
@@ -235,7 +244,8 @@ def generate_bio_for_wrestler(
     if not paragraphs:
         logger.info(
             "No lead paragraphs extractable for Wrestler#%d (%s)",
-            wrestler.id, wrestler.name,
+            wrestler.id,
+            wrestler.name,
         )
         return None
 
@@ -264,7 +274,8 @@ def generate_bio_for_wrestler(
 
     # Compute attempt_number from prior attempts that haven't been permanently rejected.
     prior_count = GeneratedBio.objects.filter(
-        entity_type="wrestler", entity_id=wrestler.id,
+        entity_type="wrestler",
+        entity_id=wrestler.id,
     ).count()
 
     # Mark any older bios for this wrestler as superseded (but preserve
@@ -289,8 +300,13 @@ def generate_bio_for_wrestler(
 
     logger.info(
         "Generated bio for Wrestler#%d (%s) mode=%s attempt=%d: %d chars, %d in / %d out tokens",
-        wrestler.id, wrestler.name, mode, bio.attempt_number, len(result.text),
-        result.input_tokens, result.output_tokens,
+        wrestler.id,
+        wrestler.name,
+        mode,
+        bio.attempt_number,
+        len(result.text),
+        result.input_tokens,
+        result.output_tokens,
     )
 
     return BioGenerationResult(bio=bio)
@@ -320,10 +336,14 @@ def generate_and_verify_with_retry(
 
     # Skip if this wrestler is permanently rejected.
     existing_permanent = GeneratedBio.objects.filter(
-        entity_type="wrestler", entity_id=wrestler.id, status="permanently_rejected",
+        entity_type="wrestler",
+        entity_id=wrestler.id,
+        status="permanently_rejected",
     ).exists()
     if existing_permanent:
-        logger.info("Wrestler#%d (%s) already permanently_rejected; skipping", wrestler.id, wrestler.name)
+        logger.info(
+            "Wrestler#%d (%s) already permanently_rejected; skipping", wrestler.id, wrestler.name
+        )
         return None
 
     # ---- attempt 1: standard ----
@@ -339,7 +359,9 @@ def generate_and_verify_with_retry(
         return gen.bio
 
     # ---- attempt 2: strict ----
-    strict_gen = generate_bio_for_wrestler(wrestler, client=client, mode="strict", parent_bio=gen.bio)
+    strict_gen = generate_bio_for_wrestler(
+        wrestler, client=client, mode="strict", parent_bio=gen.bio
+    )
     if strict_gen is None:
         _mark_permanently_rejected(gen.bio, "strict generation failed")
         return gen.bio
@@ -361,17 +383,17 @@ def generate_and_verify_with_retry(
     if vr is not None and vr.verified:
         return vr.bio
 
-    _mark_permanently_rejected(trimmed, "all 3 attempts (standard, strict, trim) failed verification")
+    _mark_permanently_rejected(
+        trimmed, "all 3 attempts (standard, strict, trim) failed verification"
+    )
     return trimmed
 
 
 def _latest_facts_for_entity(entity_type: str, entity_id: int) -> dict[str, str]:
     """Latest provenance value per field, generic over entity type."""
     facts: dict[str, str] = {}
-    provs = (
-        FieldProvenance.objects
-        .filter(entity_type=entity_type, entity_id=entity_id)
-        .order_by("field_name", "-extracted_at")
+    provs = FieldProvenance.objects.filter(entity_type=entity_type, entity_id=entity_id).order_by(
+        "field_name", "-extracted_at"
     )
     seen: set[str] = set()
     for p in provs:
@@ -385,14 +407,17 @@ def _latest_facts_for_entity(entity_type: str, entity_id: int) -> dict[str, str]
 def _primary_source_fetch_for(entity_type: str, entity_id: int) -> Optional[SourceFetch]:
     """Latest successful Wikipedia fetch for any entity."""
     return (
-        SourceFetch.objects
-        .filter(entity_type=entity_type, entity_id=entity_id, source="wikipedia", http_status=200)
+        SourceFetch.objects.filter(
+            entity_type=entity_type, entity_id=entity_id, source="wikipedia", http_status=200
+        )
         .order_by("-fetched_at")
         .first()
     )
 
 
-def generate_bio_for_event(event, client: Optional[ClaudeClient] = None) -> Optional[BioGenerationResult]:
+def generate_bio_for_event(
+    event, client: Optional[ClaudeClient] = None
+) -> Optional[BioGenerationResult]:
     """Generate (but do not yet verify) a bio for one Event."""
     if client is None:
         client = ClaudeClient()
@@ -421,28 +446,38 @@ def generate_bio_for_event(event, client: Optional[ClaudeClient] = None) -> Opti
     )
 
     result = client.generate(
-        system=EVENT_SYSTEM_PROMPT, user=user_prompt,
-        max_tokens=BIO_MAX_TOKENS, temperature=0.2,
+        system=EVENT_SYSTEM_PROMPT,
+        user=user_prompt,
+        max_tokens=BIO_MAX_TOKENS,
+        temperature=0.2,
     )
     if result is None or not result.text:
         return None
 
     prior_count = GeneratedBio.objects.filter(entity_type="event", entity_id=event.id).count()
     GeneratedBio.objects.filter(
-        entity_type="event", entity_id=event.id, status__in=["pending", "verified"],
+        entity_type="event",
+        entity_id=event.id,
+        status__in=["pending", "verified"],
     ).update(status="superseded")
     bio = GeneratedBio.objects.create(
-        entity_type="event", entity_id=event.id,
-        text=result.text, model=result.model,
-        input_tokens=result.input_tokens, output_tokens=result.output_tokens,
-        status="pending", attempt_number=prior_count + 1,
+        entity_type="event",
+        entity_id=event.id,
+        text=result.text,
+        model=result.model,
+        input_tokens=result.input_tokens,
+        output_tokens=result.output_tokens,
+        status="pending",
+        attempt_number=prior_count + 1,
         generation_mode="standard",
     )
     bio.source_fetches.add(fetch)
     return BioGenerationResult(bio=bio)
 
 
-def generate_bio_for_venue(venue, client: Optional[ClaudeClient] = None) -> Optional[BioGenerationResult]:
+def generate_bio_for_venue(
+    venue, client: Optional[ClaudeClient] = None
+) -> Optional[BioGenerationResult]:
     """Generate (but do not yet verify) a bio for one Venue."""
     if client is None:
         client = ClaudeClient()
@@ -469,21 +504,29 @@ def generate_bio_for_venue(venue, client: Optional[ClaudeClient] = None) -> Opti
     )
 
     result = client.generate(
-        system=VENUE_SYSTEM_PROMPT, user=user_prompt,
-        max_tokens=BIO_MAX_TOKENS, temperature=0.2,
+        system=VENUE_SYSTEM_PROMPT,
+        user=user_prompt,
+        max_tokens=BIO_MAX_TOKENS,
+        temperature=0.2,
     )
     if result is None or not result.text:
         return None
 
     prior_count = GeneratedBio.objects.filter(entity_type="venue", entity_id=venue.id).count()
     GeneratedBio.objects.filter(
-        entity_type="venue", entity_id=venue.id, status__in=["pending", "verified"],
+        entity_type="venue",
+        entity_id=venue.id,
+        status__in=["pending", "verified"],
     ).update(status="superseded")
     bio = GeneratedBio.objects.create(
-        entity_type="venue", entity_id=venue.id,
-        text=result.text, model=result.model,
-        input_tokens=result.input_tokens, output_tokens=result.output_tokens,
-        status="pending", attempt_number=prior_count + 1,
+        entity_type="venue",
+        entity_id=venue.id,
+        text=result.text,
+        model=result.model,
+        input_tokens=result.input_tokens,
+        output_tokens=result.output_tokens,
+        status="pending",
+        attempt_number=prior_count + 1,
         generation_mode="standard",
     )
     bio.source_fetches.add(fetch)
@@ -502,7 +545,9 @@ STRICT RULES:
 Output the overview text only. No preamble, no labels, no quotes around the output."""
 
 
-def generate_bio_for_promotion(promotion, client: Optional[ClaudeClient] = None) -> Optional[BioGenerationResult]:
+def generate_bio_for_promotion(
+    promotion, client: Optional[ClaudeClient] = None
+) -> Optional[BioGenerationResult]:
     """Generate (but do not yet verify) a bio for one Promotion."""
     if client is None:
         client = ClaudeClient()
@@ -525,28 +570,41 @@ def generate_bio_for_promotion(promotion, client: Optional[ClaudeClient] = None)
         f"Write the promotion overview."
     )
     result = client.generate(
-        system=PROMOTION_SYSTEM_PROMPT, user=user_prompt,
-        max_tokens=BIO_MAX_TOKENS, temperature=0.2,
+        system=PROMOTION_SYSTEM_PROMPT,
+        user=user_prompt,
+        max_tokens=BIO_MAX_TOKENS,
+        temperature=0.2,
     )
     if result is None or not result.text:
         return None
-    prior_count = GeneratedBio.objects.filter(entity_type="promotion", entity_id=promotion.id).count()
+    prior_count = GeneratedBio.objects.filter(
+        entity_type="promotion", entity_id=promotion.id
+    ).count()
     GeneratedBio.objects.filter(
-        entity_type="promotion", entity_id=promotion.id, status__in=["pending", "verified"],
+        entity_type="promotion",
+        entity_id=promotion.id,
+        status__in=["pending", "verified"],
     ).update(status="superseded")
     bio = GeneratedBio.objects.create(
-        entity_type="promotion", entity_id=promotion.id,
-        text=result.text, model=result.model,
-        input_tokens=result.input_tokens, output_tokens=result.output_tokens,
-        status="pending", attempt_number=prior_count + 1,
+        entity_type="promotion",
+        entity_id=promotion.id,
+        text=result.text,
+        model=result.model,
+        input_tokens=result.input_tokens,
+        output_tokens=result.output_tokens,
+        status="pending",
+        attempt_number=prior_count + 1,
         generation_mode="standard",
     )
     bio.source_fetches.add(fetch)
     return BioGenerationResult(bio=bio)
 
 
-def generate_and_verify_for_promotion(promotion, client: Optional[ClaudeClient] = None) -> Optional[GeneratedBio]:
+def generate_and_verify_for_promotion(
+    promotion, client: Optional[ClaudeClient] = None
+) -> Optional[GeneratedBio]:
     from .verify import verify_bio
+
     if client is None:
         client = ClaudeClient()
     gen = generate_bio_for_promotion(promotion, client=client)
@@ -556,9 +614,12 @@ def generate_and_verify_for_promotion(promotion, client: Optional[ClaudeClient] 
     return gen.bio
 
 
-def generate_and_verify_for_event(event, client: Optional[ClaudeClient] = None) -> Optional[GeneratedBio]:
+def generate_and_verify_for_event(
+    event, client: Optional[ClaudeClient] = None
+) -> Optional[GeneratedBio]:
     """Single-attempt generate+verify for an event (no retry passes for v3.0)."""
     from .verify import verify_bio
+
     if client is None:
         client = ClaudeClient()
     gen = generate_bio_for_event(event, client=client)
@@ -568,9 +629,12 @@ def generate_and_verify_for_event(event, client: Optional[ClaudeClient] = None) 
     return gen.bio
 
 
-def generate_and_verify_for_venue(venue, client: Optional[ClaudeClient] = None) -> Optional[GeneratedBio]:
+def generate_and_verify_for_venue(
+    venue, client: Optional[ClaudeClient] = None
+) -> Optional[GeneratedBio]:
     """Single-attempt generate+verify for a venue."""
     from .verify import verify_bio
+
     if client is None:
         client = ClaudeClient()
     gen = generate_bio_for_venue(venue, client=client)
@@ -587,7 +651,10 @@ def _mark_permanently_rejected(bio: GeneratedBio, reason: str) -> None:
     bio.save(update_fields=["status", "rejection_reason"])
     logger.warning(
         "Bio#%d for %s#%d permanently rejected: %s",
-        bio.id, bio.entity_type, bio.entity_id, reason,
+        bio.id,
+        bio.entity_type,
+        bio.entity_id,
+        reason,
     )
 
 
@@ -604,6 +671,7 @@ def trim_unsupported_sentences(rejected_bio: GeneratedBio) -> Optional[Generated
         return None
 
     from .verify import _split_sentences
+
     sentences = _split_sentences(rejected_bio.text)
     if not sentences:
         return None
@@ -611,17 +679,14 @@ def trim_unsupported_sentences(rejected_bio: GeneratedBio) -> Optional[Generated
     # The verifier reports unsupported sentences as full strings — match by
     # case-sensitive prefix or substring rather than exact equality, since the
     # LLM sometimes quotes truncated/normalised versions.
-    unsupported_set = {u.strip().rstrip('.').lower() for u in rejected_bio.claims_unsupported if u}
+    unsupported_set = {u.strip().rstrip(".").lower() for u in rejected_bio.claims_unsupported if u}
 
     kept: list[str] = []
     for sent in sentences:
-        norm = sent.strip().rstrip('.').lower()
+        norm = sent.strip().rstrip(".").lower()
         # Drop if any reported unsupported sentence is a prefix of, equal to,
         # or substring of this sentence (or vice versa).
-        is_flagged = any(
-            u == norm or u in norm or norm in u
-            for u in unsupported_set
-        )
+        is_flagged = any(u == norm or u in norm or norm in u for u in unsupported_set)
         if not is_flagged:
             kept.append(sent)
 
@@ -660,7 +725,10 @@ def trim_unsupported_sentences(rejected_bio: GeneratedBio) -> Optional[Generated
 
     logger.info(
         "Trimmed bio for %s#%d: kept %d of %d sentences",
-        rejected_bio.entity_type, rejected_bio.entity_id, len(kept), len(sentences),
+        rejected_bio.entity_type,
+        rejected_bio.entity_id,
+        len(kept),
+        len(sentences),
     )
 
     return trimmed

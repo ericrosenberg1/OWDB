@@ -8,16 +8,15 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('owdbapp', '0009_podcast_episodes_and_promotion_history'),
+        ("owdbapp", "0009_podcast_episodes_and_promotion_history"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='WrestleBotLog',
+            name="WrestleBotLog",
         ),
         migrations.DeleteModel(
-            name='WrestleBotConfig',
+            name="WrestleBotConfig",
         ),
     ]

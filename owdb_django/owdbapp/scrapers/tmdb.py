@@ -55,9 +55,7 @@ class TMDBClient(APIClient):
     ]
 
     def __init__(self, api_key: Optional[str] = None):
-        api_key = api_key or os.getenv("TMDB_API_KEY") or getattr(
-            settings, "TMDB_API_KEY", None
-        )
+        api_key = api_key or os.getenv("TMDB_API_KEY") or getattr(settings, "TMDB_API_KEY", None)
         super().__init__(api_key)
 
         if self.api_key:
@@ -199,9 +197,7 @@ class TMDBClient(APIClient):
 
         return data.get("results", [])
 
-    def search_wrestling_content(
-        self, limit: int = 50
-    ) -> Dict[str, List[Dict[str, Any]]]:
+    def search_wrestling_content(self, limit: int = 50) -> Dict[str, List[Dict[str, Any]]]:
         """
         Search for all wrestling-related content.
         Returns movies and TV shows.
@@ -222,10 +218,7 @@ class TMDBClient(APIClient):
             if tv_shows:
                 results["tv_shows"].extend(tv_shows[:10])
 
-            if (
-                len(results["movies"]) >= limit
-                and len(results["tv_shows"]) >= limit
-            ):
+            if len(results["movies"]) >= limit and len(results["tv_shows"]) >= limit:
                 break
 
         # Discover using wrestling keywords
@@ -333,20 +326,20 @@ class TMDBClient(APIClient):
     # TMDB IDs for major wrestling TV shows
     WRESTLING_SHOWS = {
         # WWE
-        'wwe_raw': 4370,
-        'wwe_smackdown': 4371,
-        'wwe_nxt': 35521,
-        'wwe_main_event': 45533,
+        "wwe_raw": 4370,
+        "wwe_smackdown": 4371,
+        "wwe_nxt": 35521,
+        "wwe_main_event": 45533,
         # AEW
-        'aew_dynamite': 89770,
-        'aew_rampage': 130542,
-        'aew_collision': 227367,
+        "aew_dynamite": 89770,
+        "aew_rampage": 130542,
+        "aew_collision": 227367,
         # TNA/Impact
-        'impact_wrestling': 4431,
+        "impact_wrestling": 4431,
         # Historical
-        'wcw_nitro': 13579,
-        'wcw_thunder': 14247,
-        'ecw_hardcore_tv': 16347,
+        "wcw_nitro": 13579,
+        "wcw_thunder": 14247,
+        "ecw_hardcore_tv": 16347,
     }
 
     @with_error_handling
@@ -366,9 +359,7 @@ class TMDBClient(APIClient):
         return self.request(f"/tv/{tv_id}/season/{season_number}")
 
     @with_error_handling
-    def get_tv_episode(
-        self, tv_id: int, season_number: int, episode_number: int
-    ) -> Optional[Dict]:
+    def get_tv_episode(self, tv_id: int, season_number: int, episode_number: int) -> Optional[Dict]:
         """
         Get details for a specific episode.
 
@@ -382,9 +373,7 @@ class TMDBClient(APIClient):
         """
         if not self._is_configured():
             return None
-        return self.request(
-            f"/tv/{tv_id}/season/{season_number}/episode/{episode_number}"
-        )
+        return self.request(f"/tv/{tv_id}/season/{season_number}/episode/{episode_number}")
 
     @with_error_handling
     def get_latest_episodes(self, tv_id: int, limit: int = 10) -> List[Dict]:
@@ -406,24 +395,20 @@ class TMDBClient(APIClient):
             return []
 
         episodes = []
-        last_season = details.get('number_of_seasons', 0)
+        last_season = details.get("number_of_seasons", 0)
 
         if last_season > 0:
             season_data = self.get_tv_season(tv_id, last_season)
-            if season_data and 'episodes' in season_data:
+            if season_data and "episodes" in season_data:
                 # Sort by air date descending and return most recent
                 sorted_eps = sorted(
-                    season_data['episodes'],
-                    key=lambda x: x.get('air_date', '') or '',
-                    reverse=True
+                    season_data["episodes"], key=lambda x: x.get("air_date", "") or "", reverse=True
                 )
                 episodes = sorted_eps[:limit]
 
         return episodes
 
-    def get_all_episodes_for_season(
-        self, tv_id: int, season_number: int
-    ) -> List[Dict]:
+    def get_all_episodes_for_season(self, tv_id: int, season_number: int) -> List[Dict]:
         """
         Get all episodes for a specific season.
 
@@ -435,8 +420,8 @@ class TMDBClient(APIClient):
             List of episode data dicts
         """
         season_data = self.get_tv_season(tv_id, season_number)
-        if season_data and 'episodes' in season_data:
-            return season_data['episodes']
+        if season_data and "episodes" in season_data:
+            return season_data["episodes"]
         return []
 
     def get_all_tracked_show_updates(self) -> Dict[str, List[Dict]]:
@@ -467,12 +452,12 @@ class TMDBClient(APIClient):
         Returns:
             Dict with fields for Event model
         """
-        air_date = episode.get('air_date')
-        ep_num = episode.get('episode_number')
-        season_num = episode.get('season_number')
+        air_date = episode.get("air_date")
+        ep_num = episode.get("episode_number")
+        season_num = episode.get("season_number")
 
         # Build episode name (e.g., "WWE Raw #1500" or use TMDB title)
-        episode_name = episode.get('name', '')
+        episode_name = episode.get("name", "")
         if ep_num and not episode_name:
             name = f"{show_name} #{ep_num}"
         elif ep_num and episode_name:
@@ -482,14 +467,14 @@ class TMDBClient(APIClient):
             name = episode_name or f"{show_name} Episode"
 
         return {
-            'name': name,
-            'date': air_date,
-            'episode_number': ep_num,
-            'season_number': season_num,
-            'event_type': 'tv_episode',
-            'tmdb_episode_id': episode.get('id'),
-            'about': episode.get('overview', '')[:500] if episode.get('overview') else None,
-            'source': 'tmdb',
+            "name": name,
+            "date": air_date,
+            "episode_number": ep_num,
+            "season_number": season_num,
+            "event_type": "tv_episode",
+            "tmdb_episode_id": episode.get("id"),
+            "about": episode.get("overview", "")[:500] if episode.get("overview") else None,
+            "source": "tmdb",
         }
 
     def get_show_season_count(self, tv_id: int) -> int:
@@ -504,7 +489,7 @@ class TMDBClient(APIClient):
         """
         details = self.get_tv_details(tv_id)
         if details:
-            return details.get('number_of_seasons', 0)
+            return details.get("number_of_seasons", 0)
         return 0
 
     def get_show_premiere_date(self, tv_id: int) -> Optional[str]:
@@ -519,7 +504,7 @@ class TMDBClient(APIClient):
         """
         details = self.get_tv_details(tv_id)
         if details:
-            return details.get('first_air_date')
+            return details.get("first_air_date")
         return None
 
     def get_show_status(self, tv_id: int) -> Optional[str]:
@@ -534,5 +519,5 @@ class TMDBClient(APIClient):
         """
         details = self.get_tv_details(tv_id)
         if details:
-            return details.get('status')
+            return details.get("status")
         return None

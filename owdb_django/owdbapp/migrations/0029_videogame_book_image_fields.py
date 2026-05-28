@@ -23,7 +23,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("owdbapp", "0028_event_verification_state_match_verification_state_and_more"),
     ]
@@ -38,8 +37,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="videogame",
             name="image_source_url",
-            field=models.URLField(blank=True, max_length=500, null=True,
-                                  help_text="Commons file-page URL (legal trail)."),
+            field=models.URLField(
+                blank=True,
+                max_length=500,
+                null=True,
+                help_text="Commons file-page URL (legal trail).",
+            ),
         ),
         migrations.AddField(
             model_name="videogame",
@@ -49,21 +52,22 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="videogame",
             name="image_license",
-            field=models.CharField(blank=True, max_length=50, null=True,
-                                   help_text="Normalized OWDB license code."),
+            field=models.CharField(
+                blank=True, max_length=50, null=True, help_text="Normalized OWDB license code."
+            ),
         ),
         migrations.AddField(
             model_name="videogame",
             name="image_credit",
-            field=models.CharField(blank=True, max_length=500, null=True,
-                                   help_text="Attribution + Commons file URL."),
+            field=models.CharField(
+                blank=True, max_length=500, null=True, help_text="Attribution + Commons file URL."
+            ),
         ),
         migrations.AddField(
             model_name="videogame",
             name="image_fetched_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
-
         # ---- Book ----------------------------------------------------------
         migrations.AddField(
             model_name="book",
@@ -73,8 +77,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="book",
             name="image_source_url",
-            field=models.URLField(blank=True, max_length=500, null=True,
-                                  help_text="Commons file-page URL (legal trail)."),
+            field=models.URLField(
+                blank=True,
+                max_length=500,
+                null=True,
+                help_text="Commons file-page URL (legal trail).",
+            ),
         ),
         migrations.AddField(
             model_name="book",
@@ -84,14 +92,16 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="book",
             name="image_license",
-            field=models.CharField(blank=True, max_length=50, null=True,
-                                   help_text="Normalized OWDB license code."),
+            field=models.CharField(
+                blank=True, max_length=50, null=True, help_text="Normalized OWDB license code."
+            ),
         ),
         migrations.AddField(
             model_name="book",
             name="image_credit",
-            field=models.CharField(blank=True, max_length=500, null=True,
-                                   help_text="Attribution + Commons file URL."),
+            field=models.CharField(
+                blank=True, max_length=500, null=True, help_text="Attribution + Commons file URL."
+            ),
         ),
         migrations.AddField(
             model_name="book",

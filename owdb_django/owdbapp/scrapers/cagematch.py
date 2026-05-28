@@ -71,8 +71,8 @@ class CagematchScraper(BaseScraper):
     # We round down slightly but stay very conservative
     # With these limits, we can do about 7 requests/hour max
     REQUESTS_PER_MINUTE = 1  # Max 1 per minute (we wait longer via crawl delay)
-    REQUESTS_PER_HOUR = 7    # ~527 seconds = ~8.8 min per request = ~7/hour
-    REQUESTS_PER_DAY = 100   # ~100 requests/day max (very conservative)
+    REQUESTS_PER_HOUR = 7  # ~527 seconds = ~8.8 min per request = ~7/hour
+    REQUESTS_PER_DAY = 100  # ~100 requests/day max (very conservative)
 
     # Minimum delay between requests (from robots.txt Crawl-delay: 527)
     # We'll use 530 seconds to be safe
@@ -87,18 +87,20 @@ class CagematchScraper(BaseScraper):
     # Extended cache TTLs - since we can only make ~7 requests/hour,
     # we cache aggressively to avoid re-fetching
     CACHE_TTL_PAGE = 86400 * 2  # 48 hours for individual pages
-    CACHE_TTL_LIST = 86400      # 24 hours for listing pages
+    CACHE_TTL_LIST = 86400  # 24 hours for listing pages
 
     def __init__(self):
         """Initialize the Cagematch scraper with robots.txt-compliant settings."""
         super().__init__()
         # Set proper User-Agent
-        self.session.headers.update({
-            "User-Agent": self.USER_AGENT,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.5",
-            "Accept-Encoding": "gzip, deflate",
-        })
+        self.session.headers.update(
+            {
+                "User-Agent": self.USER_AGENT,
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.5",
+                "Accept-Encoding": "gzip, deflate",
+            }
+        )
         # Override the minimum delay to respect robots.txt Crawl-delay
         self._min_request_delay = self.MIN_REQUEST_DELAY
         logger.info(

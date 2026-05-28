@@ -36,10 +36,20 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--entity-type", type=str, default="wrestler",
-            choices=["wrestler", "promotion", "event", "venue",
-                     "title", "stable", "tv_show",
-                     "video_game", "book"],
+            "--entity-type",
+            type=str,
+            default="wrestler",
+            choices=[
+                "wrestler",
+                "promotion",
+                "event",
+                "venue",
+                "title",
+                "stable",
+                "tv_show",
+                "video_game",
+                "book",
+            ],
             help=(
                 "Entity type to sweep (default: wrestler). For events, an "
                 "extra promotional-art guard refuses CC photos of posters / "
@@ -49,11 +59,14 @@ class Command(BaseCommand):
             ),
         )
         parser.add_argument(
-            "--limit", type=int, default=10,
+            "--limit",
+            type=int,
+            default=10,
             help="Maximum entities to process this run (default 10, max 50).",
         )
         parser.add_argument(
-            "--dry-run", action="store_true",
+            "--dry-run",
+            action="store_true",
             help=(
                 "Run the cascade and report verdicts WITHOUT writing entity "
                 "fields. SourceFetch + FieldProvenance rows are still recorded "
@@ -61,11 +74,13 @@ class Command(BaseCommand):
             ),
         )
         parser.add_argument(
-            "--json", action="store_true",
+            "--json",
+            action="store_true",
             help="Emit results as JSON for scripting.",
         )
         parser.add_argument(
-            "--verbose", action="store_true",
+            "--verbose",
+            action="store_true",
             help="Print every candidate considered for every entity.",
         )
 
@@ -78,9 +93,7 @@ class Command(BaseCommand):
 
         limit = int(options["limit"])
         if limit < 1 or limit > 50:
-            self.stderr.write(self.style.ERROR(
-                "limit must be between 1 and 50"
-            ))
+            self.stderr.write(self.style.ERROR("limit must be between 1 and 50"))
             return
 
         result = _t_assign_images_for_entities_without_images(
@@ -94,19 +107,20 @@ class Command(BaseCommand):
             return
 
         if not result.get("ok"):
-            self.stderr.write(self.style.ERROR(
-                f"Sweep failed: {result.get('error', '(no error message)')}"
-            ))
+            self.stderr.write(
+                self.style.ERROR(f"Sweep failed: {result.get('error', '(no error message)')}")
+            )
             return
 
-        self.stdout.write(self.style.HTTP_INFO(
-            f"\n=== Image-gap sweep: {result['sweep_size']} "
-            f"{options['entity_type']}s "
-            f"({'dry-run' if result['dry_run'] else 'APPLY'}) ===\n"
-        ))
         self.stdout.write(
-            f"  assigned  {result['assigned']:>4}\n"
-            f"  refused   {result['refused']:>4}\n"
+            self.style.HTTP_INFO(
+                f"\n=== Image-gap sweep: {result['sweep_size']} "
+                f"{options['entity_type']}s "
+                f"({'dry-run' if result['dry_run'] else 'APPLY'}) ===\n"
+            )
+        )
+        self.stdout.write(
+            f"  assigned  {result['assigned']:>4}\n  refused   {result['refused']:>4}\n"
         )
 
         if not result["results"]:
@@ -137,10 +151,10 @@ class Command(BaseCommand):
 
         self.stdout.write("")
         if result["dry_run"]:
-            self.stdout.write(self.style.NOTICE(
-                "Dry-run complete. Re-run without --dry-run to apply."
-            ))
+            self.stdout.write(
+                self.style.NOTICE("Dry-run complete. Re-run without --dry-run to apply.")
+            )
         else:
-            self.stdout.write(self.style.SUCCESS(
-                f"Sweep applied. {result['assigned']} new image(s) assigned."
-            ))
+            self.stdout.write(
+                self.style.SUCCESS(f"Sweep applied. {result['assigned']} new image(s) assigned.")
+            )

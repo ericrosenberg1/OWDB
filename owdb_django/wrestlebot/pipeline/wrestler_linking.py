@@ -41,14 +41,17 @@ logger = logging.getLogger(__name__)
 # Key: canonical promotion-name (the current name).
 # Value: tuple of names that should be merged-or-aliased under the key.
 PROMOTION_EQUIVALENCE_GROUPS: dict[str, tuple[str, ...]] = {
-    "WWE": ("World Wrestling Federation", "World Wide Wrestling Federation",
-            "WWWF", "WWF", "WWE"),
+    "WWE": ("World Wrestling Federation", "World Wide Wrestling Federation", "WWWF", "WWF", "WWE"),
     "Total Nonstop Action Wrestling": (
-        "Total Nonstop Action Wrestling", "TNA Wrestling", "TNA",
-        "Impact Wrestling", "Impact!",
+        "Total Nonstop Action Wrestling",
+        "TNA Wrestling",
+        "TNA",
+        "Impact Wrestling",
+        "Impact!",
     ),
     "World Championship Wrestling": (
-        "World Championship Wrestling", "Jim Crockett Promotions",
+        "World Championship Wrestling",
+        "Jim Crockett Promotions",
         "Mid-Atlantic Championship Wrestling",
     ),
 }
@@ -60,14 +63,14 @@ def _build_promotion_aliases() -> dict[str, "Promotion"]:
     Uses both Promotion.name + Promotion.abbreviation + equivalence groups.
     """
     from owdb_django.owdbapp.models import Promotion
+
     out: dict[str, "Promotion"] = {}
     # Exclude rows that have been rejected by Earl / a human (e.g.
     # "Royal Rumble match" was wrongly classified as a promotion).
     # Also exclude obviously-not-a-promotion names (anything ending
     # 'match', 'tournament', etc.).
     bad_tokens = (" match", " tournament", " championship", " title")
-    qs = Promotion.objects.only("id", "name", "abbreviation", "nicknames",
-                                 "verification_state")
+    qs = Promotion.objects.only("id", "name", "abbreviation", "nicknames", "verification_state")
     for p in qs:
         if getattr(p, "verification_state", None) == "rejected":
             continue
@@ -104,6 +107,7 @@ def _build_promotion_aliases() -> dict[str, "Promotion"]:
 @dataclass
 class WrestlerLinkingReport:
     """Summary of one wrestler's promotion-linking pass."""
+
     wrestler_id: int
     wrestler_name: str
     existing_promotion_count: int = 0
@@ -158,18 +162,23 @@ def link_wrestler_promotions(wrestler) -> WrestlerLinkingReport:
     from ..models import SourceFetch
 
     report = WrestlerLinkingReport(
-        wrestler_id=wrestler.id, wrestler_name=wrestler.name,
+        wrestler_id=wrestler.id,
+        wrestler_name=wrestler.name,
     )
     existing_promo_ids = set(
-        WrestlerPromotionHistory.objects.filter(wrestler=wrestler)
-        .values_list("promotion_id", flat=True)
+        WrestlerPromotionHistory.objects.filter(wrestler=wrestler).values_list(
+            "promotion_id", flat=True
+        )
     )
     report.existing_promotion_count = len(existing_promo_ids)
 
-    fetch = (SourceFetch.objects
-             .filter(entity_type="wrestler", entity_id=wrestler.id,
-                     source="wikipedia", http_status=200)
-             .order_by("-fetched_at").first())
+    fetch = (
+        SourceFetch.objects.filter(
+            entity_type="wrestler", entity_id=wrestler.id, source="wikipedia", http_status=200
+        )
+        .order_by("-fetched_at")
+        .first()
+    )
     if not fetch or not fetch.raw_content:
         return report
 
@@ -201,7 +210,8 @@ def link_wrestler_promotions(wrestler) -> WrestlerLinkingReport:
             continue
         try:
             WrestlerPromotionHistory.objects.create(
-                wrestler=wrestler, promotion=promotion,
+                wrestler=wrestler,
+                promotion=promotion,
                 notes=f"Linked from Wikipedia article (≥{count} wiki-link hits)",
             )
             existing_promo_ids.add(promotion.id)
@@ -209,7 +219,9 @@ def link_wrestler_promotions(wrestler) -> WrestlerLinkingReport:
         except Exception as e:
             logger.warning(
                 "Promotion link create failed (wrestler #%d → %s): %s",
-                wrestler.id, promotion.name, e,
+                wrestler.id,
+                promotion.name,
+                e,
             )
     return report
 
@@ -222,11 +234,12 @@ def link_all_unlinked_wrestlers(limit: int = 30) -> dict:
     from django.db.models import Count
     from owdb_django.owdbapp.models import Wrestler
 
-    candidates = (Wrestler.objects
-                  .annotate(n_promos=Count("promotion_history"))
-                  .filter(n_promos__lt=2, wikipedia_url__isnull=False)
-                  .exclude(wikipedia_url="")
-                  .order_by("id")[:limit])
+    candidates = (
+        Wrestler.objects.annotate(n_promos=Count("promotion_history"))
+        .filter(n_promos__lt=2, wikipedia_url__isnull=False)
+        .exclude(wikipedia_url="")
+        .order_by("id")[:limit]
+    )
 
     stats = {"processed": 0, "links_created": 0, "wrestlers": []}
     for w in candidates:
@@ -241,8 +254,7 @@ def link_all_unlinked_wrestlers(limit: int = 30) -> dict:
 # ---------------------------------------------------------- rotating review
 
 
-def wrestlers_due_for_review(days_since_review: int = 14,
-                            limit: int = 20) -> list:
+def wrestlers_due_for_review(days_since_review: int = 14, limit: int = 20) -> list:
     """
     Return wrestlers whose `updated_at` is older than `days_since_review`,
     ordered oldest first. The "living database" sweep — Al rotates through
@@ -255,20 +267,17 @@ def wrestlers_due_for_review(days_since_review: int = 14,
     from owdb_django.owdbapp.models import Wrestler
 
     cutoff = timezone.now() - timedelta(days=days_since_review)
-    qs = (Wrestler.objects
-          .filter(updated_at__lt=cutoff)
-          .annotate(n_promos=Count("promotion_history"))
-          .order_by("updated_at"))
+    qs = (
+        Wrestler.objects.filter(updated_at__lt=cutoff)
+        .annotate(n_promos=Count("promotion_history"))
+        .order_by("updated_at")
+    )
 
     # Two-tier sort: incomplete first, then oldest within each tier.
     incomplete = []
     complete = []
     for w in qs.iterator():
-        is_incomplete = (
-            not w.about
-            or not w.image_url
-            or w.n_promos == 0
-        )
+        is_incomplete = not w.about or not w.image_url or w.n_promos == 0
         if is_incomplete:
             incomplete.append(w)
         else:

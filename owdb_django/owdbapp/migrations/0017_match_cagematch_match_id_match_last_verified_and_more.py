@@ -4,72 +4,103 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('owdbapp', '0016_remove_wrestlebot_from_owdbapp'),
+        ("owdbapp", "0016_remove_wrestlebot_from_owdbapp"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='match',
-            name='cagematch_match_id',
-            field=models.IntegerField(blank=True, db_index=True, help_text='Cagematch match ID for stable cross-reference', null=True),
+            model_name="match",
+            name="cagematch_match_id",
+            field=models.IntegerField(
+                blank=True,
+                db_index=True,
+                help_text="Cagematch match ID for stable cross-reference",
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='match',
-            name='last_verified',
+            model_name="match",
+            name="last_verified",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='match',
-            name='verification_source',
-            field=models.CharField(blank=True, help_text='Primary source used for verification (cagematch, profightdb, wikipedia)', max_length=50, null=True),
+            model_name="match",
+            name="verification_source",
+            field=models.CharField(
+                blank=True,
+                help_text="Primary source used for verification (cagematch, profightdb, wikipedia)",
+                max_length=50,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='match',
-            name='verified',
-            field=models.BooleanField(db_index=True, default=False, help_text='True iff match data has been verified against an external source'),
+            model_name="match",
+            name="verified",
+            field=models.BooleanField(
+                db_index=True,
+                default=False,
+                help_text="True iff match data has been verified against an external source",
+            ),
         ),
         migrations.AddField(
-            model_name='promotion',
-            name='last_verified',
+            model_name="promotion",
+            name="last_verified",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='promotion',
-            name='verification_source',
-            field=models.CharField(blank=True, help_text='Primary source used for verification', max_length=50, null=True),
+            model_name="promotion",
+            name="verification_source",
+            field=models.CharField(
+                blank=True,
+                help_text="Primary source used for verification",
+                max_length=50,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='promotion',
-            name='verified',
-            field=models.BooleanField(db_index=True, default=False, help_text='True iff at least one field has been verified against an external source'),
+            model_name="promotion",
+            name="verified",
+            field=models.BooleanField(
+                db_index=True,
+                default=False,
+                help_text="True iff at least one field has been verified against an external source",
+            ),
         ),
         migrations.AddField(
-            model_name='wrestler',
-            name='last_verified',
+            model_name="wrestler",
+            name="last_verified",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='wrestler',
-            name='verification_source',
-            field=models.CharField(blank=True, help_text='Primary source used for verification (wikipedia, cagematch, profightdb)', max_length=50, null=True),
+            model_name="wrestler",
+            name="verification_source",
+            field=models.CharField(
+                blank=True,
+                help_text="Primary source used for verification (wikipedia, cagematch, profightdb)",
+                max_length=50,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='wrestler',
-            name='verified',
-            field=models.BooleanField(db_index=True, default=False, help_text='True iff at least one field has been verified against an external source'),
+            model_name="wrestler",
+            name="verified",
+            field=models.BooleanField(
+                db_index=True,
+                default=False,
+                help_text="True iff at least one field has been verified against an external source",
+            ),
         ),
         migrations.AddIndex(
-            model_name='match',
-            index=models.Index(fields=['verified'], name='owdbapp_mat_verifie_acd9cc_idx'),
+            model_name="match",
+            index=models.Index(fields=["verified"], name="owdbapp_mat_verifie_acd9cc_idx"),
         ),
         migrations.AddIndex(
-            model_name='promotion',
-            index=models.Index(fields=['verified'], name='owdbapp_pro_verifie_8dcfe8_idx'),
+            model_name="promotion",
+            index=models.Index(fields=["verified"], name="owdbapp_pro_verifie_8dcfe8_idx"),
         ),
         migrations.AddIndex(
-            model_name='wrestler',
-            index=models.Index(fields=['verified'], name='owdbapp_wre_verifie_a3d318_idx'),
+            model_name="wrestler",
+            index=models.Index(fields=["verified"], name="owdbapp_wre_verifie_a3d318_idx"),
         ),
     ]

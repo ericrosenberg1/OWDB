@@ -13,4 +13,4 @@ This is a Django app that provides:
 - Quality checking and data cleanup utilities
 """
 
-default_app_config = 'owdb_django.wrestlebot.apps.WrestlebotConfig'
+default_app_config = "owdb_django.wrestlebot.apps.WrestlebotConfig"

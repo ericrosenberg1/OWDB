@@ -49,9 +49,7 @@ def _client() -> Optional[TMDBClient]:
             return None
     if not getattr(_client_singleton, "_is_configured", lambda: False)():
         if not _warned_no_key:
-            logger.info(
-                "TMDB disabled: set TMDB_API_KEY env var or settings.TMDB_API_KEY"
-            )
+            logger.info("TMDB disabled: set TMDB_API_KEY env var or settings.TMDB_API_KEY")
             _warned_no_key = True
         return None
     return _client_singleton
@@ -98,7 +96,7 @@ def search_show(name: str, limit: int = 10) -> list[dict]:
     if c is None:
         return []
     rows = c.search_tv(name, page=1) or []
-    return [_slim_show(r) for r in rows[:max(1, min(limit, 20))]]
+    return [_slim_show(r) for r in rows[: max(1, min(limit, 20))]]
 
 
 def search_movie(name: str, limit: int = 10) -> list[dict]:
@@ -106,7 +104,7 @@ def search_movie(name: str, limit: int = 10) -> list[dict]:
     if c is None:
         return []
     rows = c.search_movies(name, page=1) or []
-    return [_slim_movie(r) for r in rows[:max(1, min(limit, 20))]]
+    return [_slim_movie(r) for r in rows[: max(1, min(limit, 20))]]
 
 
 def search_wrestling(query: str, limit: int = 10) -> dict:
@@ -146,5 +144,6 @@ def get_movie_details(tmdb_id: int) -> Optional[dict]:
 if __name__ == "__main__":  # pragma: no cover
     import json
     import sys
+
     q = " ".join(sys.argv[1:]) or "WWE Raw"
     print(json.dumps(search_wrestling(q, limit=3), indent=2, default=str))

@@ -81,12 +81,12 @@ class AgentCapability:
     """Everything one agent is allowed to be + do, in one place."""
 
     # Identity
-    bot_key: str                # "jr", "al", "earl" — matches AgentSession.bot
-    display_name: str           # "Good Ol' JR"
-    persona_inspiration: str    # "Jim Ross, the encyclopedic voice…"
-    role: str                   # "data-adding agent" / "interlinking agent" / "accuracy auditor"
-    mission: str                # one-sentence mission statement
-    motto: str                  # short tagline — shown on agent log pages
+    bot_key: str  # "jr", "al", "earl" — matches AgentSession.bot
+    display_name: str  # "Good Ol' JR"
+    persona_inspiration: str  # "Jim Ross, the encyclopedic voice…"
+    role: str  # "data-adding agent" / "interlinking agent" / "accuracy auditor"
+    mission: str  # one-sentence mission statement
+    motto: str  # short tagline — shown on agent log pages
 
     # Authority — what this bot CAN and CANNOT do
     authority_can: tuple[str, ...]
@@ -97,12 +97,12 @@ class AgentCapability:
     heuristics: str
 
     # Wiring
-    model: str                  # Claude model id — "claude-sonnet-4-6" etc.
-    tool_set: str               # "jr" / "al" / "earl" — resolved against tools.py
-    default_task: str           # task seeded when run_* is called with no task=
+    model: str  # Claude model id — "claude-sonnet-4-6" etc.
+    tool_set: str  # "jr" / "al" / "earl" — resolved against tools.py
+    default_task: str  # task seeded when run_* is called with no task=
 
     # Documentation extras (used in admin pages, /about/agents, etc.)
-    cadence_hint: str = ""      # human-readable schedule (e.g. "every 30 min")
+    cadence_hint: str = ""  # human-readable schedule (e.g. "every 30 min")
     extra_notes: tuple[str, ...] = field(default_factory=tuple)
 
 
@@ -317,8 +317,8 @@ EARL = AgentCapability(
 
 
 CAPABILITIES: dict[str, AgentCapability] = {
-    "jr":   JR,
-    "al":   AL,
+    "jr": JR,
+    "al": AL,
     "earl": EARL,
 }
 
@@ -383,13 +383,12 @@ def resolve_tool_set(name: str) -> dict:
     one branch here, not three.
     """
     from .tools import AL_TOOLS, EARL_TOOLS, JR_TOOLS
+
     by_name = {"jr": JR_TOOLS, "al": AL_TOOLS, "earl": EARL_TOOLS}
     try:
         return by_name[name]
     except KeyError:
-        raise ValueError(
-            f"Unknown agent tool_set {name!r}; valid: {sorted(by_name)}"
-        )
+        raise ValueError(f"Unknown agent tool_set {name!r}; valid: {sorted(by_name)}")
 
 
 def all_capabilities() -> tuple[AgentCapability, ...]:

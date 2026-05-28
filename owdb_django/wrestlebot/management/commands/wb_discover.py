@@ -22,15 +22,21 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--total", type=int, default=20,
+            "--total",
+            type=int,
+            default=20,
             help="Maximum total candidates to return (default: 20).",
         )
         parser.add_argument(
-            "--per-category", type=int, default=5,
+            "--per-category",
+            type=int,
+            default=5,
             help="Maximum candidates per category (default: 5).",
         )
         parser.add_argument(
-            "--category", action="append", default=None,
+            "--category",
+            action="append",
+            default=None,
             help="Restrict to a specific category (may be passed multiple times).",
         )
 

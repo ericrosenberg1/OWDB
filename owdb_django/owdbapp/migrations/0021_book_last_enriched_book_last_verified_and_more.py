@@ -4,97 +4,96 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('owdbapp', '0020_venue_about_venue_city_venue_country_and_more'),
+        ("owdbapp", "0020_venue_about_venue_city_venue_country_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='book',
-            name='last_enriched',
+            model_name="book",
+            name="last_enriched",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='book',
-            name='last_verified',
+            model_name="book",
+            name="last_verified",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='book',
-            name='verification_source',
+            model_name="book",
+            name="verification_source",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
         migrations.AddField(
-            model_name='book',
-            name='verified',
+            model_name="book",
+            name="verified",
             field=models.BooleanField(db_index=True, default=False),
         ),
         migrations.AddField(
-            model_name='book',
-            name='wikipedia_url',
+            model_name="book",
+            name="wikipedia_url",
             field=models.URLField(blank=True, max_length=500, null=True),
         ),
         migrations.AddField(
-            model_name='podcast',
-            name='last_enriched',
+            model_name="podcast",
+            name="last_enriched",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='podcast',
-            name='last_verified',
+            model_name="podcast",
+            name="last_verified",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='podcast',
-            name='verification_source',
+            model_name="podcast",
+            name="verification_source",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
         migrations.AddField(
-            model_name='podcast',
-            name='verified',
+            model_name="podcast",
+            name="verified",
             field=models.BooleanField(db_index=True, default=False),
         ),
         migrations.AddField(
-            model_name='podcast',
-            name='wikipedia_url',
+            model_name="podcast",
+            name="wikipedia_url",
             field=models.URLField(blank=True, max_length=500, null=True),
         ),
         migrations.AddField(
-            model_name='videogame',
-            name='last_enriched',
+            model_name="videogame",
+            name="last_enriched",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='videogame',
-            name='last_verified',
+            model_name="videogame",
+            name="last_verified",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='videogame',
-            name='verification_source',
+            model_name="videogame",
+            name="verification_source",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
         migrations.AddField(
-            model_name='videogame',
-            name='verified',
+            model_name="videogame",
+            name="verified",
             field=models.BooleanField(db_index=True, default=False),
         ),
         migrations.AddField(
-            model_name='videogame',
-            name='wikipedia_url',
+            model_name="videogame",
+            name="wikipedia_url",
             field=models.URLField(blank=True, max_length=500, null=True),
         ),
         migrations.AddIndex(
-            model_name='book',
-            index=models.Index(fields=['verified'], name='owdbapp_boo_verifie_a01713_idx'),
+            model_name="book",
+            index=models.Index(fields=["verified"], name="owdbapp_boo_verifie_a01713_idx"),
         ),
         migrations.AddIndex(
-            model_name='podcast',
-            index=models.Index(fields=['verified'], name='owdbapp_pod_verifie_4ae762_idx'),
+            model_name="podcast",
+            index=models.Index(fields=["verified"], name="owdbapp_pod_verifie_4ae762_idx"),
         ),
         migrations.AddIndex(
-            model_name='videogame',
-            index=models.Index(fields=['verified'], name='owdbapp_vid_verifie_c9155b_idx'),
+            model_name="videogame",
+            index=models.Index(fields=["verified"], name="owdbapp_vid_verifie_c9155b_idx"),
         ),
     ]

@@ -5,12 +5,12 @@ from celery import Celery
 from celery.signals import beat_init
 
 # Set the default Django settings module
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'owdb_django.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "owdb_django.settings")
 
-app = Celery('owdb_django')
+app = Celery("owdb_django")
 
 # Load config from Django settings, using the CELERY namespace
-app.config_from_object('django.conf:settings', namespace='CELERY')
+app.config_from_object("django.conf:settings", namespace="CELERY")
 
 # Auto-discover tasks in all registered Django apps
 app.autodiscover_tasks()
@@ -26,6 +26,7 @@ def sync_beat_schedule(**kwargs):
 
     try:
         from django.core.management import call_command
+
         call_command("setup_celery_schedule", verbosity=0)
     except Exception as exc:
         logger.warning("Celery schedule sync failed: %s", exc)
@@ -33,4 +34,4 @@ def sync_beat_schedule(**kwargs):
 
 @app.task(bind=True, ignore_result=True)
 def debug_task(self):
-    print(f'Request: {self.request!r}')
+    print(f"Request: {self.request!r}")

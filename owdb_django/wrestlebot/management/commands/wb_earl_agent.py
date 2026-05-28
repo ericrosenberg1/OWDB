@@ -21,24 +21,36 @@ class Command(BaseCommand):
     help = "Run one Earl Hebner session (accuracy auditor + rule improver)."
 
     def add_arguments(self, parser):
-        parser.add_argument("--task", type=str, default="",
-                            help="Goal for this session. If empty, uses default.")
-        parser.add_argument("--max-tool-calls", type=int, default=40,
-                            help="Cap on tool invocations per session (default 40).")
-        parser.add_argument("--max-input-tokens", type=int, default=200_000,
-                            help="Cap on cumulative input tokens (default 200k).")
-        parser.add_argument("--max-iterations", type=int, default=60,
-                            help="Cap on model round-trips (default 60).")
-        parser.add_argument("--model", type=str, default="",
-                            help="Override Claude model (defaults to Opus 4.5).")
+        parser.add_argument(
+            "--task", type=str, default="", help="Goal for this session. If empty, uses default."
+        )
+        parser.add_argument(
+            "--max-tool-calls",
+            type=int,
+            default=40,
+            help="Cap on tool invocations per session (default 40).",
+        )
+        parser.add_argument(
+            "--max-input-tokens",
+            type=int,
+            default=200_000,
+            help="Cap on cumulative input tokens (default 200k).",
+        )
+        parser.add_argument(
+            "--max-iterations", type=int, default=60, help="Cap on model round-trips (default 60)."
+        )
+        parser.add_argument(
+            "--model", type=str, default="", help="Override Claude model (defaults to Opus 4.5)."
+        )
 
     def handle(self, *args, **options):
         from owdb_django.wrestlebot.agents.earl_agent import run_earl
 
-        self.stdout.write(self.style.SUCCESS(
-            "\n=== Earl Hebner — 100% accuracy first. "
-            "Make JR and Al better. ===\n"
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                "\n=== Earl Hebner — 100% accuracy first. Make JR and Al better. ===\n"
+            )
+        )
         result = run_earl(
             task=options["task"] or None,
             max_tool_calls=options["max_tool_calls"],

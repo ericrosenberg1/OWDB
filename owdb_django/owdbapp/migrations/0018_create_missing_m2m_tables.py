@@ -42,9 +42,8 @@ REVERSE_NOOP = "SELECT 1"
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('owdbapp', '0017_match_cagematch_match_id_match_last_verified_and_more'),
+        ("owdbapp", "0017_match_cagematch_match_id_match_last_verified_and_more"),
     ]
 
     operations = [

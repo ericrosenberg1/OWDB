@@ -66,6 +66,7 @@ def resolve_qid_for_wikipedia_title(title: str) -> Optional[str]:
     if not title:
         return None
     from urllib.parse import quote
+
     url = WIKIPEDIA_QID_LOOKUP.format(title=quote(title))
     data = _http_get_json(url)
     if not data:
@@ -122,8 +123,10 @@ class WikidataAdapter(SourceAdapter):
         # Store the entity-only slice as raw content (not the whole envelope).
         raw_text = json.dumps(data["entities"][qid])
         return FetchResult(
-            url=url, http_status=200,
-            raw_content=raw_text, source_id=qid,
+            url=url,
+            http_status=200,
+            raw_content=raw_text,
+            source_id=qid,
         )
 
     def fetch_wrestler_by_name(self, name: str) -> Optional[FetchResult]:
@@ -160,7 +163,8 @@ class WikidataAdapter(SourceAdapter):
             d = _parse_wikidata_time(v)
             if d is not None:
                 fields.birth_date = FieldSnippet(
-                    value=d, snippet=f"Wikidata P569: {d.isoformat()}",
+                    value=d,
+                    snippet=f"Wikidata P569: {d.isoformat()}",
                 )
                 break
 
@@ -170,7 +174,8 @@ class WikidataAdapter(SourceAdapter):
             d = _parse_wikidata_time(v)
             if d is not None:
                 fields.death_date = FieldSnippet(
-                    value=d, snippet=f"Wikidata P570: {d.isoformat()}",
+                    value=d,
+                    snippet=f"Wikidata P570: {d.isoformat()}",
                 )
                 break
 

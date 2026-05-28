@@ -15,7 +15,8 @@ from unittest import mock
 from django.test import TestCase
 
 from owdb_django.owdbapp.models import (
-    ExternalRankingEntry, Wrestler,
+    ExternalRankingEntry,
+    Wrestler,
 )
 from owdb_django.wrestlebot.pipeline import pwi
 from owdb_django.wrestlebot.pipeline.pwi import PWIEntry
@@ -35,12 +36,15 @@ class PreservesManualLinkOnRerunTests(TestCase):
     def test_manual_link_survives_failed_auto_match(self):
         # First run: published name doesn't match any Wrestler, so the
         # entry is created with wrestler=NULL.
-        first = self._run_with([
-            PWIEntry(position=1, wrestler_name="Hulk Hogan"),
-        ])
+        first = self._run_with(
+            [
+                PWIEntry(position=1, wrestler_name="Hulk Hogan"),
+            ]
+        )
         self.assertEqual(first["matched_wrestlers"], 0)
         entry = ExternalRankingEntry.objects.get(
-            ranking_id=first["ranking_id"], position=1,
+            ranking_id=first["ranking_id"],
+            position=1,
         )
         self.assertIsNone(entry.wrestler)
 
@@ -53,14 +57,17 @@ class PreservesManualLinkOnRerunTests(TestCase):
 
         # Rerun the ingester. The published name STILL doesn't auto-match
         # ("Hulk Hogan" != "Terry Bollea", no alias on file).
-        second = self._run_with([
-            PWIEntry(position=1, wrestler_name="Hulk Hogan"),
-        ])
+        second = self._run_with(
+            [
+                PWIEntry(position=1, wrestler_name="Hulk Hogan"),
+            ]
+        )
         self.assertEqual(second["matched_wrestlers"], 0)
 
         entry.refresh_from_db()
         self.assertEqual(
-            entry.wrestler_id, terry.id,
+            entry.wrestler_id,
+            terry.id,
             "manual wrestler link must survive a rerun where the auto "
             "name-match fails — otherwise automation silently undoes "
             "human corrections",
@@ -70,19 +77,26 @@ class PreservesManualLinkOnRerunTests(TestCase):
         # Entry exists with no link. The wrestler row exists and IS
         # name-matchable. A rerun should set the FK (no manual link to
         # protect here).
-        first = self._run_with([
-            PWIEntry(position=2, wrestler_name="Roman Reigns"),
-        ])
+        first = self._run_with(
+            [
+                PWIEntry(position=2, wrestler_name="Roman Reigns"),
+            ]
+        )
         ExternalRankingEntry.objects.get(
-            ranking_id=first["ranking_id"], position=2, wrestler__isnull=True,
+            ranking_id=first["ranking_id"],
+            position=2,
+            wrestler__isnull=True,
         )
 
         roman = Wrestler.objects.create(name="Roman Reigns")
-        second = self._run_with([
-            PWIEntry(position=2, wrestler_name="Roman Reigns"),
-        ])
+        second = self._run_with(
+            [
+                PWIEntry(position=2, wrestler_name="Roman Reigns"),
+            ]
+        )
         self.assertEqual(second["matched_wrestlers"], 1)
         entry = ExternalRankingEntry.objects.get(
-            ranking_id=second["ranking_id"], position=2,
+            ranking_id=second["ranking_id"],
+            position=2,
         )
         self.assertEqual(entry.wrestler_id, roman.id)

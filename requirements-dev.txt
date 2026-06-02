@@ -5,7 +5,7 @@
 -r requirements.txt
 
 # Security linting
-bandit>=1.7
+bandit>=1.9.4
 
 # Code formatting and linting
 black>=26.3.1

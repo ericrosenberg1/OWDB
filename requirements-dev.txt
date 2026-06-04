@@ -5,10 +5,10 @@
 -r requirements.txt
 
 # Security linting
-bandit>=1.7
+bandit>=1.9.4
 
 # Code formatting and linting
-black>=26.3.1
+black>=26.5.1
 ruff>=0.15.12
 isort>=8.0.1
 
@@ -16,7 +16,7 @@ isort>=8.0.1
 pytest>=9.0.3
 pytest-django>=4.9
 pytest-cov>=6.0
-factory-boy>=3.3
+factory-boy>=3.3.3
 
 # Type checking
 mypy>=1.13

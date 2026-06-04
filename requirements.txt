@@ -3,7 +3,7 @@ Django>=5.2,<5.3
 gunicorn>=25.3.0
 
 # Database
-psycopg2-binary>=2.9
+psycopg2-binary>=2.9.12
 
 # Redis and caching
 redis>=5.2
@@ -28,7 +28,7 @@ python-dotenv>=1.0
 # Web scraping
 requests>=2.34.2
 beautifulsoup4>=4.14.3
-lxml>=5.3
+lxml>=6.1.1
 feedparser>=6.0  # RSS feed parsing for news sources
 
 # Claude (Sonnet 4.6) for WrestleBot bio generation.
@@ -36,4 +36,4 @@ feedparser>=6.0  # RSS feed parsing for news sources
 anthropic>=0.40
 
 # Sentry — error tracking in production (origin/main addition).
-sentry-sdk[django]>=2.18
+sentry-sdk[django]>=2.61.1

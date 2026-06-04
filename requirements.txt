@@ -3,7 +3,7 @@ Django>=5.2,<5.3
 gunicorn>=25.3.0
 
 # Database
-psycopg2-binary>=2.9
+psycopg2-binary>=2.9.12
 
 # Redis and caching
 redis>=5.2

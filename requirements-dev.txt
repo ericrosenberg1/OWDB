@@ -19,6 +19,6 @@ pytest-cov>=7.1.0
 factory-boy>=3.3.3
 
 # Type checking
-mypy>=1.13
+mypy>=2.1.0
 django-stubs>=5.1
 djangorestframework-stubs>=3.15

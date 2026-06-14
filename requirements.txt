@@ -20,7 +20,7 @@ whitenoise>=6.8
 
 # Cloud storage (Cloudflare R2)
 boto3>=1.43.24
-django-storages>=1.14
+django-storages>=1.14.6
 
 # Utilities
 python-dotenv>=1.0

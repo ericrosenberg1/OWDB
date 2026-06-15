@@ -6,7 +6,7 @@ gunicorn>=26.0.0
 psycopg2-binary>=2.9.12
 
 # Redis and caching
-redis>=5.2
+redis>=8.0.0
 
 # Celery for background tasks
 celery>=5.5

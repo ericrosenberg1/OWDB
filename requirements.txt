@@ -23,7 +23,7 @@ boto3>=1.43.29
 django-storages>=1.14.6
 
 # Utilities
-python-dotenv>=1.0
+python-dotenv>=1.2.2
 
 # Web scraping
 requests>=2.34.2

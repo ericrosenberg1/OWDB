@@ -16,7 +16,7 @@ django-celery-beat>=2.9.0
 djangorestframework>=3.17.1
 
 # Static files
-whitenoise>=6.8
+whitenoise>=6.12.0
 
 # Cloud storage (Cloudflare R2)
 boto3>=1.43.29

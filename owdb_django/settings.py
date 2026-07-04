@@ -691,6 +691,10 @@ try:
         traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.2")),
         profiles_sample_rate=float(os.getenv("SENTRY_PROFILES_SAMPLE_RATE", "0.2")),
         send_default_pii=False,
+        # Never attach request bodies to events. send_default_pii does not
+        # gate body capture (only cookies/user info), so this is the actual
+        # control. Matches fleet-wide hardening after the hsatracker audit.
+        max_request_body_size="never",
         release=os.getenv("SENTRY_RELEASE"),
     )
 except ImportError:

@@ -36,4 +36,4 @@ feedparser>=6.0.12  # RSS feed parsing for news sources
 anthropic>=0.111.0
 
 # Sentry — error tracking in production (origin/main addition).
-sentry-sdk[django]>=2.63.0
+sentry-sdk[django]>=2.65.0

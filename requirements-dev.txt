@@ -9,7 +9,7 @@ bandit>=1.9.4
 
 # Code formatting and linting
 black>=26.5.1
-ruff>=0.15.18
+ruff>=0.15.22
 isort>=8.0.1
 
 # Testing

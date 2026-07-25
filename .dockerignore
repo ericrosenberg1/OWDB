@@ -7,6 +7,13 @@ db.sqlite3-journal
 db.sqlite3-wal
 db.sqlite3-shm
 
+# ...and the whole data/ dir, which is a runtime bind mount. Without this the
+# 404 MB SQLite corpus gets baked into the image (1.27 GB -> most of it the DB)
+# and, worse, a stale snapshot of it sits at /app/data/db.sqlite3 ready to be
+# served silently if the bind mount ever goes missing. (ROS-1204)
+data/
+logs/
+
 # Local Python state
 venv/
 .venv/

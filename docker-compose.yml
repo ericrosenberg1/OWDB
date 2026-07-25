@@ -61,10 +61,20 @@ services:
       - .env
     environment:
       APP_ENV: ${APP_ENV:-production}
+      # NOTE: settings.py picks the engine from DB_ENGINE (default "sqlite") —
+      # USE_POSTGRES / USE_REDIS are read by nothing. So this stack starts
+      # Postgres + Redis and Django then quietly uses SQLite anyway. Set
+      # DB_ENGINE=postgres to actually use the `db` service.
       USE_POSTGRES: "true"
       USE_REDIS: "true"
+      DB_ENGINE: ${DB_ENGINE:-sqlite}
       DB_HOST: db
       DB_PORT: 5432
+      # In SQLite mode the DB has to sit in a directory the app user can write:
+      # /app is root:root 0755 in the image and the app runs as `appuser`, so
+      # SQLite can neither create /app/db.sqlite3 nor its `-journal` and every
+      # DB access dies with "unable to open database file". (ROS-1204)
+      SQLITE_PATH: /app/data/db.sqlite3
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
@@ -76,6 +86,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
+      - ./data:/app/data
       - static_files:/app/static_collected
     command: >
       sh -c "
@@ -109,10 +120,20 @@ services:
       - .env
     environment:
       APP_ENV: ${APP_ENV:-production}
+      # NOTE: settings.py picks the engine from DB_ENGINE (default "sqlite") —
+      # USE_POSTGRES / USE_REDIS are read by nothing. So this stack starts
+      # Postgres + Redis and Django then quietly uses SQLite anyway. Set
+      # DB_ENGINE=postgres to actually use the `db` service.
       USE_POSTGRES: "true"
       USE_REDIS: "true"
+      DB_ENGINE: ${DB_ENGINE:-sqlite}
       DB_HOST: db
       DB_PORT: 5432
+      # In SQLite mode the DB has to sit in a directory the app user can write:
+      # /app is root:root 0755 in the image and the app runs as `appuser`, so
+      # SQLite can neither create /app/db.sqlite3 nor its `-journal` and every
+      # DB access dies with "unable to open database file". (ROS-1204)
+      SQLITE_PATH: /app/data/db.sqlite3
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
@@ -130,6 +151,7 @@ services:
       --loglevel=info
       --concurrency=2
     volumes:
+      - ./data:/app/data
       - celery_beat_schedule:/app/celerybeat-schedule
     healthcheck:
       test: ["CMD", "celery", "-A", "owdb_django", "inspect", "ping"]

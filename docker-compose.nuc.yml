@@ -40,6 +40,13 @@ services:
       DB_ENGINE: sqlite
       DEBUG: "0"
       ALLOWED_HOSTS: wrestlingdb.org,www.wrestlingdb.org
+      # Keep the DB inside the bind-mounted (app-writable) ./data dir. /app is
+      # root:root 0755 in the image, so SQLite cannot create the `-journal`
+      # file alongside a DB at /app/db.sqlite3 and every write transaction
+      # fails read-only — reads keep working, which is why the healthcheck and
+      # the public pages looked fine while /signup/ 500'd. See SQLITE_PATH in
+      # owdb_django/settings.py.
+      SQLITE_PATH: /app/data/db.sqlite3
     # No public port — only the docker network reaches us. cloudflared
     # service below talks to `http://web:8000` by container name.
     ports: !reset []
@@ -47,9 +54,13 @@ services:
     depends_on: !reset []
     # SQLite + provenance audit DB lives on a host bind mount so it
     # survives rebuilds and can be rsync'd in/out for backups.
+    #
+    # Directory mount only — the old extra `./data/db.sqlite3:/app/db.sqlite3`
+    # single-file mount is gone. It dropped the DB into the unwritable /app
+    # dir, and single-file bind mounts also break if the host file is ever
+    # replaced by inode (rsync without --inplace, restore-from-backup).
     volumes:
       - ./data:/app/data
-      - ./data/db.sqlite3:/app/db.sqlite3
       - static_files:/app/static_collected
     # Override the base command: skip setup_celery_schedule (no celery),
     # run migrations + collectstatic + gunicorn.

@@ -142,11 +142,22 @@ WSGI_APPLICATION = "owdb_django.wsgi.application"
 # corpus straight into the NUC's first deploy harder than it needed to be.
 USE_SQLITE = os.getenv("DB_ENGINE", "sqlite").lower() != "postgres"
 
+# SQLite needs to create a rollback journal (`<db>-journal`) *next to* the
+# database file on every write transaction, so the containing directory has to
+# be writable by the app user — not just the .sqlite3 file itself. In the
+# container image /app is owned by root:root 0755 while the app runs as
+# `appuser`, so a DB at BASE_DIR/db.sqlite3 opens fine for reads and then fails
+# every write with "attempt to write a readonly database" (older SQLite:
+# "unable to open database file"). SQLITE_PATH lets the deploy point the DB at
+# a writable, bind-mounted directory instead. Default keeps the repo-root path
+# for local dev, where the checkout is writable.
+SQLITE_PATH = os.getenv("SQLITE_PATH") or BASE_DIR / "db.sqlite3"
+
 if USE_SQLITE:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+            "NAME": SQLITE_PATH,
         }
     }
 else:

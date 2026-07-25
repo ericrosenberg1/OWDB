@@ -29,8 +29,21 @@ jobs:
       - run: ruff format --check .
 
   test:
-    name: Test
+    # Run the suite the way production is configured as well as the way CI always
+    # has. `DEBUG = APP_ENV != "production"` gates the entire security block in
+    # settings.py, so with APP_ENV=test alone this job has never executed HSTS,
+    # the secure-cookie flags, the SSL redirect or the /health/ exemptions — a
+    # fully green run missed all 34 failures found in ROS-1210 (ROS-1214).
+    #
+    # This matrix is the belt; the braces are owdbapp/tests/test_production_settings.py,
+    # which asserts the same config from inside the suite and so keeps working
+    # while Actions is billing-disabled and nothing here runs at all.
+    name: Test (APP_ENV=${{ matrix.app_env }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app_env: [test, production]
     services:
       postgres:
         image: postgres:16
@@ -66,7 +79,10 @@ jobs:
           pip install -r requirements-dev.txt
       - name: Run tests
         env:
-          APP_ENV: test
+          APP_ENV: ${{ matrix.app_env }}
+          # Blanked so the production leg cannot fall back to the hardcoded DSN in
+          # settings.py and report CI runs as production traffic.
+          SENTRY_DSN: ''
           DB_NAME: owdb_test
           DB_USER: owdb
           DB_PASSWORD: testpassword

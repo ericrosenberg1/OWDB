@@ -51,9 +51,11 @@ RUN python manage.py collectstatic --noinput
 # Expose port
 EXPOSE 8000
 
-# Health check
+# Health check — assert an explicit 200. `curl -f` alone treats a 3xx as
+# success, so it passed on the SECURE_SSL_REDIRECT 301 that plain-HTTP
+# localhost gets, never reaching the view. (ROS-1207)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health/ || exit 1
+    CMD curl -fsS --max-time 5 -o /dev/null -w '%{http_code}' http://localhost:8000/health/ | grep -q '^200$' || exit 1
 
 # Run with Gunicorn
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "--threads", "4", "--worker-class", "gthread", "--access-logfile", "-", "--error-logfile", "-", "owdb_django.wsgi:application"]

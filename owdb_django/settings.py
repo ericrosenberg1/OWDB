@@ -68,6 +68,15 @@ if not DEBUG:
     CSRF_COOKIE_SAMESITE = "Lax"
     # Redirect HTTP to HTTPS
     SECURE_SSL_REDIRECT = True
+    # …except /health/. The container healthcheck and any other in-network
+    # caller reaches gunicorn over plain HTTP on localhost:8000, where the
+    # redirect fires and hands back a 301 before the view ever runs. `curl -f`
+    # treats 3xx as success, so the check reported healthy for as long as
+    # gunicorn could emit a redirect — including the six weeks the write path
+    # was dead in ROS-1204. Exempting the path makes the endpoint honest for
+    # every internal caller, not just the one curl. (ROS-1207)
+    # Matched by SecurityMiddleware against request.path.lstrip("/").
+    SECURE_REDIRECT_EXEMPT = [r"^health/$"]
 
 # Session security (applies to both dev and prod)
 SESSION_COOKIE_AGE = 86400 * 14  # 14 days

@@ -100,7 +100,16 @@ services:
         gunicorn --bind 0.0.0.0:8000 --workers 2 --threads 4 --worker-class gthread --access-logfile - --error-logfile - owdb_django.wsgi:application
       "
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      # Assert an explicit 200 rather than trusting curl's exit code: `curl -f`
+      # counts any 3xx as success, so the old form passed on the SSL-redirect
+      # 301 without ever reaching the view. SECURE_REDIRECT_EXEMPT now stops
+      # that redirect; this keeps the check honest if it ever comes back.
+      # (ROS-1207)
+      test:
+        - CMD-SHELL
+        - >-
+          curl -fsS --max-time 5 -o /dev/null -w '%{http_code}'
+          http://localhost:8000/health/ | grep -q '^200$$'
       interval: 30s
       timeout: 10s
       retries: 3

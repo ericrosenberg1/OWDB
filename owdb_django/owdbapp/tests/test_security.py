@@ -49,6 +49,37 @@ class SecurityHeadersTest(TestCase):
         response = self.client.get(reverse("index"))
         self.assertEqual(response.status_code, 200)
 
+    @override_settings(
+        SECURE_HSTS_SECONDS=31536000,
+        SECURE_HSTS_INCLUDE_SUBDOMAINS=True,
+        SECURE_HSTS_PRELOAD=True,
+    )
+    def test_hsts_header_on_proxied_https(self):
+        """The production HSTS settings produce the header we expect.
+
+        Values are overridden rather than read from settings so this carries the
+        same signal under APP_ENV=test, where the production block never runs
+        (ROS-1214). That the block *sets* these values is gated separately, in
+        test_production_settings.py.
+        """
+        response = self.client.get(reverse("index"))
+        self.assertEqual(
+            response.get("Strict-Transport-Security"),
+            "max-age=31536000; includeSubDomains; preload",
+        )
+
+    @override_settings(SECURE_HSTS_SECONDS=31536000)
+    def test_hsts_header_not_sent_over_plain_http(self):
+        """HSTS rides only on responses Django considers secure.
+
+        Not a nice-to-have: it is why the header depends on SECURE_PROXY_SSL_HEADER
+        and X-Forwarded-Proto surviving the proxy. A bare client stands in for a
+        request that lost them — if this ever starts returning the header, the
+        secure/insecure distinction has broken somewhere.
+        """
+        response = Client().get(reverse("index"))
+        self.assertIsNone(response.get("Strict-Transport-Security"))
+
 
 class CSRFProtectionTest(TestCase):
     """Tests for CSRF protection."""
@@ -181,6 +212,51 @@ class SessionSecurityTest(TestCase):
         self.client.post(reverse("logout"))
         # Session cookie should be cleared
         self.assertEqual(self.client.cookies["sessionid"].value, "")
+
+
+class ProductionCookieFlagsTest(TestCase):
+    """The session and CSRF cookies carry the flags production configures.
+
+    Same reasoning as the HSTS tests above: the values are overridden rather than
+    inherited from the ambient APP_ENV, so these keep their meaning under
+    APP_ENV=test where the production block is skipped entirely (ROS-1214).
+
+    Cookies are read off a real response, not off `client.login()` — the test
+    client's login shortcut copies `SESSION_COOKIE_SECURE` by hand and ignores
+    HttpOnly and SameSite, so it would pass even if SessionMiddleware set neither.
+    """
+
+    def setUp(self):
+        self.client = proxied_client()
+        self.user = User.objects.create_user(
+            username="cookieuser", email="cookie@example.com", password="testpassword123"
+        )
+
+    @override_settings(
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+    )
+    def test_session_cookie_carries_production_flags(self):
+        response = self.client.post(
+            reverse("login"), {"username": "cookieuser", "password": "testpassword123"}
+        )
+        cookie = response.cookies["sessionid"]
+        self.assertTrue(cookie["secure"])
+        self.assertTrue(cookie["httponly"])
+        self.assertEqual(cookie["samesite"], "Lax")
+
+    @override_settings(
+        CSRF_COOKIE_SECURE=True,
+        CSRF_COOKIE_HTTPONLY=True,
+        CSRF_COOKIE_SAMESITE="Lax",
+    )
+    def test_csrf_cookie_carries_production_flags(self):
+        response = self.client.get(reverse("login"))
+        cookie = response.cookies["csrftoken"]
+        self.assertTrue(cookie["secure"])
+        self.assertTrue(cookie["httponly"])
+        self.assertEqual(cookie["samesite"], "Lax")
 
 
 class HealthCheckRedirectExemptTest(TestCase):

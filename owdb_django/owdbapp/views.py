@@ -1078,19 +1078,147 @@ def account(request):
 # Health Check (for Docker/Load Balancers)
 # =============================================================================
 
+import os
+
 from django.http import JsonResponse
-from django.db import connection
+from django.db import connection, transaction
+
+from .checks import sqlite_db_directory
+
+# Name of the throwaway table the readiness probe creates and rolls back. It
+# never survives the probe — the CREATE is followed by a DROP and the whole
+# transaction is rolled back on top of that.
+_WRITE_PROBE_TABLE = "owdb_health_write_probe"
+
+
+class _ProbeRollback(Exception):
+    """Sentinel raised to unwind the readiness write probe's transaction."""
+
+
+def _check_sqlite_dir_writable():
+    """Cheap stand-in for the ROS-1204 failure mode.
+
+    SQLite writes its rollback journal *next to* the database file, so a write
+    transaction needs the containing directory to be writable — a permission
+    `SELECT 1` never exercises. Under the exact ROS-1204 conditions (DB file
+    present and readable, parent directory root:root 0755, app running as
+    appuser) `SELECT 1` returns cleanly, and so does `BEGIN IMMEDIATE`: SQLite
+    only discovers it cannot write when it goes to create the journal. Both
+    were verified against a reproduction before this check was written.
+
+    ``os.access`` is a real permission check against the running uid — it also
+    reports False for a read-only mount — so this cannot flap the way an actual
+    write can (lock contention, transient ENOSPC). That matters: a probe that
+    ever false-negatives on the Docker healthcheck path turns a live site into
+    a restart loop the moment anything is wired up to act on the status.
+
+    Returns (ok, detail).
+    """
+    directory = sqlite_db_directory(settings.DATABASES["default"])
+    if directory is None:
+        return True, "n/a (no on-disk sqlite file)"
+    if os.access(directory, os.W_OK | os.X_OK):
+        return True, "writable"
+    return False, (
+        f"{directory} is not writable by uid {os.getuid()}; every write will "
+        f"fail while reads keep succeeding (see ROS-1204)"
+    )
+
+
+def _check_write_transaction():
+    """Open a real write transaction against the default DB and roll it back.
+
+    Engine-agnostic, and stricter than the directory check: it also catches a
+    read-only Postgres (hot standby, ``default_transaction_read_only``), a
+    connection opened read-only, and a SQLite DB file that is itself unwritable
+    in a writable directory. Creating a table dirties a page, which is what
+    forces SQLite to open the journal — the precise step ROS-1204 died on.
+
+    Nothing survives: the CREATE is followed by a DROP inside the same atomic
+    block, and the block is then unwound by ``_ProbeRollback`` regardless.
+
+    A busy database is reported as "busy", not unhealthy. Lock contention means
+    somebody else is writing successfully, which is the opposite of the failure
+    this is looking for, and calling it unhealthy would be exactly the kind of
+    false negative that makes a strict probe dangerous.
+
+    Returns (ok, detail).
+    """
+    try:
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute(f"CREATE TABLE {_WRITE_PROBE_TABLE} (id integer)")
+                cursor.execute(f"DROP TABLE {_WRITE_PROBE_TABLE}")
+            raise _ProbeRollback
+    except _ProbeRollback:
+        return True, "ok"
+    except Exception as e:
+        message = str(e).lower()
+        if "locked" in message or "busy" in message or "deadlock" in message:
+            return True, f"busy (another writer holds the lock): {e}"
+        return False, str(e)
 
 
 def health_check(request):
-    """Health check endpoint for Docker and load balancers."""
+    """Liveness probe for Docker and load balancers.
+
+    Deliberately cheap — no write, no lock, no added load — because this is the
+    endpoint the container healthcheck hits every 30s. `SELECT 1` on its own is
+    not enough: it passed straight through all six weeks of ROS-1204, when
+    every write was failing. The SQLite directory check closes that specific
+    hole at the cost of two syscalls. Use /health/ready/ for the deep check.
+    """
+    checks = {}
     try:
-        # Check database connection
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
-        return JsonResponse({"status": "healthy", "database": "connected"})
+        checks["database"] = "connected"
     except Exception as e:
-        return JsonResponse({"status": "unhealthy", "error": str(e)}, status=503)
+        return JsonResponse(
+            {"status": "unhealthy", "checks": {"database": str(e)}, "error": str(e)},
+            status=503,
+        )
+
+    ok, detail = _check_sqlite_dir_writable()
+    checks["database_directory"] = detail
+    if not ok:
+        return JsonResponse({"status": "unhealthy", "checks": checks, "error": detail}, status=503)
+
+    # "database": "connected" is kept for anything already parsing this shape.
+    return JsonResponse({"status": "healthy", "database": "connected", "checks": checks})
+
+
+def health_ready(request):
+    """Readiness probe for humans and monitoring — everything /health/ does,
+    plus a real write transaction that is rolled back.
+
+    Kept off the container healthcheck path on purpose. It takes a brief write
+    lock, so running it every 30s against a live SQLite site trades a real
+    (small) risk for information nobody is reading at that frequency.
+    """
+    checks = {}
+    status = 200
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        checks["database"] = "connected"
+    except Exception as e:
+        checks["database"] = str(e)
+        return JsonResponse({"status": "unhealthy", "checks": checks}, status=503)
+
+    for key, check in (
+        ("database_directory", _check_sqlite_dir_writable),
+        ("database_write", _check_write_transaction),
+    ):
+        ok, detail = check()
+        checks[key] = detail
+        if not ok:
+            status = 503
+
+    return JsonResponse(
+        {"status": "healthy" if status == 200 else "unhealthy", "checks": checks},
+        status=status,
+    )
 
 
 # =============================================================================

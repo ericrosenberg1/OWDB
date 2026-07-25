@@ -680,22 +680,51 @@ WRESTLEBOT = {
 # =============================================================================
 # SENTRY — error + performance monitoring
 # =============================================================================
-try:
-    import sentry_sdk
-    from sentry_sdk.integrations.django import DjangoIntegration
+# This is the production project's DSN. It is deliberately NOT a blanket
+# default for every environment.
+#
+# ROS-1204, ROS-1206 and ROS-1212 were all digest alerts nobody could trace to
+# a host, because the DSN used to be the fallback for `os.getenv("SENTRY_DSN")`.
+# That meant *any* checkout picked it up — a laptop, a bare `docker compose
+# up`, a CI runner — and reported into the production `owdb` project tagged
+# `environment=development`. Chasing ROS-1212 cost a full pass over every
+# `.title` read in the repo before it turned out prod wasn't the reporter.
+#
+# Production still gets it implicitly. Everywhere else has to opt in by setting
+# SENTRY_DSN explicitly.
+PRODUCTION_SENTRY_DSN = "https://3527ae5df926c7d32962395ce6dbb143@o4507525754060800.ingest.us.sentry.io/4511429590056960"
 
-    sentry_sdk.init(
-        dsn=os.getenv(
-            "SENTRY_DSN",
-            "https://3527ae5df926c7d32962395ce6dbb143@o4507525754060800.ingest.us.sentry.io/4511429590056960",
-        ),
-        environment=APP_ENV,
-        integrations=[DjangoIntegration()],
-        traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.2")),
-        profiles_sample_rate=float(os.getenv("SENTRY_PROFILES_SAMPLE_RATE", "0.2")),
-        send_default_pii=False,
-        release=os.getenv("SENTRY_RELEASE"),
-    )
-except ImportError:
-    # sentry-sdk not installed — silently skip
-    pass
+
+def resolve_sentry_dsn(app_env, explicit_dsn):
+    """
+    Decide which DSN Sentry should use, or None to stay uninitialised.
+
+    An explicitly set SENTRY_DSN always wins, including when it is empty —
+    `SENTRY_DSN=""` is the documented way to turn reporting off in production.
+    """
+    if explicit_dsn is not None:
+        return explicit_dsn.strip() or None
+    if app_env == "production":
+        return PRODUCTION_SENTRY_DSN
+    return None
+
+
+SENTRY_DSN = resolve_sentry_dsn(APP_ENV, os.getenv("SENTRY_DSN"))
+
+if SENTRY_DSN:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.django import DjangoIntegration
+
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            environment=APP_ENV,
+            integrations=[DjangoIntegration()],
+            traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.2")),
+            profiles_sample_rate=float(os.getenv("SENTRY_PROFILES_SAMPLE_RATE", "0.2")),
+            send_default_pii=False,
+            release=os.getenv("SENTRY_RELEASE"),
+        )
+    except ImportError:
+        # sentry-sdk not installed — silently skip
+        pass

@@ -77,6 +77,9 @@ urlpatterns = [
     path("resend-verification/", views.resend_verification, name="resend_verification"),
     # Account
     path("account/", views.account, name="account"),
-    # Health check for Docker/load balancers
+    # Health check for Docker/load balancers — cheap, hit every 30s.
     path("health/", views.health_check, name="health"),
+    # Deeper readiness check for humans and monitoring. Kept off the container
+    # healthcheck path because it opens a real write transaction. (ROS-1209)
+    path("health/ready/", views.health_ready, name="health_ready"),
 ]

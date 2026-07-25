@@ -76,7 +76,10 @@ if not DEBUG:
     # was dead in ROS-1204. Exempting the path makes the endpoint honest for
     # every internal caller, not just the one curl. (ROS-1207)
     # Matched by SecurityMiddleware against request.path.lstrip("/").
-    SECURE_REDIRECT_EXEMPT = [r"^health/$"]
+    # /health/ready/ is exempt for the same reason — it is reached over plain
+    # HTTP from inside the network, and a 301 would hide its verdict from the
+    # humans and monitoring it exists for. (ROS-1209)
+    SECURE_REDIRECT_EXEMPT = [r"^health/$", r"^health/ready/$"]
 
 # Session security (applies to both dev and prod)
 SESSION_COOKIE_AGE = 86400 * 14  # 14 days

@@ -1,36 +1,66 @@
 """
 Security tests for OWDB.
+
+These use `proxied_client()` rather than a bare `Client()`. Under
+APP_ENV=production a plain-HTTP test request is 301'd by SecurityMiddleware before
+any view runs, so every assertion below would check the redirect instead of the
+thing it names — see proxied_client.py for the full explanation (ROS-1210).
 """
 
 from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 from django.contrib.auth.models import User
 
+from .proxied_client import proxied_client
+
 
 class SecurityHeadersTest(TestCase):
     """Tests for security headers."""
 
     def setUp(self):
-        self.client = Client()
+        self.client = proxied_client()
 
-    @override_settings(DEBUG=False)
     def test_x_frame_options(self):
-        """Test X-Frame-Options header is set."""
+        """Test X-Frame-Options header is set.
+
+        Not wrapped in override_settings(DEBUG=False): the production security
+        block runs at settings-import time, so flipping DEBUG here changes
+        nothing. DENY holds either way — production sets it explicitly and it is
+        also Django's default.
+        """
         response = self.client.get(reverse("index"))
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get("X-Frame-Options"), "DENY")
 
     def test_content_type_options(self):
         """Test X-Content-Type-Options header."""
         response = self.client.get(reverse("index"))
-        # This should be set by Django's SecurityMiddleware
-        self.assertIn(response.get("X-Content-Type-Options", ""), ["nosniff", None])
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get("X-Content-Type-Options"), "nosniff")
+
+    @override_settings(SECURE_SSL_REDIRECT=True)
+    def test_proxied_https_is_not_redirected(self):
+        """A proxied HTTPS request reaches the view instead of being redirected.
+
+        This is the setting the rest of the file leans on. If SECURE_PROXY_SSL_HEADER
+        is ever dropped, this test names the cause — otherwise every other test here
+        fails with an unexplained 301, and production redirect-loops.
+        """
+        response = self.client.get(reverse("index"))
+        self.assertEqual(response.status_code, 200)
 
 
 class CSRFProtectionTest(TestCase):
     """Tests for CSRF protection."""
 
     def setUp(self):
-        self.client = Client(enforce_csrf_checks=True)
+        # Referer is supplied because Django applies strict Referer checking to
+        # HTTPS requests. Without a valid one the 403s below prove only that the
+        # Referer was absent, and would still pass with token checking disabled.
+        # With it, the rejection is "CSRF cookie not set" — the real subject.
+        self.client = proxied_client(
+            enforce_csrf_checks=True, headers={"Referer": "https://testserver/"}
+        )
         self.user = User.objects.create_user(
             username="csrfuser", email="csrf@example.com", password="testpassword123"
         )
@@ -45,7 +75,7 @@ class CSRFProtectionTest(TestCase):
     def test_logout_requires_csrf(self):
         """Test that logout POST requires CSRF token."""
         # Login first (without CSRF checks)
-        client = Client()
+        client = proxied_client()
         client.login(username="csrfuser", password="testpassword123")
 
         # Now try to logout with CSRF enforcement
@@ -57,7 +87,7 @@ class OpenRedirectTest(TestCase):
     """Tests for open redirect prevention."""
 
     def setUp(self):
-        self.client = Client()
+        self.client = proxied_client()
         self.user = User.objects.create_user(
             username="redirectuser", email="redirect@example.com", password="testpassword123"
         )
@@ -85,7 +115,7 @@ class InputValidationTest(TestCase):
     """Tests for input validation."""
 
     def setUp(self):
-        self.client = Client()
+        self.client = proxied_client()
 
     def test_search_handles_special_characters(self):
         """Test that search handles special characters safely."""
@@ -134,7 +164,7 @@ class SessionSecurityTest(TestCase):
     """Tests for session security."""
 
     def setUp(self):
-        self.client = Client()
+        self.client = proxied_client()
         self.user = User.objects.create_user(
             username="sessionuser", email="session@example.com", password="testpassword123"
         )
@@ -147,6 +177,7 @@ class SessionSecurityTest(TestCase):
     def test_session_destroyed_on_logout(self):
         """Test that session is destroyed on logout."""
         self.client.login(username="sessionuser", password="testpassword123")
+        self.assertNotEqual(self.client.cookies["sessionid"].value, "")
         self.client.post(reverse("logout"))
         # Session cookie should be cleared
         self.assertEqual(self.client.cookies["sessionid"].value, "")
@@ -158,6 +189,9 @@ class HealthCheckRedirectExemptTest(TestCase):
     With SECURE_SSL_REDIRECT on and no exemption, SecurityMiddleware returns a
     301 before the view runs, and `curl -f` counts that as success — so the
     check reported healthy while the app was broken (ROS-1204/ROS-1207).
+
+    These use a plain client on purpose: the point is what an unproxied,
+    plain-HTTP caller gets.
     """
 
     def setUp(self):

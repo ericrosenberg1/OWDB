@@ -1,20 +1,26 @@
 """
 Tests for OWDB views.
+
+These use `proxied_client()` rather than a bare `Client()`. Under
+APP_ENV=production a plain-HTTP test request is 301'd by SecurityMiddleware before
+any view runs, so every assertion below would check the redirect instead of the
+view — see proxied_client.py for the full explanation (ROS-1210).
 """
 
-from django.test import TestCase, Client
+from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth.models import User
 from django.utils import timezone
 
 from ..models import Wrestler, Promotion, Event, Venue, UserProfile
+from .proxied_client import proxied_client
 
 
 class PublicViewsTest(TestCase):
     """Tests for public-facing views."""
 
     def setUp(self):
-        self.client = Client()
+        self.client = proxied_client()
         # Create some test data
         self.wrestler = Wrestler.objects.create(name="Test Wrestler", hometown="Test City")
         self.promotion = Promotion.objects.create(name="Test Promotion", abbreviation="TP")
@@ -86,7 +92,7 @@ class SearchViewsTest(TestCase):
     """Tests for search functionality."""
 
     def setUp(self):
-        self.client = Client()
+        self.client = proxied_client()
         Wrestler.objects.create(name="John Cena", hometown="West Newbury")
         Wrestler.objects.create(name="CM Punk", hometown="Chicago")
         Wrestler.objects.create(name="Daniel Bryan", hometown="Aberdeen")
@@ -124,7 +130,7 @@ class AuthenticationViewsTest(TestCase):
     """Tests for authentication views."""
 
     def setUp(self):
-        self.client = Client()
+        self.client = proxied_client()
         self.user = User.objects.create_user(
             username="testuser", email="test@example.com", password="testpassword123"
         )
@@ -179,7 +185,7 @@ class RateLimitingTest(TestCase):
     """Tests for rate limiting on auth views."""
 
     def setUp(self):
-        self.client = Client()
+        self.client = proxied_client()
 
     def test_signup_rate_limiting(self):
         """Test that signup is rate limited when the counter is at the limit."""
@@ -217,7 +223,7 @@ class AccountViewsTest(TestCase):
     """Tests for account management views."""
 
     def setUp(self):
-        self.client = Client()
+        self.client = proxied_client()
         self.user = User.objects.create_user(
             username="testuser", email="test@example.com", password="testpassword123"
         )

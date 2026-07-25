@@ -150,3 +150,29 @@ class SessionSecurityTest(TestCase):
         self.client.post(reverse("logout"))
         # Session cookie should be cleared
         self.assertEqual(self.client.cookies["sessionid"].value, "")
+
+
+class HealthCheckRedirectExemptTest(TestCase):
+    """The container healthcheck hits /health/ over plain HTTP on localhost.
+
+    With SECURE_SSL_REDIRECT on and no exemption, SecurityMiddleware returns a
+    301 before the view runs, and `curl -f` counts that as success — so the
+    check reported healthy while the app was broken (ROS-1204/ROS-1207).
+    """
+
+    def setUp(self):
+        self.client = Client()
+
+    @override_settings(SECURE_SSL_REDIRECT=True, SECURE_REDIRECT_EXEMPT=[r"^health/$"])
+    def test_health_is_not_ssl_redirected(self):
+        """/health/ answers over plain HTTP instead of redirecting."""
+        response = self.client.get("/health/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], "healthy")
+
+    @override_settings(SECURE_SSL_REDIRECT=True, SECURE_REDIRECT_EXEMPT=[r"^health/$"])
+    def test_other_paths_still_ssl_redirect(self):
+        """The exemption is scoped to /health/ — everything else still 301s."""
+        response = self.client.get(reverse("index"))
+        self.assertEqual(response.status_code, 301)
+        self.assertTrue(response["Location"].startswith("https://"))

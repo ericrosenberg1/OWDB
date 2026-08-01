@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -680,22 +681,68 @@ WRESTLEBOT = {
 # =============================================================================
 # SENTRY — error + performance monitoring
 # =============================================================================
-try:
-    import sentry_sdk
-    from sentry_sdk.integrations.django import DjangoIntegration
+# Interactive and one-off sessions do not report.
+#
+# Four of the six "new issues" in the Jul 25–Aug 1 weekly digest were not
+# production faults. Two of them — an `AttributeError: 'VideoGame' object has no
+# attribute 'title'` and a `ModuleNotFoundError: No module named 'owdbapp'` —
+# were an operator fat-fingering an import inside `manage.py shell` on a
+# throwaway verification container, which reported into the production project
+# and inflated the report (ROS-1409, ROS-1411). A typo at a REPL is not a fault
+# of the running site, and it should never page anyone.
+#
+# This is a denylist, not an allowlist, on purpose. "Only report from processes
+# I recognise as servers" silences anything it fails to predict — a new worker,
+# a cron entry, a different WSGI server — and quietly losing production errors
+# is much the worse failure. Anything not named below still reports.
+NON_REPORTING_COMMANDS = frozenset({"shell", "dbshell", "test"})
 
-    sentry_sdk.init(
-        dsn=os.getenv(
-            "SENTRY_DSN",
-            "https://3527ae5df926c7d32962395ce6dbb143@o4507525754060800.ingest.us.sentry.io/4511429590056960",
-        ),
-        environment=APP_ENV,
-        integrations=[DjangoIntegration()],
-        traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.2")),
-        profiles_sample_rate=float(os.getenv("SENTRY_PROFILES_SAMPLE_RATE", "0.2")),
-        send_default_pii=False,
-        release=os.getenv("SENTRY_RELEASE"),
-    )
-except ImportError:
-    # sentry-sdk not installed — silently skip
-    pass
+# argv[0] for these; a management command is only a management command when it
+# was invoked as one. Guarding on argv[1] alone would match `gunicorn test ...`
+# or any other process that happens to take a matching first argument.
+_MANAGEMENT_ENTRYPOINTS = frozenset({"manage.py", "django-admin", "django-admin.py"})
+
+
+def is_non_reporting_process(argv):
+    """True when argv is an interactive/one-off session rather than a service.
+
+    Deliberately narrow. `gunicorn`, `celery`, and the `migrate` /
+    `collectstatic` steps the container runs before handing off to gunicorn all
+    fall through to reporting.
+    """
+    if not argv:
+        return False
+    # `python -c "…"`: an operator running a one-liner, and the shape this
+    # repo's own settings probes use (owdbapp/tests/test_production_settings.py).
+    # Note the bare REPL (argv[0] == "") is *not* matched — embedded
+    # interpreters such as mod_wsgi also leave argv[0] empty, and mistaking a
+    # web server for a REPL would silence production.
+    if argv[0] == "-c":
+        return True
+    if os.path.basename(argv[0]) in _MANAGEMENT_ENTRYPOINTS:
+        return len(argv) > 1 and argv[1] in NON_REPORTING_COMMANDS
+    return False
+
+
+SENTRY_ENABLED = not is_non_reporting_process(sys.argv)
+
+if SENTRY_ENABLED:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.django import DjangoIntegration
+
+        sentry_sdk.init(
+            dsn=os.getenv(
+                "SENTRY_DSN",
+                "https://3527ae5df926c7d32962395ce6dbb143@o4507525754060800.ingest.us.sentry.io/4511429590056960",
+            ),
+            environment=APP_ENV,
+            integrations=[DjangoIntegration()],
+            traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.2")),
+            profiles_sample_rate=float(os.getenv("SENTRY_PROFILES_SAMPLE_RATE", "0.2")),
+            send_default_pii=False,
+            release=os.getenv("SENTRY_RELEASE"),
+        )
+    except ImportError:
+        # sentry-sdk not installed — silently skip
+        pass

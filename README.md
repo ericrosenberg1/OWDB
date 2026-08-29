@@ -84,37 +84,41 @@ curl https://wrestlingdb.org/api/wrestlers/ \
 
 ## Deployment
 
-### Server Requirements
+wrestlingdb.org runs on the NUC at `/home/eric/wrestlingdb` as a Docker Compose
+stack behind a Cloudflare Tunnel. Production runs two containers, `web` (Django
+under Gunicorn, on SQLite) and `cloudflared`. The `db`, `redis`, and `celery`
+services are still defined in `docker-compose.yml` but are pinned to zero
+replicas on the NUC by a `docker-compose.nuc.yml` override.
 
-- Ubuntu 22.04+ or similar
-- PostgreSQL 15+
-- Redis 7+
-- Python 3.11+
+Two things about that directory surprise people:
 
-### Deploy Steps
+1. It is **not** a git checkout. There is no `.git`, so there is nothing to
+   `git pull`.
+2. `docker-compose.nuc.yml` exists only on the NUC, not in this repo. A deploy
+   run without it would try to start Postgres, Redis, and Celery, and would bind
+   host port 8000, which is already taken on that box.
+
+The canonical update and deploy path is documented in Brian's weekly routine at
+`nuc:/home/eric/docker/paperclip/agent-instructions/brian/dependency-updates.md`,
+Part I. Follow that. Do not improvise a deploy from this README.
+
+There used to be a `deploy.sh` in this repo. It was removed because every fact
+in it was wrong: it targeted `/opt/owdb` (never existed on the NUC), pointed at
+a DigitalOcean IP that Eric released and that has since been reassigned to a
+third party, and opened with a `git pull` in a directory that is not a
+repository.
+
+### Local development
 
 ```bash
-ssh root@wrestlingdb.org
-cd /home/wrestlingdb
-git pull origin main
-./venv/bin/python -m pip install -r requirements.txt
-./venv/bin/python manage.py migrate
-./venv/bin/python manage.py collectstatic --noinput
-sudo systemctl restart wrestlingdb
+docker compose up --build
 ```
 
-### Service Management
+### CI
 
-```bash
-# Check status
-sudo systemctl status wrestlingdb
-
-# View logs
-sudo journalctl -u wrestlingdb -f
-
-# Restart
-sudo systemctl restart wrestlingdb
-```
+GitHub Actions is disabled on this repo on purpose (billing broke 2026-05-22).
+Nothing runs on a pull request and nothing deploys on merge, so test locally
+before merging.
 
 ---
 

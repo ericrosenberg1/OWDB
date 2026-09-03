@@ -11,7 +11,7 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "America/New_York"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0  # Actions retired; nothing can test or merge a PR
     labels:
       - "dependencies"
       - "python"

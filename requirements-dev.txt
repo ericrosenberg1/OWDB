@@ -9,7 +9,7 @@ bandit>=1.9.4
 
 # Code formatting and linting
 black>=26.5.1
-ruff>=0.15.18
+ruff>=0.16.1
 isort>=8.0.1
 
 # Testing
@@ -19,6 +19,6 @@ pytest-cov>=7.1.0
 factory-boy>=3.3.3
 
 # Type checking
-mypy>=2.1.0
-django-stubs>=6.0.5
-djangorestframework-stubs>=3.17.0
+mypy>=2.3.0
+django-stubs>=6.0.7
+djangorestframework-stubs>=3.17.1

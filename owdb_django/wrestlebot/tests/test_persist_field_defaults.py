@@ -89,7 +89,9 @@ class WrestlerRolesDefaultTests(TestCase):
         fetch1 = _make_fetch(candidate_name="Multi Role Wrestler 2")
         fields1 = WrestlerFields(
             name=FieldSnippet(value="Multi Role Wrestler 2", snippet="infobox name"),
-            roles=FieldSnippet(value="wrestler, referee", snippet="Occupation(s): wrestler, referee"),
+            roles=FieldSnippet(
+                value="wrestler, referee", snippet="Occupation(s): wrestler, referee"
+            ),
         )
         result1 = persist_wrestler("Multi Role Wrestler 2", fields1, fetch1)
         self.assertIn("roles", result1.fields_written)

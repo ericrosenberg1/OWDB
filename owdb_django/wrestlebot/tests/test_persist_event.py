@@ -52,9 +52,7 @@ def _wwe_fields(venue_name=None, attendance=None, event_date=None):
 class EventVenueFirstWriteWinsTests(TestCase):
     def test_venue_set_when_previously_unset(self):
         fetch = _make_fetch()
-        result = persist_event(
-            "Test Event", _wwe_fields(venue_name="Madison Square Garden"), fetch
-        )
+        result = persist_event("Test Event", _wwe_fields(venue_name="Madison Square Garden"), fetch)
         self.assertIsNotNone(result)
         event = Event.objects.get(id=result.event_id)
         self.assertIsNotNone(event.venue)
@@ -62,14 +60,18 @@ class EventVenueFirstWriteWinsTests(TestCase):
 
     def test_second_source_does_not_silently_relink_the_venue(self):
         fetch1 = _make_fetch()
-        result1 = persist_event("Test Event", _wwe_fields(venue_name="Madison Square Garden"), fetch1)
+        result1 = persist_event(
+            "Test Event", _wwe_fields(venue_name="Madison Square Garden"), fetch1
+        )
         original_venue_id = Event.objects.get(id=result1.event_id).venue_id
         self.assertIsNotNone(original_venue_id)
 
         fetch2 = _make_fetch()
         fetch2.entity_id = result1.event_id
         fetch2.entity_type = "event"
-        with self.assertLogs("owdb_django.wrestlebot.pipeline.persist_event", level="WARNING") as cm:
+        with self.assertLogs(
+            "owdb_django.wrestlebot.pipeline.persist_event", level="WARNING"
+        ) as cm:
             persist_event("Test Event", _wwe_fields(venue_name="T-Mobile Arena"), fetch2)
 
         self.assertTrue(any("Source drift" in msg for msg in cm.output))

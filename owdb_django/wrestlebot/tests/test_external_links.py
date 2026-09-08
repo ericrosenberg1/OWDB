@@ -49,9 +49,7 @@ _HTML_WITH_EVENT_LINK_ONLY = """
 class ExtractExternalLinksTests(TestCase):
     def test_finds_both_known_hosts(self):
         found = extract_external_links(_HTML_WITH_LINKS)
-        self.assertEqual(
-            found["cagematch_url"], "https://www.cagematch.net/?id=2&nr=123&name=Test"
-        )
+        self.assertEqual(found["cagematch_url"], "https://www.cagematch.net/?id=2&nr=123&name=Test")
         self.assertEqual(
             found["profightdb_url"],
             "https://www.profightdb.com/wrestlers/test-wrestler-456.html",
@@ -94,9 +92,9 @@ class ApplyExternalLinksToWrestlerTests(TestCase):
         )
 
         provenance_fields = set(
-            FieldProvenance.objects.filter(
-                entity_type="wrestler", entity_id=w.id
-            ).values_list("field_name", flat=True)
+            FieldProvenance.objects.filter(entity_type="wrestler", entity_id=w.id).values_list(
+                "field_name", flat=True
+            )
         )
         self.assertEqual(
             provenance_fields,

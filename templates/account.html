@@ -4,6 +4,11 @@
 <h1>Account</h1>
 <p class="mb-4">Manage your API keys for accessing the WrestlingDB REST API.</p>
 
+<div class="alert alert-info" role="alert">
+    <strong>The API is in development.</strong> You can create and manage keys below, but
+    there are no live API endpoints yet, so a key won't authenticate any requests today.
+</div>
+
 <div class="row">
     <div class="col-lg-8">
         <!-- Create New Key -->
@@ -100,10 +105,12 @@
         <div class="card mb-4">
             <div class="card-header">API Documentation</div>
             <div class="card-body">
-                <p>Use your API key in the <code>X-API-Key</code> header:</p>
-                <pre class="bg-dark p-3 rounded"><code>curl -H "X-API-Key: YOUR_KEY" \
-  https://wrestlingdb.org/api/wrestlers/</code></pre>
-                <p class="mb-0"><small class="text-muted">Full API documentation coming soon.</small></p>
+                <p class="mb-0">
+                    The WrestlingDB API is still in development, so there's nothing to call
+                    yet and no documentation to publish. Once it launches, you'll
+                    authenticate with the key you create above. We'll post the full docs
+                    here when it's live.
+                </p>
             </div>
         </div>
 

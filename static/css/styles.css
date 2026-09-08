@@ -796,6 +796,21 @@ a:hover {
     color: var(--wwf-silver);
 }
 
+/* Review-gate honesty pills — candidate/provisional verification_state.
+   Deliberately not gold (already "active") or red (already the brand/
+   error color) so they read as "pending", not "broken" or "urgent" —
+   candidate is ~88-100% of some entity types in production, so this
+   badge is common, not exceptional. */
+.status-badge.candidate {
+    background: #6b4a1e;
+    color: #ffd699;
+}
+
+.status-badge.provisional {
+    background: #2d4a63;
+    color: #bde0ff;
+}
+
 /* Person Header */
 .person-header h1 {
     font-size: 2.25rem;
@@ -2298,6 +2313,29 @@ a:hover {
     background: rgba(255, 255, 255, 0.02);
     font-size: 0.9rem;
     color: var(--bs-body-color, #ccc);
+}
+
+/* Candidate/provisional entities get the same panel, just with the
+   honesty note (see .verification-stamp__state below) leading it off,
+   and the accent color swapped to match their .status-badge modifier
+   instead of the "fully verified" green. */
+.verification-stamp--candidate {
+    border-left-color: #d98c2b;
+}
+
+.verification-stamp--provisional {
+    border-left-color: #4a90c4;
+}
+
+.verification-stamp__state {
+    margin: 0 0 0.75rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.verification-stamp__state .status-badge {
+    margin-right: 0.5rem;
+    vertical-align: middle;
 }
 
 .verification-stamp__title {

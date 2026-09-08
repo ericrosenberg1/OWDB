@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load linking_tags %}
+{% load verification_tags %}
 
 {% block content %}
 <div class="detail-header">
@@ -18,6 +19,7 @@
     {% endif %}
     <h1 class="detail-title">{{ title.name }}</h1>
     <div class="detail-meta">
+        <div class="detail-meta-item">{% verification_state_badge title %}</div>
         <div class="detail-meta-item">
             <span class="detail-meta-label">Promotion:</span>
             <a href="{% url 'promotion_detail_slug' title.promotion.slug %}">{{ title.promotion.name }}</a>
@@ -168,6 +170,8 @@
     </div>
 </div>
 {% endif %}
+
+{% verification_stamp title %}
 
 {% with entity_type="title" entity=title %}
     {% include "partials/sources_used.html" %}

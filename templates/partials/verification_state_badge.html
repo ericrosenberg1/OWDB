@@ -1,0 +1,11 @@
+{% comment %}
+Small honesty pill for candidate/provisional entities. Rendered by
+{% verification_state_badge entity %} (verification_tags.py) — reuses the
+`.status-badge` visual language already used for Active/Retired near a
+detail page's title, so this drops into the same spot, or into a list row,
+without inventing a new indicator style.
+
+Required context: state_display — dict with `label`, `modifier`, `detail`,
+or None when the entity is verified (or any other/blank state).
+{% endcomment %}
+{% if state_display %}<span class="status-badge {{ state_display.modifier }}" title="{{ state_display.detail }}">{{ state_display.label }}</span>{% endif %}

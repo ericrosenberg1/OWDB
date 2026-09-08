@@ -18,4 +18,20 @@ that compose those modules with the right policies for their role:
 
   - JR composes: discover -> fetch -> extract -> persist -> bio
   - Earl composes: audit -> measure-rules -> suggest/apply rule deltas
+
+Two different implementations answer to these same names, and it matters
+which one you're reading. `wrestlebot/agents/jr_agent.py`, `al_agent.py`,
+and `earl_agent.py` are genuine Claude tool-use agents with enforced
+per-cycle budget caps — these are what Celery beat actually schedules for
+autonomous operation, as `jr_agent_cycle` / `al_agent_cycle` /
+`earl_agent_cycle` in `wrestlebot/tasks.py`. JR and Earl in *this* module
+(reachable via the `wb_jr` / `wb_earl` management commands) are a
+separate, deterministic pipeline with no tool-use loop and no budget cap
+— not part of the autonomous beat schedule, kept on purpose for cheap,
+high-volume bulk processing. One caveat: JR's optional bio-writing stage
+still makes narrow, single-shot calls to Claude (via
+`claude_client.ClaudeClient`, not the agent framework) to draft a
+wrestler bio, and no-ops cleanly when no credentials are configured — so
+"deterministic" describes this pipeline's control flow, not a strict
+zero-LLM-calls guarantee for every stage.
 """

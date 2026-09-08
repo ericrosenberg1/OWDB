@@ -1372,11 +1372,17 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
         1. Those with Wikipedia URLs (easier to enrich)
         2. Those with some data but missing key fields
         3. Recently created (fresher data sources)
+
+        Only wrestlers whose get_completeness_score() is <= max_score are
+        returned. The priority buckets below only order candidates, they
+        don't guarantee incompleteness on their own — without this filter,
+        an already-complete wrestler could still be returned as bucket-4
+        filler whenever too few wrestlers matched buckets 1-3.
         """
         from django.db.models import Case, When, Value, IntegerField, Q
 
         # Prioritize records that have Wikipedia URLs but missing data
-        return (
+        candidates = (
             cls.objects.annotate(
                 priority=Case(
                     # Has Wikipedia URL but missing key data
@@ -1402,8 +1408,10 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
                 Q(last_enriched__isnull=True)
                 | Q(last_enriched__lt=timezone.now() - timezone.timedelta(days=7))
             )
-            .order_by("priority", "-created_at")[:limit]
+            .order_by("priority", "-created_at")
         )
+
+        return [w for w in candidates if w.get_completeness_score() <= max_score][:limit]
 
 
 class TVShow(VerificationMixin, ImageMixin, TimeStampedModel):

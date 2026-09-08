@@ -242,6 +242,11 @@ class WrestlerListView(PaginatedListView):
     search_fields = ["name", "real_name", "aliases", "hometown", "nationality"]
     search_placeholder = "wrestlers by name, alias, hometown..."
 
+    def get_queryset(self):
+        # Review gate: rejected wrestlers never reach a public list. See
+        # VerificationQuerySet.public() in models.py.
+        return super().get_queryset().public()
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["page_title"] = "Wrestlers"
@@ -253,6 +258,11 @@ class WrestlerDetailView(DetailView):
     template_name = "wrestler_detail.html"
     context_object_name = "wrestler"
 
+    def get_queryset(self):
+        # Review gate: a rejected wrestler's detail page 404s instead of
+        # rendering. See VerificationQuerySet.public() in models.py.
+        return super().get_queryset().public()
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         wrestler = self.object
@@ -261,9 +271,8 @@ class WrestlerDetailView(DetailView):
         # Recent matches with per-match W/L badge precomputed for the
         # template (avoids one query per row in a templatetag).
         recent_matches = list(
-            wrestler.matches.select_related(
-                "event", "event__promotion", "event__venue", "winner", "title"
-            )
+            wrestler.matches.public()
+            .select_related("event", "event__promotion", "event__venue", "winner", "title")
             .prefetch_related("wrestlers")
             .order_by("-event__date", "-match_order")[:30]
         )
@@ -310,6 +319,11 @@ class PromotionListView(PaginatedListView):
     search_fields = ["name", "abbreviation", "nicknames"]
     search_placeholder = "promotions by name or abbreviation..."
 
+    def get_queryset(self):
+        # Review gate: rejected promotions never reach a public list. See
+        # VerificationQuerySet.public() in models.py.
+        return super().get_queryset().public()
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["page_title"] = "Promotions"
@@ -320,6 +334,13 @@ class PromotionDetailView(DetailView):
     model = Promotion
     template_name = "promotion_detail.html"
     context_object_name = "promotion"
+
+    def get_queryset(self):
+        # Review gate: a rejected promotion's detail page 404s instead of
+        # rendering. See VerificationQuerySet.public() in models.py. This is
+        # the one entity type production currently has a live rejected row
+        # for, so this is the concrete case the whole feature exists for.
+        return super().get_queryset().public()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -350,7 +371,9 @@ class EventListView(PaginatedListView):
     search_placeholder = "events by name, promotion, or venue..."
 
     def get_queryset(self):
-        return super().get_queryset().select_related("promotion", "venue")
+        # .public() is the review gate (see VerificationQuerySet in
+        # models.py) — excludes rejected events from the public list.
+        return super().get_queryset().public().select_related("promotion", "venue")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -364,14 +387,17 @@ class EventDetailView(DetailView):
     context_object_name = "event"
 
     def get_queryset(self):
-        return super().get_queryset().select_related("promotion", "venue")
+        # Review gate: a rejected event's detail page 404s instead of
+        # rendering. See VerificationQuerySet.public() in models.py.
+        return super().get_queryset().public().select_related("promotion", "venue")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         event = self.object
         context["page_title"] = event.name
         context["matches"] = (
-            event.matches.prefetch_related("wrestlers")
+            event.matches.public()
+            .prefetch_related("wrestlers")
             .select_related("winner", "title")
             .order_by("match_order")
         )
@@ -396,7 +422,9 @@ class MatchListView(PaginatedListView):
     search_placeholder = "matches by description, event, or type..."
 
     def get_queryset(self):
-        return super().get_queryset().select_related("event", "event__promotion")
+        # .public() is the review gate (see VerificationQuerySet in
+        # models.py) — excludes rejected matches from the public list.
+        return super().get_queryset().public().select_related("event", "event__promotion")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -427,9 +455,11 @@ class TopMatchesView(PaginatedListView):
         from django.db.models import Case, When, F, FloatField, Value
         from django.db.models.functions import Coalesce
 
-        qs = Match.objects.select_related(
-            "event", "event__promotion", "event__venue", "winner", "title"
-        ).prefetch_related("wrestlers")
+        qs = (
+            Match.objects.public()
+            .select_related("event", "event__promotion", "event__venue", "winner", "title")
+            .prefetch_related("wrestlers")
+        )
 
         year = self.request.GET.get("year", "").strip()
         if year.isdigit():
@@ -491,9 +521,12 @@ class MatchDetailView(DetailView):
     context_object_name = "match"
 
     def get_queryset(self):
+        # Review gate: a rejected match's detail page 404s instead of
+        # rendering. See VerificationQuerySet.public() in models.py.
         return (
             super()
             .get_queryset()
+            .public()
             .select_related("event", "event__promotion", "event__venue", "title", "winner")
             .prefetch_related("wrestlers")
         )
@@ -523,7 +556,13 @@ class TitleListView(PaginatedListView):
     search_placeholder = "titles by name or promotion..."
 
     def get_queryset(self):
-        return super().get_queryset().select_related("promotion")
+        # .public() is the review gate (see VerificationQuerySet in
+        # models.py) — excludes rejected titles from the public list. This
+        # matters a lot here: Title is currently 100% candidate/verified in
+        # production (no title has ever been marked "verified"), so this
+        # must stay a blocklist on "rejected", never an allowlist on
+        # "verified" — see the policy note on VerificationQuerySet.public().
+        return super().get_queryset().public().select_related("promotion")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -537,13 +576,17 @@ class TitleDetailView(DetailView):
     context_object_name = "title"
 
     def get_queryset(self):
-        return super().get_queryset().select_related("promotion")
+        # Review gate: a rejected title's detail page 404s instead of
+        # rendering. See VerificationQuerySet.public() in models.py.
+        return super().get_queryset().public().select_related("promotion")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         title = self.object
         context["page_title"] = title.name
-        context["title_matches"] = title.title_matches.select_related("event", "winner")[:20]
+        context["title_matches"] = title.title_matches.public().select_related("event", "winner")[
+            :20
+        ]
 
         # Interlinking: championship history, all champions, top defenders
         context["championship_history"] = title.get_championship_history()[:20]
@@ -565,6 +608,11 @@ class VenueListView(PaginatedListView):
     search_fields = ["name", "location"]
     search_placeholder = "venues by name or location..."
 
+    def get_queryset(self):
+        # Review gate: rejected venues never reach a public list. See
+        # VerificationQuerySet.public() in models.py.
+        return super().get_queryset().public()
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["page_title"] = "Venues"
@@ -575,6 +623,11 @@ class VenueDetailView(DetailView):
     model = Venue
     template_name = "venue_detail.html"
     context_object_name = "venue"
+
+    def get_queryset(self):
+        # Review gate: a rejected venue's detail page 404s instead of
+        # rendering. See VerificationQuerySet.public() in models.py.
+        return super().get_queryset().public()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -738,7 +791,11 @@ class StableListView(PaginatedListView):
     search_placeholder = "stables by name..."
 
     def get_queryset(self):
-        return super().get_queryset().select_related("promotion").prefetch_related("members")
+        # .public() is the review gate (see VerificationQuerySet in
+        # models.py) — excludes rejected stables from the public list.
+        return (
+            super().get_queryset().public().select_related("promotion").prefetch_related("members")
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -752,15 +809,20 @@ class StableDetailView(DetailView):
     context_object_name = "stable"
 
     def get_queryset(self):
-        return super().get_queryset().select_related("promotion").prefetch_related("members")
+        # Review gate: a rejected stable's detail page 404s instead of
+        # rendering. See VerificationQuerySet.public() in models.py.
+        return (
+            super().get_queryset().public().select_related("promotion").prefetch_related("members")
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         stable = self.object
         context["page_title"] = stable.name
-        context["members"] = stable.members.all()
+        context["members"] = stable.members.public()
         context["events"] = (
-            Event.objects.filter(matches__wrestlers__in=stable.members.all())
+            Event.objects.public()
+            .filter(matches__wrestlers__in=stable.members.public())
             .distinct()
             .select_related("promotion", "venue")
             .order_by("-date")[:20]

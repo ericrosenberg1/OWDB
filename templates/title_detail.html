@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load linking_tags %}
 {% load verification_tags %}
+{% load rating_tags %}
 
 {% block content %}
 <div class="detail-header">
@@ -38,6 +39,7 @@
             {% endif %}
         </div>
     </div>
+    {% rating_widget title "title" %}
 </div>
 
 {% with about_text=title|about_with_links %}

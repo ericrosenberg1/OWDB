@@ -2,6 +2,7 @@
 {% load linking_tags %}
 {% load verification_tags %}
 {% load humanize %}
+{% load rating_tags %}
 
 {% block content %}
 <div class="detail-header">
@@ -40,6 +41,7 @@
         </div>
         {% endif %}
     </div>
+    {% rating_widget event "event" %}
 </div>
 
 {% with about_text=event|about_with_links %}

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load linking_tags %}
 {% load verification_tags %}
+{% load rating_tags %}
 
 {% block content %}
 <div class="person-page">
@@ -88,6 +89,11 @@
                             <span class="status-badge retired">Retired{% if wrestler.retirement_year %} ({{ wrestler.retirement_year }}){% endif %}</span>
                             {% endif %}
                         </p>
+                    </div>
+
+                    <div class="info-block">
+                        <h4>Profile Completeness</h4>
+                        <p><span class="status-badge completeness">{{ wrestler.get_completeness_score }}% complete</span></p>
                     </div>
 
                     {% if wrestler.aliases %}
@@ -184,6 +190,7 @@
             <div class="person-right-column">
                 <div class="person-header">
                     <h1>{{ wrestler.name }}</h1>
+                    {% rating_widget wrestler "wrestler" %}
                 </div>
 
                 <!-- Biography Section -->

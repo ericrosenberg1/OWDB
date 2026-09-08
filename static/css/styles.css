@@ -509,6 +509,23 @@ a:hover {
     font-weight: 600;
 }
 
+/* Second number on each stat tile: how many of that count are
+   verification_state="verified" (or, for the four categories that predate
+   that field, `verified=True`). Total stays the headline; this is the
+   honest quality signal next to it. */
+.stat-verified {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--wwf-gold);
+    margin-top: 0.25rem;
+    font-weight: 500;
+}
+
+.stat-item.stat-total .stat-verified {
+    color: var(--wwf-black);
+    opacity: 0.75;
+}
+
 /* Stats grid full width for homepage */
 .stats-grid-full {
     grid-template-columns: repeat(6, 1fr);
@@ -809,6 +826,33 @@ a:hover {
 .status-badge.provisional {
     background: #2d4a63;
     color: #bde0ff;
+}
+
+/* Wrestler profile-completeness indicator (get_completeness_score()).
+   Neutral styling on purpose — same pill language as the badges above, but
+   this is a data-completeness percentage, not a verification state, so it
+   deliberately doesn't borrow their gold/amber/blue meanings. */
+.status-badge.completeness {
+    background: var(--wwf-gray);
+    color: var(--wwf-silver);
+}
+
+/* Favorite/rating widget (UserRating) — small toolbar dropped onto a
+   gated entity's detail header. See partials/rating_widget.html. */
+.rating-widget {
+    margin: 0.75rem 0;
+}
+
+.rating-widget__form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.rating-widget__select {
+    width: auto;
+    display: inline-block;
 }
 
 /* Person Header */

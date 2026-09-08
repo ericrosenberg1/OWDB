@@ -299,50 +299,62 @@
             <a href="{% url 'wrestlers' %}" class="stat-item stat-link">
                 <span class="stat-value">{{ stats.wrestlers|default:0|intcomma }}</span>
                 <span class="stat-name">Wrestlers</span>
+                <span class="stat-verified">{{ verified_stats.wrestlers|default:0|intcomma }} verified</span>
             </a>
             <a href="{% url 'promotions' %}" class="stat-item stat-link">
                 <span class="stat-value">{{ stats.promotions|default:0|intcomma }}</span>
                 <span class="stat-name">Promotions</span>
+                <span class="stat-verified">{{ verified_stats.promotions|default:0|intcomma }} verified</span>
             </a>
             <a href="{% url 'events' %}" class="stat-item stat-link">
                 <span class="stat-value">{{ stats.events|default:0|intcomma }}</span>
                 <span class="stat-name">Events</span>
+                <span class="stat-verified">{{ verified_stats.events|default:0|intcomma }} verified</span>
             </a>
             <a href="{% url 'matches' %}" class="stat-item stat-link">
                 <span class="stat-value">{{ stats.matches|default:0|intcomma }}</span>
                 <span class="stat-name">Matches</span>
+                <span class="stat-verified">{{ verified_stats.matches|default:0|intcomma }} verified</span>
             </a>
             <a href="{% url 'titles' %}" class="stat-item stat-link">
                 <span class="stat-value">{{ stats.titles|default:0|intcomma }}</span>
                 <span class="stat-name">Championships</span>
+                <span class="stat-verified">{{ verified_stats.titles|default:0|intcomma }} verified</span>
             </a>
             <a href="{% url 'venues' %}" class="stat-item stat-link">
                 <span class="stat-value">{{ stats.venues|default:0|intcomma }}</span>
                 <span class="stat-name">Venues</span>
+                <span class="stat-verified">{{ verified_stats.venues|default:0|intcomma }} verified</span>
             </a>
             <a href="{% url 'stables' %}" class="stat-item stat-link">
                 <span class="stat-value">{{ stats.stables|default:0|intcomma }}</span>
                 <span class="stat-name">Stables</span>
+                <span class="stat-verified">{{ verified_stats.stables|default:0|intcomma }} verified</span>
             </a>
             <a href="{% url 'games' %}" class="stat-item stat-link">
                 <span class="stat-value">{{ stats.video_games|default:0|intcomma }}</span>
                 <span class="stat-name">Video Games</span>
+                <span class="stat-verified">{{ verified_stats.video_games|default:0|intcomma }} verified</span>
             </a>
             <a href="{% url 'podcasts' %}" class="stat-item stat-link">
                 <span class="stat-value">{{ stats.podcasts|default:0|intcomma }}</span>
                 <span class="stat-name">Podcasts</span>
+                <span class="stat-verified">{{ verified_stats.podcasts|default:0|intcomma }} verified</span>
             </a>
             <a href="{% url 'books' %}" class="stat-item stat-link">
                 <span class="stat-value">{{ stats.books|default:0|intcomma }}</span>
                 <span class="stat-name">Books</span>
+                <span class="stat-verified">{{ verified_stats.books|default:0|intcomma }} verified</span>
             </a>
             <a href="{% url 'specials' %}" class="stat-item stat-link">
                 <span class="stat-value">{{ stats.specials|default:0|intcomma }}</span>
                 <span class="stat-name">Documentaries</span>
+                <span class="stat-verified">{{ verified_stats.specials|default:0|intcomma }} verified</span>
             </a>
             <div class="stat-item stat-total">
                 <span class="stat-value">{{ stats.total|default:0|intcomma }}</span>
                 <span class="stat-name">Total Entries</span>
+                <span class="stat-verified">{{ verified_stats.total|default:0|intcomma }} verified</span>
             </div>
         </div>
     </div>

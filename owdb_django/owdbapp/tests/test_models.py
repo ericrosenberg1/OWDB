@@ -553,3 +553,70 @@ class WrestlerCompletenessScoreTest(TestCase):
         match.wrestlers.add(wrestler)
 
         self.assertEqual(wrestler.get_completeness_score(), 100)
+
+
+class WrestlerGetIncompleteProfilesTest(TestCase):
+    """get_incomplete_profiles(): `max_score` was declared in the signature
+    but never referenced in the body, so it silently did nothing. The
+    priority Case/When only orders candidates, it doesn't exclude
+    already-complete ones, so an unfiltered query could return a fully
+    complete wrestler as bucket-4 filler, and a caller passing e.g.
+    max_score=30 expecting only wrestlers scoring 30 or below got
+    everything back unfiltered."""
+
+    def test_default_max_score_excludes_a_fully_complete_wrestler(self):
+        complete = Wrestler.objects.create(
+            name="Fully Complete Wrestler",
+            real_name="Real Name",
+            debut_year=1999,
+            hometown="Hometown",
+            nationality="American",
+            finishers="Finisher Move",
+            image_url="https://example.com/img.jpg",
+            aliases="Alias",
+            birth_date="1975-01-01",
+            height="6'0\"",
+            weight="220 lbs",
+            trained_by="Some Trainer",
+            signature_moves="Move",
+            about="Bio text.",
+            wikipedia_url="https://en.wikipedia.org/wiki/Fully_Complete_Wrestler",
+        )
+        self.assertGreater(complete.get_completeness_score(), 60)
+        incomplete = Wrestler.objects.create(name="Bare Wrestler Two")
+
+        names = [w.name for w in Wrestler.get_incomplete_profiles(limit=10)]
+
+        self.assertNotIn(
+            complete.name,
+            names,
+            "a fully-complete profile must not come back from a method named "
+            "get_incomplete_profiles just because too few candidates filled the priority buckets",
+        )
+        self.assertIn(incomplete.name, names)
+
+    def test_explicit_max_score_filters_out_higher_scoring_wrestlers(self):
+        under_threshold = Wrestler.objects.create(name="Bare Wrestler Three")
+        self.assertLessEqual(under_threshold.get_completeness_score(), 30)
+
+        over_threshold = Wrestler.objects.create(
+            name="Partly Filled Wrestler",
+            real_name="Real Name",
+            debut_year=1999,
+            hometown="Hometown",
+            nationality="American",
+        )
+        self.assertGreater(over_threshold.get_completeness_score(), 30)
+
+        names = [w.name for w in Wrestler.get_incomplete_profiles(limit=10, max_score=30)]
+
+        self.assertIn(under_threshold.name, names)
+        self.assertNotIn(over_threshold.name, names)
+
+    def test_limit_applies_after_score_filtering(self):
+        for i in range(3):
+            Wrestler.objects.create(name=f"Bare Wrestler Limit {i}")
+
+        results = Wrestler.get_incomplete_profiles(limit=2)
+
+        self.assertEqual(len(results), 2)

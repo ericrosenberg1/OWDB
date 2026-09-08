@@ -623,6 +623,14 @@ LOGGING = {
 # =============================================================================
 # Django REST Framework Settings
 # =============================================================================
+# DEFAULT_AUTHENTICATION_CLASSES / DEFAULT_PERMISSION_CLASSES below are the
+# site-wide fallback. The v1 API's own views (owdb_django/owdbapp/api/views.py
+# PublicReadOnlyViewSet) explicitly override both — AllowAny + a single
+# ApiKeyAuthentication — so browsing needs no login and TokenAuthentication /
+# SessionAuthentication never apply to /api/ routes. Nothing else in the repo
+# uses DRF yet, so these two defaults have no other effect today; they're
+# left in place rather than relaxed globally so a future authenticated-only
+# DRF view doesn't inherit "allow anyone" by accident.
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -642,11 +650,19 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 100,
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle",
+        "owdb_django.owdbapp.api.throttling.APIKeyRateThrottle",
     ],
+    # The three tiers published in README.md → API → Rate Limits, and the
+    # only real numbers now — previously "user" here was 10000/hour (the
+    # right number for *paid*, wrongly applied to every authenticated
+    # request) with no "paid" tier at all, and nothing was actually wired
+    # to a URL to enforce either. See also APIKey.rate_limit /
+    # check_rate_limit() in models.py, fixed to agree with these same two
+    # non-anon numbers.
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/hour",
-        "user": "10000/hour",  # High limit for authenticated users
+        "anon": "100/hour",  # no API key — AnonRateThrottle, keyed by IP
+        "user": "1000/hour",  # valid key, is_paid=False — APIKeyRateThrottle
+        "paid": "10000/hour",  # valid key, is_paid=True — APIKeyRateThrottle
     },
 }
 

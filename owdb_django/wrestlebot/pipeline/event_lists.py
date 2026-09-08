@@ -49,6 +49,16 @@ USER_AGENT = "wrestlingdb-wrestlebot/1.0 (+https://wrestlingdb.org; admin@wrestl
 
 # Each promotion has a canonical "list of" page. Some have moved or renamed
 # over time; we keep alternate spellings as fallbacks.
+#
+# CMLL (Consejo Mundial de Lucha Libre) is deliberately NOT included here.
+# Verified 2026-09 (WebSearch + WebFetch against live Wikipedia): there is
+# no consolidated "List of CMLL pay-per-view events" or equivalent article.
+# CMLL's Wikipedia coverage is per-year weekly-show articles instead
+# ("List of CMLL Super Viernes shows in 2020", etc.) plus standalone pages
+# per named annual show ("CMLL 86th Anniversary Show"). Neither shape fits
+# this ingester (which expects one page with one wikitable per year of
+# PPV-style rows). Fabricating a "List of CMLL pay-per-view events" URL
+# would just 404 forever, so it's left out rather than guessed.
 PPV_LIST_PAGES: dict[str, tuple[str, ...]] = {
     "wwe": (
         "List of WWE pay-per-view and livestreaming supercards",
@@ -68,6 +78,16 @@ PPV_LIST_PAGES: dict[str, tuple[str, ...]] = {
     "ajpw": ("List of All Japan Pro Wrestling pay-per-view events",),
     "roh": ("List of Ring of Honor pay-per-view events",),
     "noah": ("List of Pro Wrestling Noah events",),
+    # Verified live 2026-09 (WebFetch confirmed a real per-year wikitable
+    # with date/event/venue rows on each page below).
+    "nwa": ("List of National Wrestling Alliance pay-per-view events",),
+    # Wikipedia's own title drops "pay-per-view" — MLW's page covers PPV,
+    # TV-taped, and streaming events together under one umbrella title.
+    "mlw": ("List of Major League Wrestling events",),
+    # Likewise AAA's article is titled "major ... events", not
+    # "pay-per-view events" — confirmed live, don't guess the PPV-suffixed
+    # slug (it doesn't exist).
+    "aaa": ("List of major Lucha Libre AAA Worldwide events",),
 }
 
 
@@ -83,6 +103,16 @@ EPISODE_LIST_PAGES: dict[str, tuple[str, ...]] = {
     "collision": ("List of AEW Collision episodes",),
     "nxt": ("List of WWE NXT episodes",),
     "impact": ("List of Impact! episodes",),
+    # NJPW's own weekly-episode program is "NJPW Strong" (their US-taped
+    # English broadcast on NJPW World), not "NJPW World" itself — NJPW
+    # World is the streaming platform, not a show with its own episode
+    # list. Verified live: "List of NJPW World episodes" does not exist;
+    # "List of NJPW Strong episodes" does, with a real numbered episode
+    # table.
+    "njpw_strong": ("List of NJPW Strong episodes",),
+    # NWA's flagship weekly show. Verified live: real numbered/seasoned
+    # episode table with taped + air dates.
+    "nwa_powerrr": ("List of NWA Powerrr episodes",),
 }
 
 
@@ -431,6 +461,9 @@ PROMOTION_NAME_MAP = {
     "ajpw": "All Japan Pro Wrestling",
     "roh": "Ring of Honor",
     "noah": "Pro Wrestling Noah",
+    "nwa": "National Wrestling Alliance",
+    "mlw": "Major League Wrestling",
+    "aaa": "Lucha Libre AAA Worldwide",
 }
 
 
@@ -445,6 +478,25 @@ _SHOW_TO_PROMOTION = {
     "dynamite": "aew",
     "collision": "aew",
     "impact": "tna",
+    "njpw_strong": "njpw",
+    "nwa_powerrr": "nwa",
+}
+
+
+# Display name for each show's TVShow row. Kept as a module constant
+# (rather than rebuilt inline on every `ingest_episode_list()` call) so it
+# can be unit-tested directly, same as `PROMOTION_NAME_MAP`.
+SHOW_NAME_MAP = {
+    "raw": "WWE Raw",
+    "smackdown": "WWE SmackDown",
+    "nitro": "WCW Monday Nitro",
+    "ecw_tv": "ECW on Sci-Fi",
+    "dynamite": "AEW Dynamite",
+    "collision": "AEW Collision",
+    "nxt": "WWE NXT",
+    "impact": "Impact!",
+    "njpw_strong": "NJPW Strong",
+    "nwa_powerrr": "NWA Powerrr",
 }
 
 
@@ -732,17 +784,7 @@ def ingest_episode_list(show_key: str) -> dict:
     from . import accuracy_contract
     from ._provenance import bulk_synthetic_provenance
 
-    show_name_map = {
-        "raw": "WWE Raw",
-        "smackdown": "WWE SmackDown",
-        "nitro": "WCW Monday Nitro",
-        "ecw_tv": "ECW on Sci-Fi",
-        "dynamite": "AEW Dynamite",
-        "collision": "AEW Collision",
-        "nxt": "WWE NXT",
-        "impact": "Impact!",
-    }
-    tv_show_name = show_name_map.get(show_key, show_key.upper())
+    tv_show_name = SHOW_NAME_MAP.get(show_key, show_key.upper())
     tv_show, tv_show_created = TVShow.objects.get_or_create(name=tv_show_name)
     promotion = (
         tv_show.promotion
@@ -790,7 +832,7 @@ def ingest_episode_list(show_key: str) -> dict:
                 city=ep.city,
                 source_fetch=source_fetch,
             )
-        ep_name = f"{show_name_map.get(show_key, show_key)} — {ep.air_date.isoformat()}"
+        ep_name = f"{SHOW_NAME_MAP.get(show_key, show_key)} — {ep.air_date.isoformat()}"
 
         defaults = dict(
             venue=venue_obj,

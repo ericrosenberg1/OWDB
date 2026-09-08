@@ -7,8 +7,9 @@ Two flavours:
                      Raw/SmackDown/Nitro/NXT episodes flow through TMDB —
                      run `poll_tv_episodes` or `backfill_show_episodes`.
     --all            Run both PPV + episode passes.
-    --promotion KEY  Limit to one promotion (wwe/wcw/ecw/aew/tna/njpw/ajpw/roh/noah).
-    --show KEY       Limit to one show (raw/smackdown/nitro/ecw_tv/dynamite/collision/nxt/impact).
+    --promotion KEY  Limit to one promotion (wwe/wcw/ecw/aew/tna/njpw/ajpw/roh/noah/nwa/mlw/aaa).
+    --show KEY       Limit to one show (raw/smackdown/nitro/ecw_tv/dynamite/collision/nxt/impact/
+                     njpw_strong/nwa_powerrr).
 
 Idempotent — re-runs upsert events by (name, date).
 """

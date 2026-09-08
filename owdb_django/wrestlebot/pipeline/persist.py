@@ -196,6 +196,18 @@ def persist_wrestler(
             new_value = snip.value
             # Treat empty string as unset for char/text fields.
             is_empty = current in (None, "", b"")
+            # `roles` additionally treats its own model default ("wrestler")
+            # as unset. Wrestler.roles defaults to "wrestler" the instant
+            # Wrestler.objects.create() runs, before this loop ever sees it,
+            # so without this the is_empty check above is never true for a
+            # freshly-created wrestler and a genuinely-extracted multi-role
+            # value (e.g. "wrestler, commentator") is silently discarded on
+            # every single ingest -- the extractor only ever populates this
+            # field when it found MORE than just "wrestler" (see
+            # sources/wikipedia.py's role extraction), so this can never
+            # mask a legitimate "wrestler"-only value.
+            if dst_attr == "roles" and current == "wrestler":
+                is_empty = True
 
             if is_empty:
                 setattr(wrestler, dst_attr, new_value)

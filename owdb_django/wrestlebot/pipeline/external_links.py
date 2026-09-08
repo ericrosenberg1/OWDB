@@ -74,17 +74,27 @@ def is_cagematch_wrestler_url(url: str) -> bool:
     return bool(url and _CAGEMATCH_WRESTLER_URL_RE.match(url))
 
 
-def apply_external_links_to_wrestler(wrestler, raw_html: str) -> dict:
+def apply_external_links_to_wrestler(wrestler, source_fetch) -> dict:
     """
     Walk a wrestler's Wikipedia HTML for external links and write the
     discovered profile URLs onto the wrestler. Only populates fields that
     are currently empty (never overwrites).
 
+    `source_fetch` is the SourceFetch whose raw_content is parsed for
+    links; it also carries the FieldProvenance for every field written
+    here, same as every other extracted field in the persist pipeline
+    (this used to skip provenance entirely — an oversight, not an
+    intentional exemption like the plain wikipedia_url/cagematch_url
+    "stamp the fetch URL" case elsewhere, since this URL comes from
+    parsing page content just like any other extracted field).
+
     Returns dict of fields that were newly set.
     """
-    found = extract_external_links(raw_html)
+    found = extract_external_links(source_fetch.raw_content)
     if not found:
         return {}
+
+    from ._provenance import record_provenance
 
     changed: dict[str, str] = {}
     for field_name, url in found.items():
@@ -96,10 +106,21 @@ def apply_external_links_to_wrestler(wrestler, raw_html: str) -> dict:
         existing = getattr(wrestler, field_name, "") or ""
         if existing:
             continue
-        setattr(wrestler, field_name, url[:500])
-        changed[field_name] = url
+        value = url[:500]
+        setattr(wrestler, field_name, value)
+        changed[field_name] = value
 
     if changed:
         wrestler.save(update_fields=list(changed.keys()) + ["updated_at"])
+        for field_name, value in changed.items():
+            record_provenance(
+                entity_type="wrestler",
+                entity_id=wrestler.id,
+                field_name=field_name,
+                value=value,
+                source_fetch=source_fetch,
+                snippet=f'External links section: <a href="{value}">',
+                confidence=90,
+            )
 
     return changed

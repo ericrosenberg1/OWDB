@@ -358,7 +358,7 @@ def _post_persist_side_effects(wrestler, source_fetch: SourceFetch) -> None:
         try:
             from .external_links import apply_external_links_to_wrestler
 
-            ext = apply_external_links_to_wrestler(wrestler, source_fetch.raw_content)
+            ext = apply_external_links_to_wrestler(wrestler, source_fetch)
             if ext:
                 logger.info(
                     "Picked up external links for wrestler#%d: %s", wrestler.id, list(ext.keys())

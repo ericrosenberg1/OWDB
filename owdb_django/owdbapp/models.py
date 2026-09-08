@@ -1210,23 +1210,6 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
             .order_by("-date")[:limit]
         )
 
-    def get_tv_appearances(self, limit=50):
-        """Get TV show episodes this wrestler has appeared on."""
-        # Filter for events that look like TV episodes
-        base = Event.objects.public().filter(matches__wrestlers=self)
-        return (
-            base.filter(
-                # TV shows typically have names like "Raw #123" or "SmackDown - April 5"
-                name__icontains="Raw"
-            )
-            | base.filter(name__icontains="SmackDown")
-            | base.filter(name__icontains="Dynamite")
-            | base.filter(name__icontains="Nitro")
-            .distinct()
-            .select_related("promotion", "venue")
-            .order_by("-date")[:limit]
-        )
-
     def get_all_meta_categories(self):
         """
         Get counts for all meta categories this wrestler appears in.

@@ -318,9 +318,7 @@ def _fetch_candidates_for_type(
 
         # Pre-persist gate (used by HOF discovery to drop celebrity
         # honorees before they enter the wrestler queue).
-        if pre_persist_gate is not None and not pre_persist_gate(
-            result.raw_content, result.url
-        ):
+        if pre_persist_gate is not None and not pre_persist_gate(result.raw_content, result.url):
             fetch_row = SourceFetch.objects.create(
                 source=adapter.source_name,
                 url=result.url,

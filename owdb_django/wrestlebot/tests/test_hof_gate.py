@@ -123,10 +123,6 @@ class HOFGateTests(TestCase):
         The extract queue selects on `used_at__isnull=True` and
         `entity_type='wrestler'`. Gated rejections must match neither.
         """
-        fetch_wrestler_candidates(
-            ["Bob Honoree"], from_hof_discovery=True
-        )
-        queue = SourceFetch.objects.filter(
-            entity_type="wrestler", used_at__isnull=True
-        )
+        fetch_wrestler_candidates(["Bob Honoree"], from_hof_discovery=True)
+        queue = SourceFetch.objects.filter(entity_type="wrestler", used_at__isnull=True)
         self.assertEqual(queue.count(), 0)

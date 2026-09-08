@@ -4,15 +4,20 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('wrestlebot', '0016_sourcefetch_extraction_outcome'),
+        ("wrestlebot", "0016_sourcefetch_extraction_outcome"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='entitymention',
-            name='section_label',
-            field=models.CharField(blank=True, db_index=True, help_text="Lower-cased Wikipedia section header (e.g. 'roster', 'cast', 'playable characters'). Null when the mention is in the lede or extraction wasn't section-aware.", max_length=120, null=True),
+            model_name="entitymention",
+            name="section_label",
+            field=models.CharField(
+                blank=True,
+                db_index=True,
+                help_text="Lower-cased Wikipedia section header (e.g. 'roster', 'cast', 'playable characters'). Null when the mention is in the lede or extraction wasn't section-aware.",
+                max_length=120,
+                null=True,
+            ),
         ),
     ]

@@ -150,7 +150,9 @@ class BestKnownAsRegexEdgeCases(TestCase):
         # When the lede lists multiple ring names with "and", the first is
         # the most-famous one — that's the one we want to surface.
         self.assertEqual(
-            self._extract("X (born 1970) is a wrestler best known under the ring names Tensai and A-Train."),
+            self._extract(
+                "X (born 1970) is a wrestler best known under the ring names Tensai and A-Train."
+            ),
             "Tensai",
         )
 
@@ -170,20 +172,26 @@ class BestKnownAsRegexEdgeCases(TestCase):
     def test_internal_period_preserved(self):
         # "Mr. Perfect" — internal period must not be treated as a sentence stop.
         self.assertEqual(
-            self._extract("X (born 1970), better known by his ring name Mr. Perfect, was a wrestler."),
+            self._extract(
+                "X (born 1970), better known by his ring name Mr. Perfect, was a wrestler."
+            ),
             "Mr. Perfect",
         )
 
     def test_stage_name_variant(self):
         # André the Giant: "stage name" instead of "ring name".
         self.assertEqual(
-            self._extract("X (born 1970), best known by his stage name André the Giant, was a wrestler."),
+            self._extract(
+                "X (born 1970), best known by his stage name André the Giant, was a wrestler."
+            ),
             "André the Giant",
         )
 
     def test_no_phrase_returns_none(self):
         self.assertIsNone(
-            self._extract("John Cena (born 1977) is an American actor and retired professional wrestler."),
+            self._extract(
+                "John Cena (born 1977) is an American actor and retired professional wrestler."
+            ),
         )
 
 
@@ -210,7 +218,9 @@ class PersistUsesBestKnownAsTests(TestCase):
         )
         fields = WrestlerFields(
             real_name=FieldSnippet(value="Curtis Michael Hennig", snippet="Born", confidence=95),
-            aliases=FieldSnippet(value="Mr. Perfect, Curt Hennig", snippet="Ring names", confidence=90),
+            aliases=FieldSnippet(
+                value="Mr. Perfect, Curt Hennig", snippet="Ring names", confidence=90
+            ),
             best_known_as=FieldSnippet(
                 value="Mr. Perfect",
                 snippet="better known by his ring name Mr. Perfect",

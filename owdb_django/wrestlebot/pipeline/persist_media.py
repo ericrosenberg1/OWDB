@@ -315,11 +315,19 @@ def _link_book_author_to_wrestler(book, fields: BookFields) -> int:
 # Section-label heuristics. Lower-case substring matches; ordered by how
 # directly the section names the link target (most specific first).
 _BOOK_SUBJECT_SECTIONS = (
-    "subject", "about", "biography", "subjects",
+    "subject",
+    "about",
+    "biography",
+    "subjects",
 )
 _VIDEO_GAME_ROSTER_SECTIONS = (
-    "roster", "playable characters", "playable wrestlers",
-    "cast", "wrestlers", "characters", "superstars",
+    "roster",
+    "playable characters",
+    "playable wrestlers",
+    "cast",
+    "wrestlers",
+    "characters",
+    "superstars",
 )
 
 
@@ -479,7 +487,10 @@ def persist_video_game(
         # in the game vs who's just mentioned in passing (execs, cover
         # photographers, etc.).
         persist_mentions_for_entity(
-            "video_game", game.id, source_fetch, section_aware=True,
+            "video_game",
+            game.id,
+            source_fetch,
+            section_aware=True,
         )
         resolve_all_mentions_to_wrestlers()
     except Exception as e:
@@ -525,7 +536,8 @@ def _link_video_game_to_roster(game, source_fetch: SourceFetch) -> int:
     from owdb_django.owdbapp.models import Wrestler
 
     roster_ids = _wrestler_ids_in_sections(
-        source_fetch, _VIDEO_GAME_ROSTER_SECTIONS,
+        source_fetch,
+        _VIDEO_GAME_ROSTER_SECTIONS,
     )
 
     mentions = EntityMention.objects.filter(

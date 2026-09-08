@@ -32,8 +32,13 @@ class WrestleBotHealthTests(TestCase):
         """No bot config, no fetches — endpoint still returns the full shape."""
         data = self._get()
         for k in (
-            "healthy", "enabled", "rate_limiter",
-            "today", "queue", "totals", "timestamp",
+            "healthy",
+            "enabled",
+            "rate_limiter",
+            "today",
+            "queue",
+            "totals",
+            "timestamp",
         ):
             self.assertIn(k, data, f"missing key {k!r} in response")
         # Defaults: enabled True, healthy True, queue empty.
@@ -44,7 +49,8 @@ class WrestleBotHealthTests(TestCase):
 
     def test_disabled_config_marks_unhealthy(self):
         WrestleBotConfig.objects.update_or_create(
-            key="enabled", defaults={"value": False},
+            key="enabled",
+            defaults={"value": False},
         )
         data = self._get()
         self.assertFalse(data["enabled"])
@@ -53,24 +59,40 @@ class WrestleBotHealthTests(TestCase):
     def test_queue_counts_unprocessed_fetches(self):
         # Three queued fetches across two types; one processed (excluded).
         SourceFetch.objects.create(
-            source="wikipedia", url="https://en.wikipedia.org/wiki/A",
-            entity_type="wrestler", candidate_name="A",
-            http_status=200, content_hash="a" * 64, raw_content="",
+            source="wikipedia",
+            url="https://en.wikipedia.org/wiki/A",
+            entity_type="wrestler",
+            candidate_name="A",
+            http_status=200,
+            content_hash="a" * 64,
+            raw_content="",
         )
         SourceFetch.objects.create(
-            source="wikipedia", url="https://en.wikipedia.org/wiki/B",
-            entity_type="wrestler", candidate_name="B",
-            http_status=200, content_hash="b" * 64, raw_content="",
+            source="wikipedia",
+            url="https://en.wikipedia.org/wiki/B",
+            entity_type="wrestler",
+            candidate_name="B",
+            http_status=200,
+            content_hash="b" * 64,
+            raw_content="",
         )
         SourceFetch.objects.create(
-            source="wikipedia", url="https://en.wikipedia.org/wiki/E1",
-            entity_type="event", candidate_name="E1",
-            http_status=200, content_hash="e" * 64, raw_content="",
+            source="wikipedia",
+            url="https://en.wikipedia.org/wiki/E1",
+            entity_type="event",
+            candidate_name="E1",
+            http_status=200,
+            content_hash="e" * 64,
+            raw_content="",
         )
         SourceFetch.objects.create(
-            source="wikipedia", url="https://en.wikipedia.org/wiki/Done",
-            entity_type="wrestler", candidate_name="Done",
-            http_status=200, content_hash="d" * 64, raw_content="",
+            source="wikipedia",
+            url="https://en.wikipedia.org/wiki/Done",
+            entity_type="wrestler",
+            candidate_name="Done",
+            http_status=200,
+            content_hash="d" * 64,
+            raw_content="",
             used_at=timezone.now(),
         )
 
@@ -81,17 +103,25 @@ class WrestleBotHealthTests(TestCase):
     def test_today_counts_recent_only(self):
         # Fetch from 48h ago — excluded. Fresh fetch — included.
         old = SourceFetch.objects.create(
-            source="wikipedia", url="https://en.wikipedia.org/wiki/Old",
-            entity_type="wrestler", candidate_name="Old",
-            http_status=200, content_hash="o" * 64, raw_content="",
+            source="wikipedia",
+            url="https://en.wikipedia.org/wiki/Old",
+            entity_type="wrestler",
+            candidate_name="Old",
+            http_status=200,
+            content_hash="o" * 64,
+            raw_content="",
         )
         SourceFetch.objects.filter(id=old.id).update(
             fetched_at=timezone.now() - timedelta(hours=48),
         )
         SourceFetch.objects.create(
-            source="wikipedia", url="https://en.wikipedia.org/wiki/New",
-            entity_type="wrestler", candidate_name="New",
-            http_status=200, content_hash="n" * 64, raw_content="",
+            source="wikipedia",
+            url="https://en.wikipedia.org/wiki/New",
+            entity_type="wrestler",
+            candidate_name="New",
+            http_status=200,
+            content_hash="n" * 64,
+            raw_content="",
         )
 
         data = self._get()
@@ -100,9 +130,12 @@ class WrestleBotHealthTests(TestCase):
     def test_error_activity_counted(self):
         WrestleBotActivity.objects.create(
             action_type="error",
-            entity_type="wrestler", entity_id=1,
-            entity_name="X", source="wikipedia",
-            success=False, error_message="boom",
+            entity_type="wrestler",
+            entity_id=1,
+            entity_name="X",
+            source="wikipedia",
+            success=False,
+            error_message="boom",
         )
         data = self._get()
         self.assertEqual(data["today"]["errors"], 1)

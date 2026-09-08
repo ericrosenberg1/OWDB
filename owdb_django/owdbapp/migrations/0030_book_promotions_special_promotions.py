@@ -4,20 +4,21 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('owdbapp', '0029_videogame_book_image_fields'),
+        ("owdbapp", "0029_videogame_book_image_fields"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='book',
-            name='promotions',
-            field=models.ManyToManyField(blank=True, related_name='books', to='owdbapp.promotion'),
+            model_name="book",
+            name="promotions",
+            field=models.ManyToManyField(blank=True, related_name="books", to="owdbapp.promotion"),
         ),
         migrations.AddField(
-            model_name='special',
-            name='promotions',
-            field=models.ManyToManyField(blank=True, related_name='specials', to='owdbapp.promotion'),
+            model_name="special",
+            name="promotions",
+            field=models.ManyToManyField(
+                blank=True, related_name="specials", to="owdbapp.promotion"
+            ),
         ),
     ]

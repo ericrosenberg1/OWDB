@@ -69,12 +69,13 @@ class TitleHistoryDedupeByUrlTests(TestCase):
             raw_count_seen=1,
         )
 
-        with patch(
-            "owdb_django.wrestlebot.pipeline.title_history.discover_from_title_history",
-            return_value=finding,
-        ), patch(
-            "owdb_django.wrestlebot.pipeline.fetch.fetch_wrestler_candidates"
-        ) as mock_fetch:
+        with (
+            patch(
+                "owdb_django.wrestlebot.pipeline.title_history.discover_from_title_history",
+                return_value=finding,
+            ),
+            patch("owdb_django.wrestlebot.pipeline.fetch.fetch_wrestler_candidates") as mock_fetch,
+        ):
             report = ingest_title_history_discovery(title_slug="wwe_intercontinental")
 
         # No fetch should have been triggered.
@@ -91,12 +92,13 @@ class TitleHistoryDedupeByUrlTests(TestCase):
             unique_champions=["Newcomer Joe"],
             raw_count_seen=1,
         )
-        with patch(
-            "owdb_django.wrestlebot.pipeline.title_history.discover_from_title_history",
-            return_value=finding,
-        ), patch(
-            "owdb_django.wrestlebot.pipeline.fetch.fetch_wrestler_candidates"
-        ) as mock_fetch:
+        with (
+            patch(
+                "owdb_django.wrestlebot.pipeline.title_history.discover_from_title_history",
+                return_value=finding,
+            ),
+            patch("owdb_django.wrestlebot.pipeline.fetch.fetch_wrestler_candidates") as mock_fetch,
+        ):
             report = ingest_title_history_discovery(title_slug="wwe_intercontinental")
 
         mock_fetch.assert_called_once()

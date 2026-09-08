@@ -87,7 +87,10 @@ class PersistMentionsSectionAwareTests(TestCase):
 
     def test_section_aware_persists_section_labels(self):
         n = persist_mentions_for_entity(
-            "video_game", 42, self.fetch, section_aware=True,
+            "video_game",
+            42,
+            self.fetch,
+            section_aware=True,
         )
         self.assertGreater(n, 0)
         rr = EntityMention.objects.get(source_fetch=self.fetch, wiki_link="Roman Reigns")
@@ -98,8 +101,10 @@ class PersistMentionsSectionAwareTests(TestCase):
     def test_default_extraction_still_lede_only(self):
         n = persist_mentions_for_entity("video_game", 42, self.fetch)
         # Lede-only: Rey Mysterio + WWE 2K22 (self-link), no roster names.
-        links = list(EntityMention.objects.filter(source_fetch=self.fetch).values_list(
-            "wiki_link", flat=True
-        ))
+        links = list(
+            EntityMention.objects.filter(source_fetch=self.fetch).values_list(
+                "wiki_link", flat=True
+            )
+        )
         self.assertIn("Rey Mysterio", links)
         self.assertNotIn("Roman Reigns", links)

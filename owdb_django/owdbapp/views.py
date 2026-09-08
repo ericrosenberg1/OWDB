@@ -1660,7 +1660,8 @@ def wrestlebot_health(request):
         # `enabled` lives in WrestleBotConfig; absence = enabled (default).
         enabled_cfg = WrestleBotConfig.objects.filter(key="enabled").first()
         enabled = (
-            bool(enabled_cfg.value) if enabled_cfg is not None
+            bool(enabled_cfg.value)
+            if enabled_cfg is not None
             else WrestleBotConfig.DEFAULTS["enabled"]["value"]
         )
 
@@ -1668,6 +1669,7 @@ def wrestlebot_health(request):
         # local fallback is process-only. Both keep the limiter functional;
         # only "no backend at all" would block fetching.
         from owdb_django.wrestlebot import rate_limit
+
         rate_limiter_backend = (
             "redis" if rate_limit._get_redis_client() is not None else "local_fallback"
         )
@@ -1677,7 +1679,8 @@ def wrestlebot_health(request):
         provenance_today = FieldProvenance.objects.filter(extracted_at__gte=since).count()
         earl_today = EarlObservation.objects.filter(last_seen__gte=since).count()
         errors_today = WrestleBotActivity.objects.filter(
-            created_at__gte=since, action_type="error",
+            created_at__gte=since,
+            action_type="error",
         ).count()
 
         # Extract-queue depth — un-used SourceFetch rows are waiting to be
@@ -1709,11 +1712,7 @@ def wrestlebot_health(request):
         # state shape.
         ERROR_BUDGET = 50
         QUEUE_DEPTH_BUDGET = 5000
-        healthy = (
-            enabled
-            and errors_today < ERROR_BUDGET
-            and queue_total < QUEUE_DEPTH_BUDGET
-        )
+        healthy = enabled and errors_today < ERROR_BUDGET and queue_total < QUEUE_DEPTH_BUDGET
 
         return JsonResponse(
             {

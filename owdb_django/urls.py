@@ -122,6 +122,8 @@ urlpatterns = [
     # Deeper readiness check for humans and monitoring. Kept off the container
     # healthcheck path because it opens a real write transaction. (ROS-1209)
     path("health/ready/", views.health_ready, name="health_ready"),
+    # WrestleBot pipeline health (queue depth, today's activity, errors)
+    path("wrestlebot/health/", views.wrestlebot_health, name="wrestlebot_health"),
     # =========================================================================
     # REST API v1 (feat/rest-api-v1). Every route under /api/ is registered
     # in owdb_django/owdbapp/api_urls.py via a DRF router — this include()

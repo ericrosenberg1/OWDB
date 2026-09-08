@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 import re
+from typing import Optional
 from urllib.parse import unquote
 
 from bs4 import BeautifulSoup
@@ -74,6 +75,47 @@ def extract_mentions_from_lead(
 
     Returns the deduplicated, position-ordered list.
     """
+    out = extract_mentions_with_sections(raw_html, max_mentions=max_mentions)
+    return [
+        {"mention_text": m["mention_text"], "wiki_link": m["wiki_link"]}
+        for m in out
+        if m["section_label"] is None
+    ]
+
+
+def _section_label_from_heading(node) -> Optional[str]:
+    """
+    Return a lower-cased section title from an h2/h3 element OR from a
+    Vector-2022 `<div class="mw-heading">` wrapper, or None if not a heading.
+    """
+    name = getattr(node, "name", None)
+    if name in ("h2", "h3", "h4"):
+        return (node.get_text(" ", strip=True) or "").strip().lower() or None
+    if name == "div":
+        classes = node.get("class", []) or []
+        if "mw-heading" in classes:
+            inner = node.find(["h2", "h3", "h4"])
+            if inner is not None:
+                return (inner.get_text(" ", strip=True) or "").strip().lower() or None
+    return None
+
+
+def extract_mentions_with_sections(
+    raw_html: str,
+    max_mentions: int = 200,
+) -> list[dict]:
+    """
+    Walk the whole article body, tracking which section each `<a>` lives in.
+
+    Returns deduplicated `[{mention_text, wiki_link, section_label}]` where
+    `section_label` is None for lede mentions (before the first heading)
+    and the lower-cased heading text otherwise. Used by media linkers that
+    need to require e.g. ==Roster== scoping rather than relying on
+    "mentioned 2+ times" as a proxy.
+
+    Same as `extract_mentions_from_lead`, this only inspects prose `<p>`
+    children — not tables / lists — so navboxes don't pollute the result.
+    """
     if not raw_html:
         return []
 
@@ -82,28 +124,24 @@ def extract_mentions_from_lead(
     if body is None:
         return []
 
-    # Strip footnote markers to avoid capturing cite-style internal links.
     for noisy in body.find_all(["sup", "style", "script"]):
         noisy.decompose()
 
     out: list[dict] = []
     seen: set[str] = set()
+    current_section: Optional[str] = None
 
     for child in body.children:
-        name = getattr(child, "name", None)
-        if name in ("h2", "h3"):
-            break
-        # Wikipedia (Vector 2022 skin, late 2023+) wraps section headings in
-        # <div class="mw-heading mw-headingN">. Treat those as section
-        # boundaries.
-        classes = child.get("class", []) if hasattr(child, "get") else []
-        if "mw-heading" in classes:
-            break
-        # Only inspect prose paragraphs. Tables (infoboxes, sidebars, navboxes)
-        # and lists (bibliography, "see also") are navigational and would
-        # falsely link the subject to every entity Wikipedia thought worth
-        # listing. The prose mentions are what we want.
-        if name != "p":
+        # Heading? Update the current section context and move on.
+        new_section = _section_label_from_heading(child)
+        if new_section is not None:
+            current_section = new_section
+            continue
+
+        # Only inspect prose paragraphs (same rationale as the lede-only
+        # version — tables/lists/navboxes inflate mentions with anything
+        # Wikipedia thought worth cross-listing).
+        if getattr(child, "name", None) != "p":
             continue
 
         for a in child.find_all("a", href=True):
@@ -114,11 +152,20 @@ def extract_mentions_from_lead(
             text = a.get_text(strip=True)
             if not text:
                 continue
-            # Deduplicate by wiki_link (same target may appear multiple times).
-            if link in seen:
+            # Dedupe per (link, section) — same wiki target appearing in
+            # both the lede and a Roster section is two distinct mentions
+            # with different semantic weight.
+            key = (link, current_section)
+            if key in seen:
                 continue
-            seen.add(link)
-            out.append({"mention_text": text, "wiki_link": link})
+            seen.add(key)
+            out.append(
+                {
+                    "mention_text": text,
+                    "wiki_link": link,
+                    "section_label": current_section,
+                }
+            )
             if len(out) >= max_mentions:
                 return out
 
@@ -129,15 +176,26 @@ def persist_mentions_for_entity(
     entity_type: str,
     entity_id: int,
     fetch: SourceFetch,
+    section_aware: bool = False,
 ) -> int:
     """
     Extract and persist EntityMention rows for any entity's source content.
 
     Idempotent via unique_together(source_fetch, wiki_link).
 
+    When `section_aware=True`, walks the whole article tracking section
+    headers and stamps each mention's `section_label`. Use this for book /
+    video-game / TV-show articles where the linker needs to require
+    `==Roster==` or `==Cast==` scoping. Defaults to lede-only extraction
+    (the prior behavior) to avoid inflating wrestler/event/promotion
+    mention counts with navigational sections.
+
     Returns count of newly-created mentions.
     """
-    mentions = extract_mentions_from_lead(fetch.raw_content)
+    if section_aware:
+        mentions = extract_mentions_with_sections(fetch.raw_content)
+    else:
+        mentions = extract_mentions_from_lead(fetch.raw_content)
     if not mentions:
         return 0
 
@@ -152,6 +210,7 @@ def persist_mentions_for_entity(
 
     created = 0
     for m in mentions:
+        section_label = m.get("section_label") if section_aware else None
         _, was_new = EntityMention.objects.get_or_create(
             source_fetch=fetch,
             wiki_link=m["wiki_link"],
@@ -160,6 +219,7 @@ def persist_mentions_for_entity(
                 "source_entity_id": entity_id,
                 "mention_text": m["mention_text"][:255],
                 "context": context,
+                "section_label": section_label,
             },
         )
         if was_new:

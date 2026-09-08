@@ -138,6 +138,31 @@ def _meta_text(text: str, url: Optional[str] = None) -> Dict[str, Any]:
     return {"text": text, "url": url} if url else {"text": text}
 
 
+def _via_wrestler_meta(media, candidate_ids: set, link_attr: str) -> Optional[Dict[str, Any]]:
+    """
+    For a media item surfaced on a Title or Stable page, name the wrestler
+    that grounded the link — "Via Curt Hennig" — so the user can see why a
+    given book / game / special appears here. Returns None when no
+    candidate wrestler is linked to the media (shouldn't happen in
+    practice — the media reached this section because of the wrestler
+    chain — but defensive in case the M2M was edited out of band).
+
+    `link_attr` is the M2M attribute on `media` that holds wrestlers
+    (`related_wrestlers` for Book/Special, `wrestlers` for VideoGame).
+    Callers MUST prefetch_related(link_attr) before calling, otherwise
+    this is one extra query per media item.
+    """
+    if not candidate_ids:
+        return None
+    rel = getattr(media, link_attr, None)
+    if rel is None:
+        return None
+    for w in rel.all():
+        if w.id in candidate_ids:
+            return _meta_text(f"via {w.name}", _build_url(w))
+    return None
+
+
 def _format_sources(sources: List[Tuple[str, List[str], bool]]) -> str:
     """Build a readable summary string from collected sources."""
     parts = []
@@ -545,29 +570,44 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
 
         # Cross-linked media derived from this title's champions. Every
         # link is grounded in the matches_won.title M2M chain — accuracy
-        # contract is preserved.
-        books = obj.get_books(limit=limit)
+        # contract is preserved. We surface "via [champion]" so the
+        # grounding chain isn't opaque ("why is THIS book on this title's
+        # page? — because Curt Hennig wrote it").
+        champion_ids = set(obj._notable_champion_ids_cached())
+
+        books = obj.get_books(limit=limit).prefetch_related("related_wrestlers")
         book_items = []
         for book in books:
             meta = []
             if book.author:
                 meta.append(_meta_text(book.author))
+            via = _via_wrestler_meta(book, champion_ids, "related_wrestlers")
+            if via:
+                meta.append(via)
             year_text = str(book.publication_year) if book.publication_year else ""
             book_items.append(_make_item(book, year=year_text, meta=meta))
         sections.append({"label": "Books", "items": book_items})
 
-        specials = obj.get_specials(limit=limit)
+        specials = obj.get_specials(limit=limit).prefetch_related("related_wrestlers")
         special_items = []
         for special in specials:
+            meta = []
+            via = _via_wrestler_meta(special, champion_ids, "related_wrestlers")
+            if via:
+                meta.append(via)
             year_text = str(special.release_year) if special.release_year else ""
-            special_items.append(_make_item(special, year=year_text))
+            special_items.append(_make_item(special, year=year_text, meta=meta))
         sections.append({"label": "Documentaries & Specials", "items": special_items})
 
-        games = obj.get_video_games(limit=limit)
+        games = obj.get_video_games(limit=limit).prefetch_related("wrestlers")
         game_items = []
         for game in games:
+            meta = []
+            via = _via_wrestler_meta(game, champion_ids, "wrestlers")
+            if via:
+                meta.append(via)
             year_text = str(game.release_year) if game.release_year else ""
-            game_items.append(_make_item(game, year=year_text))
+            game_items.append(_make_item(game, year=year_text, meta=meta))
         sections.append({"label": "Video Games", "items": game_items})
 
     elif isinstance(obj, Match):
@@ -745,29 +785,43 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
         sections.append({"label": "Titles", "items": title_items})
 
         # Cross-linked media derived from members — same single-M2M-hop
-        # derivation as Promotion/Title. No invented links.
-        books = obj.get_books(limit=limit)
+        # derivation as Promotion/Title. No invented links. "Via [member]"
+        # explains which stable member surfaced each item.
+        member_ids = set(obj._member_ids_cached())
+
+        books = obj.get_books(limit=limit).prefetch_related("related_wrestlers")
         book_items = []
         for book in books:
             meta = []
             if book.author:
                 meta.append(_meta_text(book.author))
+            via = _via_wrestler_meta(book, member_ids, "related_wrestlers")
+            if via:
+                meta.append(via)
             year_text = str(book.publication_year) if book.publication_year else ""
             book_items.append(_make_item(book, year=year_text, meta=meta))
         sections.append({"label": "Books", "items": book_items})
 
-        specials = obj.get_specials(limit=limit)
+        specials = obj.get_specials(limit=limit).prefetch_related("related_wrestlers")
         special_items = []
         for special in specials:
+            meta = []
+            via = _via_wrestler_meta(special, member_ids, "related_wrestlers")
+            if via:
+                meta.append(via)
             year_text = str(special.release_year) if special.release_year else ""
-            special_items.append(_make_item(special, year=year_text))
+            special_items.append(_make_item(special, year=year_text, meta=meta))
         sections.append({"label": "Documentaries & Specials", "items": special_items})
 
-        games = obj.get_video_games(limit=limit)
+        games = obj.get_video_games(limit=limit).prefetch_related("wrestlers")
         game_items = []
         for game in games:
+            meta = []
+            via = _via_wrestler_meta(game, member_ids, "wrestlers")
+            if via:
+                meta.append(via)
             year_text = str(game.release_year) if game.release_year else ""
-            game_items.append(_make_item(game, year=year_text))
+            game_items.append(_make_item(game, year=year_text, meta=meta))
         sections.append({"label": "Video Games", "items": game_items})
 
         podcasts = obj.get_podcasts(limit=limit)

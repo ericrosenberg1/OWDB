@@ -650,6 +650,22 @@ class EntityMention(models.Model):
         choices=MENTION_CONTEXTS,
         default="wrestler_about",
     )
+    # Wikipedia section the mention was found in. Empty / null = lede
+    # (before the first h2/h3). Populated when extraction is run in
+    # section-aware mode — used by media linkers to restrict roster /
+    # subject matching to e.g. ==Roster== / ==Playable characters==
+    # rather than relying on mention-count proxies.
+    section_label = models.CharField(
+        max_length=120,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text=(
+            "Lower-cased Wikipedia section header (e.g. 'roster', 'cast', "
+            "'playable characters'). Null when the mention is in the lede "
+            "or extraction wasn't section-aware."
+        ),
+    )
 
     # Resolution (set when the linked entity is identified).
     resolved_entity_type = models.CharField(

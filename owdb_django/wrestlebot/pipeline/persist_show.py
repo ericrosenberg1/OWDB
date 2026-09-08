@@ -301,6 +301,15 @@ def persist_special(
     except Exception as e:
         logger.exception("Special wrestler linking failed: %s", e)
 
+    # Denormalize sp.promotions from related_wrestlers — cache for
+    # Promotion.get_specials and similar render paths.
+    try:
+        from .persist_media import _backfill_special_promotions
+
+        _backfill_special_promotions(sp)
+    except Exception as e:
+        logger.exception("Special promotions backfill failed: %s", e)
+
     logger.info(
         "Persisted special %r (id=%d, created=%s, wrote=%s, wrestlers=%d)",
         canonical_title,

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="mb-0">Matches</h1>
+  <a href="{% url 'top_matches' %}" class="btn btn-outline-warning btn-sm">★ Top Matches</a>
+</div>
+
+{% include "partials/search_form.html" %}
+
+{% if matches %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Match</th>
+                <th>Event</th>
+                <th>Type</th>
+                <th>Result</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for match in matches %}
+            <tr>
+                <td><a href="{% url 'match_detail' match.pk %}">{{ match.match_text }}</a></td>
+                <td>
+                    {% if match.event %}
+                    <a href="{% url 'event_detail' match.event.pk %}">{{ match.event.name }}</a>
+                    {% else %}—{% endif %}
+                </td>
+                <td>{{ match.match_type|default:"Standard" }}</td>
+                <td>{{ match.result|default:"—" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+
+{% else %}
+{% include "partials/empty_state.html" with icon="🥊" title="No Matches Found" message="No matches match your search criteria." %}
+{% endif %}
+{% endblock %}

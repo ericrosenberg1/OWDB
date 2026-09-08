@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Edit Event</h1>
+
+<form action="/edit/event/{{ event.id }}" method="post" class="mt-4">
+    <div class="mb-3">
+        <label for="name" class="form-label">Event Name</label>
+        <input name="name" type="text" class="form-control" value="{{ event.name }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="promotion" class="form-label">Promotion</label>
+        <input name="promotion" type="text" class="form-control" value="{{ event.promotion }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="date" class="form-label">Event Date</label>
+        <input name="date" type="date" class="form-control" value="{{ event.date }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="location" class="form-label">Location</label>
+        <input name="location" type="text" class="form-control" value="{{ event.location }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="attendance" class="form-label">Attendance</label>
+        <input name="attendance" type="number" class="form-control" value="{{ event.attendance }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="about" class="form-label">About</label>
+        <textarea name="about" class="tinymce-editor">{{ event.about }}</textarea>
+    </div>
+
+    <button type="submit" class="btn btn-success">Save Changes</button>
+</form>
+{% endblock %}

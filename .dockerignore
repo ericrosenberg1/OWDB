@@ -1,0 +1,56 @@
+# Keep the build context lean. The SQLite DB ships via a host bind mount,
+# not baked into the image.
+
+# Source DBs (mounted at runtime)
+db.sqlite3
+db.sqlite3-journal
+db.sqlite3-wal
+db.sqlite3-shm
+
+# ...and the whole data/ dir, which is a runtime bind mount. Without this the
+# 404 MB SQLite corpus gets baked into the image (1.27 GB -> most of it the DB)
+# and, worse, a stale snapshot of it sits at /app/data/db.sqlite3 ready to be
+# served silently if the bind mount ever goes missing. (ROS-1204)
+data/
+logs/
+
+# Local Python state
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# IDE / OS metadata
+.idea/
+.vscode/
+.DS_Store
+*.swp
+
+# Local secrets — production .env lives outside the image; sample stays in
+.env
+.env.local
+.env.development
+.env.test
+
+# Heavy local artefacts
+node_modules/
+static_collected/
+media/
+.cloudflared/
+cloudflared/
+
+# Git metadata — image doesn't need history
+.git/
+.gitignore
+
+# Test/CI scratch
+.coverage
+htmlcov/
+.tox/
+
+# Backups created during this session
+*.bak
+*.backup
+db.sqlite3.bak*

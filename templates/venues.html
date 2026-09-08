@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block content %}
+<h1>Venues</h1>
+
+{% include "partials/search_form.html" %}
+
+{% if venues %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Location</th>
+                <th>Capacity</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for venue in venues %}
+            <tr>
+                <td><a href="{% url 'venue_detail' venue.pk %}">{{ venue.name }}</a></td>
+                <td>{{ venue.location|default:"—" }}</td>
+                <td>{% if venue.capacity %}{{ venue.capacity|intcomma }}{% else %}—{% endif %}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+
+{% else %}
+{% include "partials/empty_state.html" with icon="🏟️" title="No Venues Found" message="No venues match your search criteria." %}
+{% endif %}
+{% endblock %}

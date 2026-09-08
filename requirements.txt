@@ -1,0 +1,39 @@
+# Django and core - using LTS for stability
+Django>=5.2,<5.3
+gunicorn>=26.0.0
+
+# Database
+psycopg2-binary>=2.9.12
+
+# Redis and caching
+redis>=8.0.0
+
+# Celery for background tasks
+celery>=5.5
+django-celery-beat>=2.9.0
+
+# REST API
+djangorestframework>=3.17.1
+
+# Static files
+whitenoise>=6.8
+
+# Cloud storage (Cloudflare R2)
+boto3>=1.43.29
+django-storages>=1.14.6
+
+# Utilities
+python-dotenv>=1.0
+
+# Web scraping
+requests>=2.34.2
+beautifulsoup4>=4.15.0
+lxml>=6.1.1
+feedparser>=6.0.12  # RSS feed parsing for news sources
+
+# Claude (Sonnet 4.6) for WrestleBot bio generation.
+# Supports both ANTHROPIC_API_KEY (Console) and CLAUDE_CODE_OAUTH_TOKEN (Max subscription).
+anthropic>=0.109.1
+
+# Sentry — error tracking in production (origin/main addition).
+sentry-sdk[django]>=2.62.0

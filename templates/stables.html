@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Stables & Factions</h1>
+
+{% include "partials/search_form.html" %}
+
+{% if stables %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Promotion</th>
+                <th>Formed</th>
+                <th>Disbanded</th>
+                <th>Members</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for stable in stables %}
+            <tr>
+                <td><a href="{% url 'stable_detail' stable.pk %}">{{ stable.name }}</a></td>
+                <td>
+                    {% if stable.promotion %}
+                    <a href="{% url 'promotion_detail' stable.promotion.pk %}">{{ stable.promotion.abbreviation|default:stable.promotion.name }}</a>
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                <td>{{ stable.formed_year|default:"—" }}</td>
+                <td>{{ stable.disbanded_year|default:"Active" }}</td>
+                <td>{{ stable.members.count }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+
+{% else %}
+{% include "partials/empty_state.html" with icon="👥" title="No Stables Found" message="No stables match your search criteria." %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,263 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="{% block theme %}dark{% endblock %}">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-E7XYD7SSGD"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-E7XYD7SSGD');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ page_title|default:"OWDB" }}{% endblock %} - The Open Wrestling Database (OWDB)</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="{% block meta_description %}{{ page_description|default:'The Open Wrestling Database (OWDB) - the most complete free metadata source for professional wrestling from inception to date.' }}{% endblock %}">
+    <meta name="keywords" content="wrestling, WWE, AEW, pro wrestling, database, wrestlers, matches, events, OWDB">
+    <meta name="author" content="OWDB">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="{% block og_title %}{{ page_title|default:'OWDB' }}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{{ page_description|default:'The Open Wrestling Database for fans and developers.' }}{% endblock %}">
+    <meta property="og:url" content="{% block og_url %}https://wrestlingdb.org{{ request.path }}{% endblock %}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="OWDB - The Open Wrestling Database">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ page_title|default:'OWDB' }}">
+    <meta name="twitter:description" content="{{ page_description|default:'The Open Wrestling Database for fans and developers.' }}">
+
+    <!-- Favicon - Championship Belt -->
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+
+    <!-- Custom Styles -->
+    <link href="{% static 'css/styles.css' %}" rel="stylesheet">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Skip Link for Accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Header - TMDB Style -->
+    <header class="site-header">
+        <nav class="navbar navbar-expand-lg navbar-dark" role="navigation" aria-label="Main navigation">
+            <div class="container">
+                <a class="navbar-brand" href="{% url 'index' %}">
+                    <span class="brand-logo">W</span>
+                    <span class="brand-text">OWDB</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarContent">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link text-warning fw-bold" href="{% url 'hot100' %}">Hot 100</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Entries
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'wrestlers' %}">Wrestlers</a></li>
+                                <li><a class="dropdown-item" href="{% url 'promotions' %}">Promotions</a></li>
+                                <li><a class="dropdown-item" href="{% url 'events' %}">Events</a></li>
+                                <li><a class="dropdown-item" href="{% url 'matches' %}">Matches</a></li>
+                                <li><a class="dropdown-item" href="{% url 'titles' %}">Championships</a></li>
+                                <li><a class="dropdown-item" href="{% url 'venues' %}">Venues</a></li>
+                                <li><a class="dropdown-item" href="{% url 'stables' %}">Stables</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'games' %}">Video Games</a></li>
+                                <li><a class="dropdown-item" href="{% url 'podcasts' %}">Podcasts</a></li>
+                                <li><a class="dropdown-item" href="{% url 'books' %}">Books</a></li>
+                                <li><a class="dropdown-item" href="{% url 'specials' %}">Documentaries</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                About
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'about' %}">About OWDB</a></li>
+                                <li><a class="dropdown-item" href="{% url 'account' %}">API</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'privacy' %}">Privacy Policy</a></li>
+                                <li><a class="dropdown-item" href="https://github.com/ericrosenberg1/OWDB" target="_blank" rel="noopener">GitHub</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav ms-auto align-items-center">
+                        {% if user.is_authenticated %}
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle user-avatar-link" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span class="avatar-circle">{{ user.username|slice:":1"|upper }}</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><span class="dropdown-item-text text-muted">{{ user.username }}</span></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{% url 'account' %}">Account Settings</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'account' %}">API Keys</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form method="post" action="{% url 'logout' %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item">Logout</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        {% else %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'login' %}">Login</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link btn-join" href="{% url 'signup' %}">Join OWDB</a>
+                            </li>
+                        {% endif %}
+                        <li class="nav-item search-toggle ms-2">
+                            <button class="btn btn-link nav-link p-1 search-btn" onclick="toggleSearch()" aria-label="Search" title="Search">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <!-- Search Bar (Hidden by default) -->
+        <div class="search-bar-container" id="searchBar" style="display: none;">
+            <div class="container">
+                <form action="{% url 'wrestlers' %}" method="get" class="search-form">
+                    <input type="text" name="q" class="search-input" placeholder="Search for a wrestler, event, promotion, match..." autocomplete="off" autofocus>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <!-- Flash Messages -->
+    {% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main id="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer - TMDB Style -->
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo-section">
+                    <a href="{% url 'index' %}" class="footer-logo-link">
+                        <span class="footer-logo">W</span>
+                    </a>
+                    <a href="{% url 'signup' %}" class="btn btn-gold btn-sm footer-join-btn">Join the Community</a>
+                </div>
+                <div class="footer-nav">
+                    <div class="footer-section">
+                        <h4>The Basics</h4>
+                        <ul>
+                            <li><a href="{% url 'hot100' %}">Hot 100</a></li>
+                            <li><a href="{% url 'about' %}">About OWDB</a></li>
+                            <li><a href="{% url 'account' %}">API</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h4>Get Involved</h4>
+                        <ul>
+                            <li><a href="https://github.com/ericrosenberg1/OWDB" target="_blank" rel="noopener">Contribute on GitHub</a></li>
+                            <li><a href="https://github.com/ericrosenberg1/OWDB/issues" target="_blank" rel="noopener">Report a Bug</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h4>Community</h4>
+                        <ul>
+                            <li><a href="https://github.com/ericrosenberg1/OWDB" target="_blank" rel="noopener">GitHub</a></li>
+                            <li><a href="https://www.reddit.com/r/OWDB/" target="_blank" rel="noopener">Discussions</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h4>Legal</h4>
+                        <ul>
+                            <li><a href="{% url 'about' %}">Terms of Use</a></li>
+                            <li><a href="{% url 'privacy' %}">Privacy Policy</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p id="random-quote" class="quote"></p>
+                <p class="copyright">&copy; {% now "Y" %} The Open Wrestling Database. By fans, for fans.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+
+    <!-- Scripts -->
+    <script>
+        // Wrestling quotes
+        const quotes = [
+            "And that's the bottom line, 'cause Stone Cold said so!",
+            "If ya smell what The Rock is cookin'!",
+            "Rest... in... peace.",
+            "To be the man, you gotta beat the man! Wooo!",
+            "Whatcha gonna do when Hulkamania runs wild on you?!",
+            "Yes! Yes! Yes!",
+            "It doesn't matter what you think!",
+            "Austin 3:16 says I just whipped your ass!",
+            "I'm the best there is, the best there was, and the best there ever will be.",
+            "Can you dig it, sucka?!",
+            "That's not a prediction, that's a spoiler.",
+            "The cream rises to the top!"
+        ];
+
+        const quoteEl = document.getElementById('random-quote');
+        if (quoteEl) {
+            quoteEl.innerText = '"' + quotes[Math.floor(Math.random() * quotes.length)] + '"';
+        }
+
+        // Search toggle
+        function toggleSearch() {
+            const searchBar = document.getElementById('searchBar');
+            const searchInput = searchBar.querySelector('input');
+            if (searchBar.style.display === 'none') {
+                searchBar.style.display = 'block';
+                searchInput.focus();
+            } else {
+                searchBar.style.display = 'none';
+            }
+        }
+
+        // Close search on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const searchBar = document.getElementById('searchBar');
+                if (searchBar.style.display === 'block') {
+                    searchBar.style.display = 'none';
+                }
+            }
+        });
+
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

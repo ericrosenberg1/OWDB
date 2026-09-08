@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Top Matches</h1>
+
+<p class="text-muted">
+  {% if ratings_available %}
+    Ranked by Bayesian-adjusted match rating (community ratings, weighted by vote count).
+  {% else %}
+    No community ratings ingested yet — ranking by <strong>championship importance</strong>
+    (title changes first, then title matches, then everything else by date). Once Cagematch
+    user ratings flow in, this page automatically switches to a Bayesian leaderboard.
+  {% endif %}
+</p>
+
+<form method="get" class="mb-4">
+  <div class="row g-2">
+    <div class="col-md-4">
+      <div class="search-box">
+        <span class="search-box-icon">🔍</span>
+        <input type="text" name="q" class="form-control" placeholder="match or event…"
+               value="{{ request.GET.q|default:'' }}" aria-label="Search">
+      </div>
+    </div>
+    <div class="col-md-2">
+      <input type="text" name="year" class="form-control" placeholder="Year"
+             value="{{ filter_year }}" aria-label="Year filter">
+    </div>
+    <div class="col-md-3">
+      <select name="promotion" class="form-select">
+        <option value="">All promotions</option>
+        {% for p in filter_promotions %}
+          <option value="{{ p.slug }}" {% if filter_promotion == p.slug %}selected{% endif %}>{{ p.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 d-flex align-items-center">
+      <div class="form-check">
+        <input type="checkbox" name="has_rating" value="1" class="form-check-input"
+               id="has_rating" {% if filter_has_rating %}checked{% endif %}>
+        <label for="has_rating" class="form-check-label">Rated only</label>
+      </div>
+    </div>
+    <div class="col-md-1">
+      <button type="submit" class="btn btn-primary w-100">Filter</button>
+    </div>
+  </div>
+</form>
+
+{% if matches %}
+<div class="table-responsive">
+  <table class="table table-striped top-matches-table">
+    <thead>
+      <tr>
+        <th style="width: 48px;">#</th>
+        <th>Match</th>
+        <th>Event</th>
+        <th>Date</th>
+        <th class="text-end">Rating</th>
+        <th>Why ranked</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for match in matches %}
+      <tr>
+        <td class="text-muted">
+          {{ forloop.counter|add:page_obj.start_index|add:"-1" }}
+        </td>
+        <td>
+          <a href="{% url 'match_detail' match.pk %}">
+            {% if match.match_text %}{{ match.match_text|truncatechars:80 }}{% else %}Match #{{ match.pk }}{% endif %}
+          </a>
+          {% if match.title %}
+            <br>
+            <small class="text-muted">
+              <a href="{% url 'title_detail' match.title.pk %}">{{ match.title.name }}</a>
+              {% if match.title_changed %}<span class="result-badge title-change">TITLE CHANGE</span>{% endif %}
+            </small>
+          {% endif %}
+        </td>
+        <td>
+          {% if match.event %}
+            {% if match.event.slug %}
+              <a href="{% url 'event_detail_slug' match.event.slug %}">{{ match.event.name }}</a>
+            {% else %}
+              <a href="{% url 'event_detail' match.event.pk %}">{{ match.event.name }}</a>
+            {% endif %}
+            {% if match.event.promotion %}
+              <br><small class="text-muted">{{ match.event.promotion.name }}</small>
+            {% endif %}
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        <td>{% if match.event.date %}{{ match.event.date|date:"M j, Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+        <td class="text-end">
+          {% if match.cagematch_rating %}
+            <span class="rating-badge">★ {{ match.cagematch_rating }}</span>
+            {% if match.cagematch_rating_count %}
+              <br><small class="text-muted">{{ match.cagematch_rating_count }} votes</small>
+            {% endif %}
+          {% elif match.observer_stars %}
+            <span class="rating-badge">{{ match.observer_stars }}★ (Observer)</span>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if match.cagematch_rating %}
+            <small class="text-muted">Community rating</small>
+          {% elif match.title_changed %}
+            <small class="text-warning">Title changed hands</small>
+          {% elif match.title %}
+            <small class="text-info">Championship match</small>
+          {% else %}
+            <small class="text-muted">—</small>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "partials/pagination.html" %}
+<p class="text-center text-muted">
+  Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ paginator.count }} matches
+</p>
+
+{% else %}
+  <p class="text-muted">No matches found for these filters.</p>
+{% endif %}
+{% endblock %}

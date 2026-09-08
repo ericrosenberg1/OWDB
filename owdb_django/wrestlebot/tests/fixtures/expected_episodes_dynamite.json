@@ -1,0 +1,3224 @@
+[
+  {
+    "air_date": "2019-10-02",
+    "city": "Washington D.C.",
+    "episode_number": 1,
+    "name": "Episode 1 (2019-10-02)",
+    "notes": "Chris Jericho , Santana , and Ortiz vs. The Elite ( Kenny Omega , Matt Jackson , and Nick Jackson )",
+    "show": "dynamite",
+    "venue_name": "Capital One Arena"
+  },
+  {
+    "air_date": "2019-10-09",
+    "city": "Boston, Massachusetts",
+    "episode_number": 2,
+    "name": "Episode 2 (2019-10-09)",
+    "notes": "Chris Jericho and Sammy Guevara vs. \"Hangman\" Adam Page and Dustin Rhodes",
+    "show": "dynamite",
+    "venue_name": "Agganis Arena"
+  },
+  {
+    "air_date": "2019-10-16",
+    "city": "Philadelphia, Pennsylvania",
+    "episode_number": 3,
+    "name": "Episode 3 (2019-10-16)",
+    "notes": "Chris Jericho (c) vs. Darby Allin in a Philadelphia Street Fight for the AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "Liacouras Center"
+  },
+  {
+    "air_date": "2019-10-23",
+    "city": "Pittsburgh, Pennsylvania",
+    "episode_number": 4,
+    "name": "Episode 4 (2019-10-23)",
+    "notes": "Jon Moxley vs. Pac",
+    "show": "dynamite",
+    "venue_name": "Petersen Events Center"
+  },
+  {
+    "air_date": "2019-10-30",
+    "city": "Charleston, West Virginia",
+    "episode_number": 5,
+    "name": "Episode 5 (2019-10-30)",
+    "notes": "Lucha Brothers ( Pentag\u00f3n Jr. and Rey F\u00e9nix ) vs. SCU ( Frankie Kazarian and Scorpio Sky ) for the AEW World Tag Team Championship",
+    "show": "dynamite",
+    "venue_name": "Charleston Coliseum & Convention Center"
+  },
+  {
+    "air_date": "2019-11-06",
+    "city": "Charlotte, North Carolina",
+    "episode_number": 6,
+    "name": "Episode 6 (2019-11-06)",
+    "notes": "Chris Jericho and Sammy Guevara vs. Kenny Omega and \"Hangman\" Adam Page (Brawl Between Chris Jericho , MJF , Jon Moxley , Cody Rhodes , Kenny Omega , and others) [ 79 ]",
+    "show": "dynamite",
+    "venue_name": "Bojangles Coliseum"
+  },
+  {
+    "air_date": "2019-11-13",
+    "city": "Nashville, Tennessee",
+    "episode_number": 7,
+    "name": "Episode 7 (2019-11-13)",
+    "notes": "Chris Jericho and Sammy Guevara vs. SCU ( Frankie Kazarian and Scorpio Sky )",
+    "show": "dynamite",
+    "venue_name": "Nashville Municipal Auditorium"
+  },
+  {
+    "air_date": "2019-11-20",
+    "city": "Indianapolis, Indiana",
+    "episode_number": 8,
+    "name": "Episode 8 (2019-11-20)",
+    "notes": "Darby Allin vs. Jon Moxley",
+    "show": "dynamite",
+    "venue_name": "Indiana Farmers Coliseum"
+  },
+  {
+    "air_date": "2019-11-27",
+    "city": "Hoffman Estates, Illinois",
+    "episode_number": 9,
+    "name": "Episode 9 (2019-11-27)",
+    "notes": "Chris Jericho (c) vs. Scorpio Sky for the AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "Sears Centre Arena"
+  },
+  {
+    "air_date": "2019-12-04",
+    "city": "Champaign, Illinois",
+    "episode_number": 10,
+    "name": "Episode 10 (2019-12-04)",
+    "notes": "Joey Janela vs. Jon Moxley",
+    "show": "dynamite",
+    "venue_name": "State Farm Center"
+  },
+  {
+    "air_date": "2019-12-11",
+    "city": "Garland, Texas",
+    "episode_number": 11,
+    "name": "Episode 11 (2019-12-11)",
+    "notes": "The Young Bucks ( Matt Jackson and Nick Jackson ) vs. Santana and Ortiz in a Texas Street Fight",
+    "show": "dynamite",
+    "venue_name": "Curtis Culwell Center"
+  },
+  {
+    "air_date": "2019-12-18",
+    "city": "Corpus Christi, Texas",
+    "episode_number": 12,
+    "name": "Episode 12 (2019-12-18)",
+    "notes": "SCU ( Frankie Kazarian and Scorpio Sky ) (c) vs. The Young Bucks ( Matt Jackson and Nick Jackson ) for the AEW World Tag Team Championship",
+    "show": "dynamite",
+    "venue_name": "American Bank Center"
+  },
+  {
+    "air_date": "2020-01-01",
+    "city": "Jacksonville, Florida",
+    "episode_number": 13,
+    "name": "Episode 13 (2020-01-01)",
+    "notes": "The Elite ( Kenny Omega , Matt Jackson and Nick Jackson ) vs. Pac and Lucha Brothers ( Pentag\u00f3n Jr. and Rey F\u00e9nix )",
+    "show": "dynamite",
+    "venue_name": "Daily's Place"
+  },
+  {
+    "air_date": "2020-01-08",
+    "city": "Southaven, Mississippi",
+    "episode_number": 14,
+    "name": "Episode 14 (2020-01-08)",
+    "notes": "None (Segment: Did Jon Moxley join the Inner Circle? )",
+    "show": "dynamite",
+    "venue_name": "Landers Center"
+  },
+  {
+    "air_date": "2020-01-15",
+    "city": "Coral Gables, Florida",
+    "episode_number": 15,
+    "name": "Episode 15 (2020-01-15)",
+    "notes": "Darby Allin vs. Pac",
+    "show": "dynamite",
+    "venue_name": "Watsco Center"
+  },
+  {
+    "air_date": "2020-01-22",
+    "city": "Chris Jericho Cruise",
+    "episode_number": 16,
+    "name": "Episode 16 (2020-01-22)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": "Jon Moxley vs. Pac"
+  },
+  {
+    "air_date": "2020-01-29",
+    "city": "Cleveland, Ohio",
+    "episode_number": 17,
+    "name": "Episode 17 (2020-01-29)",
+    "notes": "Chris Jericho and Santana and Ortiz vs. Darby Allin and Private Party ( Isiah Kassidy and Marq Quen )",
+    "show": "dynamite",
+    "venue_name": "Wolstein Center"
+  },
+  {
+    "air_date": "2020-02-05",
+    "city": "Huntsville, Alabama",
+    "episode_number": 18,
+    "name": "Episode 18 (2020-02-05)",
+    "notes": "None (Segment with Cody Rhodes , MJF and Wardlow )",
+    "show": "dynamite",
+    "venue_name": "Von Braun Center"
+  },
+  {
+    "air_date": "2020-02-12",
+    "city": "Cedar Park, Texas",
+    "episode_number": 19,
+    "name": "Episode 19 (2020-02-12)",
+    "notes": "Jon Moxley vs. Santana",
+    "show": "dynamite",
+    "venue_name": "H-E-B Center at Cedar Park"
+  },
+  {
+    "air_date": "2020-02-19",
+    "city": "Atlanta, Georgia",
+    "episode_number": 20,
+    "name": "Episode 20 (2020-02-19)",
+    "notes": "Cody Rhodes vs. Wardlow in a Steel Cage match",
+    "show": "dynamite",
+    "venue_name": "State Farm Arena"
+  },
+  {
+    "air_date": "2020-02-26",
+    "city": "Independence, Missouri",
+    "episode_number": 21,
+    "name": "Episode 21 (2020-02-26)",
+    "notes": "None (Segment: Chris Jericho and Jon Moxley weigh-in before their match at Revolution )",
+    "show": "dynamite",
+    "venue_name": "Cable Dahmer Arena"
+  },
+  {
+    "air_date": "2020-03-04",
+    "city": "Broomfield, Colorado",
+    "episode_number": 22,
+    "name": "Episode 22 (2020-03-04)",
+    "notes": "Jon Moxley and Darby Allin vs. Chris Jericho and Sammy Guevara",
+    "show": "dynamite",
+    "venue_name": "1stBank Center"
+  },
+  {
+    "air_date": "2020-03-11",
+    "city": "Salt Lake City, Utah",
+    "episode_number": 23,
+    "name": "Episode 23 (2020-03-11)",
+    "notes": "Chris Jericho and Sammy Guevara vs. Adam Page and Dustin Rhodes",
+    "show": "dynamite",
+    "venue_name": "Maverik Center"
+  },
+  {
+    "air_date": "2020-03-18",
+    "city": "Jacksonville, Florida",
+    "episode_number": 24,
+    "name": "Episode 24 (2020-03-18)",
+    "notes": "Adam Page , Matt Jackson and Cody Rhodes vs. Jake Hager , Santana and Ortiz",
+    "show": "dynamite",
+    "venue_name": "Daily's Place"
+  },
+  {
+    "air_date": "2020-03-25",
+    "city": "None (Segment: Chris Jericho and Matt Hardy meet face to face)",
+    "episode_number": 25,
+    "name": "Episode 25 (2020-03-25)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-04-01",
+    "city": "Norcross, Georgia",
+    "episode_number": 26,
+    "name": "Episode 26 (2020-04-01)",
+    "notes": "Cody Rhodes and Darby Allin vs. Sammy Guevara and Shawn Spears",
+    "show": "dynamite",
+    "venue_name": "AEW Performance Center"
+  },
+  {
+    "air_date": "2020-04-08",
+    "city": "Cody Rhodes vs. Shawn Spears",
+    "episode_number": 27,
+    "name": "Episode 27 (2020-04-08)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-04-15",
+    "city": "Jon Moxley (c) vs. Jake Hager in a No Holds Barred match for the AEW World Championship",
+    "episode_number": 28,
+    "name": "Episode 28 (2020-04-15)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-04-22",
+    "city": "Kip Sabian vs. Dustin Rhodes in the AEW TNT Championship Tournament Quarterfinal",
+    "episode_number": 29,
+    "name": "Episode 29 (2020-04-22)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-04-29",
+    "city": "Lance Archer vs. Dustin Rhodes in the AEW TNT Championship Tournament Semifinal",
+    "episode_number": 30,
+    "name": "Episode 30 (2020-04-29)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-05-06",
+    "city": "Jacksonville, Florida",
+    "episode_number": 31,
+    "name": "Episode 31 (2020-05-06)",
+    "notes": "Chris Jericho and Sammy Guevara vs. Matt Hardy and Kenny Omega in a Tag team Street Fight",
+    "show": "dynamite",
+    "venue_name": "Daily's Place"
+  },
+  {
+    "air_date": "2020-05-13",
+    "city": "Mr. Brodie Lee vs. Christopher Daniels",
+    "episode_number": 32,
+    "name": "Episode 32 (2020-05-13)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-05-20",
+    "city": "Sammy Guevara vs. Matt Hardy",
+    "episode_number": 33,
+    "name": "Episode 33 (2020-05-20)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-05-27",
+    "city": "None ( Inner Circle segment)",
+    "episode_number": 34,
+    "name": "Episode 34 (2020-05-27)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-06-03",
+    "city": "Cody Rhodes (c) vs. Jungle Boy for the AEW TNT Championship",
+    "episode_number": 35,
+    "name": "Episode 35 (2020-06-03)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-06-10",
+    "city": "Cody Rhodes (c) vs. Marq Quen for the AEW TNT Championship",
+    "episode_number": 36,
+    "name": "Episode 36 (2020-06-10)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-06-17",
+    "city": "Chris Jericho and Sammy Guevara vs. Best Friends ( Chuck Taylor and Trent ) with the winners challenging for the AEW World Tag Team Championship at Fyter Fest",
+    "episode_number": 37,
+    "name": "Episode 37 (2020-06-17)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-06-24",
+    "city": "None (Segment: Chris Jericho and Orange Cassidy meet face to face)",
+    "episode_number": 38,
+    "name": "Episode 38 (2020-06-24)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-07-01",
+    "city": "Kenny Omega and \"Hangman\" Adam Page (c) vs. Best Friends ( Chuck Taylor and Trent ) for the AEW World Tag Team Championship",
+    "episode_number": 39,
+    "name": "Episode 39 (2020-07-01)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-07-08",
+    "city": "Chris Jericho vs. Orange Cassidy",
+    "episode_number": 40,
+    "name": "Episode 40 (2020-07-08)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-07-15",
+    "city": "Jon Moxley (c) vs. Brian Cage for the AEW World Championship",
+    "episode_number": 41,
+    "name": "Episode 41 (2020-07-15)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-07-22",
+    "city": "Chris Jericho and Jake Hager vs. Jurassic Express ( Jungle Boy and Luchasaurus )",
+    "episode_number": 42,
+    "name": "Episode 42 (2020-07-22)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-07-29",
+    "city": "Jon Moxley and Darby Allin vs. Brian Cage and Ricky Starks in a No Disqualification Tornado Tag Team match",
+    "episode_number": 43,
+    "name": "Episode 43 (2020-07-29)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-08-05",
+    "city": "Jon Moxley (c) vs. Darby Allin for the AEW World Championship",
+    "episode_number": 44,
+    "name": "Episode 44 (2020-08-05)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-08-12",
+    "city": "Chris Jericho vs. Orange Cassidy in a $7,000 Obligation match",
+    "episode_number": 45,
+    "name": "Episode 45 (2020-08-12)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-08-22",
+    "city": "Cody Rhodes (c) vs. Mr. Brodie Lee for the AEW TNT Championship",
+    "episode_number": 46,
+    "name": "Episode 46 (2020-08-22)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-08-27",
+    "city": "Matt Hardy vs. Sammy Guevara in a Tables match",
+    "episode_number": 47,
+    "name": "Episode 47 (2020-08-27)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-09-02",
+    "city": "Jon Moxley vs. Mark Sterling",
+    "episode_number": 48,
+    "name": "Episode 48 (2020-09-02)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-09-09",
+    "city": "Mr. Brodie Lee (c) vs. Dustin Rhodes for the AEW TNT Championship",
+    "episode_number": 49,
+    "name": "Episode 49 (2020-09-09)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-09-16",
+    "city": "Santana and Ortiz vs. Best Friends ( Chuck Taylor and Trent ) in a Parking Lot Fight",
+    "episode_number": 50,
+    "name": "Episode 50 (2020-09-16)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-09-23",
+    "city": "Jon Moxley (c) vs. Eddie Kingston for the AEW World Championship",
+    "episode_number": 51,
+    "name": "Episode 51 (2020-09-23)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-09-30",
+    "city": "Jon Moxley (c) vs. The Butcher for the AEW World Championship",
+    "episode_number": 52,
+    "name": "Episode 52 (2020-09-30)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-10-07",
+    "city": "Chris Jericho and Jake Hager vs. Luther and Serpentico",
+    "episode_number": 53,
+    "name": "Episode 53 (2020-10-07)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-10-14",
+    "city": "Jon Moxley (c) vs. Lance Archer in a No Disqualification match for the AEW World Championship",
+    "episode_number": 54,
+    "name": "Episode 54 (2020-10-14)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-10-21",
+    "city": "The Young Bucks ( Matt Jackson and Nick Jackson ) vs. Private Party ( Isiah Kassidy and Marq Quen ) vs. The Butcher and The Blade vs. The Dark Order ( Alex Reynolds and John Silver ) in a four-way tag team match with the winners challenging for the AEW World Tag Team Championship at Full Gear",
+    "episode_number": 55,
+    "name": "Episode 55 (2020-10-21)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-10-28",
+    "city": "Kenny Omega vs. Penta El Zero Miedo in the World Title Eliminator Tournament Semifinals match",
+    "episode_number": 56,
+    "name": "Episode 56 (2020-10-28)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-11-04",
+    "city": "Cody Rhodes , Billy Gunn and Austin Gunn vs. Colt Cabana , John Silver and Preston Vance",
+    "episode_number": 57,
+    "name": "Episode 57 (2020-11-04)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-11-11",
+    "city": "Penta El Zero Miedo vs. Rey F\u00e9nix",
+    "episode_number": 58,
+    "name": "Episode 58 (2020-11-11)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-11-18",
+    "city": "Cody Rhodes and Darby Allin vs. Brian Cage and Ricky Starks",
+    "episode_number": 59,
+    "name": "Episode 59 (2020-11-18)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-11-25",
+    "city": "Pac and Rey F\u00e9nix vs. The Butcher and The Blade",
+    "episode_number": 60,
+    "name": "Episode 60 (2020-11-25)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-12-02",
+    "city": "Jon Moxley (c) vs. Kenny Omega for the AEW World Championship",
+    "episode_number": 61,
+    "name": "Episode 61 (2020-12-02)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-12-09",
+    "city": "MJF vs. Orange Cassidy for the Dynamite Diamond Ring",
+    "episode_number": 62,
+    "name": "Episode 62 (2020-12-09)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-12-16",
+    "city": "Kenny Omega vs. Joey Janela in a No Disqualification match AEW World Championship Eliminator match",
+    "episode_number": 63,
+    "name": "Episode 63 (2020-12-16)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-12-23",
+    "city": "The Young Bucks (Matt Jackson and Nick Jackson) (c) vs. The Acclaimed ( Anthony Bowens and Max Caster ) for the AEW World Tag Team Championship",
+    "episode_number": 64,
+    "name": "Episode 64 (2020-12-23)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2020-12-30",
+    "city": "Brodie Lee Celebration of Life : In memory of Brodie Lee , who died on December 26, 2020. Featured segments with fellow performers paying tribute to Lee, and matches honoring Lee and the main event was Cody Rhodes, Orange Cassidy, and Preston Vance vs Team Taz members Brian Cage, Ricky Starks, and Powerhouse Hobbs",
+    "episode_number": 65,
+    "name": "Episode 65 (2020-12-30)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-01-06",
+    "city": "Jacksonville, Florida",
+    "episode_number": 66,
+    "name": "Episode 66 (2021-01-06)",
+    "notes": "Kenny Omega (c) vs. Rey Fenix for the AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "Daily's Place"
+  },
+  {
+    "air_date": "2021-01-13",
+    "city": "Darby Allin (c) vs. Brian Cage for the AEW TNT Championship",
+    "episode_number": 67,
+    "name": "Episode 67 (2021-01-13)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-01-20",
+    "city": "Chris Jericho and MJF vs. Santana and Ortiz vs. Sammy Guevara and Jake Hager in a Inner Circle Tag Team Challenge",
+    "episode_number": 68,
+    "name": "Episode 68 (2021-01-20)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-01-27",
+    "city": "Matt Jackson, Nick Jackson , Doc Gallows and Karl Anderson vs. Evil Uno , Stu Grayson , John Silver and Alex Reynolds",
+    "episode_number": 69,
+    "name": "Episode 69 (2021-01-27)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-02-03",
+    "city": "Kenny Omega , Doc Gallows and Karl Anderson vs. Jon Moxley , Pac and Rey F\u00e9nix",
+    "episode_number": 70,
+    "name": "Episode 70 (2021-02-03)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-02-10",
+    "city": "Kenny Omega and Kenta Kobayashi vs. Jon Moxley and Lance Archer in a Falls Count Anywhere No Disqualification match",
+    "episode_number": 71,
+    "name": "Episode 71 (2021-02-10)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-02-17",
+    "city": "Jon Moxley , Lance Archer and Rey F\u00e9nix vs. Eddie Kingston , Andy Williams and The Blade",
+    "episode_number": 72,
+    "name": "Episode 72 (2021-02-17)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-02-24",
+    "city": "Lance Archer vs. Rey F\u00e9nix in a Face of the Revolution Ladder Match Qualifying match",
+    "episode_number": 73,
+    "name": "Episode 73 (2021-02-24)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-03-03",
+    "city": "\"Hangman\" Adam Page and John Silver vs. Matt Hardy and Marq Quen",
+    "episode_number": 74,
+    "name": "Episode 74 (2021-03-03)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-03-10",
+    "city": "None (Segment: Inner Circle council)",
+    "episode_number": 75,
+    "name": "Episode 75 (2021-03-10)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-03-17",
+    "city": "Dr. Britt Baker, D.M.D. vs. Thunder Rosa in an Unsanctioned Lights Out match",
+    "episode_number": 76,
+    "name": "Episode 76 (2021-03-17)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-03-24",
+    "city": "Darby Allin (c) vs. John Silver for the AEW TNT Championship",
+    "episode_number": 77,
+    "name": "Episode 77 (2021-03-24)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-03-31",
+    "city": "Miro and Kip Sabian vs. Orange Cassidy and Chuck Taylor",
+    "episode_number": 78,
+    "name": "Episode 78 (2021-03-31)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-04-07",
+    "city": "Kenny Omega , Doc Gallows and Karl Anderson vs. Jon Moxley , Matt Jackson and Nick Jackson",
+    "episode_number": 79,
+    "name": "Episode 79 (2021-04-07)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-04-14",
+    "city": "Darby Allin (c) vs. Matt Hardy in a Falls Count Anywhere for the AEW TNT Championship",
+    "episode_number": 80,
+    "name": "Episode 80 (2021-04-14)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-04-21",
+    "city": "Darby Allin (c) vs. Jungle Boy for the AEW TNT Championship",
+    "episode_number": 81,
+    "name": "Episode 81 (2021-04-21)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-04-28",
+    "city": "Darby Allin (c) vs. Preston Vance for the AEW TNT Championship",
+    "episode_number": 82,
+    "name": "Episode 82 (2021-04-28)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-05-05",
+    "city": "The Pinnacle ( MJF , Wardlow , Shawn Spears , Cash Wheeler and Dax Harwood ) vs. Inner Circle ( Chris Jericho , Jake Hager , Sammy Guevara , Santana and Ortiz ) in a Blood and Guts match",
+    "episode_number": 83,
+    "name": "Episode 83 (2021-05-05)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-05-12",
+    "city": "Darby Allin (c) vs. Miro for the AEW TNT Championship",
+    "episode_number": 84,
+    "name": "Episode 84 (2021-05-12)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-05-19",
+    "city": "The Young Bucks ( Matt Jackson and Nick Jackson ) (c) vs. The Varsity Blondes ( Brian Pillman Jr. and Griff Garrison ) for the AEW World Tag Team Championship",
+    "episode_number": 85,
+    "name": "Episode 85 (2021-05-19)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-05-28",
+    "city": "None (Segment: Inner Circle celebration hosted by Eric Bischoff )",
+    "episode_number": 86,
+    "name": "Episode 86 (2021-05-28)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-06-04",
+    "city": "Dustin Rhodes vs. Nick Comoroto in a Bullrope match",
+    "episode_number": 87,
+    "name": "Episode 87 (2021-06-04)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-06-11",
+    "city": "\"Hangman\" Adam Page and Preston Vance vs. Brian Cage and Powerhouse Hobbs",
+    "episode_number": 88,
+    "name": "Episode 88 (2021-06-11)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-06-18",
+    "city": "Penta El Zero Miedo , Eddie Kingston and Frankie Kazarian vs. Matt Jackson , Doc Gallows and Karl Anderson",
+    "episode_number": 89,
+    "name": "Episode 89 (2021-06-18)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-06-26",
+    "city": "Kenny Omega (c) vs. Jungle Boy for the AEW World Championship",
+    "episode_number": 90,
+    "name": "Episode 90 (2021-06-26)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-06-30",
+    "city": "MJF vs. Sammy Guevara",
+    "episode_number": 91,
+    "name": "Episode 91 (2021-06-30)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2021-07-07",
+    "city": "Miami, Florida",
+    "episode_number": 92,
+    "name": "Episode 92 (2021-07-07)",
+    "notes": "The Young Bucks ( Matt Jackson and Nick Jackson ) (c) vs. Eddie Kingston and Penta El Zero Miedo in a Street Fight for the AEW World Tag Team Championship",
+    "show": "dynamite",
+    "venue_name": "James L. Knight Center"
+  },
+  {
+    "air_date": "2021-07-14",
+    "city": "Cedar Park, Texas",
+    "episode_number": 93,
+    "name": "Episode 93 (2021-07-14)",
+    "notes": "Darby Allin vs. Ethan Page in a Coffin match",
+    "show": "dynamite",
+    "venue_name": "H-E-B Center at Cedar Park"
+  },
+  {
+    "air_date": "2021-07-21",
+    "city": "Garland, Texas",
+    "episode_number": 94,
+    "name": "Episode 94 (2021-07-21)",
+    "notes": "Jon Moxley (c) vs. Lance Archer in a Texas Death match for the IWGP United States Heavyweight Championship",
+    "show": "dynamite",
+    "venue_name": "Curtis Culwell Center"
+  },
+  {
+    "air_date": "2021-07-28",
+    "city": "Charlotte, North Carolina",
+    "episode_number": 95,
+    "name": "Episode 95 (2021-07-28)",
+    "notes": "Chris Jericho vs. Nick Gage in a No Rules match",
+    "show": "dynamite",
+    "venue_name": "Bojangles Coliseum"
+  },
+  {
+    "air_date": "2021-08-04",
+    "city": "Jacksonville, Florida",
+    "episode_number": 96,
+    "name": "Episode 96 (2021-08-04)",
+    "notes": "Malakai Black vs. Cody Rhodes",
+    "show": "dynamite",
+    "venue_name": "Daily's Place"
+  },
+  {
+    "air_date": "2021-08-11",
+    "city": "Pittsburgh, Pennsylvania",
+    "episode_number": 97,
+    "name": "Episode 97 (2021-08-11)",
+    "notes": "Chris Jericho vs. Wardlow",
+    "show": "dynamite",
+    "venue_name": "Petersen Events Center"
+  },
+  {
+    "air_date": "2021-08-18",
+    "city": "Houston, Texas",
+    "episode_number": 98,
+    "name": "Episode 98 (2021-08-18)",
+    "notes": "Chris Jericho vs. MJF",
+    "show": "dynamite",
+    "venue_name": "Fertitta Center"
+  },
+  {
+    "air_date": "2021-08-25",
+    "city": "Milwaukee, Wisconsin",
+    "episode_number": 99,
+    "name": "Episode 99 (2021-08-25)",
+    "notes": "Malakai Black vs. Brock Anderson",
+    "show": "dynamite",
+    "venue_name": "UW\u2013Milwaukee Panther Arena"
+  },
+  {
+    "air_date": "2021-09-01",
+    "city": "Hoffman Estates, Illinois",
+    "episode_number": 100,
+    "name": "Episode 100 (2021-09-01)",
+    "notes": "Matt Jackson, Nick Jackson , Doc Gallows and Karl Anderson vs. Lucha Brothers , Jungle Boy and Luchasaurus",
+    "show": "dynamite",
+    "venue_name": "Now Arena"
+  },
+  {
+    "air_date": "2021-09-08",
+    "city": "Cincinnati, Ohio",
+    "episode_number": 101,
+    "name": "Episode 101 (2021-09-08)",
+    "notes": "Jon Moxley vs. Minoru Suzuki",
+    "show": "dynamite",
+    "venue_name": "Fifth Third Arena"
+  },
+  {
+    "air_date": "2021-09-15",
+    "city": "Newark, New Jersey",
+    "episode_number": 102,
+    "name": "Episode 102 (2021-09-15)",
+    "notes": "Jon Moxley and Eddie Kingston vs. Jeff Parker and Matt Lee",
+    "show": "dynamite",
+    "venue_name": "Prudential Center"
+  },
+  {
+    "air_date": "2021-09-22",
+    "city": "Queens, New York",
+    "episode_number": 103,
+    "name": "Episode 103 (2021-09-22)",
+    "notes": "Dr. Britt Baker, D.M.D. (c) vs. Ruby Soho for the AEW Women's World Championship",
+    "show": "dynamite",
+    "venue_name": "Arthur Ashe Stadium"
+  },
+  {
+    "air_date": "2021-09-29",
+    "city": "Rochester, New York",
+    "episode_number": 104,
+    "name": "Episode 104 (2021-09-29)",
+    "notes": "Miro (c) vs. Sammy Guevara for the AEW TNT Championship",
+    "show": "dynamite",
+    "venue_name": "Blue Cross Arena"
+  },
+  {
+    "air_date": "2021-10-06",
+    "city": "Philadelphia, Pennsylvania",
+    "episode_number": 105,
+    "name": "Episode 105 (2021-10-06)",
+    "notes": "\"Hangman\" Adam Page vs. Jon Moxley vs. Lance Archer vs. Matt Hardy vs. Andrade El Idolo vs. Pac in a Casino Ladder match for a future AEW World Championship match",
+    "show": "dynamite",
+    "venue_name": "Liacouras Center"
+  },
+  {
+    "air_date": "2021-10-16",
+    "city": "Miami, Florida",
+    "episode_number": 106,
+    "name": "Episode 106 (2021-10-16)",
+    "notes": "Bryan Danielson vs. Bobby Fish",
+    "show": "dynamite",
+    "venue_name": "James L. Knight Center"
+  },
+  {
+    "air_date": "2021-10-23",
+    "city": "Orlando, Florida",
+    "episode_number": 107,
+    "name": "Episode 107 (2021-10-23)",
+    "notes": "Malakai Black vs. Cody Rhodes",
+    "show": "dynamite",
+    "venue_name": "Addition Financial Arena"
+  },
+  {
+    "air_date": "2021-10-27",
+    "city": "Boston, Massachusetts",
+    "episode_number": 108,
+    "name": "Episode 108 (2021-10-27)",
+    "notes": "The Elite ( Kenny Omega , Matt Jackson, Nick Jackson and Adam Cole ) vs. The Dark Order ( Evil Uno , Stu Grayson , John Silver , and Colt Cabana )",
+    "show": "dynamite",
+    "venue_name": "Agganis Arena"
+  },
+  {
+    "air_date": "2021-11-03",
+    "city": "Independence, Missouri",
+    "episode_number": 109,
+    "name": "Episode 109 (2021-11-03)",
+    "notes": "Miro vs. Orange Cassidy in a AEW World Championship Eliminator Tournament Semifinals match",
+    "show": "dynamite",
+    "venue_name": "Cable Dahmer Arena"
+  },
+  {
+    "air_date": "2021-11-10",
+    "city": "Indianapolis, Indiana",
+    "episode_number": 110,
+    "name": "Episode 110 (2021-11-10)",
+    "notes": "None (Segment: Kenny Omega and \"Hangman\" Adam Page contract signing)",
+    "show": "dynamite",
+    "venue_name": "Indiana Farmers Coliseum"
+  },
+  {
+    "air_date": "2021-11-17",
+    "city": "Norfolk, Virginia",
+    "episode_number": 111,
+    "name": "Episode 111 (2021-11-17)",
+    "notes": "Sammy Guevara (c) vs. Jay Lethal for the AEW TNT Championship",
+    "show": "dynamite",
+    "venue_name": "Chartway Arena"
+  },
+  {
+    "air_date": "2021-11-24",
+    "city": "Chicago, Illinois",
+    "episode_number": 112,
+    "name": "Episode 112 (2021-11-24)",
+    "notes": "Cody Rhodes , Pac and Lucha Brothers vs. Andrade El Idolo , Malakai Black and FTR",
+    "show": "dynamite",
+    "venue_name": "Wintrust Arena"
+  },
+  {
+    "air_date": "2021-12-01",
+    "city": "Duluth, Georgia",
+    "episode_number": 113,
+    "name": "Episode 113 (2021-12-01)",
+    "notes": "Cody Rhodes vs. Andrade El Idolo in an Atlanta Street Fight",
+    "show": "dynamite",
+    "venue_name": "Gas South Arena"
+  },
+  {
+    "air_date": "2021-12-08",
+    "city": "Elmont, New York",
+    "episode_number": 114,
+    "name": "Episode 114 (2021-12-08)",
+    "notes": "Bryan Danielson vs. John Silver",
+    "show": "dynamite",
+    "venue_name": "UBS Arena"
+  },
+  {
+    "air_date": "2021-12-15",
+    "city": "Garland, Texas",
+    "episode_number": 115,
+    "name": "Episode 115 (2021-12-15)",
+    "notes": "MJF vs. Dante Martin for the AEW Dynamite Diamond Ring",
+    "show": "dynamite",
+    "venue_name": "Curtis Culwell Center"
+  },
+  {
+    "air_date": "2021-12-22",
+    "city": "Greensboro, North Carolina",
+    "episode_number": 116,
+    "name": "Episode 116 (2021-12-22)",
+    "notes": "Sting , CM Punk and Darby Allin vs. MJF and FTR ( Cash Wheeler , and Dax Harwood )",
+    "show": "dynamite",
+    "venue_name": "Greensboro Coliseum"
+  },
+  {
+    "air_date": "2021-12-29",
+    "city": "Jacksonville, Florida",
+    "episode_number": 117,
+    "name": "Episode 117 (2021-12-29)",
+    "notes": "Adam Cole , Bobby Fish , and Kyle O'Reilly vs. Best Friends ( Orange Cassidy , Chuck Taylor , and Trent Beretta )",
+    "show": "dynamite",
+    "venue_name": "Daily's Place"
+  },
+  {
+    "air_date": "2022-01-05",
+    "city": "Newark, New Jersey",
+    "episode_number": 118,
+    "name": "Episode 118 (2022-01-05)",
+    "notes": "Lucha Brothers ( Penta El Zero Miedo and Rey F\u00e9nix ) (c) vs. Jurassic Express ( Jungle Boy and Luchasaurus ) for the AEW World Tag Team Championship",
+    "show": "dynamite",
+    "venue_name": "Prudential Center"
+  },
+  {
+    "air_date": "2022-01-12",
+    "city": "Raleigh, North Carolina",
+    "episode_number": 119,
+    "name": "Episode 119 (2022-01-12)",
+    "notes": "Sammy Guevara (c) vs. Daniel Garcia for the Interim AEW TNT Championship",
+    "show": "dynamite",
+    "venue_name": "PNC Arena"
+  },
+  {
+    "air_date": "2022-01-19",
+    "city": "Washington, D.C.",
+    "episode_number": 120,
+    "name": "Episode 120 (2022-01-19)",
+    "notes": "Sting and Darby Allin vs. Anthony Bowens and Max Caster",
+    "show": "dynamite",
+    "venue_name": "Entertainment & Sports Arena"
+  },
+  {
+    "air_date": "2022-01-26",
+    "city": "Cleveland, Ohio",
+    "episode_number": 121,
+    "name": "Episode 121 (2022-01-26)",
+    "notes": "Orange Cassidy vs. Adam Cole in an Unsanctioned Lights Out match",
+    "show": "dynamite",
+    "venue_name": "Wolstein Center"
+  },
+  {
+    "air_date": "2022-02-02",
+    "city": "Chicago, Illinois",
+    "episode_number": 122,
+    "name": "Episode 122 (2022-02-02)",
+    "notes": "CM Punk vs. MJF",
+    "show": "dynamite",
+    "venue_name": "Wintrust Arena"
+  },
+  {
+    "air_date": "2022-02-09",
+    "city": "Atlantic City, New Jersey",
+    "episode_number": 123,
+    "name": "Episode 123 (2022-02-09)",
+    "notes": "\"Hangman\" Adam Page (c) vs. Lance Archer in Texas Death match for the AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "Jim Whelan Boardwalk Hall"
+  },
+  {
+    "air_date": "2022-02-16",
+    "city": "Nashville, Tennessee",
+    "episode_number": 124,
+    "name": "Episode 124 (2022-02-16)",
+    "notes": "Sammy Guevara (c) vs. Darby Allin for the AEW TNT Championship",
+    "show": "dynamite",
+    "venue_name": "Nashville Municipal Auditorium"
+  },
+  {
+    "air_date": "2022-02-23",
+    "city": "Bridgeport, Connecticut",
+    "episode_number": 125,
+    "name": "Episode 125 (2022-02-23)",
+    "notes": "Bryan Danielson vs. Daniel Garcia",
+    "show": "dynamite",
+    "venue_name": "Webster Bank Arena"
+  },
+  {
+    "air_date": "2022-03-02",
+    "city": "Jacksonville, Florida",
+    "episode_number": 126,
+    "name": "Episode 126 (2022-03-02)",
+    "notes": "Adam Cole and reDRagon ( Bobby Fish and Kyle O'Reilly ) vs. Adam Page and The Dark Order ( Alex Reynolds and John Silver )",
+    "show": "dynamite",
+    "venue_name": "Daily's Place"
+  },
+  {
+    "air_date": "2022-03-09",
+    "city": "Estero, Florida",
+    "episode_number": 127,
+    "name": "Episode 127 (2022-03-09)",
+    "notes": "Sammy Guevara (c) vs. Scorpio Sky for the AEW TNT Championship",
+    "show": "dynamite",
+    "venue_name": "Hertz Arena"
+  },
+  {
+    "air_date": "2022-03-16",
+    "city": "San Antonio, Texas",
+    "episode_number": 128,
+    "name": "Episode 128 (2022-03-16)",
+    "notes": "Dr. Britt Baker, D.M.D. (c) vs. Thunder Rosa for the AEW Women's World Championship in a Steel Cage match",
+    "show": "dynamite",
+    "venue_name": "Freeman Coliseum"
+  },
+  {
+    "air_date": "2022-03-23",
+    "city": "Cedar Park, Texas",
+    "episode_number": 129,
+    "name": "Episode 129 (2022-03-23)",
+    "notes": "Jericho Appreciation Society ( Chris Jericho and Daniel Garcia ) vs. The Dark Order ( Alex Reynolds and John Silver )",
+    "show": "dynamite",
+    "venue_name": "H-E-B Center at Cedar Park"
+  },
+  {
+    "air_date": "2022-03-30",
+    "city": "Columbia, South Carolina",
+    "episode_number": 130,
+    "name": "Episode 130 (2022-03-30)",
+    "notes": "Darby Allin vs. Andrade El Idolo",
+    "show": "dynamite",
+    "venue_name": "Colonial Life Arena"
+  },
+  {
+    "air_date": "2022-04-06",
+    "city": "Boston, Massachusetts",
+    "episode_number": 131,
+    "name": "Episode 131 (2022-04-06)",
+    "notes": "FTR ( Cash Wheeler and Dax Harwood ) (c) vs. The Young Bucks (Matt Jackson and Nick Jackson) for the ROH and AAA World Tag Team Championships",
+    "show": "dynamite",
+    "venue_name": "Agganis Arena"
+  },
+  {
+    "air_date": "2022-04-13",
+    "city": "New Orleans, Louisiana",
+    "episode_number": 132,
+    "name": "Episode 132 (2022-04-13)",
+    "notes": "Minoru Suzuki (c) vs. Samoa Joe for the ROH World Television Championship",
+    "show": "dynamite",
+    "venue_name": "UNO Lakefront Arena"
+  },
+  {
+    "air_date": "2022-04-20",
+    "city": "Pittsburgh, Pennsylvania",
+    "episode_number": 133,
+    "name": "Episode 133 (2022-04-20)",
+    "notes": "Darby Allin vs. Andrade El Idolo in a Coffin match",
+    "show": "dynamite",
+    "venue_name": "Petersen Events Center"
+  },
+  {
+    "air_date": "2022-04-27",
+    "city": "Philadelphia, Pennsylvania",
+    "episode_number": 134,
+    "name": "Episode 134 (2022-04-27)",
+    "notes": "Sammy Guevara (c) vs. Scorpio Sky in a Ladder match for the AEW TNT Championship",
+    "show": "dynamite",
+    "venue_name": "Liacouras Center"
+  },
+  {
+    "air_date": "2022-05-04",
+    "city": "Baltimore, Maryland",
+    "episode_number": 135,
+    "name": "Episode 135 (2022-05-04)",
+    "notes": "Deonna Purrazzo (c) vs. Mercedes Martinez for the Undisputed ROH Women's World Championship",
+    "show": "dynamite",
+    "venue_name": "Chesapeake Employers Insurance Arena"
+  },
+  {
+    "air_date": "2022-05-11",
+    "city": "Elmont, New York",
+    "episode_number": 136,
+    "name": "Episode 136 (2022-05-11)",
+    "notes": "Jeff Hardy vs. Darby Allin in an Anything Goes Men's Owen Hart Cup Tournament Quarterfinal match",
+    "show": "dynamite",
+    "venue_name": "UBS Arena"
+  },
+  {
+    "air_date": "2022-05-18",
+    "city": "Houston, Texas",
+    "episode_number": 137,
+    "name": "Episode 137 (2022-05-18)",
+    "notes": "Jeff Hardy vs. Adam Cole in a Men's Owen Hart Cup Tournament Semifinal match",
+    "show": "dynamite",
+    "venue_name": "Fertitta Center"
+  },
+  {
+    "air_date": "2022-05-25",
+    "city": "Las Vegas, Nevada",
+    "episode_number": 138,
+    "name": "Episode 138 (2022-05-25)",
+    "notes": "Samoa Joe vs. Kyle O'Reilly in a Men's Owen Hart Cup Tournament Semifinal match",
+    "show": "dynamite",
+    "venue_name": "Michelob Ultra Arena"
+  },
+  {
+    "air_date": "2022-06-01",
+    "city": "Inglewood, California",
+    "episode_number": 139,
+    "name": "Episode 139 (2022-06-01)",
+    "notes": "Jon Moxley vs. Daniel Garcia",
+    "show": "dynamite",
+    "venue_name": "Kia Forum"
+  },
+  {
+    "air_date": "2022-06-08",
+    "city": "Independence, Missouri",
+    "episode_number": 140,
+    "name": "Episode 140 (2022-06-08)",
+    "notes": "Jon Moxley vs. Kyle O'Reilly (Winner to Face Hiroshi Tanahashi for the interim AEW World Championship at Forbidden Door )",
+    "show": "dynamite",
+    "venue_name": "Cable Dahmer Arena"
+  },
+  {
+    "air_date": "2022-06-15",
+    "city": "St. Louis, Missouri",
+    "episode_number": 141,
+    "name": "Episode 141 (2022-06-15)",
+    "notes": "Jurassic Express ( Jungle Boy and Luchasaurus ) (c) vs. The Young Bucks (Matt Jackson and Nick Jackson) in a Ladder match for the AEW World Tag Team Championship",
+    "show": "dynamite",
+    "venue_name": "Chaifetz Arena"
+  },
+  {
+    "air_date": "2022-06-22",
+    "city": "Milwaukee, Wisconsin",
+    "episode_number": 142,
+    "name": "Episode 142 (2022-06-22)",
+    "notes": "Chris Jericho and Lance Archer vs. Jon Moxley and Hiroshi Tanahashi",
+    "show": "dynamite",
+    "venue_name": "UW\u2013Milwaukee Panther Arena"
+  },
+  {
+    "air_date": "2022-06-29",
+    "city": "Detroit, Michigan",
+    "episode_number": 143,
+    "name": "Episode 143 (2022-06-29)",
+    "notes": "The Jericho Appreciation Society ( Chris Jericho , Jake Hager , Sammy Guevara , Daniel Garcia , Matt Menard and Angelo Parker ) vs. Eddie Kingston , Santana and Ortiz and Blackpool Combat Club ( Jon M",
+    "show": "dynamite",
+    "venue_name": "Little Caesars Arena"
+  },
+  {
+    "air_date": "2022-07-06",
+    "city": "Rochester, New York",
+    "episode_number": 144,
+    "name": "Episode 144 (2022-07-06)",
+    "notes": "Jon Moxley (c) vs. Brody King for the interim AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "Blue Cross Arena"
+  },
+  {
+    "air_date": "2022-07-13",
+    "city": "Savannah, Georgia",
+    "episode_number": 145,
+    "name": "Episode 145 (2022-07-13)",
+    "notes": "The Young Bucks (Matt Jackson and Nick Jackson) (c) vs. Team Taz ( Ricky Starks and Powerhouse Hobbs ) vs. Swerve in Our Glory ( Keith Lee and Swerve Strickland ) in a Three-way tag team match for the",
+    "show": "dynamite",
+    "venue_name": "Enmarket Arena"
+  },
+  {
+    "air_date": "2022-07-20",
+    "city": "Duluth, Georgia",
+    "episode_number": 146,
+    "name": "Episode 146 (2022-07-20)",
+    "notes": "Eddie Kingston vs. Chris Jericho in a Barbed Wire Deathmatch The rest of the Jericho Appreciation Society will be suspended above the ring in a shark cage .",
+    "show": "dynamite",
+    "venue_name": "Gas South Arena"
+  },
+  {
+    "air_date": "2022-07-27",
+    "city": "Worcester, Massachusetts",
+    "episode_number": 147,
+    "name": "Episode 147 (2022-07-27)",
+    "notes": "Bryan Danielson vs. Daniel Garcia",
+    "show": "dynamite",
+    "venue_name": "DCU Center"
+  },
+  {
+    "air_date": "2022-08-03",
+    "city": "Columbus, Ohio",
+    "episode_number": 148,
+    "name": "Episode 148 (2022-08-03)",
+    "notes": "Chris Jericho vs. Wheeler Yuta",
+    "show": "dynamite",
+    "venue_name": "Schottenstein Center"
+  },
+  {
+    "air_date": "2022-08-10",
+    "city": "Minneapolis, Minnesota",
+    "episode_number": 149,
+    "name": "Episode 149 (2022-08-10)",
+    "notes": "Jon Moxley (c) vs. Chris Jericho for the interim AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "Target Center"
+  },
+  {
+    "air_date": "2022-08-17",
+    "city": "Charleston, West Virginia",
+    "episode_number": 150,
+    "name": "Episode 150 (2022-08-17)",
+    "notes": "The Elite ( Kenny Omega , Matt Jackson and Nick Jackson ) vs. La Faccion Ingobernable ( Andrade El Idolo , Rush and Dragon Lee )",
+    "show": "dynamite",
+    "venue_name": "Charleston Coliseum"
+  },
+  {
+    "air_date": "2022-08-24",
+    "city": "Cleveland, Ohio",
+    "episode_number": 151,
+    "name": "Episode 151 (2022-08-24)",
+    "notes": "Aussie Open ( Kyle Fletcher and Mark Davis ) and Will Ospreay vs. Death Triangle ( Pac , Penta Oscuro and Rey Fenix )",
+    "show": "dynamite",
+    "venue_name": "Wolstein Center"
+  },
+  {
+    "air_date": "2022-08-31",
+    "city": "Hoffman Estates, Illinois",
+    "episode_number": 152,
+    "name": "Episode 152 (2022-08-31)",
+    "notes": "The Elite ( Kenny Omega , Matt Jackson and Nick Jackson ) vs. Aussie Open ( Kyle Fletcher and Mark Davis ) and Will Ospreay",
+    "show": "dynamite",
+    "venue_name": "Now Arena"
+  },
+  {
+    "air_date": "2022-09-07",
+    "city": "Buffalo, New York",
+    "episode_number": 153,
+    "name": "Episode 153 (2022-09-07)",
+    "notes": "Wheeler Yuta (c) vs. Daniel Garcia for the ROH Pure Championship",
+    "show": "dynamite",
+    "venue_name": "KeyBank Center"
+  },
+  {
+    "air_date": "2022-09-14",
+    "city": "Albany, New York",
+    "episode_number": 154,
+    "name": "Episode 154 (2022-09-14)",
+    "notes": "Bryan Danielson vs. Chris Jericho",
+    "show": "dynamite",
+    "venue_name": "MVP Arena"
+  },
+  {
+    "air_date": "2022-09-21",
+    "city": "Queens, New York",
+    "episode_number": 155,
+    "name": "Episode 155 (2022-09-21)",
+    "notes": "Jon Moxley vs. Bryan Danielson for the vacant AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "Arthur Ashe Stadium"
+  },
+  {
+    "air_date": "2022-09-28",
+    "city": "Philadelphia, Pennsylvania",
+    "episode_number": 156,
+    "name": "Episode 156 (2022-09-28)",
+    "notes": "Chris Jericho (c) vs. Bandido for the ROH World Championship",
+    "show": "dynamite",
+    "venue_name": "Liacouras Center"
+  },
+  {
+    "air_date": "2022-10-05",
+    "city": "Washington D.C.",
+    "episode_number": 157,
+    "name": "Episode 157 (2022-10-05)",
+    "notes": "Jericho Appreciation Society ( Chris Jericho and Sammy Guevara ) vs. Bryan Danielson and Daniel Garcia",
+    "show": "dynamite",
+    "venue_name": "Entertainment and Sports Arena"
+  },
+  {
+    "air_date": "2022-10-12",
+    "city": "Toronto, Ontario",
+    "episode_number": 158,
+    "name": "Episode 158 (2022-10-12)",
+    "notes": "PAC (c) vs. Orange Cassidy for the AEW All-Atlantic Championship",
+    "show": "dynamite",
+    "venue_name": "Coca-Cola Coliseum"
+  },
+  {
+    "air_date": "2022-10-18",
+    "city": "Cincinnati, Ohio",
+    "episode_number": 159,
+    "name": "Episode 159 (2022-10-18)",
+    "notes": "Jon Moxley (c) vs. \"Hangman\" Adam Page for the AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "Heritage Bank Center"
+  },
+  {
+    "air_date": "2022-10-26",
+    "city": "Norfolk, Virginia",
+    "episode_number": 160,
+    "name": "Episode 160 (2022-10-26)",
+    "notes": "Jon Moxley (c) vs. Penta El Zero Miedo for the AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "Chartway Arena"
+  },
+  {
+    "air_date": "2022-11-02",
+    "city": "Baltimore, Maryland",
+    "episode_number": 161,
+    "name": "Episode 161 (2022-11-02)",
+    "notes": "Samoa Joe (c) vs. Brian Cage for the ROH World Television Championship",
+    "show": "dynamite",
+    "venue_name": "Chesapeake Employers Insurance Arena"
+  },
+  {
+    "air_date": "2022-11-09",
+    "city": "Boston, Massachusetts",
+    "episode_number": 162,
+    "name": "Episode 162 (2022-11-09)",
+    "notes": "Bryan Danielson vs. Sammy Guevara in a Two-out-of-three-falls match",
+    "show": "dynamite",
+    "venue_name": "Agganis Arena"
+  },
+  {
+    "air_date": "2022-11-16",
+    "city": "Bridgeport, Connecticut",
+    "episode_number": 163,
+    "name": "Episode 163 (2022-11-16)",
+    "notes": "None (Segment: Jon Moxley and MJF Face Off)",
+    "show": "dynamite",
+    "venue_name": "Total Mortgage Arena"
+  },
+  {
+    "air_date": "2022-11-23",
+    "city": "Chicago, Illinois",
+    "episode_number": 164,
+    "name": "Episode 164 (2022-11-23)",
+    "notes": "Chris Jericho (c) vs. Tomohiro Ishii for the ROH World Championship",
+    "show": "dynamite",
+    "venue_name": "Wintrust Arena"
+  },
+  {
+    "air_date": "2022-11-30",
+    "city": "Indianapolis, Indiana",
+    "episode_number": 165,
+    "name": "Episode 165 (2022-11-30)",
+    "notes": "Death Triangle ( Rey Fenix and Penta El Zero Miedo and Pac ) vs. The Elite ( Kenny Omega and Nick Jackson and Matt Jackson )",
+    "show": "dynamite",
+    "venue_name": "Indiana Farmers Coliseum"
+  },
+  {
+    "air_date": "2022-12-07",
+    "city": "Cedar Park, Texas",
+    "episode_number": 166,
+    "name": "Episode 166 (2022-12-07)",
+    "notes": "The Acclaimed ( Anthony Bowens and Max Caster ) (c) vs. FTR ( Cash Wheeler and Dax Harwood ) for the AEW World Tag Team Championship",
+    "show": "dynamite",
+    "venue_name": "H-E-B Center at Cedar Park"
+  },
+  {
+    "air_date": "2022-12-14",
+    "city": "Garland, Texas",
+    "episode_number": 167,
+    "name": "Episode 167 (2022-12-14)",
+    "notes": "MJF (c) vs. Ricky Starks for the AEW World Championship and the Dynamite Diamond Ring",
+    "show": "dynamite",
+    "venue_name": "Curtis Culwell Center"
+  },
+  {
+    "air_date": "2022-12-21",
+    "city": "San Antonio, Texas",
+    "episode_number": 168,
+    "name": "Episode 168 (2022-12-21)",
+    "notes": "Jamie Hayter (c) vs. Hikaru Shida for the AEW Women's World Championship",
+    "show": "dynamite",
+    "venue_name": "Freeman Coliseum"
+  },
+  {
+    "air_date": "2022-12-28",
+    "city": "Broomfield, Colorado",
+    "episode_number": 169,
+    "name": "Episode 169 (2022-12-28)",
+    "notes": "Samoa Joe (c) vs. Wardlow for the AEW TNT Championship",
+    "show": "dynamite",
+    "venue_name": "1stBank Center"
+  },
+  {
+    "air_date": "2023-01-04",
+    "city": "Seattle, Washington",
+    "episode_number": 170,
+    "name": "Episode 170 (2023-01-04)",
+    "notes": "Samoa Joe (c) vs. Darby Allin for the AEW TNT Championship",
+    "show": "dynamite",
+    "venue_name": "Climate Pledge Arena"
+  },
+  {
+    "air_date": "2023-01-11",
+    "city": "Inglewood, California",
+    "episode_number": 171,
+    "name": "Episode 171 (2023-01-11)",
+    "notes": "Death Triangle ( Pac , Rey F\u00e9nix and Penta El Zero Miedo ) (c) vs. The Elite ( Kenny Omega and The Young Bucks ( Nick Jackson and Matt Jackson )) in a Ladder match for the AEW World Trios Championship",
+    "show": "dynamite",
+    "venue_name": "Kia Forum"
+  },
+  {
+    "air_date": "2023-01-18",
+    "city": "Fresno, California",
+    "episode_number": 172,
+    "name": "Episode 172 (2023-01-18)",
+    "notes": "Darby Allin (c) vs. Kushida for the AEW TNT Championship",
+    "show": "dynamite",
+    "venue_name": "Save Mart Center"
+  },
+  {
+    "air_date": "2023-01-25",
+    "city": "Lexington, Kentucky",
+    "episode_number": 173,
+    "name": "Episode 173 (2023-01-25)",
+    "notes": "Mark Briscoe vs. Jay Lethal",
+    "show": "dynamite",
+    "venue_name": "Rupp Arena"
+  },
+  {
+    "air_date": "2023-02-01",
+    "city": "Fairborn, Ohio",
+    "episode_number": 174,
+    "name": "Episode 174 (2023-02-01)",
+    "notes": "Darby Allin (c) vs. Samoa Joe in a No Holds Barred match for the AEW TNT Championship",
+    "show": "dynamite",
+    "venue_name": "Nutter Center"
+  },
+  {
+    "air_date": "2023-02-08",
+    "city": "El Paso, Texas",
+    "episode_number": 175,
+    "name": "Episode 175 (2023-02-08)",
+    "notes": "The Acclaimed ( Anthony Bowens and Max Caster ) (c) vs. The Gunns ( Austin Gunn and Colten Gunn ) for the AEW World Tag Team Championship",
+    "show": "dynamite",
+    "venue_name": "El Paso County Coliseum"
+  },
+  {
+    "air_date": "2023-02-15",
+    "city": "Laredo, Texas",
+    "episode_number": 176,
+    "name": "Episode 176 (2023-02-15)",
+    "notes": "Toni Storm vs. Ruby Soho vs. Dr. Britt Baker, D.M.D.",
+    "show": "dynamite",
+    "venue_name": "Sames Auto Arena"
+  },
+  {
+    "air_date": "2023-02-22",
+    "city": "Phoenix, Arizona",
+    "episode_number": 177,
+    "name": "Episode 177 (2023-02-22)",
+    "notes": "Jon Moxley vs. Evil Uno",
+    "show": "dynamite",
+    "venue_name": "Footprint Center"
+  },
+  {
+    "air_date": "2023-03-01",
+    "city": "Daly City, California",
+    "episode_number": 178,
+    "name": "Episode 178 (2023-03-01)",
+    "notes": "None (Segment: MJF and Bryan Danielson Face Off)",
+    "show": "dynamite",
+    "venue_name": "Cow Palace"
+  },
+  {
+    "air_date": "2023-03-08",
+    "city": "Sacramento, California",
+    "episode_number": 179,
+    "name": "Episode 179 (2023-03-08)",
+    "notes": "Wardlow (c) vs. Powerhouse Hobbs in a Falls count anywhere match for the AEW TNT Championship",
+    "show": "dynamite",
+    "venue_name": "Golden 1 Center"
+  },
+  {
+    "air_date": "2023-03-15",
+    "city": "Winnipeg, Manitoba",
+    "episode_number": 180,
+    "name": "Episode 180 (2023-03-15)",
+    "notes": "The House of Black ( Malakai Black , Brody King and Buddy Matthews ) (c) vs. The Elite ( Kenny Omega and The Young Bucks ( Nick Jackson and Matt Jackson )) vs. The Jericho Appreciation Society ( Chris",
+    "show": "dynamite",
+    "venue_name": "Canada Life Centre"
+  },
+  {
+    "air_date": "2023-03-22",
+    "city": "Independence, Missouri",
+    "episode_number": 181,
+    "name": "Episode 181 (2023-03-22)",
+    "notes": "Kenny Omega vs. El Hijo del Vikingo",
+    "show": "dynamite",
+    "venue_name": "Cable Dahmer Arena"
+  },
+  {
+    "air_date": "2023-03-29",
+    "city": "St. Louis, Missouri",
+    "episode_number": 182,
+    "name": "Episode 182 (2023-03-29)",
+    "notes": "Adam Cole vs. Daniel Garcia",
+    "show": "dynamite",
+    "venue_name": "Chaifetz Arena"
+  },
+  {
+    "air_date": "2023-04-05",
+    "city": "Elmont, New York",
+    "episode_number": 183,
+    "name": "Episode 183 (2023-04-05)",
+    "notes": "The Gunns ( Austin Gunn and Colten Gunn ) (c) vs. FTR ( Cash Wheeler and Dax Harwood ) in a Title vs. Career match for the AEW World Tag Team Championship",
+    "show": "dynamite",
+    "venue_name": "UBS Arena"
+  },
+  {
+    "air_date": "2023-04-12",
+    "city": "Milwaukee, Wisconsin",
+    "episode_number": 184,
+    "name": "Episode 184 (2023-04-12)",
+    "notes": "Keith Lee vs. Chris Jericho",
+    "show": "dynamite",
+    "venue_name": "UW\u2013Milwaukee Panther Arena"
+  },
+  {
+    "air_date": "2023-04-19",
+    "city": "Pittsburgh, Pennsylvania",
+    "episode_number": 185,
+    "name": "Episode 185 (2023-04-19)",
+    "notes": "\"Jungle Boy\" Jack Perry vs. Sammy Guevara",
+    "show": "dynamite",
+    "venue_name": "Petersen Events Center"
+  },
+  {
+    "air_date": "2023-04-26",
+    "city": "Sunrise, Florida",
+    "episode_number": 186,
+    "name": "Episode 186 (2023-04-26)",
+    "notes": "Kenny Omega and Konosuke Takeshita vs. The Butcher and The Blade",
+    "show": "dynamite",
+    "venue_name": "FLA Live Arena"
+  },
+  {
+    "air_date": "2023-05-03",
+    "city": "Baltimore, Maryland",
+    "episode_number": 187,
+    "name": "Episode 187 (2023-05-03)",
+    "notes": "MJF and Sammy Guevara vs. Darby Allin and \"Jungle Boy\" Jack Perry",
+    "show": "dynamite",
+    "venue_name": "CFG Bank Arena"
+  },
+  {
+    "air_date": "2023-05-10",
+    "city": "Detroit, Michigan",
+    "episode_number": 188,
+    "name": "Episode 188 (2023-05-10)",
+    "notes": "Kenny Omega vs. Jon Moxley in a Steel Cage match",
+    "show": "dynamite",
+    "venue_name": "Little Caesars Arena"
+  },
+  {
+    "air_date": "2023-05-17",
+    "city": "Austin, Texas",
+    "episode_number": 189,
+    "name": "Episode 189 (2023-05-17)",
+    "notes": "None (Segment: Don Callis promo)",
+    "show": "dynamite",
+    "venue_name": "Moody Center"
+  },
+  {
+    "air_date": "2023-05-24",
+    "city": "Las Vegas, Nevada",
+    "episode_number": 190,
+    "name": "Episode 190 (2023-05-24)",
+    "notes": "The Lucha Brothers ( Penta El Zero Miedo and Rey F\u00e9nix ) (c) vs. Blackpool Combat Club ( Claudio Castagnoli and Wheeler Yuta ) for the ROH World Tag Team Championship",
+    "show": "dynamite",
+    "venue_name": "MGM Grand Garden Arena"
+  },
+  {
+    "air_date": "2023-05-31",
+    "city": "San Diego, California",
+    "episode_number": 191,
+    "name": "Episode 191 (2023-05-31)",
+    "notes": "Adam Cole and Dr. Britt Baker, D.M.D. vs. Chris Jericho and Saraya",
+    "show": "dynamite",
+    "venue_name": "Viejas Arena"
+  },
+  {
+    "air_date": "2023-06-07",
+    "city": "Colorado Springs, Colorado",
+    "episode_number": 192,
+    "name": "Episode 192 (2023-06-07)",
+    "notes": "Ricky Starks vs. Jay White",
+    "show": "dynamite",
+    "venue_name": "Broadmoor World Arena"
+  },
+  {
+    "air_date": "2023-06-14",
+    "city": "Washington D.C.",
+    "episode_number": 193,
+    "name": "Episode 193 (2023-06-14)",
+    "notes": "Blackpool Combat Club ( Jon Moxley , Claudio Castagnoli and Wheeler Yuta ) vs. The Elite ( Adam Page and The Young Bucks ( Nick Jackson and Matt Jackson ))",
+    "show": "dynamite",
+    "venue_name": "Capital One Arena"
+  },
+  {
+    "air_date": "2023-06-21",
+    "city": "Chicago, Illinois",
+    "episode_number": 194,
+    "name": "Episode 194 (2023-06-21)",
+    "notes": "None (Segment with Eddie Kingston )",
+    "show": "dynamite",
+    "venue_name": "Wintrust Arena"
+  },
+  {
+    "air_date": "2023-06-28",
+    "city": "Hamilton, Ontario",
+    "episode_number": 195,
+    "name": "Episode 195 (2023-06-28)",
+    "notes": "Chris Jericho and Sammy Guevara vs. Sting and Darby Allin in a Tornado Tag Team match",
+    "show": "dynamite",
+    "venue_name": "FirstOntario Centre"
+  },
+  {
+    "air_date": "2023-07-05",
+    "city": "Edmonton , Albertau",
+    "episode_number": 196,
+    "name": "Episode 196 (2023-07-05)",
+    "notes": "Kenny Omega vs. Wheeler Yuta",
+    "show": "dynamite",
+    "venue_name": "Rogers Place"
+  },
+  {
+    "air_date": "2023-07-12",
+    "city": "Saskatoon, Saskatchewan",
+    "episode_number": 197,
+    "name": "Episode 197 (2023-07-12)",
+    "notes": "None (Segment: The Elite and Blackpool Combat Club both reveal the fifth and final members of their teams at Blood and Guts )",
+    "show": "dynamite",
+    "venue_name": "SaskTel Centre"
+  },
+  {
+    "air_date": "2023-07-19",
+    "city": "Boston, Massachusetts",
+    "episode_number": 198,
+    "name": "Episode 198 (2023-07-19)",
+    "notes": "The Golden Elite ( Kenny Omega , \"Hangman\" Adam Page , Matt Jackson , Nick Jackson , and Kota Ibushi ) vs. Blackpool Combat Club ( Jon Moxley , Claudio Castagnoli , and Wheeler Yuta ), Konosuke Takesh",
+    "show": "dynamite",
+    "venue_name": "TD Garden"
+  },
+  {
+    "air_date": "2023-07-26",
+    "city": "Albany, New York",
+    "episode_number": 199,
+    "name": "Episode 199 (2023-07-26)",
+    "notes": "Blackpool Combat Club ( Jon Moxley and Claudio Castagnoli ) vs. The Lucha Brothers ( Penta El Zero Miedo and Rey F\u00e9nix ) vs. Best Friends ( Chuck Taylor and Trent Beretta )",
+    "show": "dynamite",
+    "venue_name": "MVP Arena"
+  },
+  {
+    "air_date": "2023-08-02",
+    "city": "Tampa, Florida",
+    "episode_number": 200,
+    "name": "Episode 200 (2023-08-02)",
+    "notes": "Toni Storm (c) vs. Hikaru Shida for the AEW Women's World Championship",
+    "show": "dynamite",
+    "venue_name": "Yuengling Center"
+  },
+  {
+    "air_date": "2023-08-09",
+    "city": "Columbus, Ohio",
+    "episode_number": 201,
+    "name": "Episode 201 (2023-08-09)",
+    "notes": "Hikaru Shida (c) vs. Anna Jay for the AEW Women's World Championship",
+    "show": "dynamite",
+    "venue_name": "Nationwide Arena"
+  },
+  {
+    "air_date": "2023-08-16",
+    "city": "Nashville, Tennessee",
+    "episode_number": 202,
+    "name": "Episode 202 (2023-08-16)",
+    "notes": "The Young Bucks ( Nick Jackson and Matt Jackson ) vs. The Gunns ( Austin Gunn and Colten Gunn )",
+    "show": "dynamite",
+    "venue_name": "Bridgestone Arena"
+  },
+  {
+    "air_date": "2023-08-23",
+    "city": "Duluth, Georgia",
+    "episode_number": 203,
+    "name": "Episode 203 (2023-08-23)",
+    "notes": "Aussie Open ( Mark Davis and Kyle Fletcher ) (c) vs. The Hardys ( Jeff Hardy and Matt Hardy ) for the ROH World Tag Team Championship",
+    "show": "dynamite",
+    "venue_name": "Gas South Arena"
+  },
+  {
+    "air_date": "2023-08-30",
+    "city": "Hoffman Estates, Illinois",
+    "episode_number": 204,
+    "name": "Episode 204 (2023-08-30)",
+    "notes": "Orange Cassidy (c) vs. Penta El Zero Miedo for the AEW International Championship",
+    "show": "dynamite",
+    "venue_name": "Now Arena"
+  },
+  {
+    "air_date": "2023-09-06",
+    "city": "Indianapolis, Indiana",
+    "episode_number": 205,
+    "name": "Episode 205 (2023-09-06)",
+    "notes": "Darby Allin vs. Nick Wayne in a Grand Slam World Championship Eliminator Tournament Quarterfinals match",
+    "show": "dynamite",
+    "venue_name": "Indiana Farmers Coliseum"
+  },
+  {
+    "air_date": "2023-09-13",
+    "city": "Cincinnati, Ohio",
+    "episode_number": 206,
+    "name": "Episode 206 (2023-09-13)",
+    "notes": "Roderick Strong vs. Samoa Joe in a Grand Slam World Championship Eliminator Tournament Final match",
+    "show": "dynamite",
+    "venue_name": "Heritage Bank Center"
+  },
+  {
+    "air_date": "2023-09-20",
+    "city": "Queens, New York",
+    "episode_number": 207,
+    "name": "Episode 207 (2023-09-20)",
+    "notes": "MJF (c) vs. Samoa Joe for the AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "Arthur Ashe Stadium"
+  },
+  {
+    "air_date": "2023-09-27",
+    "city": "Broomfield, Colorado",
+    "episode_number": 208,
+    "name": "Episode 208 (2023-09-27)",
+    "notes": "None (Segment: Swerve Strickland and \"Hangman\" Adam Page contract signing)",
+    "show": "dynamite",
+    "venue_name": "1stBank Center"
+  },
+  {
+    "air_date": "2023-10-04",
+    "city": "Stockton, California",
+    "episode_number": 209,
+    "name": "Episode 209 (2023-10-04)",
+    "notes": "None (Segment: Adam Copeland promo)",
+    "show": "dynamite",
+    "venue_name": "Stockton Arena"
+  },
+  {
+    "air_date": "2023-10-10",
+    "city": "Independence, Missouri",
+    "episode_number": 210,
+    "name": "Episode 210 (2023-10-10)",
+    "notes": "Adam Copeland vs. Luchasaurus",
+    "show": "dynamite",
+    "venue_name": "Cable Dahmer Arena"
+  },
+  {
+    "air_date": "2023-10-18",
+    "city": "Rosenberg, Texas",
+    "episode_number": 211,
+    "name": "Episode 211 (2023-10-18)",
+    "notes": "Dynamite Dozen Battle Royale (Winner faced MJF for the AEW Dynamite Diamond Ring )",
+    "show": "dynamite",
+    "venue_name": "Fort Bend Epicenter"
+  },
+  {
+    "air_date": "2023-10-25",
+    "city": "Philadelphia, Pennsylvania",
+    "episode_number": 212,
+    "name": "Episode 212 (2023-10-25)",
+    "notes": "Blackpool Combat Club ( Bryan Danielson and Claudio Castagnoli ) vs. Chaos ( Orange Cassidy and Kazuchika Okada )",
+    "show": "dynamite",
+    "venue_name": "Liacouras Center"
+  },
+  {
+    "air_date": "2023-11-01",
+    "city": "Louisville, Kentucky",
+    "episode_number": 213,
+    "name": "Episode 213 (2023-11-01)",
+    "notes": "Bullet Club Gold ( Jay White , Juice Robinson , Austin Gunn , and Colten Gunn ), vs. MJF , Billy Gunn , and The Acclaimed ( Anthony Bowens and Max Caster )",
+    "show": "dynamite",
+    "venue_name": "KFC Yum! Center"
+  },
+  {
+    "air_date": "2023-11-08",
+    "city": "Portland, Oregon",
+    "episode_number": 214,
+    "name": "Episode 214 (2023-11-08)",
+    "notes": "Mark Briscoe vs. Jay White",
+    "show": "dynamite",
+    "venue_name": "Moda Center"
+  },
+  {
+    "air_date": "2023-11-15",
+    "city": "Ontario, California",
+    "episode_number": 215,
+    "name": "Episode 215 (2023-11-15)",
+    "notes": "None (Segment: MJF promo)",
+    "show": "dynamite",
+    "venue_name": "Toyota Arena"
+  },
+  {
+    "air_date": "2023-11-22",
+    "city": "Chicago, Illinois",
+    "episode_number": 216,
+    "name": "Episode 216 (2023-11-22)",
+    "notes": "Jon Moxley vs. Mark Briscoe in a AEW Continental Classic Gold League match",
+    "show": "dynamite",
+    "venue_name": "Wintrust Arena"
+  },
+  {
+    "air_date": "2023-11-29",
+    "city": "Minneapolis, Minnesota",
+    "episode_number": 217,
+    "name": "Episode 217 (2023-11-29)",
+    "notes": "Jay White vs. Swerve Strickland in a AEW Continental Classic Gold League match",
+    "show": "dynamite",
+    "venue_name": "Target Center"
+  },
+  {
+    "air_date": "2023-12-06",
+    "city": "Montreal, Quebec, Canada",
+    "episode_number": 218,
+    "name": "Episode 218 (2023-12-06)",
+    "notes": "Christian Cage (c) vs. Adam Copeland for the AEW TNT Championship and the debut of Mother Wayne",
+    "show": "dynamite",
+    "venue_name": "Bell Centre"
+  },
+  {
+    "air_date": "2023-12-13",
+    "city": "Arlington, Texas",
+    "episode_number": 219,
+    "name": "Episode 219 (2023-12-13)",
+    "notes": "Jon Moxley vs. Swerve Strickland in a AEW Continental Classic Gold League match",
+    "show": "dynamite",
+    "venue_name": "College Park Center"
+  },
+  {
+    "air_date": "2023-12-20",
+    "city": "Oklahoma City, Oklahoma",
+    "episode_number": 220,
+    "name": "Episode 220 (2023-12-20)",
+    "notes": "Jon Moxley vs. Jay White in a AEW Continental Classic Gold League match",
+    "show": "dynamite",
+    "venue_name": "Paycom Center"
+  },
+  {
+    "air_date": "2023-12-27",
+    "city": "Orlando, Florida",
+    "episode_number": 221,
+    "name": "Episode 221 (2023-12-27)",
+    "notes": "MJF and Samoa Joe (c) vs. The Devil's Masked Men for the ROH World Tag Team Championship",
+    "show": "dynamite",
+    "venue_name": "Addition Financial Arena"
+  },
+  {
+    "air_date": "2024-01-03",
+    "city": "Newark, New Jersey",
+    "episode_number": 222,
+    "name": "Episode 222 (2024-01-03)",
+    "notes": "Swerve Strickland vs. Daniel Garcia",
+    "show": "dynamite",
+    "venue_name": "Prudential Center"
+  },
+  {
+    "air_date": "2024-01-10",
+    "city": "Jacksonville, Florida",
+    "episode_number": 223,
+    "name": "Episode 223 (2024-01-10)",
+    "notes": "Sting and Darby Allin vs. The Don Callis Family ( Konosuke Takeshita and Powerhouse Hobbs ) in a tornado tag team match",
+    "show": "dynamite",
+    "venue_name": "Daily's Place"
+  },
+  {
+    "air_date": "2024-01-17",
+    "city": "North Charleston, South Carolina",
+    "episode_number": 224,
+    "name": "Episode 224 (2024-01-17)",
+    "notes": "Samoa Joe (c) vs. Hook for the AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "North Charleston Coliseum"
+  },
+  {
+    "air_date": "2024-01-24",
+    "city": "Savannah, Georgia",
+    "episode_number": 225,
+    "name": "Episode 225 (2024-01-24)",
+    "notes": "Adam Copeland vs. Minoru Suzuki",
+    "show": "dynamite",
+    "venue_name": "Enmarket Arena"
+  },
+  {
+    "air_date": "2024-01-31",
+    "city": "New Orleans, Louisiana",
+    "episode_number": 226,
+    "name": "Episode 226 (2024-01-31)",
+    "notes": "Swerve Strickland vs. Rob Van Dam",
+    "show": "dynamite",
+    "venue_name": "UNO Lakefront Arena"
+  },
+  {
+    "air_date": "2024-02-07",
+    "city": "Phoenix, Arizona",
+    "episode_number": 227,
+    "name": "Episode 227 (2024-02-07)",
+    "notes": "Ricky Starks and Big Bill (c) vs. Sting and Darby Allin in a Tornado tag team match for the AEW World Tag Team Championship",
+    "show": "dynamite",
+    "venue_name": "Footprint Center"
+  },
+  {
+    "air_date": "2024-02-14",
+    "city": "Cedar Park, Texas",
+    "episode_number": 228,
+    "name": "Episode 228 (2024-02-14)",
+    "notes": "Orange Cassidy vs. Matt Taven in a Texas Death match",
+    "show": "dynamite",
+    "venue_name": "H-E-B Center at Cedar Park"
+  },
+  {
+    "air_date": "2024-02-21",
+    "city": "Tulsa, Oklahoma",
+    "episode_number": 229,
+    "name": "Episode 229 (2024-02-21)",
+    "notes": "Samoa Joe , Swerve Strickland and Brian Cage vs. \"Hangman\" Adam Page , Hook and Rob Van Dam",
+    "show": "dynamite",
+    "venue_name": "BOK Center"
+  },
+  {
+    "air_date": "2024-02-28",
+    "city": "Huntsville, Alabama",
+    "episode_number": 230,
+    "name": "Episode 230 (2024-02-28)",
+    "notes": "None (Segment: Sting's final Dynamite ahead of his retirement match at Revolution )",
+    "show": "dynamite",
+    "venue_name": "Von Braun Center"
+  },
+  {
+    "air_date": "2024-03-06",
+    "city": "Duluth, Georgia",
+    "episode_number": 231,
+    "name": "Episode 231 (2024-03-06)",
+    "notes": "Will Ospreay vs. Kyle Fletcher",
+    "show": "dynamite",
+    "venue_name": "Gas South Arena"
+  },
+  {
+    "air_date": "2024-03-13",
+    "city": "Boston, Massachusetts",
+    "episode_number": 232,
+    "name": "Episode 232 (2024-03-13)",
+    "notes": "Willow Nightingale vs. Riho",
+    "show": "dynamite",
+    "venue_name": "TD Garden"
+  },
+  {
+    "air_date": "2024-03-20",
+    "city": "Toronto, Ontario, Canada",
+    "episode_number": 233,
+    "name": "Episode 233 (2024-03-20)",
+    "notes": "Christian Cage (c) vs. Adam Copeland in an \"I Quit\" match for the AEW TNT Championship",
+    "show": "dynamite",
+    "venue_name": "Coca-Cola Coliseum"
+  },
+  {
+    "air_date": "2024-03-27",
+    "city": "Quebec City, Quebec, Canada",
+    "episode_number": 234,
+    "name": "Episode 234 (2024-03-27)",
+    "notes": "Swerve Strickland vs. Konosuke Takeshita",
+    "show": "dynamite",
+    "venue_name": "Videotron Centre"
+  },
+  {
+    "air_date": "2024-04-03",
+    "city": "Worcester, Massachusetts",
+    "episode_number": 235,
+    "name": "Episode 235 (2024-04-03)",
+    "notes": "None (Segment: Samoa Joe and Swerve Strickland contract signing)",
+    "show": "dynamite",
+    "venue_name": "DCU Center"
+  },
+  {
+    "air_date": "2024-04-10",
+    "city": "Charleston, West Virginia",
+    "episode_number": 236,
+    "name": "Episode 236 (2024-04-10)",
+    "notes": "Samoa Joe vs. Dustin Rhodes in an AEW World Championship eliminator match",
+    "show": "dynamite",
+    "venue_name": "Charleston Coliseum & Convention Center"
+  },
+  {
+    "air_date": "2024-04-17",
+    "city": "Indianapolis, Indiana",
+    "episode_number": 237,
+    "name": "Episode 237 (2024-04-17)",
+    "notes": "Will Ospreay vs. Claudio Castagnoli",
+    "show": "dynamite",
+    "venue_name": "Indiana Farmers Coliseum"
+  },
+  {
+    "air_date": "2024-04-24",
+    "city": "Jacksonville, Florida",
+    "episode_number": 238,
+    "name": "Episode 238 (2024-04-24)",
+    "notes": "Jon Moxley (c) vs. Powerhouse Hobbs for the IWGP World Heavyweight Championship",
+    "show": "dynamite",
+    "venue_name": "Daily's Place"
+  },
+  {
+    "air_date": "2024-05-01",
+    "city": "Winnipeg, Manitoba, Canada",
+    "episode_number": 239,
+    "name": "Episode 239 (2024-05-01)",
+    "notes": "None (Segment with Kenny Omega )",
+    "show": "dynamite",
+    "venue_name": "Canada Life Centre"
+  },
+  {
+    "air_date": "2024-05-08",
+    "city": "Edmonton, Alberta, Canada",
+    "episode_number": 240,
+    "name": "Episode 240 (2024-05-08)",
+    "notes": "Adam Copeland (c) vs. Brody King in a No disqualification match for the AEW TNT Championship",
+    "show": "dynamite",
+    "venue_name": "Rogers Place"
+  },
+  {
+    "air_date": "2024-05-15",
+    "city": "Everett, Washington",
+    "episode_number": 241,
+    "name": "Episode 241 (2024-05-15)",
+    "notes": "Kazuchika Okada (c) vs. Dax Harwood for the AEW Continental Championship",
+    "show": "dynamite",
+    "venue_name": "Angel of the Winds Arena"
+  },
+  {
+    "air_date": "2024-05-22",
+    "city": "Bakersfield, California",
+    "episode_number": 242,
+    "name": "Episode 242 (2024-05-22)",
+    "notes": "Bryan Danielson vs. Satnam Singh",
+    "show": "dynamite",
+    "venue_name": "Mechanics Bank Arena"
+  },
+  {
+    "air_date": "2024-05-29",
+    "city": "Inglewood, California",
+    "episode_number": 243,
+    "name": "Episode 243 (2024-05-29)",
+    "notes": "Forbidden Door Casino Gauntlet match (Winner faced Swerve Strickland for the AEW World Championship at Forbidden Door )",
+    "show": "dynamite",
+    "venue_name": "Kia Forum"
+  },
+  {
+    "air_date": "2024-06-05",
+    "city": "Loveland, Colorado",
+    "episode_number": 244,
+    "name": "Episode 244 (2024-06-05)",
+    "notes": "Swerve Strickland (c) vs. Roderick Strong for the AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "Blue Arena"
+  },
+  {
+    "air_date": "2024-06-12",
+    "city": "Des Moines, Iowa",
+    "episode_number": 245,
+    "name": "Episode 245 (2024-06-12)",
+    "notes": "Will Ospreay (c) vs. Rey F\u00e9nix for the AEW International Championship",
+    "show": "dynamite",
+    "venue_name": "Wells Fargo Arena"
+  },
+  {
+    "air_date": "2024-06-19",
+    "city": "Fairfax, Virginia",
+    "episode_number": 246,
+    "name": "Episode 246 (2024-06-19)",
+    "notes": "Claudio Castagnoli vs. Pac in a Men's Owen Hart Cup Tournament Quarterfinal match",
+    "show": "dynamite",
+    "venue_name": "EagleBank Arena"
+  },
+  {
+    "air_date": "2024-06-26",
+    "city": "Buffalo, New York",
+    "episode_number": 247,
+    "name": "Episode 247 (2024-06-26)",
+    "notes": "Swerve Strickland and Will Ospreay vs. Gates of Agony ( Bishop Kaun and Toa Liona )",
+    "show": "dynamite",
+    "venue_name": "KeyBank Center"
+  },
+  {
+    "air_date": "2024-07-03",
+    "city": "Chicago, Illinois",
+    "episode_number": 248,
+    "name": "Episode 248 (2024-07-03)",
+    "notes": "Will Ospreay (c) vs. Daniel Garcia for the AEW International Championship",
+    "show": "dynamite",
+    "venue_name": "Wintrust Arena"
+  },
+  {
+    "air_date": "2024-07-10",
+    "city": "Calgary, Alberta, Canada",
+    "episode_number": 249,
+    "name": "Episode 249 (2024-07-10)",
+    "notes": "Willow Nightingale vs. Mariah May in a Women's Owen Hart Cup Tournament Final match",
+    "show": "dynamite",
+    "venue_name": "Scotiabank Saddledome"
+  },
+  {
+    "air_date": "2024-07-17",
+    "city": "North Little Rock, Arkansas",
+    "episode_number": 250,
+    "name": "Episode 250 (2024-07-17)",
+    "notes": "Swerve Strickland vs. Kazuchika Okada",
+    "show": "dynamite",
+    "venue_name": "Simmons Bank Arena"
+  },
+  {
+    "air_date": "2024-07-24",
+    "city": "Nashville, Tennessee",
+    "episode_number": 251,
+    "name": "Episode 251 (2024-07-24)",
+    "notes": "The Elite ( Kazuchika Okada , Jack Perry , \"Hangman\" Adam Page and The Young Bucks ( Matthew Jackson and Nicholas Jackson )) vs. Team AEW ( Swerve Strickland , Mark Briscoe , Darby Allin and The Accla",
+    "show": "dynamite",
+    "venue_name": "Bridgestone Arena"
+  },
+  {
+    "air_date": "2024-07-31",
+    "city": "Greenville, South Carolina",
+    "episode_number": 252,
+    "name": "Episode 252 (2024-07-31)",
+    "notes": "\"Hangman\" Adam Page vs. Darby Allin",
+    "show": "dynamite",
+    "venue_name": "Bon Secours Wellness Arena"
+  },
+  {
+    "air_date": "2024-08-07",
+    "city": "Winston-Salem, North Carolina",
+    "episode_number": 253,
+    "name": "Episode 253 (2024-08-07)",
+    "notes": "Bryan Danielson vs. Jeff Jarrett",
+    "show": "dynamite",
+    "venue_name": "Lawrence Joel Veterans Memorial Coliseum"
+  },
+  {
+    "air_date": "2024-08-14",
+    "city": "Norfolk, Virginia",
+    "episode_number": 254,
+    "name": "Episode 254 (2024-08-14)",
+    "notes": "Swerve Strickland vs. Wheeler Yuta",
+    "show": "dynamite",
+    "venue_name": "Chartway Arena"
+  },
+  {
+    "air_date": "2024-08-21",
+    "city": "Cardiff, Wales, United Kingdom",
+    "episode_number": 255,
+    "name": "Episode 255 (2024-08-21)",
+    "notes": "None (Segment: The Final Staredown between AEW World Champion Swerve Strickland and Bryan Danielson ahead of their Title vs. Career match at All In )",
+    "show": "dynamite",
+    "venue_name": "Cardiff International Arena"
+  },
+  {
+    "air_date": "2024-08-28",
+    "city": "Champaign, Illinois",
+    "episode_number": 256,
+    "name": "Episode 256 (2024-08-28)",
+    "notes": "None (Segment: Bryan Danielson address his future)",
+    "show": "dynamite",
+    "venue_name": "State Farm Center"
+  },
+  {
+    "air_date": "2024-09-04",
+    "city": "Milwaukee, Wisconsin",
+    "episode_number": 257,
+    "name": "Episode 257 (2024-09-04)",
+    "notes": "None (Segment: Swerve Strickland and \"Hangman\" Adam Page contract signing)",
+    "show": "dynamite",
+    "venue_name": "UW\u2013Milwaukee Panther Arena"
+  },
+  {
+    "air_date": "2024-09-11",
+    "city": "Lexington, Kentucky",
+    "episode_number": 258,
+    "name": "Episode 258 (2024-09-11)",
+    "notes": "Tag Team Casino Gauntlet match (Winners faced The Young Bucks ( Matthew Jackson and Nicholas Jackson ) for the AEW World Tag Team Championship at Grand Slam )",
+    "show": "dynamite",
+    "venue_name": "Rupp Arena"
+  },
+  {
+    "air_date": "2024-09-18",
+    "city": "Wilkes-Barre Township, Pennsylvania",
+    "episode_number": 259,
+    "name": "Episode 259 (2024-09-18)",
+    "notes": "The Elite ( Kazuchika Okada and The Young Bucks ( Matthew Jackson and Nicholas Jackson )) vs. Will Ospreay and The Don Callis Family ( Konosuke Takeshita and Kyle Fletcher )",
+    "show": "dynamite",
+    "venue_name": "Mohegan Sun Arena at Casey Plaza"
+  },
+  {
+    "air_date": "2024-09-25",
+    "city": "Queens, New York",
+    "episode_number": 260,
+    "name": "Episode 260 (2024-09-25)",
+    "notes": "Jon Moxley vs. Darby Allin for Allin's AEW World Championship opportunity",
+    "show": "dynamite",
+    "venue_name": "Arthur Ashe Stadium"
+  },
+  {
+    "air_date": "2024-10-02",
+    "city": "Pittsburgh, Pennsylvania",
+    "episode_number": 261,
+    "name": "Episode 261 (2024-10-02)",
+    "notes": "Bryan Danielson (World) vs. Kazuchika Okada (Continental) for the AEW World and AEW Continental Championship (Okada's AEW Continental Championship was on the line for the first 20 minutes of the match",
+    "show": "dynamite",
+    "venue_name": "Peterson Events Center"
+  },
+  {
+    "air_date": "2024-10-08",
+    "city": "Spokane, Washington",
+    "episode_number": 262,
+    "name": "Episode 262 (2024-10-08)",
+    "notes": "Bryan Danielson and Wheeler Yuta vs. Claudio Castagnoli and Pac",
+    "show": "dynamite",
+    "venue_name": "Spokane Arena"
+  },
+  {
+    "air_date": "2024-10-16",
+    "city": "San Jose, California",
+    "episode_number": 263,
+    "name": "Episode 263 (2024-10-16)",
+    "notes": "Jay White vs. Christian Cage",
+    "show": "dynamite",
+    "venue_name": "SAP Center"
+  },
+  {
+    "air_date": "2024-10-23",
+    "city": "West Valley City, Utah",
+    "episode_number": 264,
+    "name": "Episode 264 (2024-10-23)",
+    "notes": "Mark Briscoe (c) vs. Chris Jericho in Ladder War for the ROH World Championship",
+    "show": "dynamite",
+    "venue_name": "Maverik Center"
+  },
+  {
+    "air_date": "2024-10-30",
+    "city": "Cleveland, Ohio",
+    "episode_number": 265,
+    "name": "Episode 265 (2024-10-30)",
+    "notes": "Swerve Strickland vs. Shelton Benjamin",
+    "show": "dynamite",
+    "venue_name": "Wolstein Center"
+  },
+  {
+    "air_date": "2024-11-06",
+    "city": "Manchester, New Hampshire",
+    "episode_number": 266,
+    "name": "Episode 266 (2024-11-06)",
+    "notes": "Konosuke Takeshita and Kyle Fletcher vs. Ricochet and Powerhouse Hobbs",
+    "show": "dynamite",
+    "venue_name": "SNHU Arena"
+  },
+  {
+    "air_date": "2024-11-13",
+    "city": "Bridgeport, Connecticut",
+    "episode_number": 267,
+    "name": "Episode 267 (2024-11-13)",
+    "notes": "FTR ( Cash Wheeler and Dax Harwood ) vs. Kings of the Black Throne ( Malakai Black and Brody King ) in a AEW World Tag Team Championship Full Gear Four-Way Contender Series match",
+    "show": "dynamite",
+    "venue_name": "Total Mortgage Arena"
+  },
+  {
+    "air_date": "2024-11-20",
+    "city": "Reading, Pennsylvania",
+    "episode_number": 268,
+    "name": "Episode 268 (2024-11-20)",
+    "notes": "Orange Cassidy vs. Wheeler Yuta",
+    "show": "dynamite",
+    "venue_name": "Santander Arena"
+  },
+  {
+    "air_date": "2024-11-27",
+    "city": "Chicago, Illinois",
+    "episode_number": 269,
+    "name": "Episode 269 (2024-11-27)",
+    "notes": "Darby Allin vs. Brody King in a AEW Continental Classic Gold League match",
+    "show": "dynamite",
+    "venue_name": "Wintrust Arena"
+  },
+  {
+    "air_date": "2024-12-04",
+    "city": "Fishers, Indiana",
+    "episode_number": 270,
+    "name": "Episode 270 (2024-12-04)",
+    "notes": "Brody King vs. Claudio Castagnoli in a AEW Continental Classic Gold League match",
+    "show": "dynamite",
+    "venue_name": "Fishers Event Center"
+  },
+  {
+    "air_date": "2024-12-11",
+    "city": "Kansas City, Missouri",
+    "episode_number": 271,
+    "name": "Episode 271 (2024-12-11)",
+    "notes": "Mariah May (c) vs. Mina Shirakawa for the AEW Women's World Championship",
+    "show": "dynamite",
+    "venue_name": "T-Mobile Center"
+  },
+  {
+    "air_date": "2024-12-18",
+    "city": "Washington, D.C.",
+    "episode_number": 272,
+    "name": "Episode 272 (2024-12-18)",
+    "notes": "Death Riders ( Jon Moxley , Pac , and Wheeler Yuta ) vs. \"Hangman\" Adam Page , Jay White , and Orange Cassidy",
+    "show": "dynamite",
+    "venue_name": "Entertainment & Sports Arena"
+  },
+  {
+    "air_date": "2024-12-25",
+    "city": "New York City, New York",
+    "episode_number": 273,
+    "name": "Episode 273 (2024-12-25)",
+    "notes": "Kyle Fletcher vs. Daniel Garcia in a AEW Continental Classic Blue League match",
+    "show": "dynamite",
+    "venue_name": "Hammerstein Ballroom"
+  },
+  {
+    "air_date": "2025-01-01",
+    "city": "Asheville, North Carolina",
+    "episode_number": 274,
+    "name": "Episode 274 (2025-01-01)",
+    "notes": "Death Riders ( Jon Moxley , Claudio Castagnoli , and Wheeler Yuta ) vs. Rated FTR ( Cope , Cash Wheeler , and Dax Harwood )",
+    "show": "dynamite",
+    "venue_name": "Harrah's Cherokee Center"
+  },
+  {
+    "air_date": "2025-01-08",
+    "city": "Clarksville, Tennessee",
+    "episode_number": 275,
+    "name": "Episode 275 (2025-01-08)",
+    "notes": "None (Segment with Kenny Omega )",
+    "show": "dynamite",
+    "venue_name": "F&M Bank Arena"
+  },
+  {
+    "air_date": "2025-01-15",
+    "city": "Cincinnati, Ohio",
+    "episode_number": 276,
+    "name": "Episode 276 (2025-01-15)",
+    "notes": "Jon Moxley (c) vs. Powerhouse Hobbs for the AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "Andrew J. Brady Music Center"
+  },
+  {
+    "air_date": "2025-01-22",
+    "city": "Knoxville, Tennessee",
+    "episode_number": 277,
+    "name": "Episode 277 (2025-01-22)",
+    "notes": "Cope vs. Pac",
+    "show": "dynamite",
+    "venue_name": "Knoxville Civic Coliseum"
+  },
+  {
+    "air_date": "2025-01-29",
+    "city": "Huntsville, Alabama",
+    "episode_number": 278,
+    "name": "Episode 278 (2025-01-29)",
+    "notes": "Mercedes Mon\u00e9 (c) vs. Yuka Sakazaki for the AEW TBS Championship",
+    "show": "dynamite",
+    "venue_name": "Propst Arena"
+  },
+  {
+    "air_date": "2025-02-05",
+    "city": "College Park, Georgia",
+    "episode_number": 279,
+    "name": "Episode 279 (2025-02-05)",
+    "notes": "Swerve Strickland vs. Ricochet",
+    "show": "dynamite",
+    "venue_name": "Gateway Center Arena"
+  },
+  {
+    "air_date": "2025-02-12",
+    "city": "Cedar Park, Texas",
+    "episode_number": 280,
+    "name": "Episode 280 (2025-02-12)",
+    "notes": "None (Segment with Cope , Jay White and Jon Moxley )",
+    "show": "dynamite",
+    "venue_name": "H-E-B Center at Cedar Park"
+  },
+  {
+    "air_date": "2025-02-19",
+    "city": "Phoenix, Arizona",
+    "episode_number": 281,
+    "name": "Episode 281 (2025-02-19)",
+    "notes": "Orange Cassidy vs. Roderick Strong (Winner faces Konosuke Takeshita for the AEW International Championship on next week's Dynamite.)",
+    "show": "dynamite",
+    "venue_name": "Arizona Financial Theatre"
+  },
+  {
+    "air_date": "2025-02-26",
+    "city": "Oceanside, California",
+    "episode_number": 282,
+    "name": "Episode 282 (2025-02-26)",
+    "notes": "Konosuke Takeshita (c) vs. Orange Cassidy for the AEW International Championship",
+    "show": "dynamite",
+    "venue_name": "Frontwave Arena"
+  },
+  {
+    "air_date": "2025-03-05",
+    "city": "Sacramento, California",
+    "episode_number": 283,
+    "name": "Episode 283 (2025-03-05)",
+    "notes": "Konosuke Takeshita and Ricochet vs. Swerve Strickland and Brody King",
+    "show": "dynamite",
+    "venue_name": "Sacramento Memorial Auditorium"
+  },
+  {
+    "air_date": "2025-03-12",
+    "city": "Fresno, California",
+    "episode_number": 284,
+    "name": "Episode 284 (2025-03-12)",
+    "notes": "Orange Cassidy vs. Hechicero in a AEW International Championship Eliminator Tournament match",
+    "show": "dynamite",
+    "venue_name": "Save Mart Center"
+  },
+  {
+    "air_date": "2025-03-19",
+    "city": "Ralston, Nebraska",
+    "episode_number": 285,
+    "name": "Episode 285 (2025-03-19)",
+    "notes": "Megan Bayne vs. Kris Statlander",
+    "show": "dynamite",
+    "venue_name": "Liberty First Credit Union Arena"
+  },
+  {
+    "air_date": "2025-03-26",
+    "city": "St. Paul, Minnesota",
+    "episode_number": 286,
+    "name": "Episode 286 (2025-03-26)",
+    "notes": "\"Timeless\" Toni Storm and Thunder Rosa vs. Megan Bayne and Penelope Ford",
+    "show": "dynamite",
+    "venue_name": "Roy Wilkins Auditorium"
+  },
+  {
+    "air_date": "2025-04-02",
+    "city": "Peoria, Illinois",
+    "episode_number": 287,
+    "name": "Episode 287 (2025-04-02)",
+    "notes": "Cope vs. Claudio Castagnoli",
+    "show": "dynamite",
+    "venue_name": "Peoria Civic Center"
+  },
+  {
+    "air_date": "2025-04-09",
+    "city": "Baltimore, Maryland",
+    "episode_number": 288,
+    "name": "Episode 288 (2025-04-09)",
+    "notes": "Death Riders ( Claudio Castagnoli and Wheeler Yuta ) vs. The Opps ( Samoa Joe and Hook )",
+    "show": "dynamite",
+    "venue_name": "Chesapeake Employers Insurance Arena"
+  },
+  {
+    "air_date": "2025-04-16",
+    "city": "Boston, Massachusetts",
+    "episode_number": 289,
+    "name": "Episode 289 (2025-04-16)",
+    "notes": "Death Riders ( Jon Moxley , Claudio Castagnoli , and Wheeler Yuta ) (c) vs. The Opps ( Samoa Joe , Powerhouse Hobbs , and Katsuyori Shibata ) for the AEW World Trios Championship",
+    "show": "dynamite",
+    "venue_name": "MGM Music Hall at Fenway"
+  },
+  {
+    "air_date": "2025-04-23",
+    "city": "New Orleans, Louisiana",
+    "episode_number": 290,
+    "name": "Episode 290 (2025-04-23)",
+    "notes": "Jamie Hayter vs. Kris Statlander in a Women's Owen Hart Cup Tournament Semifinal match",
+    "show": "dynamite",
+    "venue_name": "Lakefront Arena"
+  },
+  {
+    "air_date": "2025-04-30",
+    "city": "Norfolk, Virginia",
+    "episode_number": 291,
+    "name": "Episode 291 (2025-04-30)",
+    "notes": "\"Hangman\" Adam Page vs. Kyle Fletcher in a Men's Owen Hart Cup Tournament Semifinal match",
+    "show": "dynamite",
+    "venue_name": "Chartway Arena"
+  },
+  {
+    "air_date": "2025-05-07",
+    "city": "Detroit, Michigan",
+    "episode_number": 292,
+    "name": "Episode 292 (2025-05-07)",
+    "notes": "Samoa Joe vs. Claudio Castagnoli",
+    "show": "dynamite",
+    "venue_name": "Detroit Masonic Temple"
+  },
+  {
+    "air_date": "2025-05-14",
+    "city": "Hoffman Estates, Illinois",
+    "episode_number": 293,
+    "name": "Episode 293 (2025-05-14)",
+    "notes": "Jon Moxley (c) vs. Samoa Joe in a Steel Cage match for the AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "Now Arena"
+  },
+  {
+    "air_date": "2025-05-21",
+    "city": "Rio Rancho, New Mexico",
+    "episode_number": 294,
+    "name": "Episode 294 (2025-05-21)",
+    "notes": "Mina Shirakawa vs. Julia Hart",
+    "show": "dynamite",
+    "venue_name": "Rio Rancho Events Center"
+  },
+  {
+    "air_date": "2025-05-28",
+    "city": "El Paso, Texas",
+    "episode_number": 295,
+    "name": "Episode 295 (2025-05-28)",
+    "notes": "None (Segment: \"Timeless\" Toni Storm and Mercedes Mon\u00e9 face-off)",
+    "show": "dynamite",
+    "venue_name": "El Paso County Coliseum"
+  },
+  {
+    "air_date": "2025-06-04",
+    "city": "Denver, Colorado",
+    "episode_number": 296,
+    "name": "Episode 296 (2025-06-04)",
+    "notes": "Kenny Omega (c) vs. Brody King vs. Claudio Castagnoli vs. M\u00e1scara Dorada for the AEW International Championship",
+    "show": "dynamite",
+    "venue_name": "Mission Ballroom"
+  },
+  {
+    "air_date": "2025-06-11",
+    "city": "Portland, Oregon",
+    "episode_number": 297,
+    "name": "Episode 297 (2025-06-11)",
+    "notes": "None (Segment: Kenny Omega and Kazuchika Okada contract signing)",
+    "show": "dynamite",
+    "venue_name": "Theater of the Clouds at Moda Center"
+  },
+  {
+    "air_date": "2025-06-18",
+    "city": "Mexico City, Mexico",
+    "episode_number": 298,
+    "name": "Episode 298 (2025-06-18)",
+    "notes": "Death Riders ( Jon Moxley and Wheeler Yuta ), The Young Bucks ( Matthew Jackson and Nicholas Jackson ), and The Beast Mortos vs. Swerve Strickland , Will Ospreay and The Opps ( Samoa Joe , Powerhouse ",
+    "show": "dynamite",
+    "venue_name": "Arena M\u00e9xico"
+  },
+  {
+    "air_date": "2025-06-25",
+    "city": "Kent, Washington",
+    "episode_number": 299,
+    "name": "Episode 299 (2025-06-25)",
+    "notes": "\"Hangman\" Adam Page vs. The Beast Mortos",
+    "show": "dynamite",
+    "venue_name": "accesso ShoWare Center"
+  },
+  {
+    "air_date": "2025-07-02",
+    "city": "Ontario, California",
+    "episode_number": 300,
+    "name": "Episode 300 (2025-07-02)",
+    "notes": "Kazuchika Okada vs. Kota Ibushi",
+    "show": "dynamite",
+    "venue_name": "Toyota Arena"
+  },
+  {
+    "air_date": "2025-07-09",
+    "city": "Garland, Texas",
+    "episode_number": 301,
+    "name": "Episode 301 (2025-07-09)",
+    "notes": "Death Riders ( Jon Moxley and Claudio Castagnoli ) and The Young Bucks ( Matthew Jackson and Nicholas Jackson ) vs. \"Hangman\" Adam Page , Will Ospreay , and The Opps ( Powerhouse Hobbs and Katsuyori S",
+    "show": "dynamite",
+    "venue_name": "Curtis Culwell Center"
+  },
+  {
+    "air_date": "2025-07-16",
+    "city": "Chicago, Illinois",
+    "episode_number": 302,
+    "name": "Episode 302 (2025-07-16)",
+    "notes": "\"Hangman\" Adam Page , Mark Briscoe , and Powerhouse Hobbs vs. Death Riders ( Jon Moxley , Claudio Castagnoli , and Wheeler Yuta )",
+    "show": "dynamite",
+    "venue_name": "Byline Bank Aragon Ballroom"
+  },
+  {
+    "air_date": "2025-07-23",
+    "city": "Claudio Castagnoli vs. Mark Briscoe",
+    "episode_number": 303,
+    "name": "Episode 303 (2025-07-23)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2025-07-30",
+    "city": "Ricochet vs. Mark Briscoe",
+    "episode_number": 304,
+    "name": "Episode 304 (2025-07-30)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2025-08-06",
+    "city": "Cleveland, Ohio",
+    "episode_number": 305,
+    "name": "Episode 305 (2025-08-06)",
+    "notes": "MJF vs. Mark Briscoe",
+    "show": "dynamite",
+    "venue_name": "Wolstein Center"
+  },
+  {
+    "air_date": "2025-08-13",
+    "city": "Cincinnati, Ohio",
+    "episode_number": 306,
+    "name": "Episode 306 (2025-08-13)",
+    "notes": "The Opps ( Samoa Joe , Katsuyori Shibata , and Powerhouse Hobbs ) vs. La Facci\u00f3n Ingobernable ( Rush , Dral\u00edstico , and The Beast Mortos )",
+    "show": "dynamite",
+    "venue_name": "Andrew J. Brady Music Center"
+  },
+  {
+    "air_date": "2025-08-20",
+    "city": "Glasgow, Scotland",
+    "episode_number": 307,
+    "name": "Episode 307 (2025-08-20)",
+    "notes": "Mercedes Mon\u00e9 and Athena vs. \"Timeless\" Toni Storm and Alex Windsor",
+    "show": "dynamite",
+    "venue_name": "OVO Hydro"
+  },
+  {
+    "air_date": "2025-08-27",
+    "city": "Philadelphia, Pennsylvania",
+    "episode_number": 308,
+    "name": "Episode 308 (2025-08-27)",
+    "notes": "Darby Allin vs. Claudio Castagnoli in a Falls Count Anywhere match",
+    "show": "dynamite",
+    "venue_name": "2300 Arena"
+  },
+  {
+    "air_date": "2025-09-03",
+    "city": "\"Hangman\" Adam Page , Kenny Omega and JetSpeed ( \"Speedball\" Mike Bailey and Kevin Knight ) vs. Don Callis Family ( Kyle Fletcher and Josh Alexander ) and The Young Bucks ( Matt Jackson and Nick Jackson )",
+    "episode_number": 309,
+    "name": "Episode 309 (2025-09-03)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2025-09-10",
+    "city": "Brodido ( Brody King and Bandido ) and The Opps ( Samoa Joe , Katsuyori Shibata , and Powerhouse Hobbs ) vs. Death Riders ( Jon Moxley , Claudio Castagnoli , and Wheeler Yuta ) and The Young Bucks ( Matt Jackson and Nick Jackson )",
+    "episode_number": 310,
+    "name": "Episode 310 (2025-09-10)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2025-09-17",
+    "city": "London, Ontario, Canada",
+    "episode_number": 311,
+    "name": "Episode 311 (2025-09-17)",
+    "notes": "Thekla vs. Queen Aminata in a No Holds Barred match",
+    "show": "dynamite",
+    "venue_name": "Canada Life Place"
+  },
+  {
+    "air_date": "2025-09-24",
+    "city": "Pittsburgh, Pennsylvania",
+    "episode_number": 312,
+    "name": "Episode 312 (2025-09-24)",
+    "notes": "Kris Statlander (c) vs. Mina Shirakawa for the AEW Women's World Championship",
+    "show": "dynamite",
+    "venue_name": "Peterson Events Center"
+  },
+  {
+    "air_date": "2025-10-01",
+    "city": "Hollywood, Florida",
+    "episode_number": 313,
+    "name": "Episode 313 (2025-10-01)",
+    "notes": "Darby Allin and Kris Statlander vs. Death Riders ( Wheeler Yuta and Marina Shafir ) in a Mixed tornado tag team match",
+    "show": "dynamite",
+    "venue_name": "Hard Rock Live"
+  },
+  {
+    "air_date": "2025-10-07",
+    "city": "Jacksonville, Florida",
+    "episode_number": 314,
+    "name": "Episode 314 (2025-10-07)",
+    "notes": "Pac vs. Orange Cassidy",
+    "show": "dynamite",
+    "venue_name": "Daily's Place"
+  },
+  {
+    "air_date": "2025-10-15",
+    "city": "Independence, Missouri",
+    "episode_number": 315,
+    "name": "Episode 315 (2025-10-15)",
+    "notes": "The Opps ( Samoa Joe , Katsuyori Shibata , and Powerhouse Hobbs ) (c) vs. La Facci\u00f3n Ingobernable ( Rush , Dral\u00edstico , and The Beast Mortos ) for the AEW World Trios Championship",
+    "show": "dynamite",
+    "venue_name": "Cable Dahmer Arena"
+  },
+  {
+    "air_date": "2025-10-22",
+    "city": "San Antonio, Texas",
+    "episode_number": 316,
+    "name": "Episode 316 (2025-10-22)",
+    "notes": "Kazuchika Okada (c) vs. Bandido for the AEW Unified Championship",
+    "show": "dynamite",
+    "venue_name": "Boeing Center at Tech Port"
+  },
+  {
+    "air_date": "2025-10-29",
+    "city": "Edinburg, Texas",
+    "episode_number": 317,
+    "name": "Episode 317 (2025-10-29)",
+    "notes": "Bobby Lashley vs. Ricochet vs. Samoa Joe vs. Hook (Winner faces \"Hangman\" Adam Page for the AEW World Championship at Full Gear )",
+    "show": "dynamite",
+    "venue_name": "Bert Ogden Arena"
+  },
+  {
+    "air_date": "2025-11-05",
+    "city": "Houston, Texas",
+    "episode_number": 318,
+    "name": "Episode 318 (2025-11-05)",
+    "notes": "The Opps ( Samoa Joe , Katsuyori Shibata , and Powerhouse Hobbs ) (c) vs. \"Hangman\" Adam Page , Hook , and Eddie Kingston for the AEW World Trios Championship",
+    "show": "dynamite",
+    "venue_name": "Bayou Music Center"
+  },
+  {
+    "air_date": "2025-11-12",
+    "city": "Greensboro, North Carolina",
+    "episode_number": 319,
+    "name": "Episode 319 (2025-11-12)",
+    "notes": "Darby Allin , Roderick Strong , and The Conglomeration ( Mark Briscoe , Orange Cassidy , and Kyle O'Reilly ) vs. Death Riders ( Jon Moxley , Claudio Castagnoli , Wheeler Yuta , Daniel Garcia , and Pac",
+    "show": "dynamite",
+    "venue_name": "First Horizon Coliseum"
+  },
+  {
+    "air_date": "2025-11-19",
+    "city": "Boston, Massachusetts",
+    "episode_number": 320,
+    "name": "Episode 320 (2025-11-19)",
+    "notes": "\"Hangman\" Adam Page vs. Katsuyori Shibata",
+    "show": "dynamite",
+    "venue_name": "Agganis Arena"
+  },
+  {
+    "air_date": "2025-11-26",
+    "city": "Nashville, Tennessee",
+    "episode_number": 321,
+    "name": "Episode 321 (2025-11-26)",
+    "notes": "Orange Cassidy vs. Claudio Castagnoli in a AEW Continental Classic Blue League match",
+    "show": "dynamite",
+    "venue_name": "The Pinnacle"
+  },
+  {
+    "air_date": "2025-12-03",
+    "city": "Fishers, Indiana",
+    "episode_number": 322,
+    "name": "Episode 322 (2025-12-03)",
+    "notes": "Jon Moxley vs. Claudio Castagnoli in a Continental Classic Blue League match",
+    "show": "dynamite",
+    "venue_name": "Fishers Event Center"
+  },
+  {
+    "air_date": "2025-12-10",
+    "city": "College Park, Georgia",
+    "episode_number": 323,
+    "name": "Episode 323 (2025-12-10)",
+    "notes": "Samoa Joe (c) vs. Eddie Kingston for the AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "Gateway Center Arena"
+  },
+  {
+    "air_date": "2025-12-17",
+    "city": "Manchester, England",
+    "episode_number": 324,
+    "name": "Episode 324 (2025-12-17)",
+    "notes": "Dynamite Diamond Battle Royale (winners would face each other for the AEW Dynamite Diamond Ring at Dynamite on 34th Street .)",
+    "show": "dynamite",
+    "venue_name": "Co-op Live"
+  },
+  {
+    "air_date": "2025-12-20",
+    "city": "New York City, New York",
+    "episode_number": 325,
+    "name": "Episode 325 (2025-12-20)",
+    "notes": "Pac vs. \"Jungle\" Jack Perry in a Continental Classic Gold League match",
+    "show": "dynamite",
+    "venue_name": "Manhattan Center"
+  },
+  {
+    "air_date": "2025-12-31",
+    "city": "Ralston, Nebraska",
+    "episode_number": 326,
+    "name": "Episode 326 (2025-12-31)",
+    "notes": "Mercedes Mon\u00e9 (c) vs. Willow Nightingale for the AEW TBS Championship",
+    "show": "dynamite",
+    "venue_name": "Liberty First Credit Union Arena"
+  },
+  {
+    "air_date": "2026-01-07",
+    "city": "Tulsa, Oklahoma",
+    "episode_number": 327,
+    "name": "Episode 327 (2026-01-07)",
+    "notes": "\"Hangman\" Adam Page and Swerve Strickland vs. The Opps ( Hook and Powerhouse Hobbs ) in a Lights Out match",
+    "show": "dynamite",
+    "venue_name": "BOK Center"
+  },
+  {
+    "air_date": "2026-01-14",
+    "city": "Phoenix, Arizona",
+    "episode_number": 328,
+    "name": "Episode 328 (2026-01-14)",
+    "notes": "MJF (World) vs. Bandido (Ring) in a Winner Takes All match for the AEW World Championship and AEW Dynamite Diamond Ring",
+    "show": "dynamite",
+    "venue_name": "Arizona Financial Theatre"
+  },
+  {
+    "air_date": "2026-01-21",
+    "city": "Orlando, Florida",
+    "episode_number": 329,
+    "name": "Episode 329 (2026-01-21)",
+    "notes": "Swerve Strickland vs. Kevin Knight",
+    "show": "dynamite",
+    "venue_name": "Addition Financial Arena"
+  },
+  {
+    "air_date": "2026-01-28",
+    "city": "Cedar Park, Texas",
+    "episode_number": 330,
+    "name": "Episode 330 (2026-01-28)",
+    "notes": "Swerve Strickland vs. Andrade El Idolo",
+    "show": "dynamite",
+    "venue_name": "H-E-B Center at Cedar Park"
+  },
+  {
+    "air_date": "2026-02-04",
+    "city": "Las Vegas, Nevada",
+    "episode_number": 331,
+    "name": "Episode 331 (2026-02-04)",
+    "notes": "MJF vs. Brody King in an AEW World Championship Eliminator match",
+    "show": "dynamite",
+    "venue_name": "Pearl Theater at the Palms"
+  },
+  {
+    "air_date": "2026-02-11",
+    "city": "Ontario, California",
+    "episode_number": 332,
+    "name": "Episode 332 (2026-02-11)",
+    "notes": "Kris Statlander (c) vs. Thekla in a Strap match for the AEW Women's World Championship",
+    "show": "dynamite",
+    "venue_name": "Toyota Arena"
+  },
+  {
+    "air_date": "2026-02-18",
+    "city": "Sacramento, California",
+    "episode_number": 333,
+    "name": "Episode 333 (2026-02-18)",
+    "notes": "Kenny Omega vs. Swerve Strickland",
+    "show": "dynamite",
+    "venue_name": "Memorial Auditorium"
+  },
+  {
+    "air_date": "2026-02-25",
+    "city": "Denver, Colorado",
+    "episode_number": 334,
+    "name": "Episode 334 (2026-02-25)",
+    "notes": "FTR ( Cash Wheeler and Dax Harwood ) and The Demand ( Ricochet , Bishop Kaun , and Toa Liona ) vs. The Young Bucks ( Matt Jackson and Nick Jackson ), \"Jungle\" Jack Perry , and The Rascalz ( Dezmond Xa",
+    "show": "dynamite",
+    "venue_name": "Mission Ballroom"
+  },
+  {
+    "air_date": "2026-03-04",
+    "city": "El Paso, Texas",
+    "episode_number": 335,
+    "name": "Episode 335 (2026-03-04)",
+    "notes": "Jet Set Rodeo ( \"Hangman\" Adam Page , \"Speedball\" Mike Bailey , and Kevin Knight ) (c) vs. Don Callis Family ( Kazuchika Okada , Kyle Fletcher , and Mark Davis ) for the AEW World Trios Championship",
+    "show": "dynamite",
+    "venue_name": "Don Haskins Center"
+  },
+  {
+    "air_date": "2026-03-11",
+    "city": "San Jose, California",
+    "episode_number": 336,
+    "name": "Episode 336 (2026-03-11)",
+    "notes": "FTR ( Cash Wheeler and Dax Harwood ) and Tommaso Ciampa vs. The Young Bucks ( Matt Jackson and Nick Jackson ) and Mark Briscoe",
+    "show": "dynamite",
+    "venue_name": "San Jose Civic Center"
+  },
+  {
+    "air_date": "2026-03-18",
+    "city": "Fresno, California",
+    "episode_number": 337,
+    "name": "Episode 337 (2026-03-18)",
+    "notes": "The Young Bucks ( Matt Jackson and Nick Jackson ) and \"Jungle\" Jack Perry vs. Don Callis Family ( Kazuchika Okada , Trent Baretta , and Rocky Romero )",
+    "show": "dynamite",
+    "venue_name": "Save Mart Center"
+  },
+  {
+    "air_date": "2026-03-25",
+    "city": "St. Paul, Minnesota",
+    "episode_number": 338,
+    "name": "Episode 338 (2026-03-25)",
+    "notes": "Darby Allin vs. Rush in a No-Countout match",
+    "show": "dynamite",
+    "venue_name": "Roy Wilkins Auditorium"
+  },
+  {
+    "air_date": "2026-04-01",
+    "city": "Winnipeg, Manitoba",
+    "episode_number": 339,
+    "name": "Episode 339 (2026-04-01)",
+    "notes": "MJF vs. \"Speedball\" Mike Bailey in an AEW World Championship Eliminator match",
+    "show": "dynamite",
+    "venue_name": "Canada Life Centre"
+  },
+  {
+    "air_date": "2026-04-08",
+    "city": "Edmonton, Alberta",
+    "episode_number": 340,
+    "name": "Episode 340 (2026-04-08)",
+    "notes": "United Empire ( Will Ospreay , Callum Newman , Henare , and Francesco Akira ) vs. Death Riders ( Jon Moxley , Claudio Castagnoli , Pac , and Daniel Garcia ) in a Chaos in Canada match",
+    "show": "dynamite",
+    "venue_name": "Rogers Place"
+  },
+  {
+    "air_date": "2026-04-15",
+    "city": "Everett, Washington",
+    "episode_number": 341,
+    "name": "Episode 341 (2026-04-15)",
+    "notes": "MJF (c) vs. Darby Allin for the AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "Angel of the Winds Arena"
+  },
+  {
+    "air_date": "2026-04-22",
+    "city": "Portland, Oregon",
+    "episode_number": 342,
+    "name": "Episode 342 (2026-04-22)",
+    "notes": "Darby Allin (c) vs. Tommaso Ciampa for the AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "Veterans Memorial Coliseum"
+  },
+  {
+    "air_date": "2026-04-29",
+    "city": "Fairfax, Virginia",
+    "episode_number": 343,
+    "name": "Episode 343 (2026-04-29)",
+    "notes": "Darby Allin (c) vs. Brody King for the AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "EagleBank Arena"
+  },
+  {
+    "air_date": "2026-05-06",
+    "city": "North Charleston, South Carolina",
+    "episode_number": 344,
+    "name": "Episode 344 (2026-05-06)",
+    "notes": "Darby Allin (c) vs. Kevin Knight for the AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "North Charleston Coliseum"
+  },
+  {
+    "air_date": "2026-05-13",
+    "city": "Asheville, North Carolina",
+    "episode_number": 345,
+    "name": "Episode 345 (2026-05-13)",
+    "notes": "Darby Allin (c) vs. Konosuke Takeshita for the AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "Harrah's Cherokee Center"
+  },
+  {
+    "air_date": "2026-05-20",
+    "city": "Portland, Maine",
+    "episode_number": 346,
+    "name": "Episode 346 (2026-05-20)",
+    "notes": "Darby Allin (c) vs. \"Speedball\" Mike Bailey for the AEW World Championship",
+    "show": "dynamite",
+    "venue_name": "Cross Insurance Arena"
+  },
+  {
+    "air_date": "2026-05-27",
+    "city": "Philadelphia, Pennsylvania",
+    "episode_number": 347,
+    "name": "Episode 347 (2026-05-27)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": "Liacouras Center"
+  },
+  {
+    "air_date": "2026-06-03",
+    "city": "Richmond, Virginia",
+    "episode_number": 348,
+    "name": "Episode 348 (2026-06-03)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": "Siegel Center"
+  },
+  {
+    "air_date": "2026-06-10",
+    "city": "Cincinnati, Ohio",
+    "episode_number": 349,
+    "name": "Episode 349 (2026-06-10)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": "Andrew J. Brady Music Center"
+  },
+  {
+    "air_date": "2026-06-17",
+    "city": "Houston, Texas",
+    "episode_number": 350,
+    "name": "Episode 350 (2026-06-17)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": "Smart Financial Centre"
+  },
+  {
+    "air_date": "2026-06-24",
+    "city": "Rio Rancho, New Mexico",
+    "episode_number": 351,
+    "name": "Episode 351 (2026-06-24)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": "Rio Rancho Events Center"
+  },
+  {
+    "air_date": "2026-07-01",
+    "city": "San Diego, California",
+    "episode_number": 352,
+    "name": "Episode 352 (2026-07-01)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": "Viejas Arena"
+  },
+  {
+    "air_date": "2026-07-08",
+    "city": "Clearwater Beach, Florida",
+    "episode_number": 353,
+    "name": "Episode 353 (2026-07-08)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": "The BayCare Sound"
+  },
+  {
+    "air_date": "2026-07-15",
+    "city": "Boston, Massachusetts",
+    "episode_number": 354,
+    "name": "Episode 354 (2026-07-15)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": "MGM Music Hall at Fenway"
+  },
+  {
+    "air_date": "2026-07-22",
+    "city": "Nashville, Tennessee",
+    "episode_number": 355,
+    "name": "Episode 355 (2026-07-22)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": "The Pinnacle"
+  },
+  {
+    "air_date": "2026-07-29",
+    "city": "Detriot, Michigan",
+    "episode_number": 356,
+    "name": "Episode 356 (2026-07-29)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": "Detroit Masonic Temple"
+  },
+  {
+    "air_date": "2026-08-05",
+    "city": "",
+    "episode_number": 357,
+    "name": "Episode 357 (2026-08-05)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": ""
+  },
+  {
+    "air_date": "2026-08-12",
+    "city": "Baltimore, Maryland",
+    "episode_number": 358,
+    "name": "Episode 358 (2026-08-12)",
+    "notes": "",
+    "show": "dynamite",
+    "venue_name": "Chesapeake Employers Insurance Arena"
+  }
+]

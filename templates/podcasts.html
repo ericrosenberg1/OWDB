@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Podcasts</h1>
+
+{% include "partials/search_form.html" %}
+
+{% if podcasts %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Hosts</th>
+                <th>Launch Year</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for podcast in podcasts %}
+            <tr>
+                <td><a href="{% url 'podcast_detail' podcast.pk %}">{{ podcast.name }}</a></td>
+                <td>{{ podcast.hosts|default:"—" }}</td>
+                <td>{{ podcast.launch_year|default:"—" }}</td>
+                <td>
+                    {% if podcast.end_year %}
+                    <span class="badge badge-silver">Ended ({{ podcast.end_year }})</span>
+                    {% else %}
+                    <span class="badge badge-gold">Active</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+
+{% else %}
+{% include "partials/empty_state.html" with icon="🎙️" title="No Podcasts Found" message="No podcasts match your search criteria." %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,20 @@
+<form method="get" class="mb-4">
+    <div class="row g-2">
+        <div class="col-md-8">
+            <div class="search-box">
+                <span class="search-box-icon">🔍</span>
+                <input type="text" name="q" class="form-control" placeholder="Search {{ search_placeholder|default:'...' }}" value="{{ request.GET.q|default:'' }}" aria-label="Search">
+            </div>
+        </div>
+        <div class="col-md-2">
+            <select name="per_page" class="form-select" aria-label="Results per page">
+                <option value="25" {% if request.GET.per_page == '25' or not request.GET.per_page %}selected{% endif %}>25 per page</option>
+                <option value="50" {% if request.GET.per_page == '50' %}selected{% endif %}>50 per page</option>
+                <option value="100" {% if request.GET.per_page == '100' %}selected{% endif %}>100 per page</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Search</button>
+        </div>
+    </div>
+</form>

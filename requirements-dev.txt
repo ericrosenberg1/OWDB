@@ -1,0 +1,24 @@
+# Development dependencies
+# Install with: pip install -r requirements-dev.txt
+
+# Include production dependencies
+-r requirements.txt
+
+# Security linting
+bandit>=1.7
+
+# Code formatting and linting
+black>=24.0
+ruff>=0.8
+isort>=5.13
+
+# Testing
+pytest>=8.0
+pytest-django>=4.9
+pytest-cov>=6.0
+factory-boy>=3.3
+
+# Type checking
+mypy>=1.13
+django-stubs>=5.1
+djangorestframework-stubs>=3.15

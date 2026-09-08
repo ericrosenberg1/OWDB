@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Edit Match</h1>
+
+<form action="/edit/match/{{ match.id }}" method="post" class="mt-4">
+    <div class="mb-3">
+        <label for="match_text" class="form-label">Match Description</label>
+        <input name="match_text" type="text" class="form-control" value="{{ match.match_text }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="event_id" class="form-label">Event</label>
+        <input name="event_id" type="number" class="form-control" value="{{ match.event_id }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="result" class="form-label">Result</label>
+        <input name="result" type="text" class="form-control" value="{{ match.result }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="match_type" class="form-label">Match Type</label>
+        <input name="match_type" type="text" class="form-control" value="{{ match.match_type }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="title_contested" class="form-label">Title Contested</label>
+        <input name="title_contested" type="text" class="form-control" value="{{ match.title_contested }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="about" class="form-label">About</label>
+        <textarea name="about" class="tinymce-editor">{{ match.about }}</textarea>
+    </div>
+
+    <button type="submit" class="btn btn-success">Save Changes</button>
+</form>
+{% endblock %}

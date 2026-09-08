@@ -1,0 +1,10 @@
+{% load owdb_sources %}
+{% sources_used_for entity_type entity.id as srcs %}
+{% if srcs %}
+<section class="sources-used-section" aria-labelledby="sources-used-heading">
+  <h4 id="sources-used-heading">Sources used for verification</h4>
+  <ul class="sources-used-list">
+    {% for s in srcs %}<li>{{ s }}</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}

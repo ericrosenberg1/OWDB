@@ -1,0 +1,569 @@
+{% extends "base.html" %}
+{% load linking_tags %}
+{% load verification_tags %}
+
+{% block content %}
+<div class="person-page">
+    <div class="container">
+        <div class="person-content">
+            <!-- Left Column - Profile Image & Personal Info (TMDB Style) -->
+            <div class="person-left-column">
+                <div class="profile-image">
+                    {% if wrestler.image_url %}
+                    <img src="{{ wrestler.image_url }}" alt="{{ wrestler.name }}">
+                    {% if wrestler.image_credit or wrestler.image_license %}
+                    <div class="image-credit">
+                        {% if wrestler.image_source_url %}<a href="{{ wrestler.image_source_url }}" target="_blank" rel="noopener">{% endif %}
+                        {{ wrestler.image_credit|default:"Image" }}
+                        {% if wrestler.image_license %}({{ wrestler.image_license|upper }}){% endif %}
+                        {% if wrestler.image_source_url %}</a>{% endif %}
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="profile-placeholder">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="personal-info">
+                    <h3>Personal Info</h3>
+
+                    <div class="info-block">
+                        <h4>Known For</h4>
+                        <p>Wrestling</p>
+                    </div>
+
+                    {% if wrestler.real_name %}
+                    <div class="info-block">
+                        <h4>Real Name</h4>
+                        <p>{{ wrestler.real_name }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if wrestler.birth_date %}
+                    <div class="info-block">
+                        <h4>Birthday</h4>
+                        <p>{{ wrestler.birth_date|date:"F j, Y" }}{% if wrestler.age %} ({{ wrestler.age }} years old){% endif %}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if wrestler.hometown %}
+                    <div class="info-block">
+                        <h4>Place of Birth</h4>
+                        <p>{{ wrestler.hometown }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if wrestler.nationality %}
+                    <div class="info-block">
+                        <h4>Nationality</h4>
+                        <p>{{ wrestler.nationality }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if wrestler.debut_year %}
+                    <div class="info-block">
+                        <h4>Debut Year</h4>
+                        <p>{{ wrestler.debut_year }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="info-block">
+                        <h4>Status</h4>
+                        <p>
+                            {% if wrestler.is_active %}
+                            <span class="status-badge active">Active</span>
+                            {% else %}
+                            <span class="status-badge retired">Retired{% if wrestler.retirement_year %} ({{ wrestler.retirement_year }}){% endif %}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    {% if wrestler.aliases %}
+                    <div class="info-block">
+                        <h4>Also Known As</h4>
+                        <ul class="alias-list">
+                            {% for alias in wrestler.get_aliases_list %}
+                            <li>{{ alias }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    {% if matches %}
+                    <div class="info-block">
+                        <h4>Known Matches</h4>
+                        <p>{{ matches|length }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if record.total > 0 %}
+                    <div class="info-block">
+                        <h4>Record</h4>
+                        <p class="record-line">
+                            <span class="record-wins">{{ record.wins }}W</span>
+                            <span class="record-sep">-</span>
+                            <span class="record-losses">{{ record.losses }}L</span>
+                            {% if record.draws %}
+                            <span class="record-sep">-</span>
+                            <span class="record-draws">{{ record.draws }}D</span>
+                            {% endif %}
+                            <span class="record-pct">({{ record.win_percentage }}%)</span>
+                        </p>
+                        <p class="record-detail">
+                            {% if record.title_matches %}{{ record.title_matches }} title match{{ record.title_matches|pluralize }}{% endif %}
+                            {% if record.title_wins %} &middot; <strong>{{ record.title_wins }} title win{{ record.title_wins|pluralize }}</strong>{% endif %}
+                            {% if record.unknown %} &middot; {{ record.unknown }} unjudged{% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    {% if promotion_history %}
+                    <div class="info-block">
+                        <h4>Promotions</h4>
+                        <ul class="link-list promotion-history-list">
+                            {% for promo in promotion_history %}
+                            <li>
+                                <a href="{% url 'promotion_detail' promo.promotion_id %}">{{ promo.abbreviation|default:promo.name }}</a>
+                                <span class="promo-years">{{ promo.start_year }}-{{ promo.end_year }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% elif promotions %}
+                    <div class="info-block">
+                        <h4>Promotions</h4>
+                        <ul class="link-list">
+                            {% for promotion in promotions %}
+                            <li><a href="{% url 'promotion_detail_slug' promotion.slug %}">{{ promotion.abbreviation|default:promotion.name }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    {% if stables %}
+                    <div class="info-block">
+                        <h4>Stables & Factions</h4>
+                        <ul class="link-list">
+                            {% for stable in stables %}
+                            <li><a href="{% url 'stable_detail' stable.pk %}">{{ stable.name }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    {% if meta_counts %}
+                    <div class="info-block">
+                        <h4>Appears In</h4>
+                        <ul class="meta-counts-list">
+                            {% if meta_counts.matches > 0 %}<li><span class="count">{{ meta_counts.matches }}</span> Matches</li>{% endif %}
+                            {% if meta_counts.events > 0 %}<li><span class="count">{{ meta_counts.events }}</span> Events</li>{% endif %}
+                            {% if meta_counts.titles > 0 %}<li><span class="count">{{ meta_counts.titles }}</span> Title Reigns</li>{% endif %}
+                            {% if meta_counts.podcast_appearances > 0 %}<li><span class="count">{{ meta_counts.podcast_appearances }}</span> Podcast Episodes</li>{% endif %}
+                            {% if meta_counts.books > 0 %}<li><span class="count">{{ meta_counts.books }}</span> Books</li>{% endif %}
+                            {% if meta_counts.specials > 0 %}<li><span class="count">{{ meta_counts.specials }}</span> Documentaries</li>{% endif %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Right Column - Main Content (TMDB Style) -->
+            <div class="person-right-column">
+                <div class="person-header">
+                    <h1>{{ wrestler.name }}</h1>
+                </div>
+
+                <!-- Biography Section -->
+                <div class="biography-section">
+                    <h3>Biography</h3>
+                    {% with about_text=wrestler|about_with_links %}
+                        {% if about_text %}
+                        <div class="biography-content" id="biographyContent">
+                            <p>{{ about_text|linebreaks }}</p>
+                        </div>
+                        <button class="read-more-btn" id="readMoreBtn" onclick="toggleBiography()" style="display: none;">Read More</button>
+                        {% else %}
+                        <p class="no-biography">We don't have a biography for {{ wrestler.name }} yet.</p>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+
+                {% with linked_sections=wrestler|linked_from_sections %}
+                    {% include "partials/linked_from.html" with sections=linked_sections %}
+                {% endwith %}
+
+                <!-- Known For Section (TMDB Style horizontal scroller) -->
+                {% if wrestler.finishers %}
+                <div class="known-for-section">
+                    <h3>Signature Moves</h3>
+                    <div class="scroller-wrap">
+                        <div class="scroller moves-scroller">
+                            {% for move in wrestler.get_finishers_list %}
+                            <div class="move-card">
+                                <div class="move-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                    </svg>
+                                </div>
+                                <p>{{ move }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Championships Section -->
+                {% if titles_won %}
+                <div class="known-for-section">
+                    <h3>Championships Won</h3>
+                    <div class="scroller-wrap">
+                        <div class="scroller">
+                            {% for title in titles_won %}
+                            <a href="{% url 'title_detail_slug' title.slug %}" class="card-link">
+                                <div class="media-card">
+                                    {% if title.image_url %}
+                                    <div class="media-poster" style="background-image: url('{{ title.image_url }}')"></div>
+                                    {% else %}
+                                    <div class="media-poster placeholder">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                            <circle cx="12" cy="8" r="6"></circle>
+                                            <path d="M15.5 18H8.5L6 22h12l-2.5-4z"></path>
+                                        </svg>
+                                    </div>
+                                    {% endif %}
+                                    <p class="media-title">{{ title.name }}</p>
+                                    <p class="media-meta">{{ title.promotion.abbreviation|default:title.promotion.name }}</p>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if title_history %}
+                <div class="title-history-section">
+                    <h3>Title History</h3>
+                    {% for group in title_history %}
+                    <div class="title-history-group">
+                        <h4 class="title-history-promo">{{ group.promotion.name }}</h4>
+                        {% for entry in group.titles %}
+                        <div class="card mb-3">
+                            <div class="card-header title-history-header">
+                                <div class="title-history-belt">
+                                    {% if entry.title.image_url %}
+                                    <img src="{{ entry.title.image_url }}" alt="{{ entry.title.name }}">
+                                    {% else %}
+                                    <div class="media-poster placeholder">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                            <circle cx="12" cy="8" r="6"></circle>
+                                            <path d="M15.5 18H8.5L6 22h12l-2.5-4z"></path>
+                                        </svg>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="title-history-info">
+                                    <a href="{% url 'title_detail_slug' entry.title.slug %}" class="title-history-name">{{ entry.title.name }}</a>
+                                    <span class="title-history-meta">{{ entry.title.promotion.abbreviation|default:entry.title.promotion.name }}</span>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-striped mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Result</th>
+                                                <th>Date</th>
+                                                <th>Event</th>
+                                                <th>Match</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for match_entry in entry.entries %}
+                                            <tr>
+                                                <td>
+                                                    <span class="result-badge {{ match_entry.result }}">
+                                                        {{ match_entry.result_label }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ match_entry.event.date|date:"M j, Y" }}</td>
+                                                <td><a href="{% url 'event_detail_slug' match_entry.event.slug %}">{{ match_entry.event.name }}</a></td>
+                                                <td><a href="{% url 'match_detail' match_entry.match.pk %}">{{ match_entry.match.match_text|truncatewords:8 }}</a></td>
+                                            </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Notable Rivals Section -->
+                {% if rivals %}
+                <div class="known-for-section">
+                    <h3>Notable Rivals</h3>
+                    <div class="scroller-wrap">
+                        <div class="scroller">
+                            {% for rival in rivals %}
+                            <a href="{% url 'wrestler_detail_slug' rival.slug %}" class="card-link">
+                                <div class="media-card">
+                                    {% if rival.image_url %}
+                                    <div class="media-poster" style="background-image: url('{{ rival.image_url }}')"></div>
+                                    {% else %}
+                                    <div class="media-poster placeholder">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="12" cy="7" r="4"></circle>
+                                        </svg>
+                                    </div>
+                                    {% endif %}
+                                    <p class="media-title">{{ rival.name }}</p>
+                                    <p class="media-meta">{{ rival.encounter_count }} matches</p>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Recent Form + Match History (ESPN-feel) -->
+                {% if matches %}
+                <div class="credits-section">
+                    <div class="credits-header">
+                        <h3>Match History</h3>
+                        <div class="credits-filters">
+                            {% if recent_form %}
+                            <div class="recent-form" title="Last {{ recent_form|length }} results, most recent first">
+                                <span class="form-label">Recent form:</span>
+                                {% for r in recent_form %}
+                                    <span class="form-pill form-{{ r|lower }}">{{ r }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <select class="filter-select" id="matchFilter" onchange="filterMatches()">
+                                <option value="all">All Matches</option>
+                                <option value="win">Wins</option>
+                                <option value="loss">Losses</option>
+                                <option value="draw">Draws / No-contests</option>
+                                <option value="unknown">Unknown result</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="credits-list">
+                        {% for match in matches %}
+                        <div class="credit-item" data-result="{{ match.this_result }}">
+                            <div class="credit-year">
+                                {% if match.event.date %}{{ match.event.date|date:"M j, Y" }}{% else %}&mdash;{% endif %}
+                            </div>
+                            <div class="credit-separator">
+                                <span class="dot"></span>
+                            </div>
+                            <div class="credit-info">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    {% if match.this_result == 'win' %}
+                                        <span class="result-badge win">W</span>
+                                    {% elif match.this_result == 'loss' %}
+                                        <span class="result-badge loss">L</span>
+                                    {% elif match.this_result == 'draw' %}
+                                        <span class="result-badge draw">D</span>
+                                    {% else %}
+                                        <span class="result-badge unknown">?</span>
+                                    {% endif %}
+                                    <a href="{% url 'match_detail' match.pk %}" class="credit-title">
+                                        {% if match.opponents %}
+                                            vs.
+                                            {% for op in match.opponents %}<a href="{% url 'wrestler_detail' op.pk %}">{{ op.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
+                                        {% else %}
+                                            {{ match.match_text|truncatechars:80 }}
+                                        {% endif %}
+                                    </a>
+                                </div>
+                                <span class="credit-meta">
+                                    {% if match.event.slug %}
+                                        <a href="{% url 'event_detail_slug' match.event.slug %}">{{ match.event.name }}</a>
+                                    {% else %}
+                                        <a href="{% url 'event_detail' match.event.pk %}">{{ match.event.name }}</a>
+                                    {% endif %}
+                                    {% if match.match_type %} &middot; {{ match.match_type|truncatechars:60 }}{% endif %}
+                                    {% if match.title %}
+                                        &middot; <a href="{% url 'title_detail' match.title.pk %}">{{ match.title.name }}</a>
+                                        {% if match.title_changed %}<span class="result-badge title-change">TITLE CHANGE</span>{% endif %}
+                                    {% endif %}
+                                    {% if match.cagematch_rating %}<span class="rating-badge">★ {{ match.cagematch_rating }}</span>{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Head-to-Head Leaderboard -->
+                {% if head_to_head %}
+                <div class="credits-section">
+                    <h3>Head-to-Head — most-faced opponents</h3>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped h2h-table">
+                            <thead>
+                                <tr>
+                                    <th>Opponent</th>
+                                    <th class="text-end">Total</th>
+                                    <th class="text-end">W</th>
+                                    <th class="text-end">L</th>
+                                    <th class="text-end">D</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in head_to_head %}
+                                <tr>
+                                    <td><a href="{% url 'wrestler_detail' r.wrestler.pk %}">{{ r.wrestler.name }}</a></td>
+                                    <td class="text-end">{{ r.total }}</td>
+                                    <td class="text-end text-success">{{ r.wins }}</td>
+                                    <td class="text-end text-danger">{{ r.losses }}</td>
+                                    <td class="text-end text-muted">{{ r.draws }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Podcast Appearances Section -->
+                {% if podcast_appearances %}
+                <div class="known-for-section">
+                    <h3>Podcast Appearances</h3>
+                    <div class="credits-list podcast-list">
+                        {% for episode in podcast_appearances %}
+                        <div class="credit-item">
+                            <div class="credit-year">
+                                {% if episode.published_date %}{{ episode.published_date|date:"Y" }}{% else %}&mdash;{% endif %}
+                            </div>
+                            <div class="credit-separator">
+                                <span class="dot"></span>
+                            </div>
+                            <div class="credit-info">
+                                <a href="{% url 'podcast_detail' episode.podcast.pk %}" class="credit-title">{{ episode.title|truncatechars:60 }}</a>
+                                <span class="credit-meta">
+                                    {{ episode.podcast.name }}
+                                    {% if episode.duration_display %}<span class="duration">{{ episode.duration_display }}</span>{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Books Section -->
+                {% if books %}
+                <div class="known-for-section">
+                    <h3>Books</h3>
+                    <div class="scroller-wrap">
+                        <div class="scroller">
+                            {% for book in books %}
+                            <a href="{% url 'book_detail' book.pk %}" class="card-link">
+                                <div class="media-card">
+                                    <div class="media-poster placeholder book-placeholder">
+                                        <span>📚</span>
+                                    </div>
+                                    <p class="media-title">{{ book.title|truncatechars:30 }}</p>
+                                    <p class="media-meta">{{ book.publication_year|default:"" }}</p>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Documentaries/Specials Section -->
+                {% if specials %}
+                <div class="known-for-section">
+                    <h3>Documentaries & Specials</h3>
+                    <div class="scroller-wrap">
+                        <div class="scroller">
+                            {% for special in specials %}
+                            <a href="{% url 'special_detail' special.pk %}" class="card-link">
+                                <div class="media-card">
+                                    <div class="media-poster placeholder special-placeholder">
+                                        <span>🎬</span>
+                                    </div>
+                                    <p class="media-title">{{ special.title|truncatechars:30 }}</p>
+                                    <p class="media-meta">{{ special.release_year|default:"" }}</p>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+
+        {% verification_stamp wrestler %}
+
+        {% with entity_type="wrestler" entity=wrestler %}
+            {% include "partials/sources_used.html" %}
+        {% endwith %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Biography read more toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const content = document.getElementById('biographyContent');
+    const btn = document.getElementById('readMoreBtn');
+
+    if (content && btn) {
+        if (content.scrollHeight > 200) {
+            content.style.maxHeight = '200px';
+            content.style.overflow = 'hidden';
+            content.classList.add('collapsed');
+            btn.style.display = 'inline-block';
+        }
+    }
+});
+
+function toggleBiography() {
+    const content = document.getElementById('biographyContent');
+    const btn = document.getElementById('readMoreBtn');
+
+    if (content.classList.contains('collapsed')) {
+        content.style.maxHeight = 'none';
+        content.classList.remove('collapsed');
+        btn.textContent = 'Read Less';
+    } else {
+        content.style.maxHeight = '200px';
+        content.classList.add('collapsed');
+        btn.textContent = 'Read More';
+    }
+}
+
+// Match filter — filter by per-wrestler result value set on data-result.
+function filterMatches() {
+    const filter = document.getElementById('matchFilter').value;
+    const items = document.querySelectorAll('.credit-item');
+    items.forEach(item => {
+        const result = item.dataset.result;
+        item.style.display = (filter === 'all' || result === filter) ? 'flex' : 'none';
+    });
+}
+</script>
+{% endblock %}

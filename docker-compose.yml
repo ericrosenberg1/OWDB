@@ -1,0 +1,183 @@
+# =============================================================================
+# WrestlingDB Docker Compose - Production Ready
+# =============================================================================
+#
+# Services:
+#   - db: PostgreSQL 17 database
+#   - redis: Redis 7 for caching and Celery broker
+#   - web: Django application with Gunicorn
+#   - celery: Background task processor with embedded beat scheduler
+#
+# Usage:
+#   Development: docker-compose up
+#   Production:  docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${DB_NAME:-owdb}
+      POSTGRES_USER: ${DB_USER:-owdb}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-owdb} -d ${DB_NAME:-owdb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Redis Cache & Message Broker
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Django Web Application
+  # ---------------------------------------------------------------------------
+  web:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      # NOTE: settings.py picks the engine from DB_ENGINE (default "sqlite") —
+      # USE_POSTGRES / USE_REDIS are read by nothing. So this stack starts
+      # Postgres + Redis and Django then quietly uses SQLite anyway. Set
+      # DB_ENGINE=postgres to actually use the `db` service.
+      USE_POSTGRES: "true"
+      USE_REDIS: "true"
+      DB_ENGINE: ${DB_ENGINE:-sqlite}
+      DB_HOST: db
+      DB_PORT: 5432
+      # In SQLite mode the DB has to sit in a directory the app user can write:
+      # /app is root:root 0755 in the image and the app runs as `appuser`, so
+      # SQLite can neither create /app/db.sqlite3 nor its `-journal` and every
+      # DB access dies with "unable to open database file". (ROS-1204)
+      SQLITE_PATH: /app/data/db.sqlite3
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - static_files:/app/static_collected
+    command: >
+      sh -c "
+        echo '⏳ Running migrations…';
+        python manage.py migrate --noinput;
+        echo '📅 Setting up Celery Beat schedules…';
+        python manage.py setup_celery_schedule;
+        echo '📦 Collecting static files…';
+        python manage.py collectstatic --noinput;
+        echo '🚀 Starting Gunicorn…';
+        gunicorn --bind 0.0.0.0:8000 --workers 2 --threads 4 --worker-class gthread --access-logfile - --error-logfile - owdb_django.wsgi:application
+      "
+    healthcheck:
+      # Assert an explicit 200 rather than trusting curl's exit code: `curl -f`
+      # counts any 3xx as success, so the old form passed on the SSL-redirect
+      # 301 without ever reaching the view. SECURE_REDIRECT_EXEMPT now stops
+      # that redirect; this keeps the check honest if it ever comes back.
+      # (ROS-1207)
+      test:
+        - CMD-SHELL
+        - >-
+          curl -fsS --max-time 5 -o /dev/null -w '%{http_code}'
+          http://localhost:8000/health/ | grep -q '^200$$'
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ---------------------------------------------------------------------------
+  # Celery Worker + Beat Scheduler
+  # ---------------------------------------------------------------------------
+  # This container runs:
+  #   - Celery worker (background task processing)
+  #   - Celery beat (scheduled task scheduler, embedded with -B flag)
+  # ---------------------------------------------------------------------------
+  celery:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      # NOTE: settings.py picks the engine from DB_ENGINE (default "sqlite") —
+      # USE_POSTGRES / USE_REDIS are read by nothing. So this stack starts
+      # Postgres + Redis and Django then quietly uses SQLite anyway. Set
+      # DB_ENGINE=postgres to actually use the `db` service.
+      USE_POSTGRES: "true"
+      USE_REDIS: "true"
+      DB_ENGINE: ${DB_ENGINE:-sqlite}
+      DB_HOST: db
+      DB_PORT: 5432
+      # In SQLite mode the DB has to sit in a directory the app user can write:
+      # /app is root:root 0755 in the image and the app runs as `appuser`, so
+      # SQLite can neither create /app/db.sqlite3 nor its `-journal` and every
+      # DB access dies with "unable to open database file". (ROS-1204)
+      SQLITE_PATH: /app/data/db.sqlite3
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # Run worker with embedded beat scheduler (-B flag)
+    # Uses DatabaseScheduler for persistent schedules across restarts
+    command: >
+      celery -A owdb_django worker
+      --beat
+      --scheduler django_celery_beat.schedulers:DatabaseScheduler
+      --loglevel=info
+      --concurrency=2
+    volumes:
+      - ./data:/app/data
+      - celery_beat_schedule:/app/celerybeat-schedule
+    healthcheck:
+      test: ["CMD", "celery", "-A", "owdb_django", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  db_data:
+    driver: local
+  redis_data:
+    driver: local
+  static_files:
+    driver: local
+  celery_beat_schedule:
+    driver: local

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load linking_tags %}
+
+{% block content %}
+<div class="detail-header">
+    <h1 class="detail-title">{{ book.title }}</h1>
+    <div class="detail-meta">
+        {% if book.author %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Author:</span> {{ book.author }}
+        </div>
+        {% endif %}
+        {% if book.publication_year %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Published:</span> {{ book.publication_year }}
+        </div>
+        {% endif %}
+        {% if book.publisher %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Publisher:</span> {{ book.publisher }}
+        </div>
+        {% endif %}
+        {% if book.isbn %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">ISBN:</span> {{ book.isbn }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% with about_text=book|about_with_links %}
+    {% if about_text %}
+    <div class="card mb-4">
+        <div class="card-header">About</div>
+        <div class="card-body">
+            <p>{{ about_text|linebreaks }}</p>
+        </div>
+    </div>
+    {% endif %}
+{% endwith %}
+
+{% with linked_sections=book|linked_from_sections %}
+    {% include "partials/linked_from.html" with sections=linked_sections %}
+{% endwith %}
+
+{% if book.related_wrestlers.exists %}
+<div class="card mb-4">
+    <div class="card-header">Related Wrestlers</div>
+    <ul class="list-group list-group-flush">
+        {% for wrestler in book.related_wrestlers.all %}
+        <li class="list-group-item bg-transparent">
+            <a href="{% url 'wrestler_detail' wrestler.pk %}">{{ wrestler.name }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<a href="{% url 'books' %}" class="btn btn-secondary">&larr; Back to Books</a>
+{% endblock %}

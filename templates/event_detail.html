@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% load linking_tags %}
+{% load verification_tags %}
+{% load humanize %}
+
+{% block content %}
+<div class="detail-header">
+    {% if event.image_url %}
+    <div class="detail-image">
+        <img src="{{ event.image_url }}" alt="{{ event.name }}">
+        {% if event.image_credit or event.image_license %}
+        <div class="image-credit">
+            {% if event.image_source_url %}<a href="{{ event.image_source_url }}" target="_blank" rel="noopener">{% endif %}
+            {{ event.image_credit|default:"Image" }}
+            {% if event.image_license %}({{ event.image_license|upper }}){% endif %}
+            {% if event.image_source_url %}</a>{% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    <h1 class="detail-title">{{ event.name }}</h1>
+    <div class="detail-meta">
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Promotion:</span>
+            <a href="{% url 'promotion_detail_slug' event.promotion.slug %}">{{ event.promotion.name }}</a>
+        </div>
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Date:</span> {{ event.date|date:"F j, Y" }}
+        </div>
+        {% if event.venue %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Venue:</span>
+            <a href="{% url 'venue_detail_slug' event.venue.slug %}">{{ event.venue.name }}</a>{% if event.venue.location %}, {{ event.venue.location }}{% endif %}
+        </div>
+        {% endif %}
+        {% if event.attendance %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Attendance:</span> {{ event.attendance|intcomma }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% with about_text=event|about_with_links %}
+    {% if about_text %}
+    <div class="card mb-4">
+        <div class="card-header">About</div>
+        <div class="card-body">
+            <p>{{ about_text|linebreaks }}</p>
+        </div>
+    </div>
+    {% endif %}
+{% endwith %}
+
+{% with linked_sections=event|linked_from_sections %}
+    {% include "partials/linked_from.html" with sections=linked_sections %}
+{% endwith %}
+
+<!-- Wrestlers on Card -->
+{% if all_wrestlers %}
+<div class="card mb-4">
+    <div class="card-header">Wrestlers on This Card ({{ all_wrestlers|length }})</div>
+    <div class="card-body">
+        <div class="chip-list">
+            {% for wrestler in all_wrestlers %}
+            <a href="{% url 'wrestler_detail_slug' wrestler.slug %}" class="chip">
+                {% if wrestler.image_url %}
+                <img src="{{ wrestler.image_url }}" alt="{{ wrestler.name }}" class="chip-avatar">
+                {% endif %}
+                {{ wrestler.name }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Titles Defended -->
+{% if titles_defended %}
+<div class="card mb-4">
+    <div class="card-header">Championships on the Line</div>
+    <div class="card-body">
+        <div class="chip-list">
+            {% for title in titles_defended %}
+            <a href="{% url 'title_detail_slug' title.slug %}" class="chip chip-gold">
+                {{ title.name }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if matches %}
+<div class="card mb-4">
+    <div class="card-header">Match Card</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Match</th>
+                        <th>Type</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for match in matches %}
+                    <tr>
+                        <td>{{ match.match_order|default:forloop.counter }}</td>
+                        <td>
+                            <a href="{% url 'match_detail' match.pk %}">{{ match.match_text }}</a>
+                            {% if match.title %}
+                            <br><small class="text-muted">for the <a href="{% url 'title_detail' match.title.pk %}">{{ match.title.name }}</a></small>
+                            {% endif %}
+                        </td>
+                        <td>{{ match.match_type|default:"Standard" }}</td>
+                        <td>{{ match.result|default:"—" }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card mb-4">
+    <div class="card-body text-center py-5">
+        <p class="mb-0 text-muted">No matches have been added to this event yet.</p>
+    </div>
+</div>
+{% endif %}
+
+{% verification_stamp event %}
+
+{% with entity_type="event" entity=event %}
+    {% include "partials/sources_used.html" %}
+{% endwith %}
+
+<a href="{% url 'events' %}" class="btn btn-secondary">&larr; Back to Events</a>
+{% endblock %}

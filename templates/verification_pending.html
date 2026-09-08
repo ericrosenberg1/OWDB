@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card text-center">
+            <div class="card-header">
+                <h2 class="mb-0">Verify Your Email</h2>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="currentColor" class="text-warning" viewBox="0 0 16 16">
+                        <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z"/>
+                    </svg>
+                </div>
+                <h3>Check Your Inbox!</h3>
+                <p class="lead">We've sent a verification email to your address.</p>
+                <p class="text-muted">Click the link in the email to verify your account and unlock the ability to contribute to OWDB.</p>
+
+                <hr>
+
+                <p class="small text-muted mb-3">Didn't receive the email? Check your spam folder or click below to resend.</p>
+                <a href="{% url 'resend_verification' %}" class="btn btn-gold">Resend Verification Email</a>
+
+                <hr>
+
+                <p class="small text-muted mb-0">
+                    Already verified? <a href="{% url 'index' %}">Go to Homepage</a>
+                </p>
+            </div>
+            <div class="card-footer text-muted">
+                <small>And that's the bottom line!</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

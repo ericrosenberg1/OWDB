@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Video Games</h1>
+
+{% include "partials/search_form.html" %}
+
+{% if games %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Release Year</th>
+                <th>Systems</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for game in games %}
+            <tr>
+                <td><a href="{% url 'game_detail' game.pk %}">{{ game.name }}</a></td>
+                <td>{{ game.release_year|default:"—" }}</td>
+                <td>{{ game.systems|default:"—" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+
+{% else %}
+{% include "partials/empty_state.html" with icon="🎮" title="No Games Found" message="No video games match your search criteria." %}
+{% endif %}
+{% endblock %}

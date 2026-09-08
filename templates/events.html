@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Events</h1>
+
+{% include "partials/search_form.html" %}
+
+{% if events %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Promotion</th>
+                <th>Date</th>
+                <th>Venue</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for event in events %}
+            <tr>
+                <td><a href="{% url 'event_detail' event.pk %}">{{ event.name }}</a></td>
+                <td>
+                    {% if event.promotion %}
+                    <a href="{% url 'promotion_detail' event.promotion.pk %}">{{ event.promotion.name }}</a>
+                    {% else %}—{% endif %}
+                </td>
+                <td>{{ event.date|date:"M j, Y"|default:"—" }}</td>
+                <td>
+                    {% if event.venue %}
+                    <a href="{% url 'venue_detail' event.venue.pk %}">{{ event.venue.name }}</a>
+                    {% else %}—{% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+
+{% else %}
+{% include "partials/empty_state.html" with icon="📅" title="No Events Found" message="No events match your search criteria." %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Wrestlers</h1>
+
+{% include "partials/search_form.html" %}
+
+{% if wrestlers %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Debut Year</th>
+                <th>Hometown</th>
+                <th>Nationality</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for wrestler in wrestlers %}
+            <tr>
+                <td><a href="{% url 'wrestler_detail' wrestler.pk %}">{{ wrestler.name }}</a></td>
+                <td>{{ wrestler.debut_year|default:"—" }}</td>
+                <td>{{ wrestler.hometown|default:"—" }}</td>
+                <td>{{ wrestler.nationality|default:"—" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+
+{% else %}
+{% include "partials/empty_state.html" with icon="🤼" title="No Wrestlers Found" message="No wrestlers match your search criteria." %}
+{% endif %}
+{% endblock %}

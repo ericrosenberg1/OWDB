@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block content %}
+<!-- Hero/Welcome Section - TMDB Style -->
+<section class="welcome-section">
+    <div class="welcome-content">
+        <div class="container">
+            <h1>Welcome to OWDB.</h1>
+            <h2>The most comprehensive wrestling encyclopedia. Millions of wrestlers, events, matches, and promotions aggregated from many authoritative sources. It's a slobberknocker!</h2>
+        </div>
+    </div>
+</section>
+
+<!-- Hot 100 Section -->
+<section class="content-section">
+    <div class="container">
+        <div class="section-header">
+            <h3><a href="{% url 'hot100' %}" class="section-title-link">Hot 100</a></h3>
+            <a href="{% url 'hot100' %}" class="section-link">View Full Rankings</a>
+        </div>
+        <div class="scroller-wrap">
+            <div class="scroller">
+                {% for entry in hot100_entries %}
+                <div class="card-item hot100-card">
+                    <a href="{% url 'wrestler_detail' entry.wrestler.pk %}">
+                        <div class="card-poster">
+                            <span class="hot100-rank">{{ entry.rank }}</span>
+                            {% if entry.wrestler.image_url %}
+                            <img src="{{ entry.wrestler.image_url }}" alt="{{ entry.wrestler.name }}">
+                            {% else %}
+                            <div class="poster-placeholder">
+                                <span>{{ entry.wrestler.name|slice:":1" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-content">
+                            <h4>{{ entry.wrestler.name }}</h4>
+                            <p class="hot100-movement">
+                                {% if entry.movement > 0 %}
+                                <span class="movement-up">+{{ entry.movement }}</span>
+                                {% elif entry.movement < 0 %}
+                                <span class="movement-down">{{ entry.movement }}</span>
+                                {% else %}
+                                <span class="movement-same">-</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </a>
+                </div>
+                {% empty %}
+                <div class="empty-scroller">
+                    <p>No Hot 100 rankings yet.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Recent Events Section -->
+<section class="content-section">
+    <div class="container">
+        <div class="section-header">
+            <h3><a href="{% url 'events' %}" class="section-title-link">Recent Events</a></h3>
+            <div class="section-tabs">
+                <button class="tab-btn active" data-tab="all-events" onclick="showEventsTab('all-events')">All</button>
+                <button class="tab-btn" data-tab="wwe-events" onclick="showEventsTab('wwe-events')">WWE</button>
+                <button class="tab-btn" data-tab="aew-events" onclick="showEventsTab('aew-events')">AEW</button>
+            </div>
+        </div>
+        <!-- All Events Tab -->
+        <div class="scroller-wrap events-tab" id="all-events">
+            <div class="scroller">
+                {% for event in recent_events %}
+                <div class="card-item">
+                    <a href="{% url 'event_detail' event.pk %}">
+                        <div class="card-poster event-poster">
+                            {% if event.image_url %}
+                            <img src="{{ event.image_url }}" alt="{{ event.name }}">
+                            {% else %}
+                            <div class="poster-placeholder event-placeholder">
+                                <span>{{ event.name|slice:":2" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-content">
+                            <h4>{{ event.name|truncatechars:25 }}</h4>
+                            <p>{{ event.date|date:"M j, Y" }} · {{ event.promotion.name }}</p>
+                        </div>
+                    </a>
+                </div>
+                {% empty %}
+                <div class="empty-scroller">
+                    <p>No recent events.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <!-- WWE Events Tab -->
+        <div class="scroller-wrap events-tab" id="wwe-events" style="display: none;">
+            <div class="scroller">
+                {% for event in wwe_events %}
+                <div class="card-item">
+                    <a href="{% url 'event_detail' event.pk %}">
+                        <div class="card-poster event-poster">
+                            {% if event.image_url %}
+                            <img src="{{ event.image_url }}" alt="{{ event.name }}">
+                            {% else %}
+                            <div class="poster-placeholder event-placeholder">
+                                <span>{{ event.name|slice:":2" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-content">
+                            <h4>{{ event.name|truncatechars:25 }}</h4>
+                            <p>{{ event.date|date:"M j, Y" }}</p>
+                        </div>
+                    </a>
+                </div>
+                {% empty %}
+                <div class="empty-scroller">
+                    <p>No WWE events yet.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <!-- AEW Events Tab -->
+        <div class="scroller-wrap events-tab" id="aew-events" style="display: none;">
+            <div class="scroller">
+                {% for event in aew_events %}
+                <div class="card-item">
+                    <a href="{% url 'event_detail' event.pk %}">
+                        <div class="card-poster event-poster">
+                            {% if event.image_url %}
+                            <img src="{{ event.image_url }}" alt="{{ event.name }}">
+                            {% else %}
+                            <div class="poster-placeholder event-placeholder">
+                                <span>{{ event.name|slice:":2" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-content">
+                            <h4>{{ event.name|truncatechars:25 }}</h4>
+                            <p>{{ event.date|date:"M j, Y" }}</p>
+                        </div>
+                    </a>
+                </div>
+                {% empty %}
+                <div class="empty-scroller">
+                    <p>No AEW events yet.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Upcoming Events Section -->
+{% if upcoming_events %}
+<section class="content-section">
+    <div class="container">
+        <div class="section-header">
+            <h3><a href="{% url 'events' %}" class="section-title-link">Upcoming Events</a></h3>
+            <a href="{% url 'events' %}" class="section-link">View All</a>
+        </div>
+        <div class="scroller-wrap">
+            <div class="scroller">
+                {% for event in upcoming_events %}
+                <div class="card-item">
+                    <a href="{% url 'event_detail' event.pk %}">
+                        <div class="card-poster event-poster upcoming-event">
+                            {% if event.image_url %}
+                            <img src="{{ event.image_url }}" alt="{{ event.name }}">
+                            {% else %}
+                            <div class="poster-placeholder event-placeholder">
+                                <span>{{ event.name|slice:":2" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-content">
+                            <h4>{{ event.name|truncatechars:25 }}</h4>
+                            <p>{{ event.date|date:"M j, Y" }} · {{ event.promotion.name }}</p>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Newest Additions Section -->
+<section class="content-section">
+    <div class="container">
+        <div class="section-header">
+            <h3>Newest Additions</h3>
+            <div class="section-tabs">
+                <button class="tab-btn active" data-tab="wrestlers" onclick="showLatestTab('wrestlers')">Wrestlers</button>
+                <button class="tab-btn" data-tab="promotions" onclick="showLatestTab('promotions')">Promotions</button>
+                <button class="tab-btn" data-tab="titles" onclick="showLatestTab('titles')">Titles</button>
+            </div>
+        </div>
+        <!-- Wrestlers Tab -->
+        <div class="scroller-wrap latest-tab" id="latest-wrestlers">
+            <div class="scroller">
+                {% for wrestler in latest_wrestlers %}
+                <div class="card-item">
+                    <a href="{% url 'wrestler_detail' wrestler.pk %}">
+                        <div class="card-poster">
+                            {% if wrestler.image_url %}
+                            <img src="{{ wrestler.image_url }}" alt="{{ wrestler.name }}">
+                            {% else %}
+                            <div class="poster-placeholder">
+                                <span>{{ wrestler.name|slice:":1" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-content">
+                            <h4>{{ wrestler.name }}</h4>
+                            <p>{% if wrestler.debut_year %}Debut: {{ wrestler.debut_year }}{% endif %}</p>
+                        </div>
+                    </a>
+                </div>
+                {% empty %}
+                <div class="empty-scroller">
+                    <p>No wrestlers yet. Check back soon!</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <!-- Promotions Tab -->
+        <div class="scroller-wrap latest-tab" id="latest-promotions" style="display: none;">
+            <div class="scroller">
+                {% for promotion in latest_promotions %}
+                <div class="card-item">
+                    <a href="{% url 'promotion_detail' promotion.pk %}">
+                        <div class="card-poster">
+                            {% if promotion.image_url %}
+                            <img src="{{ promotion.image_url }}" alt="{{ promotion.name }}">
+                            {% else %}
+                            <div class="poster-placeholder">
+                                <span>{{ promotion.abbreviation|default:promotion.name|slice:":2" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-content">
+                            <h4>{{ promotion.name }}</h4>
+                            <p>{% if promotion.founded_year %}Est. {{ promotion.founded_year }}{% endif %}</p>
+                        </div>
+                    </a>
+                </div>
+                {% empty %}
+                <div class="empty-scroller">
+                    <p>No promotions yet.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <!-- Titles Tab -->
+        <div class="scroller-wrap latest-tab" id="latest-titles" style="display: none;">
+            <div class="scroller">
+                {% for title in latest_titles %}
+                <div class="card-item">
+                    <a href="{% url 'title_detail' title.pk %}">
+                        <div class="card-poster">
+                            {% if title.image_url %}
+                            <img src="{{ title.image_url }}" alt="{{ title.name }}">
+                            {% else %}
+                            <div class="poster-placeholder title-placeholder">
+                                <span>🏆</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-content">
+                            <h4>{{ title.name|truncatechars:30 }}</h4>
+                            <p>{{ title.promotion.name }}</p>
+                        </div>
+                    </a>
+                </div>
+                {% empty %}
+                <div class="empty-scroller">
+                    <p>No titles yet.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Database Stats Section -->
+<section class="content-section stats-section">
+    <div class="container">
+        <div class="section-header">
+            <h3>Database Entries</h3>
+        </div>
+        <div class="stats-grid stats-grid-full">
+            <a href="{% url 'wrestlers' %}" class="stat-item stat-link">
+                <span class="stat-value">{{ stats.wrestlers|default:0|intcomma }}</span>
+                <span class="stat-name">Wrestlers</span>
+            </a>
+            <a href="{% url 'promotions' %}" class="stat-item stat-link">
+                <span class="stat-value">{{ stats.promotions|default:0|intcomma }}</span>
+                <span class="stat-name">Promotions</span>
+            </a>
+            <a href="{% url 'events' %}" class="stat-item stat-link">
+                <span class="stat-value">{{ stats.events|default:0|intcomma }}</span>
+                <span class="stat-name">Events</span>
+            </a>
+            <a href="{% url 'matches' %}" class="stat-item stat-link">
+                <span class="stat-value">{{ stats.matches|default:0|intcomma }}</span>
+                <span class="stat-name">Matches</span>
+            </a>
+            <a href="{% url 'titles' %}" class="stat-item stat-link">
+                <span class="stat-value">{{ stats.titles|default:0|intcomma }}</span>
+                <span class="stat-name">Championships</span>
+            </a>
+            <a href="{% url 'venues' %}" class="stat-item stat-link">
+                <span class="stat-value">{{ stats.venues|default:0|intcomma }}</span>
+                <span class="stat-name">Venues</span>
+            </a>
+            <a href="{% url 'stables' %}" class="stat-item stat-link">
+                <span class="stat-value">{{ stats.stables|default:0|intcomma }}</span>
+                <span class="stat-name">Stables</span>
+            </a>
+            <a href="{% url 'games' %}" class="stat-item stat-link">
+                <span class="stat-value">{{ stats.video_games|default:0|intcomma }}</span>
+                <span class="stat-name">Video Games</span>
+            </a>
+            <a href="{% url 'podcasts' %}" class="stat-item stat-link">
+                <span class="stat-value">{{ stats.podcasts|default:0|intcomma }}</span>
+                <span class="stat-name">Podcasts</span>
+            </a>
+            <a href="{% url 'books' %}" class="stat-item stat-link">
+                <span class="stat-value">{{ stats.books|default:0|intcomma }}</span>
+                <span class="stat-name">Books</span>
+            </a>
+            <a href="{% url 'specials' %}" class="stat-item stat-link">
+                <span class="stat-value">{{ stats.specials|default:0|intcomma }}</span>
+                <span class="stat-name">Documentaries</span>
+            </a>
+            <div class="stat-item stat-total">
+                <span class="stat-value">{{ stats.total|default:0|intcomma }}</span>
+                <span class="stat-name">Total Entries</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Join & API Section -->
+<section class="content-section join-api-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="join-card">
+                    <h3>Join Today</h3>
+                    <p>Get access to maintain your own custom wrestling lists, track your favorite wrestlers, and contribute to the world's most comprehensive wrestling database. Sign up and join our community.</p>
+                    <a href="{% url 'signup' %}" class="btn btn-gold btn-lg">Sign Up</a>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="api-card">
+                    <h3>API Access</h3>
+                    <p>Access our comprehensive wrestling data through our REST API. Multi-source aggregated data perfect for apps, integrations, and wrestling history analysis.</p>
+                    <ul class="api-features">
+                        <li>Free tier: 100 requests/hour</li>
+                        <li>Complete wrestler, event, match, and stable data</li>
+                        <li>Aggregated from many authoritative sources</li>
+                        <li>Regularly updated database</li>
+                    </ul>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'account' %}" class="btn btn-primary">Manage API Keys</a>
+                    {% else %}
+                    <a href="{% url 'signup' %}" class="btn btn-primary">Get API Access</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showLatestTab(tabName) {
+    // Hide all latest tabs
+    document.querySelectorAll('.latest-tab').forEach(tab => {
+        tab.style.display = 'none';
+    });
+    // Show selected tab
+    document.getElementById('latest-' + tabName).style.display = 'block';
+
+    // Update active button state
+    const buttons = document.querySelectorAll('.section-tabs button[data-tab="wrestlers"], .section-tabs button[data-tab="promotions"], .section-tabs button[data-tab="titles"]');
+    buttons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.tab === tabName) {
+            btn.classList.add('active');
+        }
+    });
+}
+
+function showEventsTab(tabId) {
+    // Hide all events tabs
+    document.querySelectorAll('.events-tab').forEach(tab => {
+        tab.style.display = 'none';
+    });
+    // Show selected tab
+    document.getElementById(tabId).style.display = 'block';
+
+    // Update active button state
+    const buttons = document.querySelectorAll('.section-tabs button[data-tab="all-events"], .section-tabs button[data-tab="wwe-events"], .section-tabs button[data-tab="aew-events"]');
+    buttons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.tab === tabId) {
+            btn.classList.add('active');
+        }
+    });
+}
+</script>
+{% endblock %}

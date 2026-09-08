@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Edit Wrestler</h1>
+
+<form action="/edit/wrestler/{{ wrestler.id }}" method="post" class="mt-4">
+    <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <input name="name" type="text" class="form-control" value="{{ wrestler.name }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="real_name" class="form-label">Real Name</label>
+        <input name="real_name" type="text" class="form-control" value="{{ wrestler.real_name }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="aliases" class="form-label">Aliases</label>
+        <input name="aliases" type="text" class="form-control" value="{{ wrestler.aliases }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="debut_year" class="form-label">Debut Year</label>
+        <input name="debut_year" type="number" class="form-control" value="{{ wrestler.debut_year }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="hometown" class="form-label">Hometown</label>
+        <input name="hometown" type="text" class="form-control" value="{{ wrestler.hometown }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="nationality" class="form-label">Nationality</label>
+        <input name="nationality" type="text" class="form-control" value="{{ wrestler.nationality }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="finishers" class="form-label">Finishers</label>
+        <input name="finishers" type="text" class="form-control" value="{{ wrestler.finishers }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="about" class="form-label">About</label>
+        <textarea name="about" class="tinymce-editor">{{ wrestler.about }}</textarea>
+    </div>
+
+    <button type="submit" class="btn btn-success">Save Changes</button>
+</form>
+{% endblock %}

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block title %}Hot 100 Wrestlers{% endblock %}
-{% block meta_description %}The definitive monthly ranking of the hottest wrestlers in professional wrestling based on match activity, title importance, media coverage, and more.{% endblock %}
+{% block meta_description %}The definitive monthly ranking of the hottest wrestlers in professional wrestling based on match activity, title importance, and opponent quality.{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -124,8 +124,9 @@
             <h5 class="card-title">About the Hot 100</h5>
             <p class="card-text text-muted mb-0">
                 The Hot 100 ranks wrestlers based on a proprietary algorithm considering match activity,
-                match importance (main events, title matches), title wins and defenses, opponent quality,
-                media mentions, and community engagement. Rankings are generated monthly.
+                match importance (main events, title matches), title wins and defenses, and opponent
+                quality. Rankings are generated monthly. Media mentions and community engagement
+                aren't part of the score yet since that data source isn't built.
             </p>
         </div>
     </div>
@@ -137,7 +138,7 @@
         <h3>Rankings Coming Soon</h3>
         <p class="text-muted">
             The Hot 100 rankings are generated monthly based on match activity,
-            title importance, and media coverage. Check back on the 1st of the month!
+            title importance, and opponent quality. Check back on the 1st of the month!
         </p>
         <a href="{% url 'wrestlers' %}" class="btn btn-outline-warning">Browse All Wrestlers</a>
     </div>

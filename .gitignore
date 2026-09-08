@@ -134,6 +134,10 @@ owdb_django/owdbapp/wrestlingdb.code-workspace
 !SENTRY.md
 !.github/**
 !CLAUDE.md
+# docs/ is real documentation and belongs in git. The blanket *.md above was
+# hiding DEPLOY_NUC_CLOUDFLARE.md, which existed only on two disks and nowhere
+# in version control.
+!docs/**
 
 # =============================================================================
 # Secrets and deployment-specific config (never commit)

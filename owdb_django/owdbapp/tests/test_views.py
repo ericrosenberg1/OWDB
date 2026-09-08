@@ -87,6 +87,20 @@ class PublicViewsTest(TestCase):
         response = self.client.get(reverse("privacy"))
         self.assertEqual(response.status_code, 200)
 
+    def test_homepage_discloses_api_is_in_development(self):
+        """Regression for the owdbapp bug-fix sweep, item 2: the homepage's
+        API CTA used to read like a working API existed (no working /api/
+        endpoint exists anywhere in urls.py)."""
+        response = self.client.get(reverse("index"))
+        self.assertContains(response, "in development")
+        self.assertNotContains(response, "Get API Access")
+
+    def test_about_page_discloses_api_is_in_development(self):
+        """Same regression as above, for the about page's "Use the API" card."""
+        response = self.client.get(reverse("about"))
+        self.assertContains(response, "in development")
+        self.assertNotContains(response, "Get API Access")
+
 
 class SearchViewsTest(TestCase):
     """Tests for search functionality."""
@@ -339,3 +353,14 @@ class AccountViewsTest(TestCase):
         self.client.login(username="testuser", password="testpassword123")
         response = self.client.get(reverse("account"))
         self.assertEqual(response.status_code, 200)
+
+    def test_account_page_discloses_api_is_in_development(self):
+        """Regression for the owdbapp bug-fix sweep, item 2: real users could
+        generate/delete/toggle API keys here with no indication the API they
+        are supposedly for has zero working endpoints anywhere in the app."""
+        self.client.login(username="testuser", password="testpassword123")
+        response = self.client.get(reverse("account"))
+        self.assertContains(response, "in development")
+        # The old copy showed a curl example against a real-looking endpoint
+        # as though it worked today.
+        self.assertNotContains(response, "X-API-Key")

@@ -361,10 +361,9 @@
             </div>
             <div class="col-lg-6">
                 <div class="api-card">
-                    <h3>API Access</h3>
-                    <p>Access our comprehensive wrestling data through our REST API. Multi-source aggregated data perfect for apps, integrations, and wrestling history analysis.</p>
+                    <h3>API Access <small class="text-muted">(in development)</small></h3>
+                    <p>We're building a REST API for our comprehensive wrestling data, perfect for apps, integrations, and wrestling history analysis. It isn't live yet, but you can create a key now to be ready when it launches.</p>
                     <ul class="api-features">
-                        <li>Free tier: 100 requests/hour</li>
                         <li>Complete wrestler, event, match, and stable data</li>
                         <li>Aggregated from many authoritative sources</li>
                         <li>Regularly updated database</li>
@@ -372,7 +371,7 @@
                     {% if user.is_authenticated %}
                     <a href="{% url 'account' %}" class="btn btn-primary">Manage API Keys</a>
                     {% else %}
-                    <a href="{% url 'signup' %}" class="btn btn-primary">Get API Access</a>
+                    <a href="{% url 'signup' %}" class="btn btn-primary">Get Early API Access</a>
                     {% endif %}
                 </div>
             </div>

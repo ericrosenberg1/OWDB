@@ -10,6 +10,13 @@ from django.conf import settings
 from django.core.checks import Error, register
 
 SQLITE_DIR_NOT_WRITABLE = "owdbapp.E001"
+INSECURE_SECRET_KEY_IN_PRODUCTION = "owdbapp.E002"
+
+# Must match the hardcoded fallback in settings.py:
+#   SECRET_KEY = os.getenv("APP_SECRET_KEY", "django-insecure-development-key-change-in-production")
+# Kept here rather than imported from settings so this check has no import-time
+# dependency on settings.py beyond the already-required `django.conf.settings`.
+_DEFAULT_DEV_SECRET_KEY = "django-insecure-development-key-change-in-production"
 
 
 def sqlite_db_directory(config):
@@ -69,3 +76,46 @@ def sqlite_directory_is_writable(app_configs, **kwargs):
             )
         )
     return errors
+
+
+@register()
+def secret_key_is_set_in_production(app_configs, **kwargs):
+    """Fail loudly when production is still running on the public dev SECRET_KEY.
+
+    settings.py falls back to a hardcoded, well-known "django-insecure-..."
+    string when the APP_SECRET_KEY env var is not set. That default is fine for
+    local dev, but it is a real hole in production: SECRET_KEY signs session
+    cookies, the CSRF token, and password-reset-style tokens, so a key anyone
+    can read out of the open-source repo lets an attacker forge all of them.
+    There was previously nothing forcing a real key to be set before the app
+    booted in production.
+
+    Gates on ``APP_ENV == "production"`` rather than ``settings.DEBUG``. They
+    normally agree (settings.py derives ``DEBUG = APP_ENV != "production"``),
+    but `manage.py test` unconditionally forces ``settings.DEBUG = False`` for
+    the whole run (Django's own setup_test_environment(), independent of
+    APP_ENV), while the test suite also never sets APP_SECRET_KEY. Gating on
+    DEBUG would make this check fire, and abort, every single `manage.py
+    test` invocation project-wide. APP_ENV is the one signal the test runner
+    does not touch.
+    """
+    if getattr(settings, "APP_ENV", "development") != "production":
+        return []
+    if settings.SECRET_KEY != _DEFAULT_DEV_SECRET_KEY:
+        return []
+    return [
+        Error(
+            "SECRET_KEY is still the public Django dev default even though "
+            "APP_ENV=production. Anyone can read this key from the "
+            "open-source repo and use it to forge session cookies, CSRF "
+            "tokens, and password-reset links.",
+            hint=(
+                "Set the APP_SECRET_KEY environment variable to a unique, "
+                "randomly-generated secret before starting the app in "
+                'production. Generate one with: python -c "from '
+                "django.core.management.utils import get_random_secret_key; "
+                'print(get_random_secret_key())"'
+            ),
+            id=INSECURE_SECRET_KEY_IN_PRODUCTION,
+        )
+    ]

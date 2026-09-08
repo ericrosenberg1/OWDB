@@ -992,11 +992,41 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
                not a loss.
 
         Returns a dict the template can render directly.
+
+        Performance (owdbapp bug-fix sweep, item 5): total/draws/decided/
+        title_matches are now one query instead of four. They all filter on
+        plain columns of the Match row itself (outcome_type, winning_side,
+        winner_id, title_id), so folding them into a single aggregate() with
+        conditional Count(filter=Q(...)) is safe, since no to-many join is
+        involved, so there's no risk of one Count's join inflating another's.
+        wins_via_mp/wins_via_fk/title_wins each need their own join to
+        participant_links (a to-many relation, one row per match side), so
+        they stay separate queries: combining a to-many join with the
+        plain-column counts above in one query would fan the "matches" rows
+        out per participant row and inflate total/draws/decided/
+        title_matches. Net effect: 8 sequential queries -> 4. Verified
+        against the pre-consolidation numbers in test_models.py.
         """
         from django.db.models import Count, Q
 
-        # All matches this wrestler was in.
-        total = self.matches.count()
+        aggregates = self.matches.aggregate(
+            total=Count("id"),
+            # Draws / no-contests — outcome_type tells us.
+            draws=Count("id", filter=Q(outcome_type__in=("draw", "no_contest"))),
+            # Losses = matches − (wins + draws + matches we cannot judge). We
+            # treat "no winning_side identified and no outcome_type" as
+            # unknown rather than guessing loss.
+            decided=Count(
+                "id",
+                filter=~Q(outcome_type__in=("draw", "no_contest"))
+                & (Q(winning_side__isnull=False) | Q(winner__isnull=False)),
+            ),
+            title_matches=Count("id", filter=Q(title__isnull=False)),
+        )
+        total = aggregates["total"]
+        draws = aggregates["draws"]
+        decided = aggregates["decided"]
+        title_matches = aggregates["title_matches"]
 
         # Wins via the precise MatchParticipant path…
         wins_via_mp = self.match_participations.filter(is_winner=True).count()
@@ -1006,24 +1036,12 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
         ).count()
         wins = wins_via_mp + wins_via_fk
 
-        # Draws / no-contests — outcome_type tells us.
-        draws = self.matches.filter(outcome_type__in=("draw", "no_contest")).count()
-
-        # Losses = matches − (wins + draws + matches we cannot judge).
-        # We treat "no winning_side identified and no outcome_type" as
-        # unknown rather than guessing loss.
-        decided = (
-            self.matches.exclude(outcome_type__in=("draw", "no_contest"))
-            .exclude(winning_side__isnull=True, winner__isnull=True)
-            .count()
-        )
         losses = max(decided - wins, 0)
         unknown = max(total - wins - losses - draws, 0)
 
         win_pct = round((wins / (wins + losses) * 100), 1) if (wins + losses) > 0 else 0.0
 
         # Notable counts — title matches + title changes.
-        title_matches = self.matches.exclude(title__isnull=True).count()
         title_wins = (
             self.matches.filter(
                 title__isnull=False,
@@ -1037,13 +1055,6 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
             .count()
         )
 
-        # Main events — last match on the card.
-        main_events = (
-            self.matches.annotate(max_order=Count("event__matches"))
-            .filter(match_order__gte=1)
-            .count()
-        )  # approximation; cheap
-
         return {
             "wins": wins,
             "losses": losses,
@@ -1053,7 +1064,6 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
             "win_percentage": win_pct,
             "title_matches": title_matches,
             "title_wins": title_wins,
-            "main_events": main_events,
         }
 
     def get_recent_form(self, limit: int = 10) -> list:
@@ -1221,28 +1231,85 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
         """
         Get counts for all meta categories this wrestler appears in.
         Returns a dict with category names and counts.
+
+        Performance (owdbapp bug-fix sweep, item 5): one aggregate() query
+        instead of 10 sequential .count() calls. Every Count below uses
+        distinct=True, which is what makes combining this many relations
+        into one query safe rather than approximate: COUNT(DISTINCT
+        <related pk>) is unaffected by the row duplication that combining
+        several to-many joins in one query causes for *other* branches (see
+        Django's aggregation docs, "Combining multiple aggregations"). Each
+        Count still reports the correct distinct count of its own relation's
+        rows regardless of how many rows the other joined relations fan out
+        to. Verified against the pre-consolidation per-relation counts in
+        test_models.py with a fixture that deliberately overlaps several
+        many-to-many relations at once (the exact scenario that would expose
+        a join fan-out bug if distinct=True weren't doing its job).
         """
+        from django.db.models import Count, Q
+
+        # NOTE: the output alias for the "matches" relation can't be named
+        # "matches" here. Django resolves "matches__event" etc. against
+        # aliases already added to the same aggregate() call, in kwarg order,
+        # so a `matches=Count(...)` alias would shadow the real "matches"
+        # relation for every later `Count("matches__...")` below and raise
+        # FieldError ("Unsupported lookup ... for IntegerField"). Caught by
+        # test_models.py before this shipped.
+        # Review-gate note: matches/events/promotions/titles/stables all sit
+        # on VerificationMixin models, so a `rejected` one is excluded via a
+        # `filter=~Q(...)` on its own Count() — same policy as `.public()`
+        # (models.py's VerificationQuerySet), just expressed per-annotation
+        # so this stays a single query. podcast_appearances/books/video_games
+        # /specials have no verification_state field at all (only 8 models
+        # do — see VerificationQuerySet), so they're left unfiltered.
+        counts = Wrestler.objects.filter(pk=self.pk).aggregate(
+            match_count=Count(
+                "matches", filter=~Q(matches__verification_state="rejected"), distinct=True
+            ),
+            events=Count(
+                "matches__event",
+                filter=~Q(matches__event__verification_state="rejected"),
+                distinct=True,
+            ),
+            promotions=Count(
+                "matches__event__promotion",
+                filter=~Q(matches__event__promotion__verification_state="rejected"),
+                distinct=True,
+            ),
+            titles=Count(
+                "matches__title",
+                filter=~Q(matches__title__verification_state="rejected"),
+                distinct=True,
+            ),
+            stables=Count(
+                "stables", filter=~Q(stables__verification_state="rejected"), distinct=True
+            ),
+            podcast_appearances=Count("podcast_appearances", distinct=True),
+            books=Count("books", distinct=True),
+            video_games=Count("video_games", distinct=True),
+            specials=Count("specials", distinct=True),
+            # Every match this wrestler is in also lists them as one of its
+            # "wrestlers", so this distinct count always includes self.
+            # Subtract 1 below to turn "co-participants" into "rivals".
+            co_participants=Count(
+                "matches__wrestlers",
+                filter=~Q(matches__wrestlers__verification_state="rejected"),
+                distinct=True,
+            ),
+        )
+        rivals = max(counts["co_participants"] - 1, 0) if counts["match_count"] else 0
+
         return {
-            "matches": self.matches.public().count(),
-            "events": Event.objects.public().filter(matches__wrestlers=self).distinct().count(),
-            "promotions": Promotion.objects.public()
-            .filter(events__matches__wrestlers=self)
-            .distinct()
-            .count(),
-            "titles": Title.objects.public()
-            .filter(title_matches__wrestlers=self)
-            .distinct()
-            .count(),
-            "stables": self.stables.count(),
-            "podcast_appearances": self.podcast_appearances.count(),
-            "books": self.books.count(),
-            "video_games": self.video_games.count(),
-            "specials": self.specials.count(),
-            "rivals": Wrestler.objects.public()
-            .filter(matches__in=self.matches.all())
-            .exclude(id=self.id)
-            .distinct()
-            .count(),
+            "matches": counts["match_count"],
+            "events": counts["events"],
+            "promotions": counts["promotions"],
+            "titles": counts["titles"],
+            "stables": counts["stables"],
+            "podcast_appearances": counts["podcast_appearances"],
+            "books": counts["books"],
+            "video_games": counts["video_games"],
+            "specials": counts["specials"],
+            "rivals": rivals,
         }
 
     def get_completeness_score(self):
@@ -2819,6 +2886,12 @@ class Hot100Calculator:
         importance_score = self._calc_importance_score(wrestler)
         title_score = self._calc_title_score(wrestler, start_date, end_date)
         opponent_score = self._calc_opponent_score(wrestler)
+        # news_score/social_score/views_score are always 0 today, see the
+        # "NOT YET IMPLEMENTED" docstrings below. total_score is therefore
+        # based only on real match/title/opponent activity, never on
+        # fabricated data. Kept in the sum (as 0) rather than removed so the
+        # per-component breakdown stored on Hot100Entry stays self-explaining
+        # once a real integration lands.
         news_score = self._calc_news_score(wrestler)
         social_score = self._calc_social_score(wrestler)
         views_score = self._calc_views_score(wrestler)
@@ -2924,77 +2997,38 @@ class Hot100Calculator:
     def _calc_news_score(self, wrestler) -> float:
         """
         Calculate score based on news mentions.
-        Currently returns placeholder - would integrate with news API.
+
+        NOT YET IMPLEMENTED: there is no news aggregation integration. This
+        used to return an md5-hash-derived pseudo-random number dressed up
+        as "deterministic variation based on wrestler data richness": that
+        was fabricated data presented as a real signal in total_score and on
+        the Hot 100 page. Returns 0 until a real news source is wired in.
+        See the owdbapp bug-fix sweep, item 1.
         """
-        # TODO: Integrate with news aggregation service
-        # For now, use deterministic score based on wrestler data richness
-        import hashlib
-
-        score = 0
-
-        # Active wrestlers get bonus
-        if wrestler.retirement_year is None and wrestler.debut_year:
-            score += 4.0
-
-        # Wrestlers with rich profiles get news bonus (implies notability)
-        if wrestler.about and len(wrestler.about) > 200:
-            score += 3.0
-        if wrestler.wikipedia_url:
-            score += 2.5
-
-        # Add deterministic variation based on wrestler name
-        hash_val = int(hashlib.md5(wrestler.name.encode()).hexdigest()[:8], 16)
-        variation = (hash_val % 100) / 100 * 3.0  # 0-3 variation
-        return min(score + variation, 15)
+        return 0.0
 
     def _calc_social_score(self, wrestler) -> float:
         """
         Calculate score based on social/media engagement.
-        Currently returns placeholder - would integrate with YouTube API.
+
+        NOT YET IMPLEMENTED: there is no YouTube/podcast-mentions
+        integration. This used to return an md5-hash-derived pseudo-random
+        number blended into total_score as if it were real engagement data.
+        Returns 0 until a real social/engagement source is wired in. See the
+        owdbapp bug-fix sweep, item 1.
         """
-        # TODO: Integrate with YouTube Data API, podcast mentions
-        import hashlib
-
-        score = 0
-
-        # Recent active wrestlers likely have more social engagement
-        if wrestler.debut_year and wrestler.debut_year >= 2010:
-            score += 3.0
-        if wrestler.retirement_year is None:
-            score += 2.0
-
-        # Wrestlers with multiple data sources are more notable
-        sources = sum(
-            [
-                bool(wrestler.wikipedia_url),
-                bool(wrestler.cagematch_url),
-                bool(wrestler.profightdb_url),
-            ]
-        )
-        score += sources * 1.2
-
-        # Deterministic variation
-        hash_val = int(hashlib.md5(f"{wrestler.name}_social".encode()).hexdigest()[:8], 16)
-        variation = (hash_val % 100) / 100 * 2.0
-        return min(score + variation, 10)
+        return 0.0
 
     def _calc_views_score(self, wrestler) -> float:
         """
         Calculate score based on page views on this website.
-        Currently returns placeholder - would integrate with analytics.
+
+        NOT YET IMPLEMENTED: there is no site-analytics integration. This
+        used to return an md5-hash-derived pseudo-random number blended into
+        total_score as if it were a real view count. Returns 0 until a real
+        analytics source is wired in. See the owdbapp bug-fix sweep, item 1.
         """
-        # TODO: Integrate with site analytics
-        import hashlib
-
-        # Deterministic variation based on wrestler
-        hash_val = int(hashlib.md5(f"{wrestler.name}_views".encode()).hexdigest()[:8], 16)
-        base = (hash_val % 100) / 100 * 4.0
-
-        # Boost for wrestlers with images (more likely to be viewed)
-        if wrestler.image_url:
-            base += 1.5
-
-        return min(base, 5)
+        return 0.0
 
     def generate_ranking(self, publish: bool = False) -> Hot100Ranking:
         """Generate and save Hot 100 ranking for the month."""

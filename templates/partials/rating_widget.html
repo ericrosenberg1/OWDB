@@ -1,0 +1,38 @@
+{% comment %}
+Favorite toggle + 1-10 rating control, backed by UserRating (models.py).
+Rendered by {% rating_widget entity "wrestler" %} (rating_tags.py). Renders
+nothing for anonymous visitors — favoriting/rating is a logged-in feature.
+
+One <form> with two submit buttons posting to the `rate_entity` view: the
+star button submits action=toggle_favorite, the Save button submits
+action=rate alongside whatever the <select> is set to. `next` round-trips
+the current page so the view can redirect back here.
+
+Required context (from rating_tags.rating_widget): is_authenticated,
+entity_type, entity_id, user_rating (the viewer's own UserRating row, or
+None), rating_range.
+{% endcomment %}
+{% if is_authenticated %}
+<div class="rating-widget">
+    <form method="post" action="{% url 'rate_entity' %}" class="rating-widget__form">
+        {% csrf_token %}
+        <input type="hidden" name="entity_type" value="{{ entity_type }}">
+        <input type="hidden" name="entity_id" value="{{ entity_id }}">
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button type="submit" name="action" value="toggle_favorite"
+                class="btn btn-sm rating-widget__favorite {% if user_rating.is_favorite %}btn-gold{% else %}btn-outline-light{% endif %}"
+                aria-pressed="{% if user_rating.is_favorite %}true{% else %}false{% endif %}">
+            {% if user_rating.is_favorite %}&#9733; Favorited{% else %}&#9734; Favorite{% endif %}
+        </button>
+        <label for="rating-select-{{ entity_type }}-{{ entity_id }}" class="visually-hidden">Your rating, 1 to 10</label>
+        <select name="rating" id="rating-select-{{ entity_type }}-{{ entity_id }}"
+                class="form-select form-select-sm rating-widget__select">
+            <option value="">Rate&hellip;</option>
+            {% for n in rating_range %}
+            <option value="{{ n }}" {% if user_rating.rating == n %}selected{% endif %}>{{ n }}/10</option>
+            {% endfor %}
+        </select>
+        <button type="submit" name="action" value="rate" class="btn btn-sm btn-outline-light">Save Rating</button>
+    </form>
+</div>
+{% endif %}

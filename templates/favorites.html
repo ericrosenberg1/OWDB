@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}My Favorites — OWDB{% endblock %}
+
+{% block content %}
+<h1>My Favorites</h1>
+<p class="text-muted mb-4">Everything you've starred, newest first.</p>
+
+{% if items %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Entity</th>
+                <th>Type</th>
+                <th>Your Rating</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in items %}
+            <tr>
+                <td>
+                    {% if item.entity and item.url_name %}
+                        <a href="{% url item.url_name item.entity.pk %}">{{ item.entity }}</a>
+                    {% elif item.entity %}
+                        {{ item.entity }}
+                    {% else %}
+                        <span class="text-muted">No longer available</span>
+                    {% endif %}
+                </td>
+                <td>{{ item.rating.get_entity_type_display }}</td>
+                <td>{% if item.rating.rating %}{{ item.rating.rating }}/10{% else %}—{% endif %}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+{% include "partials/empty_state.html" with icon="⭐" title="No Favorites Yet" message="Star a wrestler, promotion, event, match, championship, stable, or theme song to see it here." %}
+{% endif %}
+{% endblock %}

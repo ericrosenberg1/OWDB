@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Theme Songs</h1>
+
+{% include "partials/search_form.html" %}
+
+{% if theme_songs %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Artist</th>
+                <th>Released</th>
+                <th>Album</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for song in theme_songs %}
+            <tr>
+                <td><a href="{% url 'theme_song_detail' song.pk %}">{{ song.title }}</a></td>
+                <td>{{ song.artist|default:"—" }}</td>
+                <td>{{ song.release_year|default:"—" }}</td>
+                <td>{{ song.album|default:"—" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+
+{% else %}
+{% include "partials/empty_state.html" with icon="🎵" title="No Theme Songs Found" message="No theme songs match your search criteria." %}
+{% endif %}
+{% endblock %}

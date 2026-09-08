@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Action Figures</h1>
+
+{% include "partials/search_form.html" %}
+
+{% if action_figures %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Manufacturer</th>
+                <th>Years</th>
+                <th>Promotion</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for figure in action_figures %}
+            <tr>
+                <td><a href="{% url 'action_figure_detail' figure.pk %}">{{ figure.name }}</a></td>
+                <td>{{ figure.manufacturer|default:"—" }}</td>
+                <td>
+                    {% if figure.start_year %}{{ figure.start_year }}–{{ figure.end_year|default:"present" }}{% else %}—{% endif %}
+                </td>
+                <td>
+                    {% if figure.promotion %}<a href="{% url 'promotion_detail' figure.promotion.pk %}">{{ figure.promotion.name }}</a>{% else %}—{% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+
+{% else %}
+{% include "partials/empty_state.html" with icon="🧸" title="No Action Figures Found" message="No action figures match your search criteria." %}
+{% endif %}
+{% endblock %}

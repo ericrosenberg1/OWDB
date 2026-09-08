@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load linking_tags %}
+{% load rating_tags %}
+
+{% block title %}{{ theme_song.title }} — Theme Song — OWDB{% endblock %}
+
+{% block content %}
+<div class="detail-header">
+    <h1 class="detail-title">{{ theme_song.title }}</h1>
+    <div class="detail-meta">
+        {% if theme_song.artist %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Artist:</span> {{ theme_song.artist }}
+        </div>
+        {% endif %}
+        {% if theme_song.release_year %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Released:</span> {{ theme_song.release_year }}
+        </div>
+        {% endif %}
+        {% if theme_song.album %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Album:</span> {{ theme_song.album }}
+        </div>
+        {% endif %}
+        {% if theme_song.wikipedia_url %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Wikipedia:</span>
+            <a href="{{ theme_song.wikipedia_url }}" target="_blank" rel="noopener noreferrer">view ↗</a>
+        </div>
+        {% endif %}
+    </div>
+    {% rating_widget theme_song "theme_song" %}
+</div>
+
+{% with about_text=theme_song|about_with_links %}
+    {% if about_text %}
+    <div class="card mb-4">
+        <div class="card-header">About</div>
+        <div class="card-body">
+            <p>{{ about_text|linebreaks }}</p>
+        </div>
+    </div>
+    {% endif %}
+{% endwith %}
+
+{% with linked_sections=theme_song|linked_from_sections %}
+    {% include "partials/linked_from.html" with sections=linked_sections %}
+{% endwith %}
+
+{% if theme_song.used_by_wrestlers.exists %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Used By</span>
+        <span class="badge bg-secondary">{{ theme_song.used_by_wrestlers.count }}</span>
+    </div>
+    <ul class="list-group list-group-flush">
+        {% for wrestler in theme_song.used_by_wrestlers.all %}
+        <li class="list-group-item bg-transparent">
+            <a href="{% url 'wrestler_detail' wrestler.pk %}">{{ wrestler.name }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<a href="{% url 'theme_songs' %}" class="btn btn-secondary">&larr; Back to Theme Songs</a>
+{% endblock %}

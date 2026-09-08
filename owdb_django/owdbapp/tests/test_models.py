@@ -157,6 +157,30 @@ class APIKeyModelTest(TestCase):
         # Free tier should have 1000 limit
         self.assertTrue(api_key.check_rate_limit())
 
+    def test_rate_limit_matches_published_tiers(self):
+        """Regression for the rate-limit fix: check_rate_limit()'s docstring
+        used to say "1000 free / unlimited paid" while the separate
+        rate_limit property said "100 free / 1000 paid" — two different,
+        both-wrong pairs of numbers for the same two tiers, with no real
+        caller of either. Both must now agree with each other and with the
+        real published tiers (README.md -> API -> Rate Limits / the live
+        DRF throttle in settings.REST_FRAMEWORK)."""
+        free_key = APIKey.objects.create(user=self.user, key=APIKey.generate_key(), is_paid=False)
+        paid_key = APIKey.objects.create(user=self.user, key=APIKey.generate_key(), is_paid=True)
+
+        self.assertEqual(free_key.rate_limit, 1000)
+        self.assertEqual(paid_key.rate_limit, 10000)
+        self.assertTrue(free_key.check_rate_limit())
+        self.assertTrue(paid_key.check_rate_limit())
+
+        # check_rate_limit() actually compares against requests_today, not
+        # just returning True unconditionally for paid keys (the old
+        # docstring's "unlimited" claim).
+        free_key.requests_today = 1000
+        paid_key.requests_today = 10000
+        self.assertFalse(free_key.check_rate_limit())
+        self.assertFalse(paid_key.check_rate_limit())
+
 
 class EmailVerificationTokenTest(TestCase):
     """Tests for email verification tokens."""

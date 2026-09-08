@@ -2631,13 +2631,22 @@ class APIKey(TimeStampedModel):
         return secrets.token_hex(20)
 
     def check_rate_limit(self):
-        """Return True if this key is within its daily request limit.
+        """Return True if this key is within its daily request-volume ceiling.
 
-        Free tier: 1000 requests/day. Paid tier: unlimited.
+        This is the coarse, informational counter shown on the account page
+        (templates/account.html renders requests_today/rate_limit) — it is
+        NOT how the live API enforces limits. Real, per-hour enforcement is
+        owdb_django.owdbapp.api.throttling.APIKeyRateThrottle, driven by
+        settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]. Both now key off
+        the same `is_paid` flag and the same two numbers (see `rate_limit`
+        below) — previously this method's docstring claimed "1000 free /
+        unlimited paid" while `rate_limit` claimed "100 free / 1000 paid",
+        two different and equally made-up pairs for the same tiers. Neither
+        had a real caller, so nothing enforced either. Fixed to agree with
+        each other and with the real published tiers (README.md → API →
+        Rate Limits).
         """
-        if self.is_paid:
-            return True
-        return self.requests_today < 1000
+        return self.requests_today < self.rate_limit
 
     def reset_daily_count(self):
         """Reset the daily request count."""
@@ -2662,8 +2671,15 @@ class APIKey(TimeStampedModel):
 
     @property
     def rate_limit(self):
-        """Return the rate limit for this key."""
-        return 1000 if self.is_paid else 100
+        """Request-volume ceiling for this key's tier.
+
+        An APIKey row only ever exists for a signed-in, key-holding user —
+        there's no "anonymous APIKey" — so the two tiers this property can
+        express are the README's "Authenticated" (1,000) and "Paid"
+        (10,000). The lower "Free"/anonymous tier (100) applies only to
+        keyless requests and is enforced separately, by AnonRateThrottle.
+        """
+        return 10000 if self.is_paid else 1000
 
     @property
     def is_rate_limited(self):

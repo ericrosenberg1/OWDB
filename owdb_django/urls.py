@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 from owdb_django.owdbapp import views
 
 urlpatterns = [
@@ -82,4 +82,11 @@ urlpatterns = [
     # Deeper readiness check for humans and monitoring. Kept off the container
     # healthcheck path because it opens a real write transaction. (ROS-1209)
     path("health/ready/", views.health_ready, name="health_ready"),
+    # =========================================================================
+    # REST API v1 (feat/rest-api-v1). Every route under /api/ is registered
+    # in owdb_django/owdbapp/api_urls.py via a DRF router — this include()
+    # should be the only line anyone else ever needs to touch here to pull
+    # that work in.
+    # =========================================================================
+    path("api/", include("owdb_django.owdbapp.api_urls")),
 ]

@@ -15,7 +15,7 @@ An open, fan-curated wrestling database and platform — inspired by TMDB and IM
 
 - **Django 5.2+** web application with PostgreSQL
 - **Redis** caching and **Celery** background tasks
-- **REST API** with JWT authentication and rate limiting
+- **REST API** for the core catalog: read-only, browsable with no login, an API key just raises your rate limit
 - **Dark mode** responsive interface
 - **Docker Compose** for easy deployment
 
@@ -61,23 +61,47 @@ python manage.py runserver
 
 ## API
 
-```bash
-# Get JWT token
-curl -X POST https://wrestlingdb.org/api/token/ \
-  -H "Content-Type: application/json" \
-  -d '{"username": "user", "password": "pass"}'
+Read-only (`GET`) endpoints for the core catalog. Browsing needs no
+account. An API key (generate one from
+[your account page](https://wrestlingdb.org/account/) once signed in)
+doesn't gate access, it just raises your rate limit. Full route list:
+`owdb_django/owdbapp/api_urls.py`.
 
-# Use token
+| Resource | List | Detail |
+|---|---|---|
+| Wrestlers | `GET /api/wrestlers/` | `GET /api/wrestlers/<id>/` |
+| Promotions | `GET /api/promotions/` | `GET /api/promotions/<id>/` |
+| Events | `GET /api/events/` | `GET /api/events/<id>/` |
+| Matches | `GET /api/matches/` | `GET /api/matches/<id>/` |
+| Titles | `GET /api/titles/` | `GET /api/titles/<id>/` |
+| Venues | `GET /api/venues/` | `GET /api/venues/<id>/` |
+| Stables | `GET /api/stables/` | `GET /api/stables/<id>/` |
+| Books | `GET /api/books/` | `GET /api/books/<id>/` |
+| Video Games | `GET /api/games/` | `GET /api/games/<id>/` |
+| Podcasts | `GET /api/podcasts/` | `GET /api/podcasts/<id>/` |
+| Specials | `GET /api/specials/` | `GET /api/specials/<id>/` |
+
+List responses are paginated (100 per page) and nest the fields a
+consumer actually wants: a match includes wrestler and event *names*,
+not bare ids requiring a second request. Write endpoints (`POST`/`PUT`/
+`DELETE`) don't exist in v1, this is browse-only.
+
+```bash
+# No key needed to browse, at the Free rate limit.
+curl https://wrestlingdb.org/api/wrestlers/
+
+# With an API key from your account page, for the higher Authenticated
+# (or Paid) rate limit below.
 curl https://wrestlingdb.org/api/wrestlers/ \
-  -H "Authorization: Bearer YOUR_TOKEN"
+  -H "X-API-Key: YOUR_KEY"
 ```
 
 ### Rate Limits
 
 | Tier | Requests/Hour |
 |------|---------------|
-| Free | 100 |
-| Authenticated | 1,000 |
+| Free (no key) | 100 |
+| Authenticated (has a key) | 1,000 |
 | Paid | 10,000 |
 
 ---

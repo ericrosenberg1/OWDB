@@ -46,6 +46,10 @@ staticfiles/
 # Media files
 media/
 
+# Generated ID-list exports (manage.py export_id_list) — regenerable data
+# dumps, not source.
+exports/
+
 # =============================================================================
 # Environment & Secrets
 # =============================================================================

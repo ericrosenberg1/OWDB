@@ -2742,6 +2742,12 @@ class Hot100Calculator:
         importance_score = self._calc_importance_score(wrestler)
         title_score = self._calc_title_score(wrestler, start_date, end_date)
         opponent_score = self._calc_opponent_score(wrestler)
+        # news_score/social_score/views_score are always 0 today — see the
+        # "NOT YET IMPLEMENTED" docstrings below. total_score is therefore
+        # based only on real match/title/opponent activity, never on
+        # fabricated data. Kept in the sum (as 0) rather than removed so the
+        # per-component breakdown stored on Hot100Entry stays self-explaining
+        # once a real integration lands.
         news_score = self._calc_news_score(wrestler)
         social_score = self._calc_social_score(wrestler)
         views_score = self._calc_views_score(wrestler)
@@ -2847,77 +2853,38 @@ class Hot100Calculator:
     def _calc_news_score(self, wrestler) -> float:
         """
         Calculate score based on news mentions.
-        Currently returns placeholder - would integrate with news API.
+
+        NOT YET IMPLEMENTED: there is no news aggregation integration. This
+        used to return an md5-hash-derived pseudo-random number dressed up
+        as "deterministic variation based on wrestler data richness" — that
+        was fabricated data presented as a real signal in total_score and on
+        the Hot 100 page. Returns 0 until a real news source is wired in.
+        See the owdbapp bug-fix sweep, item 1.
         """
-        # TODO: Integrate with news aggregation service
-        # For now, use deterministic score based on wrestler data richness
-        import hashlib
-
-        score = 0
-
-        # Active wrestlers get bonus
-        if wrestler.retirement_year is None and wrestler.debut_year:
-            score += 4.0
-
-        # Wrestlers with rich profiles get news bonus (implies notability)
-        if wrestler.about and len(wrestler.about) > 200:
-            score += 3.0
-        if wrestler.wikipedia_url:
-            score += 2.5
-
-        # Add deterministic variation based on wrestler name
-        hash_val = int(hashlib.md5(wrestler.name.encode()).hexdigest()[:8], 16)
-        variation = (hash_val % 100) / 100 * 3.0  # 0-3 variation
-        return min(score + variation, 15)
+        return 0.0
 
     def _calc_social_score(self, wrestler) -> float:
         """
         Calculate score based on social/media engagement.
-        Currently returns placeholder - would integrate with YouTube API.
+
+        NOT YET IMPLEMENTED: there is no YouTube/podcast-mentions
+        integration. This used to return an md5-hash-derived pseudo-random
+        number blended into total_score as if it were real engagement data.
+        Returns 0 until a real social/engagement source is wired in. See the
+        owdbapp bug-fix sweep, item 1.
         """
-        # TODO: Integrate with YouTube Data API, podcast mentions
-        import hashlib
-
-        score = 0
-
-        # Recent active wrestlers likely have more social engagement
-        if wrestler.debut_year and wrestler.debut_year >= 2010:
-            score += 3.0
-        if wrestler.retirement_year is None:
-            score += 2.0
-
-        # Wrestlers with multiple data sources are more notable
-        sources = sum(
-            [
-                bool(wrestler.wikipedia_url),
-                bool(wrestler.cagematch_url),
-                bool(wrestler.profightdb_url),
-            ]
-        )
-        score += sources * 1.2
-
-        # Deterministic variation
-        hash_val = int(hashlib.md5(f"{wrestler.name}_social".encode()).hexdigest()[:8], 16)
-        variation = (hash_val % 100) / 100 * 2.0
-        return min(score + variation, 10)
+        return 0.0
 
     def _calc_views_score(self, wrestler) -> float:
         """
         Calculate score based on page views on this website.
-        Currently returns placeholder - would integrate with analytics.
+
+        NOT YET IMPLEMENTED: there is no site-analytics integration. This
+        used to return an md5-hash-derived pseudo-random number blended into
+        total_score as if it were a real view count. Returns 0 until a real
+        analytics source is wired in. See the owdbapp bug-fix sweep, item 1.
         """
-        # TODO: Integrate with site analytics
-        import hashlib
-
-        # Deterministic variation based on wrestler
-        hash_val = int(hashlib.md5(f"{wrestler.name}_views".encode()).hexdigest()[:8], 16)
-        base = (hash_val % 100) / 100 * 4.0
-
-        # Boost for wrestlers with images (more likely to be viewed)
-        if wrestler.image_url:
-            base += 1.5
-
-        return min(base, 5)
+        return 0.0
 
     def generate_ranking(self, publish: bool = False) -> Hot100Ranking:
         """Generate and save Hot 100 ranking for the month."""

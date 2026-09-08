@@ -1,10 +1,12 @@
 {% extends "base.html" %}
 {% load linking_tags %}
+{% load verification_tags %}
 
 {% block content %}
 <div class="detail-header">
     <h1 class="detail-title">{{ match.match_text }}</h1>
     <div class="detail-meta">
+        <div class="detail-meta-item">{% verification_state_badge match %}</div>
         <div class="detail-meta-item">
             <span class="detail-meta-label">Event:</span>
             <a href="{% url 'event_detail_slug' match.event.slug %}">{{ match.event.name }}</a>
@@ -139,6 +141,12 @@
         {% endif %}
     </div>
 </div>
+
+{% verification_stamp match %}
+
+{% with entity_type="match" entity=match %}
+    {% include "partials/sources_used.html" %}
+{% endwith %}
 
 <a href="{% url 'event_detail_slug' match.event.slug %}" class="btn btn-secondary">&larr; Back to Event</a>
 <a href="{% url 'matches' %}" class="btn btn-outline-light ms-2">All Matches</a>

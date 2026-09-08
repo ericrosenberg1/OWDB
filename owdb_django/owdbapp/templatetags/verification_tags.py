@@ -38,11 +38,56 @@ SOURCE_DISPLAY = {
 }
 
 
+# Honesty copy for entities that aren't fully verified yet — the review-gate's
+# UI half. The query-level gate (VerificationQuerySet.public() in models.py)
+# only ever hides "rejected"; "candidate" and "provisional" stay visible on
+# purpose (see the policy note there), so this is how a reader is told not to
+# take the page at face value. "verified" and "rejected" are intentionally
+# absent: a verified entity gets no extra badge (the sources panel below
+# already makes the case), and a rejected entity never reaches a template in
+# the first place. Keyed by VerificationMixin.verification_state.
+VERIFICATION_STATE_DISPLAY = {
+    "candidate": {
+        "label": "Unverified — pending review",
+        "modifier": "candidate",
+        "detail": (
+            "This entry exists because we found a reference to it, but nobody has "
+            "confirmed the details against a source yet. Treat it as a lead, not a fact."
+        ),
+    },
+    "provisional": {
+        "label": "Provisional",
+        "modifier": "provisional",
+        "detail": (
+            "This entry has structured data on file, but is still missing "
+            "source-by-source confirmation for one or more fields."
+        ),
+    },
+}
+
+
 def _entity_type_for(obj) -> Optional[str]:
     cls = obj.__class__.__name__.lower()
-    if cls in {"wrestler", "promotion", "event", "match", "title", "venue", "stable"}:
+    if cls in {"wrestler", "promotion", "event", "match", "title", "venue", "stable", "tvshow"}:
         return cls
     return None
+
+
+@register.inclusion_tag("partials/verification_state_badge.html")
+def verification_state_badge(entity):
+    """
+    Small honesty pill for `candidate` / `provisional` entities.
+
+    Reuses the same `.status-badge` visual language already shown for
+    Active/Retired state near a detail page's title (see styles.css), so
+    list rows and detail headers can drop in the same indicator. Renders
+    nothing for `verified` (the sources panel below speaks for it) or for
+    any other/blank state — this is a UI nicety, not the security boundary
+    (that's VerificationQuerySet.public() in models.py; a rejected entity
+    never reaches a template that could call this).
+    """
+    state = getattr(entity, "verification_state", None)
+    return {"state_display": VERIFICATION_STATE_DISPLAY.get(state)}
 
 
 @register.inclusion_tag("partials/verification_stamp.html")
@@ -53,16 +98,23 @@ def verification_stamp(entity):
     Pulls every source we have direct evidence for — either a successful
     SourceFetch row, or a stored profile URL on the entity itself. Trademarked
     databases get a generic display name; everything else is named & linked.
+    Also carries `state_display` (see VERIFICATION_STATE_DISPLAY) so the same
+    panel can lead with an honest "unverified" / "provisional" note instead
+    of just going quiet when an entity has zero sources on file — which is
+    the common case for a `candidate` row.
     """
+    state_display = VERIFICATION_STATE_DISPLAY.get(getattr(entity, "verification_state", None))
+    empty = {"sources": [], "total": 0, "verified_count": 0, "linked_count": 0}
+
     entity_type = _entity_type_for(entity)
     if entity_type is None:
-        return {"sources": [], "total": 0}
+        return {**empty, "state_display": state_display}
 
     # Late import to avoid top-level wrestlebot dependency in owdbapp.
     try:
         from owdb_django.wrestlebot.models import SourceFetch
     except Exception:
-        return {"sources": [], "total": 0}
+        return {**empty, "state_display": state_display}
 
     fetches = SourceFetch.objects.filter(
         entity_type=entity_type, entity_id=entity.id, http_status=200
@@ -118,6 +170,7 @@ def verification_stamp(entity):
         "total": len(ordered),
         "verified_count": verified_count,
         "linked_count": len(ordered) - verified_count,
+        "state_display": state_display,
     }
 
 

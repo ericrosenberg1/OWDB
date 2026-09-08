@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load humanize %}
 {% load linking_tags %}
+{% load verification_tags %}
 
 {% block content %}
 <div class="detail-header">
@@ -19,6 +20,7 @@
     {% endif %}
     <h1 class="detail-title">{{ venue.name }}</h1>
     <div class="detail-meta">
+        <div class="detail-meta-item">{% verification_state_badge venue %}</div>
         {% if venue.location %}
         <div class="detail-meta-item">
             <span class="detail-meta-label">Location:</span> {{ venue.location }}
@@ -143,6 +145,8 @@
     {% endif %}
 </div>
 {% endif %}
+
+{% verification_stamp venue %}
 
 {% with entity_type="venue" entity=venue %}
     {% include "partials/sources_used.html" %}

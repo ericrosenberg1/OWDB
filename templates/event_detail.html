@@ -20,6 +20,7 @@
     {% endif %}
     <h1 class="detail-title">{{ event.name }}</h1>
     <div class="detail-meta">
+        <div class="detail-meta-item">{% verification_state_badge event %}</div>
         <div class="detail-meta-item">
             <span class="detail-meta-label">Promotion:</span>
             <a href="{% url 'promotion_detail_slug' event.promotion.slug %}">{{ event.promotion.name }}</a>

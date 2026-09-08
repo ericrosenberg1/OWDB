@@ -19,6 +19,7 @@
     {% endif %}
     <h1 class="detail-title">{{ promotion.name }}</h1>
     <div class="detail-meta">
+        <div class="detail-meta-item">{% verification_state_badge promotion %}</div>
         {% if promotion.abbreviation %}
         <div class="detail-meta-item">
             <span class="detail-meta-label">Abbreviation:</span> {{ promotion.abbreviation }}

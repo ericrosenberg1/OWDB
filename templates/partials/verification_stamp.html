@@ -10,10 +10,18 @@ Required context (provided by `{% verification_stamp entity %}`):
   sources         — ordered list of dicts: {source, display_name, homepage, url, fetched_at, kind}
   total           — int, len(sources)
   verified_count  — int, count where kind == "verified"
+  state_display   — dict {label, modifier, detail}, or None when verified
 {% endcomment %}
 
-{% if total > 0 %}
-<aside class="verification-stamp" aria-label="Data sources">
+{% if total > 0 or state_display %}
+<aside class="verification-stamp {% if state_display %}verification-stamp--{{ state_display.modifier }}{% endif %}" aria-label="Data sources">
+    {% if state_display %}
+    <p class="verification-stamp__state">
+        <span class="status-badge {{ state_display.modifier }}">{{ state_display.label }}</span>
+        {{ state_display.detail }}
+    </p>
+    {% endif %}
+    {% if total > 0 %}
     <h4 class="verification-stamp__title">
         Verified from {{ total }} source{{ total|pluralize }}
         {% if verified_count and linked_count %}
@@ -47,5 +55,6 @@ Required context (provided by `{% verification_stamp entity %}`):
     <p class="verification-stamp__note">
         Data is extracted and cross-checked across these sources. Every fact stored on this page traces back to one of them.
     </p>
+    {% endif %}
 </aside>
 {% endif %}

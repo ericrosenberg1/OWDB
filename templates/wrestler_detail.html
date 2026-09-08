@@ -72,6 +72,13 @@
                     </div>
                     {% endif %}
 
+                    {% if wrestler.verification_state == "candidate" or wrestler.verification_state == "provisional" %}
+                    <div class="info-block">
+                        <h4>Verification</h4>
+                        <p>{% verification_state_badge wrestler %}</p>
+                    </div>
+                    {% endif %}
+
                     <div class="info-block">
                         <h4>Status</h4>
                         <p>

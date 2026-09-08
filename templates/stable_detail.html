@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load linking_tags %}
+{% load verification_tags %}
 
 {% block content %}
 <div class="detail-page">
@@ -81,6 +82,11 @@
                     <div class="sidebar-card">
                         <h4>Info</h4>
                         <dl class="info-list">
+                            {% if stable.verification_state == "candidate" or stable.verification_state == "provisional" %}
+                            <dt>Verification</dt>
+                            <dd>{% verification_state_badge stable %}</dd>
+                            {% endif %}
+
                             {% if stable.promotion %}
                             <dt>Promotion</dt>
                             <dd><a href="{% url 'promotion_detail' stable.promotion.pk %}">{{ stable.promotion.name }}</a></dd>
@@ -108,6 +114,12 @@
                 </div>
             </div>
         </div>
+
+        {% verification_stamp stable %}
+
+        {% with entity_type="stable" entity=stable %}
+            {% include "partials/sources_used.html" %}
+        {% endwith %}
     </div>
 </div>
 {% endblock %}

@@ -29,6 +29,7 @@ from typing import Optional
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
+from ..rate_limit import rate_limited
 from .wikidata import (
     USER_AGENT,
     WIKIDATA_ENTITY_URL,
@@ -41,6 +42,16 @@ logger = logging.getLogger(__name__)
 COMMONS_FILEPATH_URL = "https://commons.wikimedia.org/wiki/Special:FilePath/{filename}"
 COMMONS_API = "https://commons.wikimedia.org/w/api.php"
 COMMONS_FILE_PAGE = "https://commons.wikimedia.org/wiki/File:{filename}"
+
+# Same reasoning as wikidata.py's RATE_LIMIT_PER_SEC: Commons is WMF-run,
+# high-capacity infrastructure, so 1 req/sec (the standard MediaWiki API
+# politeness convention) is deliberately more generous than the 500
+# req/day given to the fan-run Cagematch site in SCRAPER_CONFIG
+# (settings.py), while still capping the image-sweep cascade and
+# cross-validation stage rather than letting them hit Commons unbounded.
+# This single key covers every Commons/Wikipedia call this module makes —
+# they all funnel through `_http_get_json` below.
+RATE_LIMIT_PER_SEC = 1.0
 
 P_IMAGE = "P18"
 P_LOGO = "P154"  # used for promotion logos
@@ -101,8 +112,9 @@ def _http_get_json(url: str, timeout: float = 10.0) -> Optional[dict]:
                 "Accept": "application/json",
             },
         )
-        with urlopen(req, timeout=timeout) as resp:
-            return json.loads(resp.read().decode("utf-8"))
+        with rate_limited("commons", per_second=RATE_LIMIT_PER_SEC):
+            with urlopen(req, timeout=timeout) as resp:
+                return json.loads(resp.read().decode("utf-8"))
     except Exception as e:
         logger.debug("Commons HTTP failure for %s: %s", url, e)
         return None

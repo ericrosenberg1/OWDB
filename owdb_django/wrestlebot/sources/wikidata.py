@@ -22,6 +22,7 @@ from datetime import date
 from typing import Optional
 from urllib.request import Request, urlopen
 
+from ..rate_limit import rate_limited
 from .base import (
     FetchResult,
     FieldSnippet,
@@ -40,6 +41,18 @@ WIKIPEDIA_QID_LOOKUP = (
 )
 USER_AGENT = "wrestlingdb-wrestlebot/1.0 (+https://wrestlingdb.org; admin@wrestlingdb.org)"
 
+# Wikidata (and the Wikipedia QID lookup below, which is really a Wikidata
+# concern routed through Wikipedia's API) is WMF-run infrastructure, same
+# tier as Wikipedia itself — high-capacity, but not a license to hammer it.
+# 1 req/sec is the commonly-cited MediaWiki API politeness convention for
+# anonymous/bot traffic (see https://www.mediawiki.org/wiki/API:Etiquette).
+# That's 60/min, 3,600/hour, up to 86,400/day if sustained continuously
+# (it never is — JR calls this in small bounded batches) — deliberately
+# more generous than the 500 req/day given to the fan-run Cagematch site
+# in SCRAPER_CONFIG (settings.py), since Wikidata can actually take it,
+# but still a real ceiling rather than none at all.
+RATE_LIMIT_PER_SEC = 1.0
+
 
 # Property IDs we look up from Wikidata claims.
 P_INSTANCE_OF = "P31"
@@ -54,8 +67,9 @@ P_SPORT = "P641"
 def _http_get_json(url: str, timeout: float = 10.0) -> Optional[dict]:
     try:
         req = Request(url, headers={"User-Agent": USER_AGENT, "Accept": "application/json"})
-        with urlopen(req, timeout=timeout) as resp:
-            return json.loads(resp.read().decode("utf-8"))
+        with rate_limited("wikidata", per_second=RATE_LIMIT_PER_SEC):
+            with urlopen(req, timeout=timeout) as resp:
+                return json.loads(resp.read().decode("utf-8"))
     except Exception as e:
         logger.debug("Wikidata HTTP failure for %s: %s", url, e)
         return None

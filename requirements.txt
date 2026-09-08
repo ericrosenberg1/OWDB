@@ -1,4 +1,6 @@
-# Django and core - using LTS for stability
+# Django and core. NOTE: 6.0 is NOT an LTS (mainstream support ended 2026-08-04,
+# security-only until April 2027). Ceiling is <6.1 because django-celery-beat
+# 2.9.0 declares Django<6.1. Next LTS is 6.2, April 2027.
 Django>=6.0.7,<6.1
 gunicorn>=26.0.0
 

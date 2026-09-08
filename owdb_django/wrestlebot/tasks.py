@@ -38,30 +38,74 @@ from celery import shared_task
 logger = logging.getLogger(__name__)
 
 
-def _stage_crossvalidate(limit: int) -> int:
+# How much bigger a pool to pull from Wrestler.get_incomplete_profiles()
+# than the final candidate count we need. That classmethod's priority
+# ordering already puts "has wikipedia_url but missing key fields" first,
+# but its lower-priority buckets include wrestlers with NO wikipedia_url
+# at all (which we can't resolve a Wikidata QID for) — so we can't just
+# slice the first `limit` rows and use them directly. Pulling a wider pool
+# and filtering in Python keeps this to one query instead of duplicating
+# get_incomplete_profiles()'s Case/When priority logic here.
+_CROSSVALIDATE_POOL_MULTIPLIER = 20
+_CROSSVALIDATE_POOL_MIN = 100
+
+
+def _crossvalidate_candidates(limit: int) -> list:
     """
-    Fetch Wikidata for wrestlers that don't yet have a wikidata SourceFetch,
-    extract typed fields, persist for cross-source reconcile.
+    Select which wrestlers JR should spend this cycle's Wikidata budget on.
+
+    Delegates to `Wrestler.get_incomplete_profiles()` for prioritization
+    (Wikipedia URL but missing key fields ranked first, recently-enriched
+    wrestlers skipped — see owdbapp/models.py), then narrows to wrestlers
+    that actually have a Wikipedia URL (required to resolve a Wikidata
+    QID) and haven't already been cross-validated. Extracted from
+    `_stage_crossvalidate` so the selection order is unit-testable without
+    mocking network calls.
     """
-    import hashlib
     from owdb_django.owdbapp.models import Wrestler
     from .models import SourceFetch
-    from .pipeline.extract import extract_wrestler
-    from .pipeline.persist import persist_wrestler
-    from .sources.wikidata import WikidataAdapter, resolve_qid_for_wikipedia_title
 
-    # Wrestlers with Wikipedia source but no Wikidata source yet.
+    if limit <= 0:
+        return []
+
+    # Wrestlers with a Wikidata source already fetched.
     already_xv = set(
         SourceFetch.objects.filter(source="wikidata", http_status=200).values_list(
             "entity_id", flat=True
         )
     )
-    candidates = (
-        Wrestler.objects.exclude(wikipedia_url="")
-        .exclude(wikipedia_url__isnull=True)
-        .exclude(id__in=already_xv)
-        .order_by("id")[:limit]
-    )
+    pool_size = max(limit * _CROSSVALIDATE_POOL_MULTIPLIER, _CROSSVALIDATE_POOL_MIN)
+    pool = Wrestler.get_incomplete_profiles(limit=pool_size)
+
+    out = []
+    for w in pool:
+        if not w.wikipedia_url:
+            continue
+        if w.id in already_xv:
+            continue
+        out.append(w)
+        if len(out) >= limit:
+            break
+    return out
+
+
+def _stage_crossvalidate(limit: int) -> int:
+    """
+    Fetch Wikidata for wrestlers that don't yet have a wikidata SourceFetch,
+    extract typed fields, persist for cross-source reconcile.
+
+    Candidates come from `_crossvalidate_candidates()`, which prioritizes
+    incomplete profiles (via `Wrestler.get_incomplete_profiles()`) instead
+    of plain creation order, so this scarce, rate-limited Wikidata budget
+    goes to the wrestlers most worth enriching first.
+    """
+    import hashlib
+    from .models import SourceFetch
+    from .pipeline.extract import extract_wrestler
+    from .pipeline.persist import persist_wrestler
+    from .sources.wikidata import WikidataAdapter, resolve_qid_for_wikipedia_title
+
+    candidates = _crossvalidate_candidates(limit)
 
     adapter = WikidataAdapter()
     done = 0

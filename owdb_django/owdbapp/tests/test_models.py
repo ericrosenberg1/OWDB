@@ -6,7 +6,24 @@ from django.test import TestCase
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from ..models import Wrestler, Promotion, Event, Venue, UserProfile, APIKey, EmailVerificationToken
+from ..models import (
+    Wrestler,
+    Promotion,
+    Event,
+    Venue,
+    UserProfile,
+    APIKey,
+    EmailVerificationToken,
+    Match,
+    MatchParticipant,
+    Title,
+    Stable,
+    Podcast,
+    PodcastEpisode,
+    Book,
+    Special,
+    VideoGame,
+)
 
 
 class WrestlerModelTest(TestCase):
@@ -171,3 +188,189 @@ class EmailVerificationTokenTest(TestCase):
             expires_at=timezone.now() + timezone.timedelta(hours=24),
         )
         self.assertFalse(token.is_expired())
+
+
+class WrestlerRecordAndMetaCategoriesTest(TestCase):
+    """Regression coverage for the owdbapp bug-fix sweep, item 5.
+
+    get_win_loss_record() went from 8 sequential queries to 4, and
+    get_all_meta_categories() went from 10 to 1, by folding independent
+    .count() calls into aggregate() with conditional/distinct Count(). Both
+    are meant to be query-plan changes only. This fixture pins the actual
+    numbers, so a
+    refactor that silently changes what gets counted (e.g. a join fan-out
+    inflating a count, or an aggregate alias shadowing a relation name, both
+    of which happened once during development of this fix) fails loudly
+    instead of shipping a wrong "1,024 matches" or "0 rivals" onto a real
+    wrestler's page.
+
+    The fixture deliberately gives every many-to-many category (stables,
+    podcast_appearances, books, video_games, specials) exactly 2 rows, and
+    spreads matches across 3 events in 2 promotions with 3 different
+    opponents. A fan-out bug in the consolidated aggregate() would multiply
+    these together (e.g. reporting 32 instead of 2 for a category), not just
+    round incorrectly, so this fixture would catch it.
+    """
+
+    def setUp(self):
+        self.promotion1 = Promotion.objects.create(name="Promotion One", abbreviation="P1")
+        self.promotion2 = Promotion.objects.create(name="Promotion Two", abbreviation="P2")
+        self.title = Title.objects.create(name="World Title", promotion=self.promotion1)
+
+        self.event1 = Event.objects.create(
+            name="Event One", promotion=self.promotion1, date=timezone.datetime(2020, 1, 1).date()
+        )
+        self.event2 = Event.objects.create(
+            name="Event Two", promotion=self.promotion1, date=timezone.datetime(2020, 2, 1).date()
+        )
+        self.event3 = Event.objects.create(
+            name="Event Three", promotion=self.promotion2, date=timezone.datetime(2020, 3, 1).date()
+        )
+
+        self.wrestler = Wrestler.objects.create(name="Test Champion")
+        self.opponent1 = Wrestler.objects.create(name="Opponent One")
+        self.opponent2 = Wrestler.objects.create(name="Opponent Two")
+        self.opponent3 = Wrestler.objects.create(name="Opponent Three")
+
+        # M1: decided via the Match.winner FK only (no MatchParticipant rows
+        # at all), no title. Win #1 (via the FK fallback path).
+        self.match1 = Match.objects.create(
+            event=self.event1,
+            match_text="Champion vs Opponent One",
+            outcome_type="pinfall",
+            winner=self.wrestler,
+        )
+        self.match1.wrestlers.set([self.wrestler, self.opponent1])
+
+        # M2: decided via MatchParticipant.is_winner (and also has winner=FK
+        # set, matching real data) plus a title change. Win #2 (via the MP
+        # path) and the one title win.
+        self.match2 = Match.objects.create(
+            event=self.event1,
+            match_text="Champion vs Opponent Two (Title)",
+            outcome_type="pinfall",
+            winner=self.wrestler,
+            title=self.title,
+            title_changed=True,
+        )
+        self.match2.wrestlers.set([self.wrestler, self.opponent2])
+        MatchParticipant.objects.create(match=self.match2, wrestler=self.wrestler, is_winner=True)
+        MatchParticipant.objects.create(match=self.match2, wrestler=self.opponent2, is_winner=False)
+
+        # M3: a 3-way draw. Counts toward draws, not wins/losses.
+        self.match3 = Match.objects.create(
+            event=self.event2,
+            match_text="Three-way draw",
+            outcome_type="draw",
+        )
+        self.match3.wrestlers.set([self.wrestler, self.opponent1, self.opponent2])
+
+        # M4: decided via winning_side (no winner FK) plus MatchParticipant,
+        # a title defense (title set, title_changed=False). Win #3, and a
+        # second title_matches row that is NOT a title win.
+        self.match4 = Match.objects.create(
+            event=self.event3,
+            match_text="Title defense",
+            outcome_type="submission",
+            winning_side=1,
+            title=self.title,
+            title_changed=False,
+        )
+        self.match4.wrestlers.set([self.wrestler, self.opponent3])
+        MatchParticipant.objects.create(
+            match=self.match4, wrestler=self.wrestler, is_winner=True, side=1
+        )
+        MatchParticipant.objects.create(
+            match=self.match4, wrestler=self.opponent3, is_winner=False, side=0
+        )
+
+        # M5: no winner, no winning_side, no outcome_type, so unknown.
+        self.match5 = Match.objects.create(
+            event=self.event3,
+            match_text="Result unclear",
+        )
+        self.match5.wrestlers.set([self.wrestler, self.opponent1])
+
+        # Two rows in every other many-to-many category.
+        self.stable1 = Stable.objects.create(name="Stable One")
+        self.stable1.members.add(self.wrestler)
+        self.stable2 = Stable.objects.create(name="Stable Two")
+        self.stable2.members.add(self.wrestler)
+
+        podcast = Podcast.objects.create(name="Wrestling Talk")
+        self.episode1 = PodcastEpisode.objects.create(podcast=podcast, title="Episode One")
+        self.episode1.guests.add(self.wrestler)
+        self.episode2 = PodcastEpisode.objects.create(podcast=podcast, title="Episode Two")
+        self.episode2.guests.add(self.wrestler)
+
+        self.book1 = Book.objects.create(title="Book One")
+        self.book1.related_wrestlers.add(self.wrestler)
+        self.book2 = Book.objects.create(title="Book Two")
+        self.book2.related_wrestlers.add(self.wrestler)
+
+        self.game1 = VideoGame.objects.create(name="Game One")
+        self.game1.wrestlers.add(self.wrestler)
+        self.game2 = VideoGame.objects.create(name="Game Two")
+        self.game2.wrestlers.add(self.wrestler)
+
+        self.special1 = Special.objects.create(title="Special One")
+        self.special1.related_wrestlers.add(self.wrestler)
+        self.special2 = Special.objects.create(title="Special Two")
+        self.special2.related_wrestlers.add(self.wrestler)
+
+    def test_win_loss_record_matches_hand_computed_expectations(self):
+        record = self.wrestler.get_win_loss_record()
+        self.assertEqual(
+            record,
+            {
+                "wins": 3,  # M1 (FK path), M2 (MP path), M4 (MP path)
+                "losses": 0,
+                "draws": 1,  # M3
+                "unknown": 1,  # M5
+                "total": 5,
+                "win_percentage": 100.0,
+                "title_matches": 2,  # M2, M4
+                "title_wins": 1,  # M2 only (M4 is a defense, not a change)
+            },
+        )
+        # The old "main_events" computation was dead (the annotation it used
+        # was never applied to the filter or returned) and unused by any
+        # template or caller anywhere in the repo; removed rather than fixed
+        # into something that requires guessing a real "main event" rule.
+        self.assertNotIn("main_events", record)
+
+    def test_win_loss_record_query_count_is_four(self):
+        """Pin the query-count win: 8 sequential queries -> 4."""
+        with self.assertNumQueries(4):
+            self.wrestler.get_win_loss_record()
+
+    def test_all_meta_categories_matches_hand_computed_expectations(self):
+        counts = self.wrestler.get_all_meta_categories()
+        self.assertEqual(
+            counts,
+            {
+                "matches": 5,
+                "events": 3,  # event1, event2, event3
+                "promotions": 2,  # promotion1 (event1/2), promotion2 (event3)
+                "titles": 1,  # only self.title, from M2 and M4
+                "stables": 2,
+                "podcast_appearances": 2,
+                "books": 2,
+                "video_games": 2,
+                "specials": 2,
+                "rivals": 3,  # opponent1, opponent2, opponent3, no double count
+            },
+        )
+
+    def test_all_meta_categories_query_count_is_one(self):
+        """Pin the query-count win: 10 sequential queries -> 1."""
+        with self.assertNumQueries(1):
+            self.wrestler.get_all_meta_categories()
+
+    def test_all_meta_categories_zero_matches_gives_zero_rivals(self):
+        """Guard the co_participants-includes-self subtraction: a wrestler
+        with no matches must report 0 rivals, not -1."""
+        lonely = Wrestler.objects.create(name="Nobody Faced Them")
+        counts = lonely.get_all_meta_categories()
+        self.assertEqual(counts["matches"], 0)
+        self.assertEqual(counts["rivals"], 0)

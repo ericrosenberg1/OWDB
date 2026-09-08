@@ -931,11 +931,41 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
                not a loss.
 
         Returns a dict the template can render directly.
+
+        Performance (owdbapp bug-fix sweep, item 5): total/draws/decided/
+        title_matches are now one query instead of four. They all filter on
+        plain columns of the Match row itself (outcome_type, winning_side,
+        winner_id, title_id), so folding them into a single aggregate() with
+        conditional Count(filter=Q(...)) is safe, since no to-many join is
+        involved, so there's no risk of one Count's join inflating another's.
+        wins_via_mp/wins_via_fk/title_wins each need their own join to
+        participant_links (a to-many relation, one row per match side), so
+        they stay separate queries: combining a to-many join with the
+        plain-column counts above in one query would fan the "matches" rows
+        out per participant row and inflate total/draws/decided/
+        title_matches. Net effect: 8 sequential queries -> 4. Verified
+        against the pre-consolidation numbers in test_models.py.
         """
         from django.db.models import Count, Q
 
-        # All matches this wrestler was in.
-        total = self.matches.count()
+        aggregates = self.matches.aggregate(
+            total=Count("id"),
+            # Draws / no-contests — outcome_type tells us.
+            draws=Count("id", filter=Q(outcome_type__in=("draw", "no_contest"))),
+            # Losses = matches − (wins + draws + matches we cannot judge). We
+            # treat "no winning_side identified and no outcome_type" as
+            # unknown rather than guessing loss.
+            decided=Count(
+                "id",
+                filter=~Q(outcome_type__in=("draw", "no_contest"))
+                & (Q(winning_side__isnull=False) | Q(winner__isnull=False)),
+            ),
+            title_matches=Count("id", filter=Q(title__isnull=False)),
+        )
+        total = aggregates["total"]
+        draws = aggregates["draws"]
+        decided = aggregates["decided"]
+        title_matches = aggregates["title_matches"]
 
         # Wins via the precise MatchParticipant path…
         wins_via_mp = self.match_participations.filter(is_winner=True).count()
@@ -945,24 +975,12 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
         ).count()
         wins = wins_via_mp + wins_via_fk
 
-        # Draws / no-contests — outcome_type tells us.
-        draws = self.matches.filter(outcome_type__in=("draw", "no_contest")).count()
-
-        # Losses = matches − (wins + draws + matches we cannot judge).
-        # We treat "no winning_side identified and no outcome_type" as
-        # unknown rather than guessing loss.
-        decided = (
-            self.matches.exclude(outcome_type__in=("draw", "no_contest"))
-            .exclude(winning_side__isnull=True, winner__isnull=True)
-            .count()
-        )
         losses = max(decided - wins, 0)
         unknown = max(total - wins - losses - draws, 0)
 
         win_pct = round((wins / (wins + losses) * 100), 1) if (wins + losses) > 0 else 0.0
 
         # Notable counts — title matches + title changes.
-        title_matches = self.matches.exclude(title__isnull=True).count()
         title_wins = (
             self.matches.filter(
                 title__isnull=False,
@@ -976,13 +994,6 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
             .count()
         )
 
-        # Main events — last match on the card.
-        main_events = (
-            self.matches.annotate(max_order=Count("event__matches"))
-            .filter(match_order__gte=1)
-            .count()
-        )  # approximation; cheap
-
         return {
             "wins": wins,
             "losses": losses,
@@ -992,7 +1003,6 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
             "win_percentage": win_pct,
             "title_matches": title_matches,
             "title_wins": title_wins,
-            "main_events": main_events,
         }
 
     def get_recent_form(self, limit: int = 10) -> list:
@@ -1153,23 +1163,58 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
         """
         Get counts for all meta categories this wrestler appears in.
         Returns a dict with category names and counts.
+
+        Performance (owdbapp bug-fix sweep, item 5): one aggregate() query
+        instead of 10 sequential .count() calls. Every Count below uses
+        distinct=True, which is what makes combining this many relations
+        into one query safe rather than approximate: COUNT(DISTINCT
+        <related pk>) is unaffected by the row duplication that combining
+        several to-many joins in one query causes for *other* branches (see
+        Django's aggregation docs, "Combining multiple aggregations"). Each
+        Count still reports the correct distinct count of its own relation's
+        rows regardless of how many rows the other joined relations fan out
+        to. Verified against the pre-consolidation per-relation counts in
+        test_models.py with a fixture that deliberately overlaps several
+        many-to-many relations at once (the exact scenario that would expose
+        a join fan-out bug if distinct=True weren't doing its job).
         """
+        from django.db.models import Count
+
+        # NOTE: the output alias for the "matches" relation can't be named
+        # "matches" here. Django resolves "matches__event" etc. against
+        # aliases already added to the same aggregate() call, in kwarg order,
+        # so a `matches=Count(...)` alias would shadow the real "matches"
+        # relation for every later `Count("matches__...")` below and raise
+        # FieldError ("Unsupported lookup ... for IntegerField"). Caught by
+        # test_models.py before this shipped.
+        counts = Wrestler.objects.filter(pk=self.pk).aggregate(
+            match_count=Count("matches", distinct=True),
+            events=Count("matches__event", distinct=True),
+            promotions=Count("matches__event__promotion", distinct=True),
+            titles=Count("matches__title", distinct=True),
+            stables=Count("stables", distinct=True),
+            podcast_appearances=Count("podcast_appearances", distinct=True),
+            books=Count("books", distinct=True),
+            video_games=Count("video_games", distinct=True),
+            specials=Count("specials", distinct=True),
+            # Every match this wrestler is in also lists them as one of its
+            # "wrestlers", so this distinct count always includes self.
+            # Subtract 1 below to turn "co-participants" into "rivals".
+            co_participants=Count("matches__wrestlers", distinct=True),
+        )
+        rivals = max(counts["co_participants"] - 1, 0) if counts["match_count"] else 0
+
         return {
-            "matches": self.matches.count(),
-            "events": Event.objects.filter(matches__wrestlers=self).distinct().count(),
-            "promotions": Promotion.objects.filter(events__matches__wrestlers=self)
-            .distinct()
-            .count(),
-            "titles": Title.objects.filter(title_matches__wrestlers=self).distinct().count(),
-            "stables": self.stables.count(),
-            "podcast_appearances": self.podcast_appearances.count(),
-            "books": self.books.count(),
-            "video_games": self.video_games.count(),
-            "specials": self.specials.count(),
-            "rivals": Wrestler.objects.filter(matches__in=self.matches.all())
-            .exclude(id=self.id)
-            .distinct()
-            .count(),
+            "matches": counts["match_count"],
+            "events": counts["events"],
+            "promotions": counts["promotions"],
+            "titles": counts["titles"],
+            "stables": counts["stables"],
+            "podcast_appearances": counts["podcast_appearances"],
+            "books": counts["books"],
+            "video_games": counts["video_games"],
+            "specials": counts["specials"],
+            "rivals": rivals,
         }
 
     def get_completeness_score(self):

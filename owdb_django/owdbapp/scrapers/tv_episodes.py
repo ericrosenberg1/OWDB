@@ -189,8 +189,12 @@ class TVEpisodeScraper:
             # For long-running shows, calculate total episode number
             name = f"{show.name} #{ep_num}"
             if episode_title and episode_title != f"Episode {ep_num}":
-                # Include title if it's meaningful
-                name = f"{show.name} #{ep_num}"
+                # Include the title when it's meaningful (not TMDB's generic
+                # "Episode N" placeholder). Bug fix: this branch used to
+                # rebuild the exact same "{show.name} #{ep_num}" string with
+                # no title at all, so a real title from TMDB was silently
+                # dropped every time.
+                name = f"{show.name} #{ep_num}: {episode_title}"
         else:
             name = episode_title or f"{show.name} Episode"
 
@@ -511,9 +515,16 @@ class TVEpisodeScraper:
                 logger.debug("No Cagematch data found for %s", episode.name)
                 return results
 
-            # Store Cagematch event ID if found
+            # Store Cagematch event ID if found. Tracked separately from the
+            # "matches_added > 0" save below (bug fix: this assignment used
+            # to be saved only as a side effect of that later save(), so if
+            # every match on the page turned out to have no match_text and
+            # got skipped, cagematch_event_id was set in memory and then
+            # silently discarded when the function returned).
+            episode_needs_save = False
             if event_data.get("cagematch_id") and not episode.cagematch_event_id:
                 episode.cagematch_event_id = event_data["cagematch_id"]
+                episode_needs_save = True
 
             # Add matches
             for i, match_data in enumerate(event_data.get("matches", [])):
@@ -560,9 +571,12 @@ class TVEpisodeScraper:
                 episode.verified = True
                 episode.verification_source = "cagematch"
                 episode.last_verified = timezone.now()
-                episode.save()
+                episode_needs_save = True
                 results["verified"] = True
                 results["source"] = "cagematch"
+
+            if episode_needs_save:
+                episode.save()
 
         except Exception as e:
             logger.warning("Error enriching episode %s: %s", episode.name, e)

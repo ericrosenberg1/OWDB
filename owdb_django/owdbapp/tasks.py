@@ -606,10 +606,18 @@ def run_full_import():
     """
     from celery import chain
 
-    # Run scrapers first, then APIs
+    # Run scrapers first, then APIs. run_all_apis takes no arguments, so it
+    # needs an immutable signature (.si()) here rather than .s(). A Celery
+    # chain passes each task's return value as the next task's first
+    # positional argument by default, and run_all_scrapers returns a dict
+    # ({"status": "started"}). With .s(), that dict would be forwarded into
+    # run_all_apis(), which takes zero parameters, raising "run_all_apis()
+    # takes 0 positional arguments but 1 was given" as soon as the chain
+    # executed. Confirmed by calling both tasks directly with mocked
+    # apply_async(); see test_tasks.py.
     workflow = chain(
         run_all_scrapers.s(),
-        run_all_apis.s(),
+        run_all_apis.si(),
     )
 
     workflow.apply_async()
@@ -1129,13 +1137,21 @@ def run_all_image_fetches():
     """
     from celery import chain
 
-    # Run image fetches sequentially to respect rate limits
+    # Run image fetches sequentially to respect rate limits. Each task here
+    # is independent (none consumes another's output), so every link uses an
+    # immutable signature (.si()) rather than .s(). With .s(), a Celery chain
+    # prepends each task's return value to the next task's own args: task 1
+    # returns a dict, which would land as fetch_promotion_images's
+    # batch_size, shifting batch_size=10 into refresh_old and crashing on
+    # `queryset[:batch_size]` (a dict isn't a valid slice bound) as soon as
+    # the second task ran, then likewise for every task after it. Confirmed
+    # by inspecting the built chain's signature args; see test_tasks.py.
     workflow = chain(
-        fetch_wrestler_images.s(20),
-        fetch_promotion_images.s(10),
-        fetch_venue_images.s(10),
-        fetch_title_images.s(10),
-        fetch_event_images.s(15),
+        fetch_wrestler_images.si(20),
+        fetch_promotion_images.si(10),
+        fetch_venue_images.si(10),
+        fetch_title_images.si(10),
+        fetch_event_images.si(15),
     )
 
     workflow.apply_async()

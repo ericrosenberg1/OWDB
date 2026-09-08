@@ -8,6 +8,7 @@ Usage:
     python manage.py import_podcast_rss --match-guests    # Try to match guests to wrestlers
 """
 
+import logging
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from email.utils import parsedate_to_datetime
@@ -17,6 +18,8 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from owdb_django.owdbapp.models import Podcast, PodcastEpisode, Wrestler
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -240,8 +243,15 @@ class Command(BaseCommand):
         try:
             # RFC 2822 (common in RSS)
             return parsedate_to_datetime(date_str)
-        except Exception:
-            pass
+        except Exception as e:
+            # Routine, not a bug: plenty of real-world feeds use ISO 8601
+            # instead of RFC 2822, so this is expected to "fail" here and
+            # succeed below for most non-RFC-2822 feeds. debug (not
+            # warning/error) keeps that from spamming logs on every such
+            # episode, while still making a genuinely unparseable date
+            # string (this case, plus all three ISO formats below also
+            # failing) visible if someone raises the log level to debug it.
+            logger.debug("parse_date: %r isn't RFC 2822 (%s); trying ISO formats", date_str, e)
 
         # Try ISO format
         for fmt in ["%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d"]:

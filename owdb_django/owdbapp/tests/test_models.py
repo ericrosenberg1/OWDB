@@ -6,7 +6,17 @@ from django.test import TestCase
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from ..models import Wrestler, Promotion, Event, Venue, UserProfile, APIKey, EmailVerificationToken
+from ..models import (
+    Wrestler,
+    Promotion,
+    Event,
+    Venue,
+    Title,
+    Match,
+    UserProfile,
+    APIKey,
+    EmailVerificationToken,
+)
 
 
 class WrestlerModelTest(TestCase):
@@ -171,3 +181,113 @@ class EmailVerificationTokenTest(TestCase):
             expires_at=timezone.now() + timezone.timedelta(hours=24),
         )
         self.assertFalse(token.is_expired())
+
+
+class ReviewGateQuerySetTest(TestCase):
+    """
+    Tests for VerificationQuerySet.public() — the review gate.
+
+    Policy under test: `.public()` is a blocklist on `rejected`, not an
+    allowlist on `verified`. Production data has whole entity types that
+    are almost entirely `candidate` (Title 100%, Promotion 88% at the time
+    this gate was written), so an allowlist would empty those sections —
+    see the policy note on VerificationQuerySet in models.py.
+    """
+
+    def test_public_excludes_rejected(self):
+        Wrestler.objects.create(name="Rejected Wrestler", verification_state="rejected")
+        Wrestler.objects.create(name="Good Wrestler", verification_state="verified")
+        public_names = list(Wrestler.objects.public().values_list("name", flat=True))
+        self.assertNotIn("Rejected Wrestler", public_names)
+        self.assertIn("Good Wrestler", public_names)
+
+    def test_public_keeps_candidate_and_provisional(self):
+        """Regression test for the "just hide anything not verified" mistake."""
+        Wrestler.objects.create(name="Candidate Wrestler", verification_state="candidate")
+        Wrestler.objects.create(name="Provisional Wrestler", verification_state="provisional")
+        public_names = list(Wrestler.objects.public().values_list("name", flat=True))
+        self.assertIn("Candidate Wrestler", public_names)
+        self.assertIn("Provisional Wrestler", public_names)
+
+    def test_default_manager_stays_unfiltered(self):
+        """
+        `Model.objects.all()` / `.filter()` without `.public()` must still
+        return rejected rows — Django Admin and the wrestlebot pipeline
+        (e.g. wrestler_linking.py's manual rejected-state check) both
+        depend on seeing every state through the default manager.
+        """
+        Promotion.objects.create(name="Rejected Promo", verification_state="rejected")
+        self.assertTrue(Promotion.objects.filter(verification_state="rejected").exists())
+
+    def test_related_manager_inherits_public(self):
+        """
+        A related manager off a gated model (e.g. `promotion.events`) gets
+        `.public()` for free, since Django builds related managers as a
+        subclass of the model's default manager class.
+        """
+        promo = Promotion.objects.create(name="Promo With Events")
+        Event.objects.create(
+            name="Rejected Event",
+            promotion=promo,
+            date=timezone.now().date(),
+            verification_state="rejected",
+        )
+        Event.objects.create(
+            name="Good Event",
+            promotion=promo,
+            date=timezone.now().date(),
+            verification_state="verified",
+        )
+        public_events = list(promo.events.public().values_list("name", flat=True))
+        self.assertNotIn("Rejected Event", public_events)
+        self.assertIn("Good Event", public_events)
+
+
+class ReviewGateRelationalLeakTest(TestCase):
+    """
+    A rejected entity must not leak through another entity's own "related
+    object listing" helper methods — the query-level gate alone isn't
+    enough if a detail page's cross-reference methods bypass it.
+    """
+
+    def setUp(self):
+        self.promotion = Promotion.objects.create(name="Leak Test Promotion")
+        self.title = Title.objects.create(name="Leak Test Title", promotion=self.promotion)
+        self.event = Event.objects.create(
+            name="Leak Test Event", promotion=self.promotion, date=timezone.now().date()
+        )
+        self.rejected_wrestler = Wrestler.objects.create(
+            name="Rejected Champion", verification_state="rejected"
+        )
+        self.good_wrestler = Wrestler.objects.create(
+            name="Good Champion", verification_state="verified"
+        )
+
+    def test_title_get_all_champions_excludes_rejected_wrestler(self):
+        Match.objects.create(
+            event=self.event,
+            match_text="Rejected title win",
+            title=self.title,
+            winner=self.rejected_wrestler,
+        )
+        Match.objects.create(
+            event=self.event,
+            match_text="Good title win",
+            title=self.title,
+            winner=self.good_wrestler,
+        )
+        champion_names = list(self.title.get_all_champions().values_list("name", flat=True))
+        self.assertNotIn("Rejected Champion", champion_names)
+        self.assertIn("Good Champion", champion_names)
+
+    def test_event_get_titles_defended_excludes_rejected_title(self):
+        rejected_title = Title.objects.create(
+            name="Rejected Title", promotion=self.promotion, verification_state="rejected"
+        )
+        Match.objects.create(
+            event=self.event, match_text="Rejected title defense", title=rejected_title
+        )
+        Match.objects.create(event=self.event, match_text="Good title defense", title=self.title)
+        defended_names = list(self.event.get_titles_defended().values_list("name", flat=True))
+        self.assertNotIn("Rejected Title", defended_names)
+        self.assertIn("Leak Test Title", defended_names)

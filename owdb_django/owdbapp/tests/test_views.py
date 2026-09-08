@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from ..models import Wrestler, Promotion, Event, Venue, UserProfile
+from ..models import Wrestler, Promotion, Event, Venue, Match, UserProfile
 from .proxied_client import proxied_client
 
 
@@ -217,6 +217,106 @@ class RateLimitingTest(TestCase):
 
         # 11th attempt should show rate limit message
         self.assertContains(response, "Too many login attempts")
+
+
+class ReviewGateViewsTest(TestCase):
+    """
+    Proves the review gate at the HTTP layer: a rejected entity is absent
+    from its list view and 404s on its own detail page, while candidate
+    and provisional entities stay fully visible — the regression check
+    that would have caught a "hide anything not verified" allowlist
+    mistake instead of the intended "hide only rejected" blocklist.
+    """
+
+    def setUp(self):
+        self.client = proxied_client()
+        self.rejected_promotion = Promotion.objects.create(
+            name="Rejected Test Promotion", verification_state="rejected"
+        )
+        self.candidate_wrestler = Wrestler.objects.create(
+            name="Candidate Test Wrestler", verification_state="candidate"
+        )
+        self.provisional_wrestler = Wrestler.objects.create(
+            name="Provisional Test Wrestler", verification_state="provisional"
+        )
+        self.rejected_wrestler = Wrestler.objects.create(
+            name="Rejected Test Wrestler", verification_state="rejected"
+        )
+
+    def test_rejected_promotion_absent_from_list(self):
+        response = self.client.get(reverse("promotions"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Rejected Test Promotion")
+
+    def test_rejected_promotion_detail_404s(self):
+        response = self.client.get(reverse("promotion_detail", args=[self.rejected_promotion.pk]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_rejected_wrestler_absent_from_list(self):
+        response = self.client.get(reverse("wrestlers"))
+        self.assertNotContains(response, "Rejected Test Wrestler")
+
+    def test_rejected_wrestler_detail_404s(self):
+        response = self.client.get(reverse("wrestler_detail", args=[self.rejected_wrestler.pk]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_candidate_wrestler_still_visible_in_list_and_detail(self):
+        """Regression test: `.public()` must not act like a `verified`-only allowlist."""
+        list_response = self.client.get(reverse("wrestlers"))
+        self.assertContains(list_response, "Candidate Test Wrestler")
+        detail_response = self.client.get(
+            reverse("wrestler_detail", args=[self.candidate_wrestler.pk])
+        )
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertContains(detail_response, "Candidate Test Wrestler")
+
+    def test_provisional_wrestler_still_visible_in_list_and_detail(self):
+        list_response = self.client.get(reverse("wrestlers"))
+        self.assertContains(list_response, "Provisional Test Wrestler")
+        detail_response = self.client.get(
+            reverse("wrestler_detail", args=[self.provisional_wrestler.pk])
+        )
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertContains(detail_response, "Provisional Test Wrestler")
+
+    def test_candidate_entity_shows_unverified_badge(self):
+        response = self.client.get(reverse("wrestler_detail", args=[self.candidate_wrestler.pk]))
+        self.assertContains(response, "Unverified")
+
+    def test_provisional_entity_shows_provisional_badge(self):
+        response = self.client.get(reverse("wrestler_detail", args=[self.provisional_wrestler.pk]))
+        self.assertContains(response, "Provisional")
+
+    def test_verified_entity_has_no_review_gate_badge(self):
+        verified = Wrestler.objects.create(
+            name="Verified Test Wrestler", verification_state="verified"
+        )
+        response = self.client.get(reverse("wrestler_detail", args=[verified.pk]))
+        self.assertNotContains(response, "Unverified")
+        self.assertNotContains(response, "Provisional")
+
+
+class ReviewGateRelationalLeakViewTest(TestCase):
+    """A rejected Match must not leak through an Event's own detail page."""
+
+    def setUp(self):
+        self.client = proxied_client()
+        self.promotion = Promotion.objects.create(name="Leak View Promotion")
+        self.event = Event.objects.create(
+            name="Leak View Event", promotion=self.promotion, date=timezone.now().date()
+        )
+        Match.objects.create(
+            event=self.event, match_text="Rejected Leak Match", verification_state="rejected"
+        )
+        Match.objects.create(
+            event=self.event, match_text="Good Leak Match", verification_state="verified"
+        )
+
+    def test_rejected_match_not_shown_on_event_detail(self):
+        response = self.client.get(reverse("event_detail", args=[self.event.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Rejected Leak Match")
+        self.assertContains(response, "Good Leak Match")
 
 
 class AccountViewsTest(TestCase):

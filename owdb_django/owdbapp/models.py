@@ -2742,7 +2742,7 @@ class Hot100Calculator:
         importance_score = self._calc_importance_score(wrestler)
         title_score = self._calc_title_score(wrestler, start_date, end_date)
         opponent_score = self._calc_opponent_score(wrestler)
-        # news_score/social_score/views_score are always 0 today — see the
+        # news_score/social_score/views_score are always 0 today, see the
         # "NOT YET IMPLEMENTED" docstrings below. total_score is therefore
         # based only on real match/title/opponent activity, never on
         # fabricated data. Kept in the sum (as 0) rather than removed so the
@@ -2856,7 +2856,7 @@ class Hot100Calculator:
 
         NOT YET IMPLEMENTED: there is no news aggregation integration. This
         used to return an md5-hash-derived pseudo-random number dressed up
-        as "deterministic variation based on wrestler data richness" — that
+        as "deterministic variation based on wrestler data richness": that
         was fabricated data presented as a real signal in total_score and on
         the Hot 100 page. Returns 0 until a real news source is wired in.
         See the owdbapp bug-fix sweep, item 1.

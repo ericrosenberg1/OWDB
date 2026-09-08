@@ -4,7 +4,7 @@ Tests for the Hot 100 ranking calculator.
 Regression coverage for the owdbapp bug-fix sweep, item 1:
 ``_calc_news_score``, ``_calc_social_score`` and ``_calc_views_score`` used to
 return an ``md5(wrestler.name...)``-derived pseudo-random number dressed up as
-"deterministic variation" — fabricated data blended into ``total_score`` as if
+"deterministic variation", fabricated data blended into ``total_score`` as if
 it were real news/social/analytics signal, worth up to ~30 raw points (roughly
 a third of a wrestler's score) for a wrestler with zero real match activity.
 They now return 0 until those integrations actually exist.
@@ -22,13 +22,13 @@ class Hot100FakeDataRemovedTest(TestCase):
 
     def setUp(self):
         self.calculator = Hot100Calculator(year=2026, month=1)
-        # Deliberately maximal "rich profile" — every field the old hash-based
+        # Deliberately maximal "rich profile": every field the old hash-based
         # methods used to reward (long bio, all three source URLs, an image,
         # a recent debut, no retirement year) is populated, so the old code
         # would have scored this wrestler up to ~28 fake points despite them
         # having zero real matches. Two different names, because the old
-        # implementation's "variation" hashed the wrestler's name — different
-        # names had to produce different fake scores.
+        # implementation's "variation" hashed the wrestler's name, so
+        # different names had to produce different fake scores.
         self.wrestler_a = Wrestler.objects.create(
             name="Alpha Wrestler",
             debut_year=2015,
@@ -64,7 +64,7 @@ class Hot100FakeDataRemovedTest(TestCase):
         """total_score must equal match+importance+title+opponent only.
 
         With no real match, title, or previous-ranking data, every one of
-        those four real components is 0 for this wrestler — so under the old
+        those four real components is 0 for this wrestler, so under the old
         code (hash-based news/social/views fabricating up to ~28 points for
         exactly this "rich profile, zero activity" shape), total_score would
         have been nonzero despite there being no real signal at all.

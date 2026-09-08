@@ -15,6 +15,7 @@ Coverage:
 from __future__ import annotations
 
 from datetime import date
+from unittest import mock
 
 from django.test import SimpleTestCase, TestCase
 
@@ -204,4 +205,69 @@ class OrphanPruneTests(TestCase):
         self.assertEqual(stats["orphans_pruned"], 0)
         self.assertTrue(
             Match.objects.filter(event=self.event, match_order=999).exists(),
+        )
+
+
+class AtomicityTests(TestCase):
+    """
+    Regression: persist_matches_for_event previously had zero transaction
+    wrapping around its per-match loop + orphan-pruning pass. An exception
+    partway through a multi-match card (e.g. a bulk_synthetic_provenance
+    failure on match #2 of 3) used to leave match #1 already committed,
+    match #2 possibly half-written, and match #3 never attempted -- a
+    partial write. The whole function body is now one transaction.atomic()
+    block, so a mid-card failure leaves the DB exactly as it was before
+    the call.
+    """
+
+    def setUp(self):
+        self.promo = Promotion.objects.create(name="Atomicity Test Pro")
+        self.event = Event.objects.create(
+            name="Atomicity Test PPV",
+            date=date(2024, 1, 1),
+            promotion=self.promo,
+        )
+        for nm in ["Owen Hart", "Bret Hart", "Razor Ramon", "Diesel", "The Undertaker", "Yokozuna"]:
+            Wrestler.objects.create(name=nm)
+
+    def _make_fetch(self, html: str) -> SourceFetch:
+        return SourceFetch.objects.create(
+            source="wikipedia",
+            url=f"https://en.wikipedia.org/wiki/Atomic_{id(html)}",
+            entity_type="event",
+            entity_id=self.event.id,
+            candidate_name="Test",
+            http_status=200,
+            content_hash=f"atomic-hash-{id(html)}",
+            raw_content=html,
+        )
+
+    def test_mid_card_failure_rolls_back_the_whole_card(self):
+        # _MAIN_CARD_ONLY_HTML extracts 3 matches. Fail on the 2nd match's
+        # provenance write -- match #1 would have already been
+        # Match.objects.update_or_create()'d (committed, pre-fix) by the
+        # time this fires.
+        call_count = {"n": 0}
+
+        def _boom_on_second_call(*args, **kwargs):
+            call_count["n"] += 1
+            if call_count["n"] == 2:
+                raise RuntimeError("simulated provenance write failure")
+            return None
+
+        with mock.patch(
+            "owdb_django.wrestlebot.pipeline._provenance.bulk_synthetic_provenance",
+            side_effect=_boom_on_second_call,
+        ):
+            with self.assertRaises(RuntimeError):
+                persist_matches_for_event(self.event, fetch=self._make_fetch(_MAIN_CARD_ONLY_HTML))
+
+        self.assertEqual(call_count["n"], 2, "the mock must have been reached twice")
+        # Before the fix: match_order=1 would exist here. After the fix,
+        # the whole card rolls back -- zero matches for this event.
+        self.assertEqual(
+            Match.objects.filter(event=self.event).count(),
+            0,
+            "a mid-card exception must roll back every match from this call, not just "
+            "skip the ones after the failure point",
         )

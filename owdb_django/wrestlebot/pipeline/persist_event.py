@@ -497,18 +497,36 @@ def persist_event(
         fields_written: list[str] = []
         provenance_rows = 0
 
-        # Venue resolution (best-effort)
+        # Venue resolution (best-effort). First-write-wins, same as every
+        # other field here: only assign when the event has no venue yet.
+        # The old `if venue and event.venue_id != venue.id` check instead
+        # reassigned the venue on ANY re-persist where resolution disagreed
+        # with what's already stored (a second extraction run, a different
+        # Venue stub resolving for the same wiki-link, etc.) -- silently
+        # relinking an already-correct event to a different venue, with no
+        # drift log at all (contrast with persist.py's wrestler fields).
         venue = _ensure_venue_stub_from_wiki(
             fields.venue_wiki_link.value if fields.venue_wiki_link else None,
             fields.venue_name.value if fields.venue_name else None,
             source_fetch=source_fetch,
         )
-        if venue and event.venue_id != venue.id:
-            event.venue = venue
-            fields_written.append("venue")
+        if venue:
+            if event.venue_id is None:
+                event.venue = venue
+                fields_written.append("venue")
+            elif event.venue_id != venue.id:
+                logger.warning(
+                    "Source drift on Event#%s.venue: keeping %r, %s resolved %r",
+                    event.id,
+                    event.venue.name if event.venue else event.venue_id,
+                    source_fetch.source,
+                    venue.name,
+                )
 
-        # Attendance
-        if fields.attendance and not event.attendance:
+        # Attendance. `is None` (not falsy) so a real attendance of 0
+        # (e.g. a closed-set taping) isn't treated as "unset" and
+        # overwritten by a later, possibly-wrong source.
+        if fields.attendance and event.attendance is None:
             event.attendance = fields.attendance.value
             fields_written.append("attendance")
 

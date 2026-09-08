@@ -364,6 +364,76 @@ class AssignImageSuccessTests(TestCase):
             self.assertGreaterEqual(r.confidence, 90)
 
 
+class AssignImageAtomicityTests(TestCase):
+    """
+    Regression: the entity.save() writing the four image fields and the
+    FieldProvenance rows that follow it used to run with no transaction.
+    An exception partway through the provenance loop (a DB hiccup, an
+    interrupted process) left an entity with a live, publicly-visible
+    image but incomplete/zero provenance for it -- with no automatic
+    repair path, since the "already has an image" guard at the top of
+    assign_image_to_entity means nothing re-drives it for that entity
+    without force=True. Both writes are now one transaction.atomic()
+    block, so a mid-write failure rolls back the image fields too.
+    """
+
+    def setUp(self):
+        _with_cascade_off(self)
+
+    def test_provenance_failure_rolls_back_the_image_fields_too(self):
+        from owdb_django.wrestlebot.pipeline import images
+
+        w = Wrestler.objects.create(name="Atomicity Test")
+        meta = _fake_meta()
+
+        call_count = {"n": 0}
+
+        def _boom_on_second_call(*args, **kwargs):
+            call_count["n"] += 1
+            if call_count["n"] == 2:
+                raise RuntimeError("simulated provenance write failure")
+            return None
+
+        with (
+            mock.patch(
+                "owdb_django.wrestlebot.pipeline.images.resolve_qid_for_wikipedia_title",
+                return_value="Q999",
+            ),
+            mock.patch(
+                "owdb_django.wrestlebot.pipeline.images.fetch_image_for_qid",
+                return_value={
+                    "filename": "Test.jpg",
+                    "url": meta.original_url,
+                    "thumb_url": meta.thumb_url_400,
+                    "qid": "Q999",
+                    "property": "P18",
+                },
+            ),
+            mock.patch(
+                "owdb_django.wrestlebot.pipeline.images.fetch_image_metadata",
+                return_value=meta,
+            ),
+            mock.patch(
+                "owdb_django.wrestlebot.pipeline.images.record_provenance",
+                side_effect=_boom_on_second_call,
+            ),
+        ):
+            with self.assertRaises(RuntimeError):
+                images.assign_image_to_entity(w, entity_type="wrestler")
+
+        self.assertEqual(call_count["n"], 2, "the mock must have been reached twice")
+        w.refresh_from_db()
+        self.assertFalse(
+            w.image_url,
+            "a mid-write provenance failure must roll back the image fields too, "
+            "not leave a live image with incomplete provenance",
+        )
+        self.assertEqual(
+            FieldProvenance.objects.filter(entity_type="wrestler", entity_id=w.id).count(),
+            0,
+        )
+
+
 # ============================================================================
 # Cascade tests — verify the new identity scorer, candidate cascade,
 # first-fill dim relaxation, and identity-threshold floor.

@@ -104,10 +104,18 @@ class Command(BaseCommand):
 
         if options["verify_only"]:
             # Just re-verify whatever pending bios exist (manual path).
-            pending_qs = GeneratedBio.objects.filter(status="pending", entity_type="wrestler")
+            pending_qs = GeneratedBio.objects.filter(
+                status="pending", entity_type="wrestler"
+            ).order_by("id")
             if options["wrestler"]:
                 pending_qs = pending_qs.filter(entity_id__in=options["wrestler"])
-            pending = list(pending_qs.order_by("id"))
+            else:
+                # No explicit ids given — cap like every other path in this
+                # command. Without this, a batch of bios stuck at 'pending'
+                # (e.g. a prior run crashed between generate and verify)
+                # would trigger one uncapped Claude call per row.
+                pending_qs = pending_qs[: options["limit"]]
+            pending = list(pending_qs)
             self.stdout.write(
                 self.style.HTTP_INFO(f"\n=== verify-only ({len(pending)} bio(s)) ===\n")
             )

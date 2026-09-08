@@ -52,6 +52,7 @@ import re as _re
 from dataclasses import dataclass, field
 from typing import Iterator, Optional
 
+from django.db import transaction
 from django.utils import timezone
 
 from ..sources.commons import (
@@ -799,62 +800,70 @@ def assign_image_to_entity(
 
     credit = _build_credit_string(accepted_meta, entity_type=entity_type)
 
-    # Archive the prior image (if any) into ImageHistory before overwriting.
-    if _entity_already_has_image(entity):
-        try:
-            ImageHistory.archive_current_image(entity, reason="better_image_found")
-        except Exception as e:
-            logger.warning(
-                "ImageHistory archive failed for %s#%s: %s",
-                entity_type,
-                entity_id,
-                e,
-            )
+    # The entity's image fields and their FieldProvenance rows must land
+    # together: without a transaction here, an exception between the
+    # entity.save() below and the end of the provenance loop (a DB hiccup,
+    # an interrupted process) left an entity with a live, publicly-visible
+    # image but incomplete or zero provenance for it -- with no automatic
+    # repair path, since nothing re-drives this function for an entity
+    # that already "has an image" (see the force=True guard above).
+    with transaction.atomic():
+        # Archive the prior image (if any) into ImageHistory before overwriting.
+        if _entity_already_has_image(entity):
+            try:
+                ImageHistory.archive_current_image(entity, reason="better_image_found")
+            except Exception as e:
+                logger.warning(
+                    "ImageHistory archive failed for %s#%s: %s",
+                    entity_type,
+                    entity_id,
+                    e,
+                )
 
-    # Write the four image fields.
-    entity.image_url = accepted_meta.original_url[:500]
-    entity.image_source_url = accepted_meta.file_page_url[:500]
-    entity.image_original_url = accepted_meta.original_url[:500]
-    entity.image_license = accepted_meta.license_code
-    entity.image_credit = credit
-    entity.image_fetched_at = timezone.now()
-    entity.save(
-        update_fields=[
-            "image_url",
-            "image_source_url",
-            "image_original_url",
-            "image_license",
-            "image_credit",
-            "image_fetched_at",
-        ]
-    )
-
-    # Provenance rows for the four legally-significant fields.
-    snippet = (
-        f"Commons {accepted_meta.filename} | "
-        f"License: {accepted_meta.license_short or accepted_meta.license_code} | "
-        f"Artist: {accepted_meta.artist or 'unknown'} | "
-        f"Dims: {accepted_meta.width}x{accepted_meta.height} | "
-        f"Source: {accepted_candidate.source_path} | "
-        f"Identity conf: {accepted_conf}"
-    )[:8000]
-    for field_name, value in (
-        ("image_url", entity.image_url),
-        ("image_source_url", entity.image_source_url),
-        ("image_license", entity.image_license),
-        ("image_credit", entity.image_credit),
-    ):
-        if not value:
-            continue
-        record_provenance(
-            entity_type=entity_type,
-            entity_id=entity_id,
-            field_name=field_name,
-            value=value,
-            snippet=snippet,
-            confidence=accepted_conf,
-            source_fetch=source_fetch,
+        # Write the four image fields.
+        entity.image_url = accepted_meta.original_url[:500]
+        entity.image_source_url = accepted_meta.file_page_url[:500]
+        entity.image_original_url = accepted_meta.original_url[:500]
+        entity.image_license = accepted_meta.license_code
+        entity.image_credit = credit
+        entity.image_fetched_at = timezone.now()
+        entity.save(
+            update_fields=[
+                "image_url",
+                "image_source_url",
+                "image_original_url",
+                "image_license",
+                "image_credit",
+                "image_fetched_at",
+            ]
         )
+
+        # Provenance rows for the four legally-significant fields.
+        snippet = (
+            f"Commons {accepted_meta.filename} | "
+            f"License: {accepted_meta.license_short or accepted_meta.license_code} | "
+            f"Artist: {accepted_meta.artist or 'unknown'} | "
+            f"Dims: {accepted_meta.width}x{accepted_meta.height} | "
+            f"Source: {accepted_candidate.source_path} | "
+            f"Identity conf: {accepted_conf}"
+        )[:8000]
+        for field_name, value in (
+            ("image_url", entity.image_url),
+            ("image_source_url", entity.image_source_url),
+            ("image_license", entity.image_license),
+            ("image_credit", entity.image_credit),
+        ):
+            if not value:
+                continue
+            record_provenance(
+                entity_type=entity_type,
+                entity_id=entity_id,
+                field_name=field_name,
+                value=value,
+                snippet=snippet,
+                confidence=accepted_conf,
+                source_fetch=source_fetch,
+            )
 
     return ImageAssignment(
         success=True,

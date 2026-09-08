@@ -36,6 +36,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from bs4 import BeautifulSoup
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -354,145 +355,157 @@ def persist_matches_for_event(event, fetch=None) -> dict:
     by_state = {"verified": 0, "provisional": 0, "candidate": 0}
     kept_orders: set[int] = {em.card_position for em in extracted}
 
-    for em in extracted:
-        title_obj = None
-        if em.title_at_stake:
-            title_obj = title_by_name.get(em.title_at_stake.strip().lower())
+    # Whole card in one transaction: this event's Match/MatchParticipant/
+    # FieldProvenance writes and the orphan-pruning pass below either all
+    # land or none do. Without this, an exception partway through a
+    # multi-match card (e.g. a bulk_synthetic_provenance failure on match
+    # #5 of 12) left matches #1-4 committed, match #5 possibly half-written
+    # (Match row present, its MatchParticipant/provenance rows missing),
+    # matches #6-12 never attempted, and the orphan-pruning pass — which
+    # depends on `kept_orders` reflecting the complete extraction — skipped
+    # entirely, so a crash didn't just leave incomplete data, it also
+    # silently left stale rows the next successful run wouldn't know to
+    # look for (kept_orders would look "complete" again on retry).
+    with transaction.atomic():
+        for em in extracted:
+            title_obj = None
+            if em.title_at_stake:
+                title_obj = title_by_name.get(em.title_at_stake.strip().lower())
 
-        winner_obj = None
-        if em.winning_side is not None and em.sides:
-            for nm in em.sides[em.winning_side]:
-                w = wrestler_by_name.get(nm.strip().lower())
-                if w is not None:
-                    winner_obj = w
-                    break
+            winner_obj = None
+            if em.winning_side is not None and em.sides:
+                for nm in em.sides[em.winning_side]:
+                    w = wrestler_by_name.get(nm.strip().lower())
+                    if w is not None:
+                        winner_obj = w
+                        break
 
-        match, was_created = Match.objects.update_or_create(
-            event=event,
-            match_order=em.card_position,
-            defaults=dict(
-                match_text=em.raw_text[:1000],
-                result=em.raw_text[:255],
-                match_type=em.stipulation[:255],
-                outcome_type=em.outcome_type,
-                duration_seconds=em.duration_seconds,
-                title=title_obj,
-                title_changed=em.title_changed,
-                winner=winner_obj,
-                winning_side=em.winning_side,
-                verified=True,  # back-compat boolean
-                verification_source="wikipedia",
-            ),
-        )
-        if was_created:
-            created += 1
-        else:
-            updated += 1
+            match, was_created = Match.objects.update_or_create(
+                event=event,
+                match_order=em.card_position,
+                defaults=dict(
+                    match_text=em.raw_text[:1000],
+                    result=em.raw_text[:255],
+                    match_type=em.stipulation[:255],
+                    outcome_type=em.outcome_type,
+                    duration_seconds=em.duration_seconds,
+                    title=title_obj,
+                    title_changed=em.title_changed,
+                    winner=winner_obj,
+                    winning_side=em.winning_side,
+                    verified=True,  # back-compat boolean
+                    verification_source="wikipedia",
+                ),
+            )
+            if was_created:
+                created += 1
+            else:
+                updated += 1
 
-        # ------------------------------------------------------------------
-        # Participants: keep existing rows when present so manual corrections
-        # (entrance order, roles) aren't destroyed on rerun. Codex P2 finding.
-        # ------------------------------------------------------------------
-        existing_pids = {p.wrestler_id for p in match.participant_links.all()}
-        row_unmatched: list[str] = []
-        for side_idx, names in enumerate(em.sides):
-            for nm in names:
-                w = wrestler_by_name.get(nm.strip().lower())
-                if w is None:
-                    row_unmatched.append(nm)
-                    unmatched.append(nm)
-                    continue
-                # Upsert (don't delete+recreate) so future role/entrance-order
-                # corrections survive re-ingest.
-                MatchParticipant.objects.update_or_create(
-                    match=match,
-                    wrestler=w,
-                    defaults=dict(
-                        side=side_idx,
-                        is_winner=(em.winning_side == side_idx),
-                    ),
-                )
-                match.wrestlers.add(w)
+            # --------------------------------------------------------------
+            # Participants: keep existing rows when present so manual
+            # corrections (entrance order, roles) aren't destroyed on
+            # rerun. Codex P2 finding.
+            # --------------------------------------------------------------
+            row_unmatched: list[str] = []
+            for side_idx, names in enumerate(em.sides):
+                for nm in names:
+                    w = wrestler_by_name.get(nm.strip().lower())
+                    if w is None:
+                        row_unmatched.append(nm)
+                        unmatched.append(nm)
+                        continue
+                    # Upsert (don't delete+recreate) so future role/entrance-order
+                    # corrections survive re-ingest.
+                    MatchParticipant.objects.update_or_create(
+                        match=match,
+                        wrestler=w,
+                        defaults=dict(
+                            side=side_idx,
+                            is_winner=(em.winning_side == side_idx),
+                        ),
+                    )
+                    match.wrestlers.add(w)
 
-        # Record unresolved participants on the match itself so future
-        # passes (or Al) can backfill them. Stored in `about` so they show
-        # up on the match detail page.
-        if row_unmatched:
-            note = "Unresolved participants: " + ", ".join(row_unmatched)
-            current_about = match.about or ""
-            if note not in current_about:
-                match.about = (current_about + "\n\n" + note).strip()[:2000]
-                match.save(update_fields=["about"])
+            # Record unresolved participants on the match itself so future
+            # passes (or Al) can backfill them. Stored in `about` so they show
+            # up on the match detail page.
+            if row_unmatched:
+                note = "Unresolved participants: " + ", ".join(row_unmatched)
+                current_about = match.about or ""
+                if note not in current_about:
+                    match.about = (current_about + "\n\n" + note).strip()[:2000]
+                    match.save(update_fields=["about"])
 
-        # ------------------------------------------------------------------
-        # FieldProvenance: every persisted field cites this event's source
-        # fetch + carries the source-text snippet.
-        # ------------------------------------------------------------------
-        snippet_hint = em.raw_text[:1000]
-        field_values = {
-            "match_text": em.raw_text[:1000],
-            "match_type": em.stipulation[:255],
-        }
-        if em.outcome_type:
-            field_values["outcome_type"] = em.outcome_type
-        if em.duration_seconds is not None:
-            field_values["duration_seconds"] = em.duration_seconds
-        if winner_obj:
-            field_values["winner"] = winner_obj.name
-        if em.winning_side is not None:
-            field_values["winning_side"] = em.winning_side
-        if title_obj:
-            field_values["title"] = title_obj.name
-        if em.title_changed:
-            field_values["title_changed"] = True
-        bulk_synthetic_provenance(
-            entity_type="match",
-            entity_id=match.id,
-            field_values=field_values,
-            source_fetch=fetch,
-            snippet_hint=snippet_hint,
-            confidence=85,  # 85 — match data parsed directly from Wikipedia results table
-        )
-
-        # ------------------------------------------------------------------
-        # Contract enforcement — sets verification_state to verified iff:
-        #   - match_text has provenance (it does)
-        #   - match has at least one participant (forbidden-state check)
-        # Falls to candidate if zero participants matched.
-        # ------------------------------------------------------------------
-        state, reasons = accuracy_contract.enforce("match", match)
-        if match.verification_state != state:
-            match.verification_state = state
-            match.save(update_fields=["verification_state"])
-        by_state[state] = by_state.get(state, 0) + 1
-
-    # ------------------------------------------------------------------
-    # Prune orphans: a Wikipedia-sourced Match whose match_order is no
-    # longer in the current extract has been removed upstream (or shifted
-    # to a new card_position because a sibling Results table appeared).
-    # Without this, table_index re-namespacing leaves the old rows behind
-    # forever. Scope is intentionally narrow:
-    #   - Same event
-    #   - verification_source='wikipedia' only (don't touch Cagematch/manual)
-    #   - Skip when kept_orders is empty (already short-circuited above, but
-    #     belt-and-braces against future refactors that could nuke an event)
-    # MatchParticipant cascades via FK; FieldProvenance is a soft reference
-    # so we clear it explicitly.
-    # ------------------------------------------------------------------
-    orphans_pruned = 0
-    if kept_orders:
-        orphans = list(
-            Match.objects.filter(event=event, verification_source="wikipedia")
-            .exclude(match_order__in=kept_orders)
-            .values_list("id", flat=True)
-        )
-        if orphans:
-            FieldProvenance.objects.filter(
+            # --------------------------------------------------------------
+            # FieldProvenance: every persisted field cites this event's source
+            # fetch + carries the source-text snippet.
+            # --------------------------------------------------------------
+            snippet_hint = em.raw_text[:1000]
+            field_values = {
+                "match_text": em.raw_text[:1000],
+                "match_type": em.stipulation[:255],
+            }
+            if em.outcome_type:
+                field_values["outcome_type"] = em.outcome_type
+            if em.duration_seconds is not None:
+                field_values["duration_seconds"] = em.duration_seconds
+            if winner_obj:
+                field_values["winner"] = winner_obj.name
+            if em.winning_side is not None:
+                field_values["winning_side"] = em.winning_side
+            if title_obj:
+                field_values["title"] = title_obj.name
+            if em.title_changed:
+                field_values["title_changed"] = True
+            bulk_synthetic_provenance(
                 entity_type="match",
-                entity_id__in=orphans,
-            ).delete()
-            Match.objects.filter(id__in=orphans).delete()
-            orphans_pruned = len(orphans)
+                entity_id=match.id,
+                field_values=field_values,
+                source_fetch=fetch,
+                snippet_hint=snippet_hint,
+                confidence=85,  # 85 — match data parsed directly from Wikipedia results table
+            )
+
+            # --------------------------------------------------------------
+            # Contract enforcement — sets verification_state to verified iff:
+            #   - match_text has provenance (it does)
+            #   - match has at least one participant (forbidden-state check)
+            # Falls to candidate if zero participants matched.
+            # --------------------------------------------------------------
+            state, reasons = accuracy_contract.enforce("match", match)
+            if match.verification_state != state:
+                match.verification_state = state
+                match.save(update_fields=["verification_state"])
+            by_state[state] = by_state.get(state, 0) + 1
+
+        # ----------------------------------------------------------------
+        # Prune orphans: a Wikipedia-sourced Match whose match_order is no
+        # longer in the current extract has been removed upstream (or shifted
+        # to a new card_position because a sibling Results table appeared).
+        # Without this, table_index re-namespacing leaves the old rows behind
+        # forever. Scope is intentionally narrow:
+        #   - Same event
+        #   - verification_source='wikipedia' only (don't touch Cagematch/manual)
+        #   - Skip when kept_orders is empty (already short-circuited above, but
+        #     belt-and-braces against future refactors that could nuke an event)
+        # MatchParticipant cascades via FK; FieldProvenance is a soft reference
+        # so we clear it explicitly.
+        # ----------------------------------------------------------------
+        orphans_pruned = 0
+        if kept_orders:
+            orphans = list(
+                Match.objects.filter(event=event, verification_source="wikipedia")
+                .exclude(match_order__in=kept_orders)
+                .values_list("id", flat=True)
+            )
+            if orphans:
+                FieldProvenance.objects.filter(
+                    entity_type="match",
+                    entity_id__in=orphans,
+                ).delete()
+                Match.objects.filter(id__in=orphans).delete()
+                orphans_pruned = len(orphans)
 
     return {
         "extracted": len(extracted),

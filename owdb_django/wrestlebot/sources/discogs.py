@@ -109,8 +109,8 @@ def get_token() -> Optional[str]:
         token = getattr(settings, "DISCOGS_TOKEN", None)
         if token:
             return token
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Could not read DISCOGS_TOKEN from Django settings: %s", e)
     t = os.environ.get("DISCOGS_TOKEN")
     if t:
         return t

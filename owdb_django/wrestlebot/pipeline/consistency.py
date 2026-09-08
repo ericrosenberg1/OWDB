@@ -613,8 +613,12 @@ def check_cross_link_grounding(entity_type: str, entity) -> list[ConsistencyIssu
             ).first()
             if author_prov:
                 author_name = (author_prov.value or "").strip().lower()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(
+                "check_consistency: could not look up author provenance for Book#%s: %s",
+                entity.id,
+                e,
+            )
         from owdb_django.owdbapp.models import Wrestler
 
         for wid in wrestler_ids:

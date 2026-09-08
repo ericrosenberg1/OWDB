@@ -4,6 +4,8 @@ WrestleBot Admin Interface
 Provides admin views for monitoring bot activity, configuration, and statistics.
 """
 
+import logging
+
 from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html
@@ -16,6 +18,8 @@ from .models import (
     FieldProvenance,
     GeneratedBio,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @admin.register(WrestleBotActivity)
@@ -88,8 +92,13 @@ class WrestleBotActivityAdmin(admin.ModelAdmin):
             if url_name and obj.entity_id:
                 url = reverse(f"admin:{url_name}", args=[obj.entity_id])
                 return format_html('<a href="{}">{}</a>', url, obj.entity_name)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(
+                "entity_link: could not build admin URL for %s#%s: %s",
+                obj.entity_type,
+                obj.entity_id,
+                e,
+            )
         return obj.entity_name
 
     entity_link.short_description = "Entity"

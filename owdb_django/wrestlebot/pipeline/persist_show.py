@@ -236,6 +236,16 @@ def persist_special(
                 continue
             current = getattr(sp, dst_attr, None)
             is_empty = current in (None, "", b"")
+            # `type` additionally treats its own model default ("other") as
+            # unset. Special.type defaults to "other" the instant
+            # Special.objects.create() runs, before this loop ever sees it,
+            # so without this a genuinely-extracted classification
+            # (documentary/movie/tv_special/series) is silently discarded
+            # on every ingest -- extract_special() (sources/wikipedia.py)
+            # only ever sets this field to one of those four values, never
+            # to "other", so this can never mask a legitimate "other" value.
+            if dst_attr == "type" and current == "other":
+                is_empty = True
             if is_empty:
                 setattr(sp, dst_attr, snip.value)
                 fields_written.append(dst_attr)
@@ -254,9 +264,10 @@ def persist_special(
             sp.wikipedia_url = source_fetch.url[:500]
             fields_written.append("wikipedia_url")
 
-        # `special` has no formal entry in CONTRACTS yet; accuracy_contract
-        # returns PROVISIONAL for unknown types, which is correct here —
-        # better than an unconditional `verified=True`.
+        # `special` has a CONTRACTS entry requiring only `title` provenance
+        # (see accuracy_contract.py); _apply_contract resolves the real
+        # state from that rather than defaulting to an unconditional
+        # `verified=True`.
         sp.last_enriched = timezone.now()
         _apply_contract("special", sp, source_fetch)
         sp.save()

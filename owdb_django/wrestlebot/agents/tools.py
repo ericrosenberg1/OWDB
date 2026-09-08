@@ -759,7 +759,7 @@ def _t_generate_bio(wrestler_id: int) -> dict:
         wrestler_name=w.name,
         bio_status=bio.status,
         bio_preview=_truncate(bio.text, 400),
-        attempts=bio.attempts,
+        attempts=bio.attempt_number,
     )
 
 

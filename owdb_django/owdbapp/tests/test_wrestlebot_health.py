@@ -16,8 +16,6 @@ from django.test import Client, TestCase
 from django.utils import timezone
 
 from owdb_django.wrestlebot.models import (
-    EarlObservation,
-    FieldProvenance,
     SourceFetch,
     WrestleBotActivity,
     WrestleBotConfig,

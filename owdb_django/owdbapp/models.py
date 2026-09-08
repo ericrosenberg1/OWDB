@@ -454,30 +454,52 @@ class Promotion(VerificationMixin, ImageMixin, TimeStampedModel):
             .distinct()
         )
 
+    def _canonical_roster_ids_cached(self):
+        """
+        Memoized list of canonical-roster wrestler ids. Used to keep a
+        single render (which fans out into get_books / get_specials /
+        get_podcasts / etc.) from re-running the same ≥3-match annotation
+        query 4+ times. Cache lives on the instance; harmless when the
+        Promotion is short-lived.
+        """
+        cached = getattr(self, "__roster_ids_cache", None)
+        if cached is None:
+            cached = list(self.canonical_roster_ids())
+            self.__roster_ids_cache = cached
+        return cached
+
     def get_books(self, limit=20):
         """
-        Books whose related_wrestlers include canonical roster members
-        (≥3 matches at this promotion). Sorted by publication year
-        (newest first). See ``canonical_roster_ids`` for the tightened
-        threshold rationale.
+        Books linked to this promotion. Prefers the direct `Book.promotions`
+        M2M (populated by `_backfill_book_promotions` at extract time);
+        falls back to the canonical-roster derivation when the
+        denormalized link is empty (older books pre-backfill, or books
+        with related_wrestlers that don't yet have match histories).
         """
+        direct = Book.objects.filter(promotions=self)
+        if direct.exists():
+            return direct.distinct().order_by("-publication_year", "title")[:limit]
         return (
-            Book.objects.filter(related_wrestlers__in=self.canonical_roster_ids())
+            Book.objects.filter(related_wrestlers__in=self._canonical_roster_ids_cached())
             .distinct()
             .order_by("-publication_year", "title")[:limit]
         )
 
     def get_specials(self, limit=20):
-        """Documentaries whose roster overlaps this promotion's canonical roster."""
+        """Documentaries linked to this promotion (direct M2M preferred,
+        roster-derivation as fallback). Same shape as `get_books`."""
+        direct = Special.objects.filter(promotions=self)
+        if direct.exists():
+            return direct.distinct().order_by("-release_year", "title")[:limit]
         return (
-            Special.objects.filter(related_wrestlers__in=self.canonical_roster_ids())
+            Special.objects.filter(related_wrestlers__in=self._canonical_roster_ids_cached())
             .distinct()
             .order_by("-release_year", "title")[:limit]
         )
 
     def get_podcasts(self, limit=20):
         """Podcasts whose hosts/related wrestlers are canonical roster members."""
-        roster_ids = self.canonical_roster_ids()
+        roster_ids = self._canonical_roster_ids_cached()
         return (
             Podcast.objects.filter(
                 models.Q(host_wrestlers__in=roster_ids) | models.Q(related_wrestlers__in=roster_ids)
@@ -602,11 +624,22 @@ class Stable(VerificationMixin, ImageMixin, TimeStampedModel):
         max_year = (self.disbanded_year or 9999) + self.STABLE_MEDIA_GRACE_YEARS
         return self.formed_year, max_year
 
+    def _member_ids_cached(self):
+        """
+        Memoized list of member wrestler ids — the detail page renders
+        4 derived media sections (books/specials/games/podcasts) and the
+        members M2M is identical for each. Cache on the instance.
+        """
+        cached = getattr(self, "__member_ids_cache", None)
+        if cached is None:
+            cached = list(self.members.values_list("id", flat=True))
+            self.__member_ids_cache = cached
+        return cached
+
     def get_books(self, limit=20):
         """Books whose related_wrestlers include a member AND were published
         in (or shortly after) the stable's active years."""
-        member_ids = list(self.members.values_list("id", flat=True))
-        qs = Book.objects.filter(related_wrestlers__in=member_ids).distinct()
+        qs = Book.objects.filter(related_wrestlers__in=self._member_ids_cached()).distinct()
         lo, hi = self._media_year_window()
         if lo is not None:
             qs = qs.filter(
@@ -617,8 +650,7 @@ class Stable(VerificationMixin, ImageMixin, TimeStampedModel):
 
     def get_specials(self, limit=20):
         """Documentaries featuring a member AND released within the stable's active window."""
-        member_ids = list(self.members.values_list("id", flat=True))
-        qs = Special.objects.filter(related_wrestlers__in=member_ids).distinct()
+        qs = Special.objects.filter(related_wrestlers__in=self._member_ids_cached()).distinct()
         lo, hi = self._media_year_window()
         if lo is not None:
             qs = qs.filter(
@@ -629,8 +661,7 @@ class Stable(VerificationMixin, ImageMixin, TimeStampedModel):
 
     def get_video_games(self, limit=20):
         """Video games where a member is on the roster AND released within the stable's window."""
-        member_ids = list(self.members.values_list("id", flat=True))
-        qs = VideoGame.objects.filter(wrestlers__in=member_ids).distinct()
+        qs = VideoGame.objects.filter(wrestlers__in=self._member_ids_cached()).distinct()
         lo, hi = self._media_year_window()
         if lo is not None:
             qs = qs.filter(
@@ -643,7 +674,7 @@ class Stable(VerificationMixin, ImageMixin, TimeStampedModel):
         """Podcasts hosted by — or featuring — a stable member, launched in the active window."""
         from django.db.models import Q
 
-        member_ids = list(self.members.values_list("id", flat=True))
+        member_ids = self._member_ids_cached()
         qs = Podcast.objects.filter(
             Q(host_wrestlers__in=member_ids) | Q(related_wrestlers__in=member_ids)
         ).distinct()
@@ -1526,10 +1557,23 @@ class Title(VerificationMixin, ImageMixin, TimeStampedModel):
             .distinct()
         )
 
+    def _notable_champion_ids_cached(self):
+        """
+        Memoized list of notable-champion ids. A detail page render fans
+        out into get_books / get_specials / get_video_games + the
+        linking.py "via [champion]" lookup — same annotation query would
+        otherwise execute 4 times.
+        """
+        cached = getattr(self, "__champion_ids_cache", None)
+        if cached is None:
+            cached = list(self.notable_champion_ids())
+            self.__champion_ids_cache = cached
+        return cached
+
     def get_books(self, limit=20):
         """Books whose related_wrestlers include a notable (multi-reign) champion."""
         return (
-            Book.objects.filter(related_wrestlers__in=self.notable_champion_ids())
+            Book.objects.filter(related_wrestlers__in=self._notable_champion_ids_cached())
             .distinct()
             .order_by("-publication_year", "title")[:limit]
         )
@@ -1537,7 +1581,7 @@ class Title(VerificationMixin, ImageMixin, TimeStampedModel):
     def get_specials(self, limit=20):
         """Documentaries featuring a notable (multi-reign) champion of this title."""
         return (
-            Special.objects.filter(related_wrestlers__in=self.notable_champion_ids())
+            Special.objects.filter(related_wrestlers__in=self._notable_champion_ids_cached())
             .distinct()
             .order_by("-release_year", "title")[:limit]
         )
@@ -1545,7 +1589,7 @@ class Title(VerificationMixin, ImageMixin, TimeStampedModel):
     def get_video_games(self, limit=20):
         """Games whose roster includes a notable (multi-reign) champion."""
         return (
-            VideoGame.objects.filter(wrestlers__in=self.notable_champion_ids())
+            VideoGame.objects.filter(wrestlers__in=self._notable_champion_ids_cached())
             .distinct()
             .order_by("-release_year", "name")[:limit]
         )
@@ -2315,6 +2359,12 @@ class Book(TimeStampedModel):
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     author = models.CharField(max_length=255, blank=True, null=True, db_index=True)
     related_wrestlers = models.ManyToManyField(Wrestler, blank=True, related_name="books")
+    # Direct promotion link populated by persist_book at extract time
+    # (derived from related_wrestlers' canonical promotion at persist).
+    # The legacy fan-out (Promotion → Event → Match → Wrestler → Book) is
+    # accurate but expensive at render scale; this denormalization is the
+    # cache layer for Promotion.get_books() and similar listing views.
+    promotions = models.ManyToManyField(Promotion, blank=True, related_name="books")
     publication_year = models.IntegerField(blank=True, null=True)
     isbn = models.CharField(max_length=20, blank=True, null=True, unique=True)
     publisher = models.CharField(max_length=255, blank=True, null=True)
@@ -2377,6 +2427,9 @@ class Special(TimeStampedModel):
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     release_year = models.IntegerField(blank=True, null=True)
     related_wrestlers = models.ManyToManyField(Wrestler, blank=True, related_name="specials")
+    # Direct promotion link populated by persist_special at extract time —
+    # mirrors Book.promotions, see comment there.
+    promotions = models.ManyToManyField(Promotion, blank=True, related_name="specials")
     type = models.CharField(max_length=50, choices=SPECIAL_TYPES, default="other")
     director = models.CharField(max_length=255, blank=True, null=True)
     about = models.TextField(blank=True, null=True)

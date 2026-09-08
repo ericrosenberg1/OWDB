@@ -79,4 +79,6 @@ urlpatterns = [
     path("account/", views.account, name="account"),
     # Health check for Docker/load balancers
     path("health/", views.health_check, name="health"),
+    # WrestleBot pipeline health (queue depth, today's activity, errors)
+    path("wrestlebot/health/", views.wrestlebot_health, name="wrestlebot_health"),
 ]

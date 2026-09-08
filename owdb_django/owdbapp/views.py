@@ -6,7 +6,7 @@ from django.views.decorators.http import require_http_methods
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.views.generic import ListView, DetailView, TemplateView
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
@@ -1143,4 +1143,134 @@ class Hot100HistoryView(ListView):
 # NOTE: A WrestleBot health-check view from origin/main was dropped during
 # the merge — it referenced the legacy in-app `owdbapp.wrestlebot` module
 # that this PR replaces with the standalone `owdb_django.wrestlebot` app.
-# A re-implementation against the new wrestlebot can land as a follow-up.
+# The re-implementation below targets the new app's models.
+
+
+from django.views.decorators.http import require_GET
+
+
+@require_GET
+def wrestlebot_health(request):
+    """
+    Health check for the wrestlebot pipeline.
+
+    Returns JSON describing:
+      - `healthy`: composite flag — true when bot is enabled, the rate
+        limiter has a backend, the extract queue isn't stuck, and recent
+        errors are below threshold.
+      - `enabled`: WrestleBotConfig['enabled'] (defaults to True).
+      - `rate_limiter`: which backend is in use (redis / local fallback).
+      - `today`: counts of SourceFetch + FieldProvenance + EarlObservation
+        created in the last 24h, plus WrestleBotActivity errors.
+      - `queue`: depth of the extract queue (SourceFetch with
+        used_at IS NULL), bucketed by entity_type.
+      - `totals`: lifetime entity counts.
+      - `timestamp`: now, ISO-8601.
+
+    Accessible at: /wrestlebot/health/
+
+    Shape mirrors the legacy in-app endpoint so existing monitoring
+    dashboards keep working; field semantics target the new pipeline.
+    """
+    from datetime import timedelta
+    from django.utils import timezone
+
+    from owdb_django.wrestlebot.models import (
+        EarlObservation,
+        FieldProvenance,
+        SourceFetch,
+        WrestleBotActivity,
+        WrestleBotConfig,
+    )
+
+    try:
+        now = timezone.now()
+        since = now - timedelta(hours=24)
+
+        # `enabled` lives in WrestleBotConfig; absence = enabled (default).
+        enabled_cfg = WrestleBotConfig.objects.filter(key="enabled").first()
+        enabled = (
+            bool(enabled_cfg.value) if enabled_cfg is not None
+            else WrestleBotConfig.DEFAULTS["enabled"]["value"]
+        )
+
+        # Rate-limiter backend: redis-backed means cross-worker coordination,
+        # local fallback is process-only. Both keep the limiter functional;
+        # only "no backend at all" would block fetching.
+        from owdb_django.wrestlebot import rate_limit
+        rate_limiter_backend = (
+            "redis" if rate_limit._get_redis_client() is not None else "local_fallback"
+        )
+
+        # 24h activity counts.
+        fetches_today = SourceFetch.objects.filter(fetched_at__gte=since).count()
+        provenance_today = FieldProvenance.objects.filter(extracted_at__gte=since).count()
+        earl_today = EarlObservation.objects.filter(last_seen__gte=since).count()
+        errors_today = WrestleBotActivity.objects.filter(
+            created_at__gte=since, action_type="error",
+        ).count()
+
+        # Extract-queue depth — un-used SourceFetch rows are waiting to be
+        # processed. A growing number here means the extract worker is
+        # behind; zero/low means it's keeping up.
+        queue_qs = SourceFetch.objects.filter(used_at__isnull=True, http_status=200)
+        queue_total = queue_qs.count()
+        queue_by_type = dict(
+            queue_qs.exclude(entity_type__isnull=True)
+            .exclude(entity_type="")
+            .values_list("entity_type")
+            .annotate(c=Count("id"))
+            .values_list("entity_type", "c")
+        )
+
+        # Lifetime entity counts for quick sanity-checking.
+        totals = {
+            "wrestlers": Wrestler.objects.count(),
+            "events": Event.objects.count(),
+            "promotions": Promotion.objects.count(),
+            "titles": Title.objects.count(),
+            "source_fetches": SourceFetch.objects.count(),
+            "field_provenance": FieldProvenance.objects.count(),
+            "earl_observations": EarlObservation.objects.count(),
+        }
+
+        # Composite health: bot enabled, errors under threshold, queue not
+        # absurdly deep. Tune ERRORS / QUEUE caps as we learn the steady-
+        # state shape.
+        ERROR_BUDGET = 50
+        QUEUE_DEPTH_BUDGET = 5000
+        healthy = (
+            enabled
+            and errors_today < ERROR_BUDGET
+            and queue_total < QUEUE_DEPTH_BUDGET
+        )
+
+        return JsonResponse(
+            {
+                "healthy": healthy,
+                "enabled": enabled,
+                "rate_limiter": rate_limiter_backend,
+                "today": {
+                    "fetches": fetches_today,
+                    "provenance_rows": provenance_today,
+                    "earl_observations": earl_today,
+                    "errors": errors_today,
+                },
+                "queue": {
+                    "total": queue_total,
+                    "by_entity_type": queue_by_type,
+                },
+                "totals": totals,
+                "timestamp": now.isoformat(),
+            }
+        )
+
+    except Exception as e:
+        return JsonResponse(
+            {
+                "healthy": False,
+                "error": str(e),
+                "timestamp": timezone.now().isoformat(),
+            },
+            status=500,
+        )

@@ -164,11 +164,16 @@ CONTRACTS: dict[str, Contract] = {
     # that the previous schema let games be created with no name-provenance
     # row, which let any fetched Wikipedia article become a VideoGame even
     # if the article was actually a person / TV show / hub list.
+    # `video_game_without_game_infobox` flags rows whose source HTML has no
+    # `infobox vg` / `infobox video game` template and no "is a ... video
+    # game" lede — catches pre-existing rows the new
+    # _looks_like_video_game_article fetch-time gate only prevents going
+    # forward.
     "video_game": Contract(
         entity_type="video_game",
         required_fields=("name",),
         recommended_fields=("release_year", "developer", "publisher", "systems"),
-        forbidden_state_checks=(),
+        forbidden_state_checks=("video_game_without_game_infobox",),
     ),
     # Podcast — name only; hosts + launch year are recommended.
     "podcast": Contract(
@@ -236,11 +241,52 @@ def match_must_have_participants(match) -> list[str]:
     return []
 
 
+def video_game_without_game_infobox(video_game) -> list[str]:
+    """
+    Flag VideoGame rows whose Wikipedia source HTML doesn't look like a
+    video game article — no `infobox vg` template AND no "is a ... game"
+    lede phrase. Symptom of the pre-gate ingester accepting any /wiki/X
+    that happened to be referenced by a games-discovery seed.
+
+    Scope:
+      * Only video games sourced from Wikipedia (no signal otherwise).
+      * Only when we still have raw_content cached on the SourceFetch.
+      * Silent (no violation) when we have no cached HTML — we can't
+        prove the row is bad without re-fetching, and that's a separate
+        operation.
+    """
+    from ..models import SourceFetch
+    from .games_discovery import _looks_like_video_game_article
+
+    fetch = (
+        SourceFetch.objects.filter(
+            entity_type="video_game",
+            entity_id=video_game.id,
+            source="wikipedia",
+            http_status=200,
+        )
+        .exclude(raw_content="")
+        .order_by("-fetched_at")
+        .first()
+    )
+    if fetch is None:
+        return []  # no cached HTML to evaluate; abstain rather than false-flag
+
+    article_title = video_game.name or ""
+    if not _looks_like_video_game_article(fetch.raw_content, article_title):
+        return [
+            f"VideoGame {video_game.name!r} source HTML lacks a video-game infobox "
+            f"and lede phrasing — SourceFetch#{fetch.id} may not actually describe a game"
+        ]
+    return []
+
+
 # Registry the contract layer uses to dispatch checks by name.
 _FORBIDDEN_CHECK_FUNCS = {
     "event_must_have_promotion": event_must_have_promotion,
     "venue_name_not_a_city": venue_name_not_a_city,
     "match_must_have_participants": match_must_have_participants,
+    "video_game_without_game_infobox": video_game_without_game_infobox,
 }
 
 

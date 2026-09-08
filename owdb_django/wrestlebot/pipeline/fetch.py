@@ -12,7 +12,7 @@ from __future__ import annotations
 import hashlib
 import logging
 from datetime import timedelta
-from typing import Iterable, Optional
+from typing import Callable, Iterable, Optional
 
 from django.utils import timezone
 
@@ -22,6 +22,30 @@ from ..sources.cagematch import CagematchAdapter
 from ..sources.wikipedia import WikipediaAdapter
 
 logger = logging.getLogger(__name__)
+
+
+# A pre-persist gate: receives `(raw_content, url)` and returns True if the
+# fetch should be persisted as the requested entity_type, False if it
+# should be recorded as rejected (so we don't refetch) but kept out of the
+# extract queue.
+PrePersistGate = Callable[[str, str], bool]
+
+
+def _hof_wrestler_gate(raw_content: str, url: str) -> bool:
+    """
+    HOF inductee gate: Hall-of-Fame lists mix wrestlers with celebrity
+    honorees (Drew Carey, Bob Uecker, Pete Rose). When discovery queues
+    one of those names, the fetched page is e.g. an MLB-player infobox
+    rather than a wrestler infobox. Refuse to persist it as
+    `entity_type='wrestler'` — otherwise the extract pipeline writes a
+    Wrestler row with no provenance and Earl spends a cycle flagging it.
+
+    Returns True only when `classify_html` confidently identifies the
+    page as a wrestler article.
+    """
+    from .classifier import classify_html
+
+    return classify_html(raw_content) == "wrestler"
 
 
 # How long a fetched page is considered "fresh enough" before we refetch.
@@ -173,11 +197,20 @@ def _fetch_candidates_for_type(
     entity_type: str,
     adapter: Optional[SourceAdapter] = None,
     force: bool = False,
+    pre_persist_gate: Optional[PrePersistGate] = None,
 ) -> list[SourceFetch]:
     """
     Shared candidate fetch loop. `entity_type` determines which adapter method
     we call (fetch_wrestler_by_name / fetch_event_by_name / fetch_venue_by_name)
     and what gets stamped on the SourceFetch row.
+
+    `pre_persist_gate` (optional): when provided, runs against the freshly
+    fetched HTML before the SourceFetch row is created with the requested
+    entity_type. If it returns False, the row is still created (so we don't
+    refetch on next run) but with `entity_type=None` + `used_at=now()` +
+    `extraction_outcome='persist_refused'`, taking it out of the extract queue.
+    Use this to gate noisy candidate sources like Hall of Fame lists where
+    many entries aren't actually wrestlers.
     """
     if adapter is None:
         adapter = WikipediaAdapter()
@@ -283,6 +316,32 @@ def _fetch_candidates_for_type(
             )
             continue
 
+        # Pre-persist gate (used by HOF discovery to drop celebrity
+        # honorees before they enter the wrestler queue).
+        if pre_persist_gate is not None and not pre_persist_gate(
+            result.raw_content, result.url
+        ):
+            fetch_row = SourceFetch.objects.create(
+                source=adapter.source_name,
+                url=result.url,
+                entity_type=None,  # don't enter the per-type extract queue
+                candidate_name=name,
+                http_status=result.http_status,
+                content_hash=content_hash,
+                raw_content=result.raw_content,
+                used_at=timezone.now(),
+                extraction_outcome="persist_refused",
+            )
+            out.append(fetch_row)
+            logger.info(
+                "Pre-persist gate rejected %r [requested=%s] on %s -> SourceFetch#%d",
+                name,
+                entity_type,
+                adapter.source_name,
+                fetch_row.id,
+            )
+            continue
+
         fetch_row = SourceFetch.objects.create(
             source=adapter.source_name,
             url=result.url,
@@ -308,9 +367,24 @@ def fetch_wrestler_candidates(
     candidate_names: Iterable[str],
     adapter: Optional[SourceAdapter] = None,
     force: bool = False,
+    from_hof_discovery: bool = False,
 ) -> list[SourceFetch]:
-    """Fetch and persist source content for wrestler candidates."""
-    return _fetch_candidates_for_type(candidate_names, "wrestler", adapter, force)
+    """
+    Fetch and persist source content for wrestler candidates.
+
+    When `from_hof_discovery=True`, the fetched page must pass the
+    `classify_html` wrestler check. Pages that don't (celebrity HOF
+    inductees, sports figures, etc.) get a SourceFetch row recorded
+    with extraction_outcome='persist_refused' so we don't refetch and
+    don't extract.
+    """
+    return _fetch_candidates_for_type(
+        candidate_names,
+        "wrestler",
+        adapter,
+        force,
+        pre_persist_gate=_hof_wrestler_gate if from_hof_discovery else None,
+    )
 
 
 def fetch_event_candidates(

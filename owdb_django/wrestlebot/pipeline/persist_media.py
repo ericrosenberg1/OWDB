@@ -203,7 +203,9 @@ def persist_book(
         from .mentions import persist_mentions_for_entity
         from .linking import resolve_all_mentions_to_wrestlers
 
-        persist_mentions_for_entity("book", book.id, source_fetch)
+        # section_aware=True: book articles have ==Subject==/==About==
+        # sections that pin which wrestler the book is actually about.
+        persist_mentions_for_entity("book", book.id, source_fetch, section_aware=True)
         # Resolve immediately so the cross-link step below finds them.
         resolve_all_mentions_to_wrestlers()
     except Exception as e:
@@ -214,6 +216,14 @@ def persist_book(
         linked += _link_book_to_mentioned_wrestlers(book, source_fetch)
     except Exception as e:
         logger.exception("Book wrestler-linking failed: %s", e)
+
+    # Denormalize book.promotions from related_wrestlers so render-time
+    # listing views (Promotion.get_books, etc.) don't have to walk the
+    # full Promotion → Event → Match → Wrestler → Book chain.
+    try:
+        _backfill_book_promotions(book)
+    except Exception as e:
+        logger.exception("Book promotions backfill failed: %s", e)
 
     logger.info(
         "Persisted book %r (id=%d, created=%s, wrote=%s, linked_wrestlers=%d)",
@@ -230,6 +240,46 @@ def persist_book(
         provenance_rows_created=provenance_rows,
         linked_wrestlers=linked,
     )
+
+
+def _backfill_book_promotions(book) -> None:
+    """
+    Populate book.promotions from book.related_wrestlers' canonical
+    promotions. Idempotent; safe to re-run. Adds links — never removes —
+    so a wrestler joining a new promotion years later doesn't clear the
+    book's existing promo trail.
+    """
+    from owdb_django.owdbapp.models import Promotion
+
+    if not book.related_wrestlers.exists():
+        return
+    # Distinct promotions across all linked wrestlers' match histories.
+    promo_ids = (
+        Promotion.objects.filter(events__matches__wrestlers__in=book.related_wrestlers.all())
+        .values_list("id", flat=True)
+        .distinct()
+    )
+    existing = set(book.promotions.values_list("id", flat=True))
+    new_ids = [pid for pid in promo_ids if pid not in existing]
+    if new_ids:
+        book.promotions.add(*new_ids)
+
+
+def _backfill_special_promotions(special) -> None:
+    """Mirror of `_backfill_book_promotions` for Special."""
+    from owdb_django.owdbapp.models import Promotion
+
+    if not special.related_wrestlers.exists():
+        return
+    promo_ids = (
+        Promotion.objects.filter(events__matches__wrestlers__in=special.related_wrestlers.all())
+        .values_list("id", flat=True)
+        .distinct()
+    )
+    existing = set(special.promotions.values_list("id", flat=True))
+    new_ids = [pid for pid in promo_ids if pid not in existing]
+    if new_ids:
+        special.promotions.add(*new_ids)
 
 
 def _link_book_author_to_wrestler(book, fields: BookFields) -> int:
@@ -262,31 +312,71 @@ def _link_book_author_to_wrestler(book, fields: BookFields) -> int:
     return linked
 
 
+# Section-label heuristics. Lower-case substring matches; ordered by how
+# directly the section names the link target (most specific first).
+_BOOK_SUBJECT_SECTIONS = (
+    "subject", "about", "biography", "subjects",
+)
+_VIDEO_GAME_ROSTER_SECTIONS = (
+    "roster", "playable characters", "playable wrestlers",
+    "cast", "wrestlers", "characters", "superstars",
+)
+
+
+def _wrestler_ids_in_sections(
+    source_fetch: SourceFetch,
+    section_substrings: tuple[str, ...],
+) -> set[int]:
+    """
+    Return the set of resolved wrestler IDs whose EntityMention rows for
+    this fetch fall under one of the named sections (case-insensitive
+    substring match on `section_label`).
+    """
+    from ..models import EntityMention
+
+    qs = EntityMention.objects.filter(
+        source_fetch=source_fetch,
+        resolved_entity_type="wrestler",
+        section_label__isnull=False,
+    ).exclude(section_label="")
+    out: set[int] = set()
+    for m in qs:
+        label = (m.section_label or "").lower()
+        if any(s in label for s in section_substrings):
+            if m.resolved_entity_id:
+                out.add(m.resolved_entity_id)
+    return out
+
+
 def _link_book_to_mentioned_wrestlers(book, source_fetch: SourceFetch) -> int:
     """
-    Walk EntityMentions for this book; link any wrestlers mentioned 2+ times.
-
-    Round-2 accuracy fix (same shape as _link_video_game_to_roster). Books
-    often mention dozens of wrestlers in passing; only ones referenced
-    multiple times are likely subjects vs background. The single-mention
-    case was producing books that claimed to be "about" a wrestler whose
-    name appeared once in a back-cover blurb.
+    Link wrestlers mentioned in the book's source paragraphs to
+    book.related_wrestlers. Prefers ==Subject== / ==About== section
+    mentions (when section-aware extraction populated section_label);
+    falls back to the legacy "mentioned 2+ times" proxy when no
+    sectioned mentions exist (e.g. older SourceFetch rows that were
+    extracted before mention.section_label was a field).
     """
     from collections import Counter
     from ..models import EntityMention
     from owdb_django.owdbapp.models import Wrestler
 
+    # Strong signal: wrestler appears in a "Subject"/"About" section.
+    subject_ids = _wrestler_ids_in_sections(source_fetch, _BOOK_SUBJECT_SECTIONS)
+
+    # Fallback: legacy 2-mention heuristic on resolved wrestlers.
     mentions = EntityMention.objects.filter(
         source_fetch=source_fetch,
         resolved_entity_type="wrestler",
     )
     counts = Counter(m.resolved_entity_id for m in mentions if m.resolved_entity_id)
     MIN_MENTIONS_FOR_BOOK_LINK = 2
+    fallback_ids = {wid for wid, n in counts.items() if n >= MIN_MENTIONS_FOR_BOOK_LINK}
+
+    to_link = subject_ids or fallback_ids
 
     linked = 0
-    for wrestler_id, hit_count in counts.items():
-        if hit_count < MIN_MENTIONS_FOR_BOOK_LINK:
-            continue
+    for wrestler_id in to_link:
         try:
             w = Wrestler.objects.get(id=wrestler_id)
         except Wrestler.DoesNotExist:
@@ -384,7 +474,13 @@ def persist_video_game(
         from .mentions import persist_mentions_for_entity
         from .linking import resolve_all_mentions_to_wrestlers
 
-        persist_mentions_for_entity("video_game", game.id, source_fetch)
+        # section_aware=True: video-game articles have ==Roster==/
+        # ==Playable characters== sections that authoritatively list who's
+        # in the game vs who's just mentioned in passing (execs, cover
+        # photographers, etc.).
+        persist_mentions_for_entity(
+            "video_game", game.id, source_fetch, section_aware=True,
+        )
         resolve_all_mentions_to_wrestlers()
     except Exception as e:
         logger.exception("VideoGame mention extraction failed: %s", e)
@@ -411,45 +507,39 @@ def _link_video_game_to_roster(game, source_fetch: SourceFetch) -> int:
     """
     Link wrestlers mentioned in the game's source paragraphs to game.wrestlers.
 
-    Round-2 accuracy fix: BOTH codex AND Claude flagged that the previous
-    "any single lead-paragraph mention adds the wrestler to the roster"
-    behavior overreaches. Example: WWE 2K22's lead mentions Vince McMahon
-    in passing as the exec who greenlit the title — Vince was not on the
-    playable roster, but the old code attached him to game.wrestlers.
+    Two-tier rule:
+      1. **Strong**: any wrestler mentioned inside a ==Roster==,
+         ==Playable characters==, ==Cast==, etc. section (section-aware
+         extraction populates `EntityMention.section_label`).
+      2. **Fallback**: legacy proxy of "mentioned 2+ times across the
+         article" — used when no sectioned mentions exist for the fetch
+         (older SourceFetches predate the section_label field, or the
+         article has no roster section at all).
 
-    The tightened rule requires MULTIPLE mentions per resolved wrestler.
-    Real roster wrestlers are mentioned repeatedly in a game article
-    (cover star, playable character, signature move list). One-off
-    mentions are too easily false positives.
-
-    Future tightening (tracked in consistency.py Earl rule
-    video_game_roster_lead_only): only count mentions that appear inside
-    a Roster / Playable Characters section, not the lead. Today's
-    EntityMention rows don't carry section labels, so we use mention
-    count as a proxy.
+    The original "any single lead-paragraph mention" rule overreached
+    (Vince McMahon attaching to every WWE game's roster); the 2-mention
+    fallback narrowed it; the section signal is the real fix.
     """
     from collections import Counter
     from ..models import EntityMention
     from owdb_django.owdbapp.models import Wrestler
 
+    roster_ids = _wrestler_ids_in_sections(
+        source_fetch, _VIDEO_GAME_ROSTER_SECTIONS,
+    )
+
     mentions = EntityMention.objects.filter(
         source_fetch=source_fetch,
         resolved_entity_type="wrestler",
     )
-    # Count mentions per resolved wrestler. The same wrestler often gets
-    # several EntityMention rows from a single article when their name
-    # appears repeatedly.
     counts = Counter(m.resolved_entity_id for m in mentions if m.resolved_entity_id)
-
-    # Roster threshold — at least 2 mentions before we attach. Tunable;
-    # tighter values would reduce the chance of leaked execs but also
-    # drop real roster members who happen to be named only twice.
     MIN_MENTIONS_FOR_ROSTER = 2
+    fallback_ids = {wid for wid, n in counts.items() if n >= MIN_MENTIONS_FOR_ROSTER}
+
+    to_link = roster_ids or fallback_ids
 
     linked = 0
-    for wrestler_id, hit_count in counts.items():
-        if hit_count < MIN_MENTIONS_FOR_ROSTER:
-            continue
+    for wrestler_id in to_link:
         try:
             w = Wrestler.objects.get(id=wrestler_id)
         except Wrestler.DoesNotExist:

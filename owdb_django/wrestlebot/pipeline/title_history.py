@@ -883,6 +883,23 @@ def discover_from_all_titles(limit_per_title: int = 200) -> dict:
 # ------------------------------------------------------ ingest entry point
 
 
+def _wiki_url_slug(url: str) -> str:
+    """
+    Return the lowercase /wiki/<slug> portion of a Wikipedia URL.
+
+    Examples:
+      'https://en.wikipedia.org/wiki/Curt_Hennig'        -> 'curt_hennig'
+      'https://en.wikipedia.org/wiki/Rikishi_(wrestler)' -> 'rikishi_(wrestler)'
+      ''                                                  -> ''
+      'https://example.com/foo'                           -> ''
+    Used by `ingest_title_history_discovery` for url-based dedupe.
+    """
+    if not url or "/wiki/" not in url:
+        return ""
+    s = url.split("/wiki/", 1)[1].split("#", 1)[0].split("?", 1)[0]
+    return urllib.parse.unquote(s).lower()
+
+
 def ingest_title_history_discovery(
     title_slug: Optional[str] = None,
     max_unknown_to_queue: int = 20,
@@ -901,15 +918,32 @@ def ingest_title_history_discovery(
     report: dict[str, dict] = {}
     total_queued = 0
 
-    # One DB-side lookup for the existing wrestler name set, used across
-    # all titles to avoid repeated full-table queries.
-    existing_names = {w.name.strip().lower() for w in Wrestler.objects.only("name")}
-    existing_aliases = set()
-    for w in Wrestler.objects.only("name", "aliases"):
+    # One DB-side lookup for the existing wrestler dedupe sets, used
+    # across all titles to avoid repeated full-table queries.
+    #
+    # Three keys are tracked:
+    #   - name (lowercase)
+    #   - alias (lowercase, each one in the comma-separated list)
+    #   - wikipedia url slug (lowercase, no underscores)
+    #
+    # The url-slug key is what catches the title-history fix's "queue by
+    # link target" behavior: a wrestler stored as name="Mr. Perfect" with
+    # wikipedia_url=".../Curt_Hennig" must dedupe against a new candidate
+    # named "Curt Hennig". Name-only dedupe misses this and produces
+    # duplicates plus a wasted Wikipedia API call.
+    existing_names: set[str] = set()
+    existing_aliases: set[str] = set()
+    existing_url_slugs: set[str] = set()
+    for w in Wrestler.objects.only("name", "aliases", "wikipedia_url"):
+        if w.name:
+            existing_names.add(w.name.strip().lower())
         for a in (getattr(w, "aliases", "") or "").split(","):
             a = a.strip().lower()
             if a:
                 existing_aliases.add(a)
+        slug_part = _wiki_url_slug(getattr(w, "wikipedia_url", "") or "")
+        if slug_part:
+            existing_url_slugs.add(slug_part)
 
     for slug in title_slugs:
         if total_queued >= max_unknown_to_queue:
@@ -923,7 +957,15 @@ def ingest_title_history_discovery(
         unknown: list[str] = []
         for name in finding.unique_champions:
             lower = name.lower()
-            if lower in existing_names or lower in existing_aliases:
+            # Candidate names from title_history are already link targets
+            # (the title-history fix queues hrefs, not display text), so
+            # the candidate's url-slug is just the name with spaces → "_".
+            candidate_slug = lower.replace(" ", "_")
+            if (
+                lower in existing_names
+                or lower in existing_aliases
+                or candidate_slug in existing_url_slugs
+            ):
                 known += 1
             else:
                 unknown.append(name)
@@ -932,27 +974,19 @@ def ingest_title_history_discovery(
         budget = max(0, max_unknown_to_queue - total_queued)
         to_queue = unknown[:budget]
 
-        # Round-2 fix: Hall-of-Fame lists mix wrestlers with celebrity
-        # honorees (Drew Carey, Bob Uecker, Pete Rose). Tag those slugs
-        # so the downstream classify-on-fetch path knows to require
-        # stronger wrestler-evidence before persisting. The
-        # `from_hof_discovery=True` flag is read by fetch_wrestler_candidates
-        # (and falls through harmlessly if that helper doesn't yet
-        # consume it — Earl will catch persisted non-wrestlers).
+        # Hall-of-Fame lists mix wrestlers with celebrity honorees
+        # (Drew Carey, Bob Uecker, Pete Rose). When the slug is in
+        # `_HOF_DISCOVERY_SLUGS`, fetch_wrestler_candidates runs a
+        # per-page classifier gate and drops candidates whose Wikipedia
+        # article doesn't look like a wrestler page.
         from_hof = slug in _HOF_DISCOVERY_SLUGS
 
         if to_queue:
-            try:
-                fetch_wrestler_candidates(
-                    to_queue,
-                    force=False,
-                    from_hof_discovery=from_hof,
-                )
-            except TypeError:
-                # Back-compat: older fetch_wrestler_candidates signature
-                # doesn't accept the kwarg. The classifier still gates
-                # at persist time so accuracy is preserved.
-                fetch_wrestler_candidates(to_queue, force=False)
+            fetch_wrestler_candidates(
+                to_queue,
+                force=False,
+                from_hof_discovery=from_hof,
+            )
             total_queued += len(to_queue)
 
         report[slug] = {

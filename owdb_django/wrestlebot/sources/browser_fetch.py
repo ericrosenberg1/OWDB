@@ -158,8 +158,12 @@ def fetch_html_many(urls: list[str], **kw) -> dict[str, Optional[str]]:
                 if wait_selector:
                     try:
                         page.wait_for_selector(wait_selector, timeout=timeout_ms)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        # Selector never appeared — return what we have anyway
+                        # (matches fetch_html's identical fallback behavior).
+                        logger.debug(
+                            "wait_for_selector(%r) timed out for %s: %s", wait_selector, url, e
+                        )
                 out[url] = page.content()
             except Exception as e:
                 logger.warning("browser_fetch_many failed for %s: %s", url, e)

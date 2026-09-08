@@ -100,8 +100,8 @@ def _resolve_redis_url() -> Optional[str]:
         url = getattr(settings, "CELERY_BROKER_URL", None) or getattr(settings, "REDIS_URL", None)
         if url:
             return url
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Could not read Redis URL from Django settings: %s", e)
     return os.environ.get("CELERY_BROKER_URL") or os.environ.get("REDIS_URL")
 
 

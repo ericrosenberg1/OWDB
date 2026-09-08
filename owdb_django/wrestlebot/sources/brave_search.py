@@ -95,8 +95,8 @@ def get_api_key() -> Optional[str]:
         key = getattr(settings, "BRAVE_SEARCH_API_KEY", None)
         if key:
             return key
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Could not read BRAVE_SEARCH_API_KEY from Django settings: %s", e)
 
     # 2. Environment variable
     key = os.environ.get("BRAVE_SEARCH_API_KEY")

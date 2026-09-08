@@ -110,8 +110,8 @@ def get_api_key() -> Optional[str]:
         key = getattr(settings, "TAVILY_API_KEY", None)
         if key:
             return key
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Could not read TAVILY_API_KEY from Django settings: %s", e)
 
     key = os.environ.get("TAVILY_API_KEY")
     if key:

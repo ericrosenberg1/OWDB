@@ -63,6 +63,46 @@ urlpatterns = [
         views.PodcastEpisodeDetailView.as_view(),
         name="episode_detail_slug",
     ),
+    # ---------------------------------------------------------------------
+    # Action Figures / Theme Songs / Training Schools — new in the entity
+    # expansion pass. wrestlebot already extracts these three types; these
+    # routes are the first public views for them.
+    # ---------------------------------------------------------------------
+    path("action-figures/", views.ActionFigureListView.as_view(), name="action_figures"),
+    path(
+        "action-figures/<int:pk>/",
+        views.ActionFigureDetailView.as_view(),
+        name="action_figure_detail",
+    ),
+    path(
+        "action-figures/<slug:slug>/",
+        views.ActionFigureDetailView.as_view(),
+        name="action_figure_detail_slug",
+    ),
+    path("theme-songs/", views.ThemeSongListView.as_view(), name="theme_songs"),
+    path("theme-songs/<int:pk>/", views.ThemeSongDetailView.as_view(), name="theme_song_detail"),
+    path(
+        "theme-songs/<slug:slug>/",
+        views.ThemeSongDetailView.as_view(),
+        name="theme_song_detail_slug",
+    ),
+    path("training-schools/", views.TrainingSchoolListView.as_view(), name="training_schools"),
+    path(
+        "training-schools/<int:pk>/",
+        views.TrainingSchoolDetailView.as_view(),
+        name="training_school_detail",
+    ),
+    path(
+        "training-schools/<slug:slug>/",
+        views.TrainingSchoolDetailView.as_view(),
+        name="training_school_detail_slug",
+    ),
+    # ---------------------------------------------------------------------
+    # User Ratings & Favorites — favorite/rate toggle (UserRating) and the
+    # "My Favorites" account page.
+    # ---------------------------------------------------------------------
+    path("ratings/", views.rate_entity, name="rate_entity"),
+    path("favorites/", views.my_favorites, name="my_favorites"),
     # Hot 100 Rankings
     path("hot100/", views.Hot100View.as_view(), name="hot100"),
     path("hot100/<int:year>/<int:month>/", views.Hot100View.as_view(), name="hot100_month"),

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load linking_tags %}
 {% load verification_tags %}
+{% load rating_tags %}
 
 {% block content %}
 <div class="detail-header">
@@ -30,6 +31,7 @@
         </div>
         {% endif %}
     </div>
+    {% rating_widget match "match" %}
 </div>
 
 <div class="row">

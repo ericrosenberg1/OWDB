@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load linking_tags %}
+
+{% block title %}{{ training_school.name }} — Training School — OWDB{% endblock %}
+
+{% block content %}
+<div class="detail-header">
+    <h1 class="detail-title">{{ training_school.name }}</h1>
+    <div class="detail-meta">
+        {% if training_school.location %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Location:</span> {{ training_school.location }}
+        </div>
+        {% endif %}
+        {% if training_school.founded_year %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Founded:</span> {{ training_school.founded_year }}{% if training_school.closed_year %}–{{ training_school.closed_year }}{% endif %}
+        </div>
+        {% endif %}
+        {% if training_school.founder %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Founder:</span> {{ training_school.founder }}
+        </div>
+        {% endif %}
+        {% if training_school.head_trainer %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Head Trainer:</span> {{ training_school.head_trainer }}
+        </div>
+        {% endif %}
+        {% if training_school.parent_promotion %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Parent Promotion:</span>
+            <a href="{% url 'promotion_detail' training_school.parent_promotion.pk %}">{{ training_school.parent_promotion.name }}</a>
+        </div>
+        {% endif %}
+        {% if training_school.wikipedia_url %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Wikipedia:</span>
+            <a href="{{ training_school.wikipedia_url }}" target="_blank" rel="noopener noreferrer">view ↗</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% with about_text=training_school|about_with_links %}
+    {% if about_text %}
+    <div class="card mb-4">
+        <div class="card-header">About</div>
+        <div class="card-body">
+            <p>{{ about_text|linebreaks }}</p>
+        </div>
+    </div>
+    {% endif %}
+{% endwith %}
+
+{% with linked_sections=training_school|linked_from_sections %}
+    {% include "partials/linked_from.html" with sections=linked_sections %}
+{% endwith %}
+
+{% if training_school.notable_trainees.exists %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Notable Trainees</span>
+        <span class="badge bg-secondary">{{ training_school.notable_trainees.count }}</span>
+    </div>
+    <ul class="list-group list-group-flush">
+        {% for wrestler in training_school.notable_trainees.all %}
+        <li class="list-group-item bg-transparent">
+            <a href="{% url 'wrestler_detail' wrestler.pk %}">{{ wrestler.name }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<a href="{% url 'training_schools' %}" class="btn btn-secondary">&larr; Back to Training Schools</a>
+{% endblock %}

@@ -12,7 +12,22 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from ..models import Wrestler, Promotion, Event, Venue, Match, UserProfile
+from ..models import (
+    Wrestler,
+    Promotion,
+    Event,
+    Venue,
+    Match,
+    Title,
+    Stable,
+    Book,
+    ActionFigure,
+    ThemeSong,
+    TrainingSchool,
+    UserRating,
+    UserProfile,
+)
+from ..views import RATING_ENTITY_MODELS
 from .proxied_client import proxied_client
 
 
@@ -364,3 +379,403 @@ class AccountViewsTest(TestCase):
         # The old copy showed a curl example against a real-looking endpoint
         # as though it worked today.
         self.assertNotContains(response, "X-API-Key")
+
+
+# =============================================================================
+# Part A: Action Figures / Theme Songs / Training Schools
+#
+# All three are TimeStampedModel, not VerificationMixin — a plain `verified`
+# boolean (same shape as Book/VideoGame/Podcast/Special), no
+# `verification_state`, no `.public()` review gate, no `rejected` state.
+# That's a real finding, not an assumption: confirmed by reading models.py
+# before writing these views. So there is no "rejected entity excluded" test
+# to mirror here — instead, "unverified still visible" is the honest
+# equivalent of ReviewGateViewsTest's candidate/provisional checks, proving
+# `verified=False` (the common case; wrestlebot doesn't backfill it) isn't
+# mistaken for a takedown state.
+# =============================================================================
+
+
+class ActionFigureViewsTest(TestCase):
+    def setUp(self):
+        self.client = proxied_client()
+        self.figure = ActionFigure.objects.create(
+            name="WWF Hasbro Wrestling Superstars", manufacturer="Hasbro"
+        )
+
+    def test_action_figures_list_renders(self):
+        response = self.client.get(reverse("action_figures"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "WWF Hasbro Wrestling Superstars")
+
+    def test_action_figure_detail_renders(self):
+        response = self.client.get(reverse("action_figure_detail", args=[self.figure.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "WWF Hasbro Wrestling Superstars")
+
+    def test_action_figure_detail_by_slug(self):
+        response = self.client.get(reverse("action_figure_detail_slug", args=[self.figure.slug]))
+        self.assertEqual(response.status_code, 200)
+
+    def test_unverified_action_figure_still_visible_in_list_and_detail(self):
+        unverified = ActionFigure.objects.create(name="Unverified Figure Line")
+        self.assertFalse(unverified.verified)
+        list_response = self.client.get(reverse("action_figures"))
+        self.assertContains(list_response, "Unverified Figure Line")
+        detail_response = self.client.get(reverse("action_figure_detail", args=[unverified.pk]))
+        self.assertEqual(detail_response.status_code, 200)
+
+
+class ThemeSongViewsTest(TestCase):
+    def setUp(self):
+        self.client = proxied_client()
+        self.song = ThemeSong.objects.create(title="Real American", artist="Rick Derringer")
+
+    def test_theme_songs_list_renders(self):
+        response = self.client.get(reverse("theme_songs"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Real American")
+
+    def test_theme_song_detail_renders(self):
+        response = self.client.get(reverse("theme_song_detail", args=[self.song.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Real American")
+
+    def test_theme_song_detail_by_slug(self):
+        response = self.client.get(reverse("theme_song_detail_slug", args=[self.song.slug]))
+        self.assertEqual(response.status_code, 200)
+
+    def test_unverified_theme_song_still_visible_in_list_and_detail(self):
+        unverified = ThemeSong.objects.create(title="Unverified Song")
+        self.assertFalse(unverified.verified)
+        list_response = self.client.get(reverse("theme_songs"))
+        self.assertContains(list_response, "Unverified Song")
+        detail_response = self.client.get(reverse("theme_song_detail", args=[unverified.pk]))
+        self.assertEqual(detail_response.status_code, 200)
+
+
+class TrainingSchoolViewsTest(TestCase):
+    def setUp(self):
+        self.client = proxied_client()
+        self.school = TrainingSchool.objects.create(
+            name="Hart Dungeon", location="Calgary, Alberta"
+        )
+
+    def test_training_schools_list_renders(self):
+        response = self.client.get(reverse("training_schools"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Hart Dungeon")
+
+    def test_training_school_detail_renders(self):
+        response = self.client.get(reverse("training_school_detail", args=[self.school.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Hart Dungeon")
+
+    def test_training_school_detail_by_slug(self):
+        response = self.client.get(reverse("training_school_detail_slug", args=[self.school.slug]))
+        self.assertEqual(response.status_code, 200)
+
+    def test_unverified_training_school_still_visible_in_list_and_detail(self):
+        unverified = TrainingSchool.objects.create(name="Unverified School")
+        self.assertFalse(unverified.verified)
+        list_response = self.client.get(reverse("training_schools"))
+        self.assertContains(list_response, "Unverified School")
+        detail_response = self.client.get(reverse("training_school_detail", args=[unverified.pk]))
+        self.assertEqual(detail_response.status_code, 200)
+
+
+class NewEntityNavTest(TestCase):
+    """The three new list pages are reachable from the site nav, not just by
+    direct URL — otherwise wrestlebot's extracted rows would still be
+    effectively invisible to a visitor who doesn't already know the URL."""
+
+    def setUp(self):
+        self.client = proxied_client()
+
+    def test_homepage_nav_links_to_new_entity_types(self):
+        response = self.client.get(reverse("index"))
+        self.assertContains(response, reverse("action_figures"))
+        self.assertContains(response, reverse("theme_songs"))
+        self.assertContains(response, reverse("training_schools"))
+
+
+# =============================================================================
+# Part B, item 1: UserRating (favorite toggle + 1-10 rating)
+#
+# UserRating associates to an entity via a hand-rolled (entity_type,
+# entity_id) pair — a CharField `choices` + a plain PositiveIntegerField PK —
+# NOT Django's contenttypes GenericForeignKey. Confirmed by reading the
+# field list on models.py before building anything on top of it.
+# RATING_ENTITY_MODELS (views.py) maps each declared choice to its real
+# model; the first test below pins that the two never drift apart.
+# =============================================================================
+
+
+class UserRatingEntityMapTest(TestCase):
+    def test_rating_entity_models_matches_declared_choices(self):
+        declared = {choice for choice, _label in UserRating.ENTITY_TYPE_CHOICES}
+        self.assertEqual(set(RATING_ENTITY_MODELS.keys()), declared)
+
+
+class RateEntityViewTest(TestCase):
+    def setUp(self):
+        self.client = proxied_client()
+        self.user = User.objects.create_user(username="rater", password="testpassword123")
+        self.wrestler = Wrestler.objects.create(name="Rateable Wrestler")
+
+    def test_toggle_favorite_requires_login(self):
+        response = self.client.post(
+            reverse("rate_entity"),
+            {
+                "entity_type": "wrestler",
+                "entity_id": self.wrestler.pk,
+                "action": "toggle_favorite",
+                "next": reverse("wrestler_detail", args=[self.wrestler.pk]),
+            },
+        )
+        self.assertRedirects(response, f"{reverse('login')}?next={reverse('rate_entity')}")
+        self.assertFalse(UserRating.objects.exists())
+
+    def test_toggle_favorite_creates_then_removes(self):
+        self.client.login(username="rater", password="testpassword123")
+        detail_url = reverse("wrestler_detail", args=[self.wrestler.pk])
+        post_data = {
+            "entity_type": "wrestler",
+            "entity_id": self.wrestler.pk,
+            "action": "toggle_favorite",
+            "next": detail_url,
+        }
+        response = self.client.post(reverse("rate_entity"), post_data)
+        self.assertRedirects(response, detail_url)
+        rating = UserRating.objects.get(
+            user=self.user, entity_type="wrestler", entity_id=self.wrestler.pk
+        )
+        self.assertTrue(rating.is_favorite)
+
+        self.client.post(reverse("rate_entity"), post_data)
+        rating.refresh_from_db()
+        self.assertFalse(rating.is_favorite)
+
+    def test_rate_entity_sets_rating(self):
+        self.client.login(username="rater", password="testpassword123")
+        detail_url = reverse("wrestler_detail", args=[self.wrestler.pk])
+        response = self.client.post(
+            reverse("rate_entity"),
+            {
+                "entity_type": "wrestler",
+                "entity_id": self.wrestler.pk,
+                "action": "rate",
+                "rating": "8",
+                "next": detail_url,
+            },
+        )
+        self.assertRedirects(response, detail_url)
+        rating = UserRating.objects.get(
+            user=self.user, entity_type="wrestler", entity_id=self.wrestler.pk
+        )
+        self.assertEqual(rating.rating, 8)
+
+    def test_rate_entity_can_clear_rating(self):
+        self.client.login(username="rater", password="testpassword123")
+        UserRating.objects.create(
+            user=self.user, entity_type="wrestler", entity_id=self.wrestler.pk, rating=5
+        )
+        detail_url = reverse("wrestler_detail", args=[self.wrestler.pk])
+        self.client.post(
+            reverse("rate_entity"),
+            {
+                "entity_type": "wrestler",
+                "entity_id": self.wrestler.pk,
+                "action": "rate",
+                "rating": "",
+                "next": detail_url,
+            },
+        )
+        rating = UserRating.objects.get(
+            user=self.user, entity_type="wrestler", entity_id=self.wrestler.pk
+        )
+        self.assertIsNone(rating.rating)
+
+    def test_rate_entity_rejects_out_of_range_rating(self):
+        self.client.login(username="rater", password="testpassword123")
+        detail_url = reverse("wrestler_detail", args=[self.wrestler.pk])
+        self.client.post(
+            reverse("rate_entity"),
+            {
+                "entity_type": "wrestler",
+                "entity_id": self.wrestler.pk,
+                "action": "rate",
+                "rating": "11",
+                "next": detail_url,
+            },
+        )
+        self.assertFalse(UserRating.objects.filter(rating=11).exists())
+
+    def test_rate_entity_rejects_entity_type_not_in_declared_choices(self):
+        """`venue` is a gated (VerificationMixin) entity, but it's absent
+        from UserRating.ENTITY_TYPE_CHOICES — a real schema gap found while
+        building this. The endpoint must not silently accept it."""
+        self.client.login(username="rater", password="testpassword123")
+        venue = Venue.objects.create(name="Rateable Venue")
+        self.client.post(
+            reverse("rate_entity"),
+            {
+                "entity_type": "venue",
+                "entity_id": venue.pk,
+                "action": "toggle_favorite",
+                "next": reverse("index"),
+            },
+        )
+        self.assertFalse(UserRating.objects.exists())
+
+    def test_rate_entity_404s_for_rejected_entity(self):
+        rejected = Wrestler.objects.create(name="Rejected Rateable", verification_state="rejected")
+        self.client.login(username="rater", password="testpassword123")
+        response = self.client.post(
+            reverse("rate_entity"),
+            {
+                "entity_type": "wrestler",
+                "entity_id": rejected.pk,
+                "action": "toggle_favorite",
+                "next": reverse("index"),
+            },
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(UserRating.objects.exists())
+
+    def test_rating_widget_visible_only_when_logged_in(self):
+        detail_url = reverse("wrestler_detail", args=[self.wrestler.pk])
+        anon_response = self.client.get(detail_url)
+        self.assertNotContains(anon_response, "Save Rating")
+
+        self.client.login(username="rater", password="testpassword123")
+        auth_response = self.client.get(detail_url)
+        self.assertContains(auth_response, "Save Rating")
+
+
+class RatingWidgetPresentOnDetailPagesTest(TestCase):
+    """
+    The rating widget was wired into 7 detail templates: the six gated
+    (VerificationMixin) entity types with a public page and a matching
+    UserRating.ENTITY_TYPE_CHOICES entry (wrestler, promotion, event, match,
+    title, stable), plus ThemeSong — the one Part-A entity type
+    ENTITY_TYPE_CHOICES already anticipated. Venue is gated but missing from
+    ENTITY_TYPE_CHOICES (see the schema-gap test above) and TVShow is gated
+    but has no public page at all, so neither gets the widget. This proves
+    every template that should have it, does.
+    """
+
+    def setUp(self):
+        self.client = proxied_client()
+        self.user = User.objects.create_user(username="widgetcheck", password="testpassword123")
+        self.client.login(username="widgetcheck", password="testpassword123")
+
+        self.promotion = Promotion.objects.create(name="Widget Promotion")
+        self.venue = Venue.objects.create(name="Widget Venue")
+        self.event = Event.objects.create(
+            name="Widget Event",
+            promotion=self.promotion,
+            venue=self.venue,
+            date=timezone.now().date(),
+        )
+        self.wrestler = Wrestler.objects.create(name="Widget Wrestler")
+        self.match = Match.objects.create(event=self.event, match_text="Widget Match")
+        self.title = Title.objects.create(name="Widget Title", promotion=self.promotion)
+        self.stable = Stable.objects.create(name="Widget Stable")
+        self.song = ThemeSong.objects.create(title="Widget Song")
+
+    def test_widget_present_on_each_detail_page(self):
+        urls = [
+            reverse("wrestler_detail", args=[self.wrestler.pk]),
+            reverse("promotion_detail", args=[self.promotion.pk]),
+            reverse("event_detail", args=[self.event.pk]),
+            reverse("match_detail", args=[self.match.pk]),
+            reverse("title_detail", args=[self.title.pk]),
+            reverse("stable_detail", args=[self.stable.pk]),
+            reverse("theme_song_detail", args=[self.song.pk]),
+        ]
+        for url in urls:
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 200, url)
+            self.assertContains(response, "Save Rating", msg_prefix=url)
+
+
+class MyFavoritesViewTest(TestCase):
+    def setUp(self):
+        self.client = proxied_client()
+        self.user = User.objects.create_user(username="favuser", password="testpassword123")
+        self.wrestler = Wrestler.objects.create(name="Favorited Wrestler")
+
+    def test_requires_login(self):
+        response = self.client.get(reverse("my_favorites"))
+        self.assertRedirects(response, f"{reverse('login')}?next={reverse('my_favorites')}")
+
+    def test_shows_favorited_entity(self):
+        UserRating.objects.create(
+            user=self.user, entity_type="wrestler", entity_id=self.wrestler.pk, is_favorite=True
+        )
+        self.client.login(username="favuser", password="testpassword123")
+        response = self.client.get(reverse("my_favorites"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Favorited Wrestler")
+
+    def test_excludes_non_favorited_rating(self):
+        UserRating.objects.create(
+            user=self.user,
+            entity_type="wrestler",
+            entity_id=self.wrestler.pk,
+            rating=7,
+            is_favorite=False,
+        )
+        self.client.login(username="favuser", password="testpassword123")
+        response = self.client.get(reverse("my_favorites"))
+        self.assertNotContains(response, "Favorited Wrestler")
+
+    def test_nav_links_to_my_favorites_when_logged_in(self):
+        self.client.login(username="favuser", password="testpassword123")
+        response = self.client.get(reverse("index"))
+        self.assertContains(response, reverse("my_favorites"))
+
+
+# =============================================================================
+# Part B, item 2: Wrestler.get_completeness_score()
+# =============================================================================
+
+
+class WrestlerCompletenessDisplayTest(TestCase):
+    def setUp(self):
+        self.client = proxied_client()
+
+    def test_completeness_percentage_shown_on_detail_page(self):
+        wrestler = Wrestler.objects.create(name="Bare Wrestler")
+        response = self.client.get(reverse("wrestler_detail", args=[wrestler.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f"{wrestler.get_completeness_score()}% complete")
+
+
+# =============================================================================
+# Part B, item 3: honest entry counts on the homepage
+# =============================================================================
+
+
+class HomepageVerifiedStatsTest(TestCase):
+    def setUp(self):
+        self.client = proxied_client()
+
+    def test_homepage_shows_total_and_verified_counts(self):
+        Wrestler.objects.create(name="Verified Wrestler", verification_state="verified")
+        Wrestler.objects.create(name="Candidate Wrestler", verification_state="candidate")
+        response = self.client.get(reverse("index"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["stats"]["wrestlers"], 2)
+        self.assertEqual(response.context["verified_stats"]["wrestlers"], 1)
+        self.assertContains(response, "1 verified")
+
+    def test_homepage_verified_book_count_uses_verified_boolean(self):
+        """Book predates VerificationMixin — no verification_state — so its
+        honest count reads the plain `verified` boolean instead."""
+        Book.objects.create(title="Verified Book", verified=True)
+        Book.objects.create(title="Unverified Book", verified=False)
+        response = self.client.get(reverse("index"))
+        self.assertEqual(response.context["stats"]["books"], 2)
+        self.assertEqual(response.context["verified_stats"]["books"], 1)

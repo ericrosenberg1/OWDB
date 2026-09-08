@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Training Schools</h1>
+
+{% include "partials/search_form.html" %}
+
+{% if training_schools %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Location</th>
+                <th>Founded</th>
+                <th>Parent Promotion</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for school in training_schools %}
+            <tr>
+                <td><a href="{% url 'training_school_detail' school.pk %}">{{ school.name }}</a></td>
+                <td>{{ school.location|default:"—" }}</td>
+                <td>
+                    {% if school.founded_year %}{{ school.founded_year }}{% if school.closed_year %}–{{ school.closed_year }}{% endif %}{% else %}—{% endif %}
+                </td>
+                <td>
+                    {% if school.parent_promotion %}<a href="{% url 'promotion_detail' school.parent_promotion.pk %}">{{ school.parent_promotion.name }}</a>{% else %}—{% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+
+{% else %}
+{% include "partials/empty_state.html" with icon="🏫" title="No Training Schools Found" message="No training schools match your search criteria." %}
+{% endif %}
+{% endblock %}

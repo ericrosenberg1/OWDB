@@ -80,6 +80,9 @@
                                 <li><a class="dropdown-item" href="{% url 'podcasts' %}">Podcasts</a></li>
                                 <li><a class="dropdown-item" href="{% url 'books' %}">Books</a></li>
                                 <li><a class="dropdown-item" href="{% url 'specials' %}">Documentaries</a></li>
+                                <li><a class="dropdown-item" href="{% url 'action_figures' %}">Action Figures</a></li>
+                                <li><a class="dropdown-item" href="{% url 'theme_songs' %}">Theme Songs</a></li>
+                                <li><a class="dropdown-item" href="{% url 'training_schools' %}">Training Schools</a></li>
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
@@ -106,6 +109,7 @@
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" href="{% url 'account' %}">Account Settings</a></li>
                                     <li><a class="dropdown-item" href="{% url 'account' %}">API Keys</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'my_favorites' %}">My Favorites</a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <form method="post" action="{% url 'logout' %}" class="d-inline">

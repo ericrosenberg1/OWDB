@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
@@ -27,6 +27,11 @@ from .models import (
     PodcastEpisode,
     Book,
     Special,
+    TVShow,
+    ActionFigure,
+    ThemeSong,
+    TrainingSchool,
+    UserRating,
     APIKey,
     UserProfile,
     EmailVerificationToken,
@@ -144,6 +149,31 @@ class IndexView(TemplateView):
         }
         stats["total"] = sum(stats.values())
         context["stats"] = stats
+
+        # Honest counts: `stats` above is every row regardless of review
+        # state, so a database that's 90% unverified `candidate` rows reads
+        # as a wall of green numbers. verified_stats is the same categories,
+        # counted with the review gate applied. Wrestlers/Promotions/Events/
+        # Matches/Titles/Venues/Stables carry the four-state
+        # `verification_state` (VerificationMixin); Video Games/Podcasts/
+        # Books/Specials predate that and only have a plain `verified`
+        # boolean, so they're counted on that flag instead — same honest
+        # intent, simpler mechanism.
+        verified_stats = {
+            "wrestlers": Wrestler.objects.filter(verification_state="verified").count(),
+            "promotions": Promotion.objects.filter(verification_state="verified").count(),
+            "events": Event.objects.filter(verification_state="verified").count(),
+            "matches": Match.objects.filter(verification_state="verified").count(),
+            "titles": Title.objects.filter(verification_state="verified").count(),
+            "venues": Venue.objects.filter(verification_state="verified").count(),
+            "stables": Stable.objects.filter(verification_state="verified").count(),
+            "video_games": VideoGame.objects.filter(verified=True).count(),
+            "podcasts": Podcast.objects.filter(verified=True).count(),
+            "books": Book.objects.filter(verified=True).count(),
+            "specials": Special.objects.filter(verified=True).count(),
+        }
+        verified_stats["total"] = sum(verified_stats.values())
+        context["verified_stats"] = verified_stats
 
         # Get latest additions (wrestlers, promotions, titles)
         context["latest_wrestlers"] = Wrestler.objects.order_by("-created_at")[:10]
@@ -855,6 +885,122 @@ class PodcastEpisodeDetailView(DetailView):
 
 
 # =============================================================================
+# Action Figure Views
+#
+# ActionFigure is a TimeStampedModel (not VerificationMixin) — same shape as
+# Book/VideoGame/Podcast: a plain `verified` boolean, no `verification_state`,
+# no `.public()` review gate. Modeled directly on BookListView/BookDetailView.
+# =============================================================================
+
+
+class ActionFigureListView(PaginatedListView):
+    model = ActionFigure
+    template_name = "action_figures.html"
+    context_object_name = "action_figures"
+    search_fields = ["name", "manufacturer"]
+    search_placeholder = "action figures by name or manufacturer..."
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["page_title"] = "Action Figures"
+        return context
+
+
+class ActionFigureDetailView(DetailView):
+    model = ActionFigure
+    template_name = "action_figure_detail.html"
+    context_object_name = "action_figure"
+
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .select_related("promotion")
+            .prefetch_related("featured_wrestlers")
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["page_title"] = self.object.name
+        return context
+
+
+# =============================================================================
+# Theme Song Views
+#
+# ThemeSong is also a plain TimeStampedModel — no review gate. Same pattern
+# as ActionFigure/Book above.
+# =============================================================================
+
+
+class ThemeSongListView(PaginatedListView):
+    model = ThemeSong
+    template_name = "theme_songs.html"
+    context_object_name = "theme_songs"
+    search_fields = ["title", "artist"]
+    search_placeholder = "theme songs by title or artist..."
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["page_title"] = "Theme Songs"
+        return context
+
+
+class ThemeSongDetailView(DetailView):
+    model = ThemeSong
+    template_name = "theme_song_detail.html"
+    context_object_name = "theme_song"
+
+    def get_queryset(self):
+        return super().get_queryset().prefetch_related("used_by_wrestlers")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["page_title"] = self.object.title
+        return context
+
+
+# =============================================================================
+# Training School Views
+#
+# TrainingSchool is also a plain TimeStampedModel — no review gate. Same
+# pattern as ActionFigure/ThemeSong/Book above.
+# =============================================================================
+
+
+class TrainingSchoolListView(PaginatedListView):
+    model = TrainingSchool
+    template_name = "training_schools.html"
+    context_object_name = "training_schools"
+    search_fields = ["name", "location", "founder"]
+    search_placeholder = "training schools by name or location..."
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["page_title"] = "Training Schools"
+        return context
+
+
+class TrainingSchoolDetailView(DetailView):
+    model = TrainingSchool
+    template_name = "training_school_detail.html"
+    context_object_name = "training_school"
+
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .select_related("parent_promotion")
+            .prefetch_related("notable_trainees")
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["page_title"] = self.object.name
+        return context
+
+
+# =============================================================================
 # Authentication Views
 # =============================================================================
 
@@ -1134,6 +1280,140 @@ def account(request):
 
     api_keys = APIKey.objects.filter(user=request.user).order_by("-created_at")
     return render(request, "account.html", {"api_keys": api_keys, "page_title": "Account"})
+
+
+# =============================================================================
+# User Ratings & Favorites
+#
+# UserRating (models.py) associates to an entity via a hand-rolled
+# (entity_type, entity_id) pair — a string choice + a plain PositiveIntegerField
+# PK, NOT Django's contenttypes GenericForeignKey. RATING_ENTITY_MODELS below
+# must mirror UserRating.ENTITY_TYPE_CHOICES exactly (test_views.py asserts
+# this) so every declared entity_type resolves to a real model for the
+# existence check, and so nothing writes an entity_type value the model
+# itself doesn't declare.
+# =============================================================================
+
+RATING_ENTITY_MODELS = {
+    "wrestler": Wrestler,
+    "event": Event,
+    "match": Match,
+    "title": Title,
+    "stable": Stable,
+    "promotion": Promotion,
+    "tv_show": TVShow,
+    "special": Special,
+    "book": Book,
+    "video_game": VideoGame,
+    "podcast": Podcast,
+    "theme_song": ThemeSong,
+}
+
+# Detail-page URL name for each rating-able entity type, used to link back
+# to the entity from "My Favorites". `tv_show` has no public detail page
+# (TVShow has zero routes in urls.py today), so it's omitted here — a
+# favorited TV show would show up unlinked rather than 404 or crash.
+RATING_ENTITY_DETAIL_URL_NAMES = {
+    "wrestler": "wrestler_detail",
+    "event": "event_detail",
+    "match": "match_detail",
+    "title": "title_detail",
+    "stable": "stable_detail",
+    "promotion": "promotion_detail",
+    "special": "special_detail",
+    "book": "book_detail",
+    "video_game": "game_detail",
+    "podcast": "podcast_detail",
+    "theme_song": "theme_song_detail",
+}
+
+
+@login_required
+@require_http_methods(["POST"])
+def rate_entity(request):
+    """
+    Single POST endpoint backing the favorite/rating widget
+    (partials/rating_widget.html): one <form> with two submit buttons,
+    `action=toggle_favorite` or `action=rate`, both landing here.
+
+    Validates entity_type against RATING_ENTITY_MODELS (which mirrors
+    UserRating.ENTITY_TYPE_CHOICES) and looks the entity up through
+    `.public()` when the model has a review gate, so a rejected/nonexistent
+    entity can't collect a rating even via a hand-crafted POST.
+    """
+    from django.utils.http import url_has_allowed_host_and_scheme
+
+    next_url = request.POST.get("next", "")
+    if not next_url or not url_has_allowed_host_and_scheme(
+        next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        next_url = "index"
+
+    entity_type = request.POST.get("entity_type", "")
+    entity_id = request.POST.get("entity_id", "")
+    action = request.POST.get("action", "")
+
+    model = RATING_ENTITY_MODELS.get(entity_type)
+    if model is None or not entity_id.isdigit():
+        messages.error(request, "That entity can't be rated.")
+        return redirect(next_url)
+
+    manager = model.objects
+    queryset = manager.public() if hasattr(manager, "public") else manager.all()
+    entity = get_object_or_404(queryset, pk=int(entity_id))
+
+    if action == "toggle_favorite":
+        rating_obj, _ = UserRating.objects.get_or_create(
+            user=request.user, entity_type=entity_type, entity_id=entity.pk
+        )
+        rating_obj.is_favorite = not rating_obj.is_favorite
+        rating_obj.save(update_fields=["is_favorite", "updated_at"])
+        messages.success(
+            request, "Added to favorites." if rating_obj.is_favorite else "Removed from favorites."
+        )
+    elif action == "rate":
+        raw_rating = request.POST.get("rating", "").strip()
+        if raw_rating == "":
+            UserRating.objects.filter(
+                user=request.user, entity_type=entity_type, entity_id=entity.pk
+            ).update(rating=None)
+            messages.success(request, "Rating cleared.")
+        elif raw_rating.isdigit() and 1 <= int(raw_rating) <= 10:
+            rating_obj, _ = UserRating.objects.get_or_create(
+                user=request.user, entity_type=entity_type, entity_id=entity.pk
+            )
+            rating_obj.rating = int(raw_rating)
+            rating_obj.save(update_fields=["rating", "updated_at"])
+            messages.success(request, f"Rated {raw_rating}/10.")
+        else:
+            messages.error(request, "Rating must be between 1 and 10.")
+    else:
+        messages.error(request, "Unknown rating action.")
+
+    return redirect(next_url)
+
+
+@login_required
+def my_favorites(request):
+    """Simple 'My Favorites' page: every entity the user has starred, newest
+    first, linking back to each entity's own detail page."""
+    favorites = UserRating.objects.filter(user=request.user, is_favorite=True).order_by(
+        "-updated_at"
+    )
+
+    items = []
+    for fav in favorites:
+        model = RATING_ENTITY_MODELS.get(fav.entity_type)
+        entity = model.objects.filter(pk=fav.entity_id).first() if model else None
+        items.append(
+            {
+                "rating": fav,
+                "entity": entity,
+                "url_name": RATING_ENTITY_DETAIL_URL_NAMES.get(fav.entity_type),
+            }
+        )
+
+    return render(request, "favorites.html", {"items": items, "page_title": "My Favorites"})
 
 
 # =============================================================================

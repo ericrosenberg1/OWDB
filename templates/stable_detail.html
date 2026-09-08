@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load linking_tags %}
 {% load verification_tags %}
+{% load rating_tags %}
 
 {% block content %}
 <div class="detail-page">
@@ -10,6 +11,7 @@
             {% if stable.aliases %}
             <p class="text-muted">Also known as: {{ stable.aliases }}</p>
             {% endif %}
+            {% rating_widget stable "stable" %}
         </div>
 
         <div class="row">

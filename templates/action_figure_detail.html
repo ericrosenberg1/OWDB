@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load linking_tags %}
+
+{% block title %}{{ action_figure.name }} — Action Figure — OWDB{% endblock %}
+
+{% block content %}
+<div class="detail-header">
+    <h1 class="detail-title">{{ action_figure.name }}</h1>
+    <div class="detail-meta">
+        {% if action_figure.manufacturer %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Manufacturer:</span> {{ action_figure.manufacturer }}
+        </div>
+        {% endif %}
+        {% if action_figure.start_year %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Years:</span> {{ action_figure.start_year }}–{{ action_figure.end_year|default:"present" }}
+        </div>
+        {% endif %}
+        {% if action_figure.promotion %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Promotion:</span>
+            <a href="{% url 'promotion_detail' action_figure.promotion.pk %}">{{ action_figure.promotion.name }}</a>
+        </div>
+        {% endif %}
+        {% if action_figure.wikipedia_url %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Wikipedia:</span>
+            <a href="{{ action_figure.wikipedia_url }}" target="_blank" rel="noopener noreferrer">view ↗</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% with about_text=action_figure|about_with_links %}
+    {% if about_text %}
+    <div class="card mb-4">
+        <div class="card-header">About</div>
+        <div class="card-body">
+            <p>{{ about_text|linebreaks }}</p>
+        </div>
+    </div>
+    {% endif %}
+{% endwith %}
+
+{% with linked_sections=action_figure|linked_from_sections %}
+    {% include "partials/linked_from.html" with sections=linked_sections %}
+{% endwith %}
+
+{% if action_figure.featured_wrestlers.exists %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Featured Wrestlers</span>
+        <span class="badge bg-secondary">{{ action_figure.featured_wrestlers.count }}</span>
+    </div>
+    <ul class="list-group list-group-flush">
+        {% for wrestler in action_figure.featured_wrestlers.all %}
+        <li class="list-group-item bg-transparent">
+            <a href="{% url 'wrestler_detail' wrestler.pk %}">{{ wrestler.name }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<a href="{% url 'action_figures' %}" class="btn btn-secondary">&larr; Back to Action Figures</a>
+{% endblock %}

@@ -508,3 +508,48 @@ class WrestlerRecordAndMetaCategoriesTest(TestCase):
         counts = lonely.get_all_meta_categories()
         self.assertEqual(counts["matches"], 0)
         self.assertEqual(counts["rivals"], 0)
+
+
+class WrestlerCompletenessScoreTest(TestCase):
+    """get_completeness_score(): a real 0-100 weighted score that, before
+    this change, was computed and never surfaced anywhere (see
+    wrestler_detail.html's "Profile Completeness" info-block)."""
+
+    def test_minimal_wrestler_scores_name_weight_only(self):
+        wrestler = Wrestler.objects.create(name="Bare Wrestler")
+        self.assertEqual(wrestler.get_completeness_score(), 10)
+
+    def test_score_is_bounded_for_partial_profile(self):
+        wrestler = Wrestler.objects.create(name="Partial Wrestler", hometown="Somewhere")
+        score = wrestler.get_completeness_score()
+        self.assertGreater(score, 0)
+        self.assertLess(score, 100)
+
+    def test_fully_populated_wrestler_with_a_match_scores_100(self):
+        wrestler = Wrestler.objects.create(
+            name="Complete Wrestler",
+            real_name="Real Name",
+            debut_year=1999,
+            hometown="Hometown",
+            nationality="American",
+            finishers="Finisher Move",
+            image_url="https://example.com/img.jpg",
+            aliases="Alias",
+            birth_date="1975-01-01",
+            height="6'0\"",
+            weight="220 lbs",
+            trained_by="Some Trainer",
+            signature_moves="Move",
+            about="Bio text.",
+            wikipedia_url="https://en.wikipedia.org/wiki/Complete_Wrestler",
+        )
+        promotion = Promotion.objects.create(name="Completeness Test Promotion")
+        event = Event.objects.create(
+            name="Completeness Test Event",
+            promotion=promotion,
+            date=timezone.now().date(),
+        )
+        match = Match.objects.create(event=event, match_text="Completeness Test Match")
+        match.wrestlers.add(wrestler)
+
+        self.assertEqual(wrestler.get_completeness_score(), 100)

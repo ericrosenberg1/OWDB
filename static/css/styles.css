@@ -813,6 +813,15 @@ a:hover {
     color: var(--wwf-silver);
 }
 
+/* API key billing indicator (UserAPIKey.is_paid) — kept distinct from
+   .active so a key can show both badges at once without two identical
+   gold pills; green reads as a paid/positive signal without reusing
+   active's gold or retired's gray. */
+.status-badge.paid {
+    background: #1e5631;
+    color: #a3e6b0;
+}
+
 /* Review-gate honesty pills — candidate/provisional verification_state.
    Deliberately not gold (already "active") or red (already the brand/
    error color) so they read as "pending", not "broken" or "urgent" —

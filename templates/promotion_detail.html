@@ -34,9 +34,9 @@
         <div class="detail-meta-item">
             <span class="detail-meta-label">Status:</span>
             {% if promotion.is_active %}
-            <span class="badge badge-gold">Active</span>
+            <span class="status-badge active">Active</span>
             {% else %}
-            <span class="badge badge-silver">Closed ({{ promotion.closed_year }})</span>
+            <span class="status-badge retired">Closed ({{ promotion.closed_year }})</span>
             {% endif %}
         </div>
         {% if promotion.website %}
@@ -176,7 +176,7 @@
                 <li class="list-group-item bg-transparent">
                     <a href="{% url 'title_detail_slug' title.slug %}">{{ title.name }}</a>
                     {% if title.is_active %}
-                    <span class="badge badge-gold ms-2">Active</span>
+                    <span class="status-badge active ms-2">Active</span>
                     {% endif %}
                 </li>
                 {% endfor %}

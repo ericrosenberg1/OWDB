@@ -33,9 +33,9 @@
         <div class="detail-meta-item">
             <span class="detail-meta-label">Status:</span>
             {% if title.is_active %}
-            <span class="badge badge-gold">Active</span>
+            <span class="status-badge active">Active</span>
             {% else %}
-            <span class="badge badge-silver">Retired ({{ title.retirement_year }})</span>
+            <span class="status-badge retired">Retired ({{ title.retirement_year }})</span>
             {% endif %}
         </div>
     </div>

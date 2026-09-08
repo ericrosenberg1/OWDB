@@ -28,9 +28,9 @@
                 <td>{{ title.debut_year|default:"—" }}</td>
                 <td>
                     {% if title.retirement_year %}
-                    <span class="badge badge-silver">Retired ({{ title.retirement_year }})</span>
+                    <span class="status-badge retired">Retired ({{ title.retirement_year }})</span>
                     {% else %}
-                    <span class="badge badge-gold">Active</span>
+                    <span class="status-badge active">Active</span>
                     {% endif %}
                 </td>
             </tr>

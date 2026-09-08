@@ -24,9 +24,9 @@
                 <td>{{ podcast.launch_year|default:"—" }}</td>
                 <td>
                     {% if podcast.end_year %}
-                    <span class="badge badge-silver">Ended ({{ podcast.end_year }})</span>
+                    <span class="status-badge retired">Ended ({{ podcast.end_year }})</span>
                     {% else %}
-                    <span class="badge badge-gold">Active</span>
+                    <span class="status-badge active">Active</span>
                     {% endif %}
                 </td>
             </tr>

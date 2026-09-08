@@ -63,12 +63,12 @@
                             </td>
                             <td>
                                 {% if key.is_active %}
-                                <span class="badge badge-gold">Active</span>
+                                <span class="status-badge active">Active</span>
                                 {% else %}
-                                <span class="badge badge-silver">Inactive</span>
+                                <span class="status-badge retired">Inactive</span>
                                 {% endif %}
                                 {% if key.is_paid %}
-                                <span class="badge badge-gold">Paid</span>
+                                <span class="status-badge paid">Paid</span>
                                 {% endif %}
                             </td>
                             <td>

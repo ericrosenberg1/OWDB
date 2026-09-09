@@ -168,6 +168,30 @@ class ContractEnforceTests(TestCase):
         state, _ = accuracy_contract.enforce("event", ev)
         self.assertEqual(state, accuracy_contract.VERIFIED)
 
+    def test_rejected_is_sticky_even_with_full_provenance(self):
+        """A rejected entity stays rejected on re-extraction (2026-09-08 bug:
+        a confirmed-duplicate promotion flipped back to verified)."""
+        ev = Event.objects.create(
+            name="Duplicate Event",
+            date=date(2024, 1, 1),
+            promotion=self.promotion,
+            verification_state=accuracy_contract.REJECTED,
+        )
+        for field, value in (("name", "Duplicate Event"), ("date", "2024-01-01")):
+            record_provenance(
+                entity_type="event",
+                entity_id=ev.id,
+                field_name=field,
+                value=value,
+                source_fetch=self.fetch,
+            )
+        state, reasons = accuracy_contract.enforce("event", ev)
+        self.assertEqual(state, accuracy_contract.REJECTED)
+        self.assertTrue(reasons)
+        audit = accuracy_contract.audit_persistence("event", ev, source_fetch=self.fetch)
+        self.assertEqual(audit["state"], accuracy_contract.REJECTED)
+        self.assertFalse(audit["verified_eligible"])
+
     def test_event_without_promotion_is_candidate(self):
         """Forbidden-state check is a hard block; provenance alone isn't enough."""
         ev = Event.objects.create(

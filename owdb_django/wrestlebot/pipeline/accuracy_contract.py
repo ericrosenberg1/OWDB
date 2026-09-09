@@ -300,11 +300,23 @@ def enforce(entity_type: str, entity) -> tuple[str, list[str]]:
     """
     Resolve an entity's correct verification_state per its contract.
 
-    Returns (state, reasons) where state ∈ {candidate, provisional, verified}
-    and `reasons` is a list of human-readable explanations for the chosen
-    state (always non-empty for provisional/candidate so Earl can quote
-    them in observations).
+    Returns (state, reasons) where state ∈ {candidate, provisional, verified,
+    rejected} and `reasons` is a list of human-readable explanations for the
+    chosen state (always non-empty for provisional/candidate/rejected so Earl
+    can quote them in observations).
+
+    `rejected` is sticky. A human or Earl put the entity there on purpose
+    (a confirmed duplicate, junk data), and a routine re-extraction must never
+    lift it: on 2026-09-08 re-extracting one promotion touched a rejected
+    duplicate row and this function recomputed it straight back to verified.
+    Only an explicit state write outside this function un-rejects an entity.
     """
+    if getattr(entity, "verification_state", None) == REJECTED:
+        return REJECTED, [
+            "rejected by a human or Earl; a re-extraction does not lift that, "
+            "only an explicit state change does"
+        ]
+
     contract = CONTRACTS.get(entity_type)
     if contract is None:
         # Unknown entity type — refuse to assert verified.

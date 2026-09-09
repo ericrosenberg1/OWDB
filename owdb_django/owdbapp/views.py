@@ -378,6 +378,9 @@ class PromotionDetailView(DetailView):
         context["page_title"] = promotion.name
         context["events"] = promotion.events.select_related("venue").order_by("-date")[:20]
         context["titles"] = promotion.titles.all()
+        # TV shows are gated, so the related manager's .public() keeps a
+        # rejected show off the promotion's page.
+        context["tv_shows"] = promotion.tv_shows.public().order_by("name")
 
         # Interlinking: wrestlers roster, venues, event timeline, stats
         context["all_wrestlers"] = promotion.get_all_wrestlers(limit=30)
@@ -419,7 +422,7 @@ class EventDetailView(DetailView):
     def get_queryset(self):
         # Review gate: a rejected event's detail page 404s instead of
         # rendering. See VerificationQuerySet.public() in models.py.
-        return super().get_queryset().public().select_related("promotion", "venue")
+        return super().get_queryset().public().select_related("promotion", "venue", "tv_show")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -885,6 +888,65 @@ class PodcastEpisodeDetailView(DetailView):
 
 
 # =============================================================================
+# TV Show Views
+#
+# TVShow carries VerificationMixin (the four-state review gate), so both
+# views route through .public() the same way Venue and Stable do above.
+# Episodes are Event rows linked through Event.tv_show (related_name
+# "episodes") and are gated in their own right, so the episode list on the
+# detail page is .public() too: a rejected episode never leaks through its
+# show's page.
+# =============================================================================
+
+
+class TVShowListView(PaginatedListView):
+    model = TVShow
+    template_name = "tv_shows.html"
+    context_object_name = "tv_shows"
+    search_fields = ["name", "network", "promotion__name"]
+    search_placeholder = "TV shows by name, network, or promotion..."
+
+    def get_queryset(self):
+        # Review gate: rejected shows never reach a public list. See
+        # VerificationQuerySet.public() in models.py.
+        return super().get_queryset().public().select_related("promotion")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["page_title"] = "TV Shows"
+        return context
+
+
+class TVShowDetailView(DetailView):
+    model = TVShow
+    template_name = "tv_show_detail.html"
+    context_object_name = "tv_show"
+
+    def get_queryset(self):
+        # Review gate: a rejected show's detail page 404s instead of
+        # rendering. See VerificationQuerySet.public() in models.py.
+        return super().get_queryset().public().select_related("promotion")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        tv_show = self.object
+        context["page_title"] = tv_show.name
+
+        # Paginated episode list, newest first, gated like the show itself.
+        from django.core.paginator import Paginator
+
+        episodes = tv_show.episodes.public().select_related("venue").order_by("-date")
+        paginator = Paginator(episodes, 25)
+        page = self.request.GET.get("page", 1)
+        context["episodes"] = paginator.get_page(page)
+        context["episode_count"] = paginator.count
+        context["first_episode"] = tv_show.episodes.public().order_by("date").first()
+        context["latest_episode"] = tv_show.get_latest_episode()
+
+        return context
+
+
+# =============================================================================
 # Action Figure Views
 #
 # ActionFigure is a TimeStampedModel (not VerificationMixin) — same shape as
@@ -1311,9 +1373,9 @@ RATING_ENTITY_MODELS = {
 }
 
 # Detail-page URL name for each rating-able entity type, used to link back
-# to the entity from "My Favorites". `tv_show` has no public detail page
-# (TVShow has zero routes in urls.py today), so it's omitted here — a
-# favorited TV show would show up unlinked rather than 404 or crash.
+# to the entity from "My Favorites". Every entity type in
+# RATING_ENTITY_MODELS has a public detail page now (TVShow was the last one
+# to get routes), and test_views.py pins that the two maps never drift apart.
 RATING_ENTITY_DETAIL_URL_NAMES = {
     "wrestler": "wrestler_detail",
     "event": "event_detail",
@@ -1322,6 +1384,7 @@ RATING_ENTITY_DETAIL_URL_NAMES = {
     "stable": "stable_detail",
     "promotion": "promotion_detail",
     "venue": "venue_detail",
+    "tv_show": "tv_show_detail",
     "special": "special_detail",
     "book": "book_detail",
     "video_game": "game_detail",

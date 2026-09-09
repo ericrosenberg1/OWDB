@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>TV Shows</h1>
+
+{% include "partials/search_form.html" %}
+
+{% if tv_shows %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Promotion</th>
+                <th>Type</th>
+                <th>Network</th>
+                <th>Premiered</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for show in tv_shows %}
+            <tr>
+                <td><a href="{% url 'tv_show_detail' show.pk %}">{{ show.name }}</a></td>
+                <td><a href="{% url 'promotion_detail' show.promotion.pk %}">{{ show.promotion.abbreviation|default:show.promotion.name }}</a></td>
+                <td>{{ show.get_show_type_display }}</td>
+                <td>{{ show.network|default:"—" }}</td>
+                <td>{% if show.premiere_date %}{{ show.premiere_date|date:"Y" }}{% else %}—{% endif %}</td>
+                <td>{% if show.is_active %}<span class="status-badge active">Active</span>{% else %}Ended {{ show.finale_date|date:"Y" }}{% endif %}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "partials/pagination.html" %}
+
+{% else %}
+{% include "partials/empty_state.html" with icon="📺" title="No TV Shows Found" message="No TV shows match your search criteria." %}
+{% endif %}
+{% endblock %}

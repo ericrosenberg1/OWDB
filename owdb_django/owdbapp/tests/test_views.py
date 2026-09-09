@@ -24,10 +24,11 @@ from ..models import (
     ActionFigure,
     ThemeSong,
     TrainingSchool,
+    TVShow,
     UserRating,
     UserProfile,
 )
-from ..views import RATING_ENTITY_MODELS
+from ..views import RATING_ENTITY_DETAIL_URL_NAMES, RATING_ENTITY_MODELS
 from .proxied_client import proxied_client
 
 
@@ -500,6 +501,155 @@ class NewEntityNavTest(TestCase):
 
 
 # =============================================================================
+# TV Shows: the first public pages for TVShow.
+#
+# Unlike the three Part-A entity types above, TVShow carries
+# VerificationMixin, so it has the four-state review gate. These mirror
+# ThemeSongViewsTest for the basic list/detail/slug coverage, then
+# ReviewGateViewsTest for the gate itself (rejected hidden, candidate and
+# provisional visible with a badge), then ReviewGateRelationalLeakViewTest
+# for episodes, which are gated Event rows linked through Event.tv_show.
+# =============================================================================
+
+
+class TVShowViewsTest(TestCase):
+    def setUp(self):
+        self.client = proxied_client()
+        self.promotion = Promotion.objects.create(name="Show Promotion", abbreviation="SP")
+        self.show = TVShow.objects.create(
+            name="Monday Night Raw",
+            promotion=self.promotion,
+            network="USA Network",
+            verification_state="verified",
+        )
+
+    def _episode(self, name, **overrides):
+        fields = {
+            "name": name,
+            "promotion": self.promotion,
+            "tv_show": self.show,
+            "date": timezone.now().date(),
+        }
+        fields.update(overrides)
+        return Event.objects.create(**fields)
+
+    def test_tv_shows_list_renders(self):
+        response = self.client.get(reverse("tv_shows"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Monday Night Raw")
+        self.assertContains(response, reverse("tv_show_detail", args=[self.show.pk]))
+
+    def test_tv_shows_list_searches_by_name_network_and_promotion(self):
+        other_promotion = Promotion.objects.create(name="Other Promotion")
+        TVShow.objects.create(name="Dynamite", promotion=other_promotion, network="TBS")
+        for query in ("Raw", "USA Network", "Show Promotion"):
+            response = self.client.get(reverse("tv_shows"), {"q": query})
+            self.assertContains(response, "Monday Night Raw", msg_prefix=query)
+            self.assertNotContains(response, "Dynamite", msg_prefix=query)
+
+    def test_tv_show_detail_renders(self):
+        response = self.client.get(reverse("tv_show_detail", args=[self.show.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Monday Night Raw")
+        self.assertContains(response, "USA Network")
+        self.assertContains(response, reverse("promotion_detail", args=[self.promotion.pk]))
+
+    def test_tv_show_detail_by_slug(self):
+        response = self.client.get(reverse("tv_show_detail_slug", args=[self.show.slug]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Monday Night Raw")
+
+    def test_candidate_and_provisional_shows_still_visible(self):
+        """`.public()` is a rejected-only blocklist, not a verified allowlist."""
+        candidate = TVShow.objects.create(
+            name="Candidate Show", promotion=self.promotion, verification_state="candidate"
+        )
+        provisional = TVShow.objects.create(
+            name="Provisional Show", promotion=self.promotion, verification_state="provisional"
+        )
+        list_response = self.client.get(reverse("tv_shows"))
+        self.assertContains(list_response, "Candidate Show")
+        self.assertContains(list_response, "Provisional Show")
+        for show in (candidate, provisional):
+            detail_response = self.client.get(reverse("tv_show_detail", args=[show.pk]))
+            self.assertEqual(detail_response.status_code, 200, show.name)
+            self.assertContains(detail_response, show.name)
+
+    def test_candidate_show_wears_unverified_badge(self):
+        candidate = TVShow.objects.create(
+            name="Candidate Show", promotion=self.promotion, verification_state="candidate"
+        )
+        response = self.client.get(reverse("tv_show_detail", args=[candidate.pk]))
+        self.assertContains(response, "Unverified")
+
+    def test_verified_show_has_no_review_gate_badge(self):
+        response = self.client.get(reverse("tv_show_detail", args=[self.show.pk]))
+        self.assertNotContains(response, "Unverified")
+        self.assertNotContains(response, "Provisional")
+
+    def test_rejected_show_absent_from_list_and_404s_on_detail(self):
+        rejected = TVShow.objects.create(
+            name="Rejected Show", promotion=self.promotion, verification_state="rejected"
+        )
+        list_response = self.client.get(reverse("tv_shows"))
+        self.assertNotContains(list_response, "Rejected Show")
+        by_pk = self.client.get(reverse("tv_show_detail", args=[rejected.pk]))
+        self.assertEqual(by_pk.status_code, 404)
+        by_slug = self.client.get(reverse("tv_show_detail_slug", args=[rejected.slug]))
+        self.assertEqual(by_slug.status_code, 404)
+
+    def test_episodes_listed_on_show_detail(self):
+        self._episode("Raw Episode 1", episode_number=1)
+        response = self.client.get(reverse("tv_show_detail", args=[self.show.pk]))
+        self.assertContains(response, "Raw Episode 1")
+        self.assertContains(response, "Episodes (1)")
+
+    def test_rejected_episode_not_shown_on_show_detail(self):
+        self._episode("Good Raw Episode", verification_state="verified")
+        self._episode("Rejected Raw Episode", verification_state="rejected")
+        response = self.client.get(reverse("tv_show_detail", args=[self.show.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Good Raw Episode")
+        self.assertNotContains(response, "Rejected Raw Episode")
+
+    def test_verification_stamp_finds_tv_show_source_fetches(self):
+        """The wrestlebot writes SourceFetch.entity_type="tv_show", while the
+        stamp used to look up a bare lowercased class name ("tvshow") and so
+        could never find a show's sources. Regression for that."""
+        from owdb_django.wrestlebot.models import SourceFetch
+
+        SourceFetch.objects.create(
+            source="wikipedia",
+            url="https://en.wikipedia.org/wiki/WWE_Raw",
+            entity_type="tv_show",
+            entity_id=self.show.pk,
+            candidate_name="Monday Night Raw",
+            http_status=200,
+            content_hash="rawhash",
+            raw_content="<html/>",
+        )
+        response = self.client.get(reverse("tv_show_detail", args=[self.show.pk]))
+        self.assertContains(response, "Verified from 1 source")
+
+    def test_event_detail_links_to_its_tv_show(self):
+        episode = self._episode("Raw Episode 1", episode_number=1)
+        response = self.client.get(reverse("event_detail", args=[episode.pk]))
+        self.assertContains(response, reverse("tv_show_detail", args=[self.show.pk]))
+
+    def test_promotion_detail_lists_its_tv_shows_but_not_rejected_ones(self):
+        TVShow.objects.create(
+            name="Rejected Promo Show", promotion=self.promotion, verification_state="rejected"
+        )
+        response = self.client.get(reverse("promotion_detail", args=[self.promotion.pk]))
+        self.assertContains(response, reverse("tv_show_detail", args=[self.show.pk]))
+        self.assertNotContains(response, "Rejected Promo Show")
+
+    def test_homepage_nav_links_to_tv_shows(self):
+        response = self.client.get(reverse("index"))
+        self.assertContains(response, reverse("tv_shows"))
+
+
+# =============================================================================
 # Part B, item 1: UserRating (favorite toggle + 1-10 rating)
 #
 # UserRating associates to an entity via a hand-rolled (entity_type,
@@ -515,6 +665,15 @@ class UserRatingEntityMapTest(TestCase):
     def test_rating_entity_models_matches_declared_choices(self):
         declared = {choice for choice, _label in UserRating.ENTITY_TYPE_CHOICES}
         self.assertEqual(set(RATING_ENTITY_MODELS.keys()), declared)
+
+    def test_every_rateable_entity_type_links_to_a_detail_page(self):
+        """Every entity type a user can favorite has a public detail page, so
+        "My Favorites" can link each row. TVShow was the one gap (it had no
+        routes at all) until it got public pages. Pins that the two maps
+        never drift apart again and that every URL name still resolves."""
+        self.assertEqual(set(RATING_ENTITY_DETAIL_URL_NAMES), set(RATING_ENTITY_MODELS))
+        for entity_type, url_name in RATING_ENTITY_DETAIL_URL_NAMES.items():
+            self.assertTrue(reverse(url_name, args=[1]), entity_type)
 
 
 class RateEntityViewTest(TestCase):
@@ -646,6 +805,24 @@ class RateEntityViewTest(TestCase):
         row = UserRating.objects.get(entity_type="venue", entity_id=venue.pk)
         self.assertTrue(row.is_favorite)
 
+    def test_tv_show_can_be_favorited(self):
+        """TVShow is gated and, as of its public pages, the last rate-able
+        entity type to get a detail page to post back to."""
+        self.client.login(username="rater", password="testpassword123")
+        promotion = Promotion.objects.create(name="Rateable Promotion")
+        show = TVShow.objects.create(name="Rateable Show", promotion=promotion)
+        self.client.post(
+            reverse("rate_entity"),
+            {
+                "entity_type": "tv_show",
+                "entity_id": show.pk,
+                "action": "toggle_favorite",
+                "next": reverse("tv_show_detail", args=[show.pk]),
+            },
+        )
+        row = UserRating.objects.get(entity_type="tv_show", entity_id=show.pk)
+        self.assertTrue(row.is_favorite)
+
     def test_rate_entity_404s_for_rejected_entity(self):
         rejected = Wrestler.objects.create(name="Rejected Rateable", verification_state="rejected")
         self.client.login(username="rater", password="testpassword123")
@@ -673,14 +850,14 @@ class RateEntityViewTest(TestCase):
 
 class RatingWidgetPresentOnDetailPagesTest(TestCase):
     """
-    The rating widget was wired into 7 detail templates: the six gated
+    The rating widget is wired into 9 detail templates: the eight gated
     (VerificationMixin) entity types with a public page and a matching
     UserRating.ENTITY_TYPE_CHOICES entry (wrestler, promotion, event, match,
-    title, stable), plus ThemeSong — the one Part-A entity type
-    ENTITY_TYPE_CHOICES already anticipated. Venue is gated but missing from
-    ENTITY_TYPE_CHOICES (see the schema-gap test above) and TVShow is gated
-    but has no public page at all, so neither gets the widget. This proves
-    every template that should have it, does.
+    title, stable, venue, TV show), plus ThemeSong, the one Part-A entity
+    type ENTITY_TYPE_CHOICES already anticipated. Venue joined the choices in
+    migration 0031 but its template was never given the widget, and TVShow
+    had no public page at all. Both are covered now. This proves every
+    template that should have it, does.
     """
 
     def setUp(self):
@@ -701,6 +878,7 @@ class RatingWidgetPresentOnDetailPagesTest(TestCase):
         self.title = Title.objects.create(name="Widget Title", promotion=self.promotion)
         self.stable = Stable.objects.create(name="Widget Stable")
         self.song = ThemeSong.objects.create(title="Widget Song")
+        self.show = TVShow.objects.create(name="Widget Show", promotion=self.promotion)
 
     def test_widget_present_on_each_detail_page(self):
         urls = [
@@ -710,6 +888,8 @@ class RatingWidgetPresentOnDetailPagesTest(TestCase):
             reverse("match_detail", args=[self.match.pk]),
             reverse("title_detail", args=[self.title.pk]),
             reverse("stable_detail", args=[self.stable.pk]),
+            reverse("venue_detail", args=[self.venue.pk]),
+            reverse("tv_show_detail", args=[self.show.pk]),
             reverse("theme_song_detail", args=[self.song.pk]),
         ]
         for url in urls:
@@ -753,6 +933,19 @@ class MyFavoritesViewTest(TestCase):
         self.client.login(username="favuser", password="testpassword123")
         response = self.client.get(reverse("index"))
         self.assertContains(response, reverse("my_favorites"))
+
+    def test_favorited_tv_show_links_to_its_detail_page(self):
+        """Regression: TVShow had no public route, so a favorited show sat in
+        this list as bare text. It links to its detail page now."""
+        promotion = Promotion.objects.create(name="Fav Promotion")
+        show = TVShow.objects.create(name="Favorited Show", promotion=promotion)
+        UserRating.objects.create(
+            user=self.user, entity_type="tv_show", entity_id=show.pk, is_favorite=True
+        )
+        self.client.login(username="favuser", password="testpassword123")
+        response = self.client.get(reverse("my_favorites"))
+        self.assertContains(response, "Favorited Show")
+        self.assertContains(response, reverse("tv_show_detail", args=[show.pk]))
 
 
 # =============================================================================

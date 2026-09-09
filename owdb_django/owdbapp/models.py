@@ -45,6 +45,10 @@ class VerificationQuerySet(models.QuerySet):
     and every cross-entity lookup that renders on a public page should
     route through it before the results reach a template. It is a
     blocklist, not an allowlist — see the policy note below.
+
+    `MatchQuerySet` below extends it for Match: a match is public only when
+    its Event is too, so a rejected event can't resurface through a
+    wrestler's or title's match list.
     """
 
     def public(self):
@@ -318,30 +322,39 @@ class Venue(VerificationMixin, ImageMixin, TimeStampedModel):
         return self.name
 
     def get_event_count(self):
-        """Get total number of events at this venue."""
-        return self.events.count()
+        """Get total number of non-rejected events at this venue."""
+        return self.events.public().count()
 
     def get_promotions(self):
         """Get all promotions that have held events here, ordered by event count."""
-        from django.db.models import Count, Q
+        from django.db.models import Count
 
+        # `events__in=self.events.public()` keeps a rejected event from
+        # surfacing its promotion here or inflating event_count: annotate()
+        # reuses the join filter() set up, so Count("events") only sees this
+        # venue's non-rejected events. (A negated `~Q(events__...)` inside
+        # filter() would not do: Django turns a negated multi-valued lookup
+        # into "promotions with no rejected event anywhere".)
         return (
             Promotion.objects.public()
-            .filter(events__venue=self)
+            .filter(events__in=self.events.public())
             .distinct()
-            .annotate(event_count=Count("events", filter=Q(events__venue=self)))
+            .annotate(event_count=Count("events"))
             .order_by("-event_count")
         )
 
     def get_wrestlers(self, limit=20):
         """Get wrestlers who have performed at this venue, ordered by appearance count."""
-        from django.db.models import Count, Q
+        from django.db.models import Count
 
+        # Match.objects.public() drops rejected matches and matches at a
+        # rejected event (see MatchQuerySet), and the annotate() reuses the
+        # filter() join, so appearance_count only counts what the page shows.
         return (
             Wrestler.objects.public()
-            .filter(matches__event__venue=self)
+            .filter(matches__in=Match.objects.public().filter(event__venue=self))
             .distinct()
-            .annotate(appearance_count=Count("matches", filter=Q(matches__event__venue=self)))
+            .annotate(appearance_count=Count("matches"))
             .order_by("-appearance_count")[:limit]
         )
 
@@ -349,7 +362,7 @@ class Venue(VerificationMixin, ImageMixin, TimeStampedModel):
         """Get venue statistics."""
         from django.db.models import Sum, Avg, Count
 
-        stats = self.events.aggregate(
+        stats = self.events.public().aggregate(
             total_events=Count("id"),
             total_attendance=Sum("attendance"),
             avg_attendance=Avg("attendance"),
@@ -419,25 +432,30 @@ class Promotion(VerificationMixin, ImageMixin, TimeStampedModel):
 
     def get_all_wrestlers(self, limit=50):
         """Get all wrestlers who have appeared for this promotion, ordered by match count."""
-        from django.db.models import Count, Q
+        from django.db.models import Count
 
+        # See Venue.get_wrestlers: the public match subquery keeps rejected
+        # matches and matches at rejected events out of both the roster and
+        # match_count.
         return (
             Wrestler.objects.public()
-            .filter(matches__event__promotion=self)
+            .filter(matches__in=Match.objects.public().filter(event__promotion=self))
             .distinct()
-            .annotate(match_count=Count("matches", filter=Q(matches__event__promotion=self)))
+            .annotate(match_count=Count("matches"))
             .order_by("-match_count")[:limit]
         )
 
     def get_venues(self, limit=20):
         """Get venues where this promotion has held events, ordered by event count."""
-        from django.db.models import Count, Q
+        from django.db.models import Count
 
+        # See Venue.get_promotions for why this is an `__in` subquery and
+        # not a negated Q on the multi-valued events relation.
         return (
             Venue.objects.public()
-            .filter(events__promotion=self)
+            .filter(events__in=self.events.public())
             .distinct()
-            .annotate(event_count=Count("events", filter=Q(events__promotion=self)))
+            .annotate(event_count=Count("events"))
             .order_by("-event_count")[:limit]
         )
 
@@ -447,7 +465,8 @@ class Promotion(VerificationMixin, ImageMixin, TimeStampedModel):
         from django.db.models import Count
 
         return (
-            self.events.annotate(year=ExtractYear("date"))
+            self.events.public()
+            .annotate(year=ExtractYear("date"))
             .values("year")
             .annotate(count=Count("id"))
             .order_by("-year")
@@ -455,11 +474,15 @@ class Promotion(VerificationMixin, ImageMixin, TimeStampedModel):
 
     def get_stats(self):
         """Get promotion statistics."""
+        # Every count here renders on the public promotion page, so each one
+        # goes through the review gate: rejected events, titles, wrestlers,
+        # and matches (or matches at rejected events) don't count.
         return {
-            "total_events": self.events.count(),
-            "total_titles": self.titles.count(),
-            "active_titles": self.titles.filter(retirement_year__isnull=True).count(),
-            "total_wrestlers": Wrestler.objects.filter(matches__event__promotion=self)
+            "total_events": self.events.public().count(),
+            "total_titles": self.titles.public().count(),
+            "active_titles": self.titles.public().filter(retirement_year__isnull=True).count(),
+            "total_wrestlers": Wrestler.objects.public()
+            .filter(matches__in=Match.objects.public().filter(event__promotion=self))
             .distinct()
             .count(),
         }
@@ -486,18 +509,13 @@ class Promotion(VerificationMixin, ImageMixin, TimeStampedModel):
         wrestlers who had one enhancement match decades ago, which is
         too weak to justify a "linked from this promotion" claim.
         """
-        from django.db.models import Count, Q
+        from django.db.models import Count
 
         threshold = min_matches if min_matches is not None else self.CANONICAL_ROSTER_MIN_MATCHES
         return (
             Wrestler.objects.public()
-            .filter(matches__event__promotion=self)
-            .annotate(
-                _promo_match_count=Count(
-                    "matches",
-                    filter=Q(matches__event__promotion=self),
-                ),
-            )
+            .filter(matches__in=Match.objects.public().filter(event__promotion=self))
+            .annotate(_promo_match_count=Count("matches"))
             .filter(_promo_match_count__gte=threshold)
             .values_list("id", flat=True)
             .distinct()
@@ -851,21 +869,22 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
 
     def get_promotions(self):
         """Get all promotions this wrestler has appeared for, ordered by match count."""
-        from django.db.models import Count, Q
+        from django.db.models import Count
 
+        # self.matches.public() drops rejected matches and matches at a
+        # rejected event, so a promotion only shows (and match_count only
+        # counts) what the wrestler's public match list shows.
         return (
             Promotion.objects.public()
-            .filter(events__matches__wrestlers=self)
+            .filter(events__matches__in=self.matches.public())
             .distinct()
-            .annotate(
-                match_count=Count("events__matches", filter=Q(events__matches__wrestlers=self))
-            )
+            .annotate(match_count=Count("events__matches"))
             .order_by("-match_count")
         )
 
     def get_titles_won(self):
         """Get all titles this wrestler has won (matches where they were the winner)."""
-        return Title.objects.public().filter(title_matches__winner=self).distinct()
+        return Title.objects.public().filter(title_matches__in=self.matches_won.public()).distinct()
 
     def get_title_history(self, limit_titles: int | None = None):
         """
@@ -1000,7 +1019,7 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
         from django.db.models import Count
 
         # Get all matches this wrestler was in
-        my_matches = self.matches.all()
+        my_matches = self.matches.public()
         # Find other wrestlers in those matches, counted by frequency
         return (
             Wrestler.objects.public()
@@ -1040,7 +1059,7 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
         """
         from django.db.models import Count, Q
 
-        aggregates = self.matches.aggregate(
+        aggregates = self.matches.public().aggregate(
             total=Count("id"),
             # Draws / no-contests — outcome_type tells us.
             draws=Count("id", filter=Q(outcome_type__in=("draw", "no_contest"))),
@@ -1060,11 +1079,20 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
         title_matches = aggregates["title_matches"]
 
         # Wins via the precise MatchParticipant path…
-        wins_via_mp = self.match_participations.filter(is_winner=True).count()
+        wins_via_mp = (
+            self.match_participations.filter(is_winner=True)
+            .exclude(match__verification_state="rejected")
+            .exclude(match__event__verification_state="rejected")
+            .count()
+        )
         # …falling back to Match.winner for older / less-structured rows.
-        wins_via_fk = self.matches_won.exclude(
-            participant_links__wrestler=self,
-        ).count()
+        wins_via_fk = (
+            self.matches_won.public()
+            .exclude(
+                participant_links__wrestler=self,
+            )
+            .count()
+        )
         wins = wins_via_mp + wins_via_fk
 
         losses = max(decided - wins, 0)
@@ -1074,7 +1102,8 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
 
         # Notable counts — title matches + title changes.
         title_wins = (
-            self.matches.filter(
+            self.matches.public()
+            .filter(
                 title__isnull=False,
                 title_changed=True,
             )
@@ -1102,9 +1131,11 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
         Last N matches as a sequence of 'W' / 'L' / 'D' / '?' characters.
         Useful for a streak badge on the wrestler page.
         """
-        recent = self.matches.select_related("event").order_by("-event__date", "-match_order")[
-            :limit
-        ]
+        recent = (
+            self.matches.public()
+            .select_related("event")
+            .order_by("-event__date", "-match_order")[:limit]
+        )
         out: list[str] = []
         for m in recent:
             r = m.result_for_wrestler(self.id)
@@ -1119,7 +1150,7 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
         """
         from collections import defaultdict
 
-        my_match_ids = set(self.matches.values_list("id", flat=True))
+        my_match_ids = set(self.matches.public().values_list("id", flat=True))
         if not my_match_ids:
             return []
 
@@ -1235,7 +1266,7 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
         """Get events this wrestler has appeared at."""
         return (
             Event.objects.public()
-            .filter(matches__wrestlers=self)
+            .filter(matches__in=self.matches.public())
             .distinct()
             .select_related("promotion", "venue")
             .order_by("-date")[:limit]
@@ -1271,28 +1302,29 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
         # test_models.py before this shipped.
         # Review-gate note: matches/events/promotions/titles/stables all sit
         # on VerificationMixin models, so a `rejected` one is excluded via a
-        # `filter=~Q(...)` on its own Count() — same policy as `.public()`
+        # `filter=~Q(...)` on its own Count(), the same policy as `.public()`
         # (models.py's VerificationQuerySet), just expressed per-annotation
-        # so this stays a single query. podcast_appearances/books/video_games
-        # /specials have no verification_state field at all (only 8 models
-        # do — see VerificationQuerySet), so they're left unfiltered.
+        # so this stays a single query. Everything reached through a match
+        # also requires the match and its event to be live (`live_match`),
+        # matching MatchQuerySet.public(), so a rejected event can't count
+        # toward matches, events, promotions, titles, or rivals.
+        # podcast_appearances/books/video_games/specials have no
+        # verification_state field at all (only 8 models do, see
+        # VerificationQuerySet), so they're left unfiltered.
+        live_match = ~Q(matches__verification_state="rejected") & ~Q(
+            matches__event__verification_state="rejected"
+        )
         counts = Wrestler.objects.filter(pk=self.pk).aggregate(
-            match_count=Count(
-                "matches", filter=~Q(matches__verification_state="rejected"), distinct=True
-            ),
-            events=Count(
-                "matches__event",
-                filter=~Q(matches__event__verification_state="rejected"),
-                distinct=True,
-            ),
+            match_count=Count("matches", filter=live_match, distinct=True),
+            events=Count("matches__event", filter=live_match, distinct=True),
             promotions=Count(
                 "matches__event__promotion",
-                filter=~Q(matches__event__promotion__verification_state="rejected"),
+                filter=live_match & ~Q(matches__event__promotion__verification_state="rejected"),
                 distinct=True,
             ),
             titles=Count(
                 "matches__title",
-                filter=~Q(matches__title__verification_state="rejected"),
+                filter=live_match & ~Q(matches__title__verification_state="rejected"),
                 distinct=True,
             ),
             stables=Count(
@@ -1307,7 +1339,7 @@ class Wrestler(VerificationMixin, ImageMixin, TimeStampedModel):
             # Subtract 1 below to turn "co-participants" into "rivals".
             co_participants=Count(
                 "matches__wrestlers",
-                filter=~Q(matches__wrestlers__verification_state="rejected"),
+                filter=live_match & ~Q(matches__wrestlers__verification_state="rejected"),
                 distinct=True,
             ),
         )
@@ -1586,11 +1618,16 @@ class Event(VerificationMixin, ImageMixin, TimeStampedModel):
 
     def get_all_wrestlers(self):
         """Get all wrestlers who competed at this event."""
-        return Wrestler.objects.public().filter(matches__event=self).distinct().order_by("name")
+        return (
+            Wrestler.objects.public()
+            .filter(matches__in=self.matches.public())
+            .distinct()
+            .order_by("name")
+        )
 
     def get_titles_defended(self):
         """Get all titles that were defended/contested at this event."""
-        return Title.objects.public().filter(title_matches__event=self).distinct()
+        return Title.objects.public().filter(title_matches__in=self.matches.public()).distinct()
 
 
 class Title(VerificationMixin, ImageMixin, TimeStampedModel):
@@ -1643,15 +1680,20 @@ class Title(VerificationMixin, ImageMixin, TimeStampedModel):
 
     def get_all_champions(self):
         """Get all wrestlers who have held this title."""
-        return Wrestler.objects.public().filter(matches_won__title=self).distinct()
+        return (
+            Wrestler.objects.public().filter(matches_won__in=self.title_matches.public()).distinct()
+        )
 
     def get_most_defenses(self, limit=10):
         """Get wrestlers with the most title defenses."""
         from django.db.models import Count
 
+        # title_matches.public() drops rejected matches and matches at a
+        # rejected event, and annotate() reuses the filter() join, so
+        # defense_count only counts those.
         return (
             Wrestler.objects.public()
-            .filter(matches_won__title=self)
+            .filter(matches_won__in=self.title_matches.public())
             .annotate(defense_count=Count("matches_won"))
             .order_by("-defense_count")[:limit]
         )
@@ -1677,15 +1719,13 @@ class Title(VerificationMixin, ImageMixin, TimeStampedModel):
         transitional champions don't pull their entire media catalog
         onto the title page.
         """
-        from django.db.models import Count, Q
+        from django.db.models import Count
 
         threshold = min_reigns if min_reigns is not None else self.NOTABLE_CHAMPION_MIN_REIGNS
         return (
             Wrestler.objects.public()
-            .filter(matches_won__title=self)
-            .annotate(
-                _title_wins=Count("matches_won", filter=Q(matches_won__title=self)),
-            )
+            .filter(matches_won__in=self.title_matches.public())
+            .annotate(_title_wins=Count("matches_won"))
             .filter(_title_wins__gte=threshold)
             .values_list("id", flat=True)
             .distinct()
@@ -1727,6 +1767,25 @@ class Title(VerificationMixin, ImageMixin, TimeStampedModel):
             .distinct()
             .order_by("-release_year", "name")[:limit]
         )
+
+
+class MatchQuerySet(VerificationQuerySet):
+    """
+    Review gate for Match: a match is public only when the match itself
+    and the Event it happened at are both non-rejected.
+
+    Every match list on the site renders its event's name and link
+    (wrestler and title pages, the match list and detail pages, the API),
+    so screening the match row alone would let a rejected event resurface
+    through its matches. `event` is a non-null FK, so this is a plain
+    single-valued exclude, not the multi-valued exclude trap. Related
+    managers (`wrestler.matches`, `title.title_matches`, `event.matches`,
+    `wrestler.matches_won`) inherit it, same as VerificationQuerySet.
+    `Match.objects` itself stays unfiltered for admin and the wrestlebot.
+    """
+
+    def public(self):
+        return super().public().exclude(event__verification_state="rejected")
 
 
 class Match(VerificationMixin, TimeStampedModel):
@@ -1832,6 +1891,8 @@ class Match(VerificationMixin, TimeStampedModel):
         db_index=True,
         help_text="ProFightDB match identifier for cross-reference",
     )
+
+    objects = MatchQuerySet.as_manager()
 
     class Meta:
         ordering = ["event", "match_order"]

@@ -19,6 +19,7 @@ from .models import (
     Special,
     Stable,
     Title,
+    TVShow,
     Venue,
     VideoGame,
     Wrestler,
@@ -82,6 +83,10 @@ def _build_url(obj) -> Optional[str]:
         if obj.slug:
             return reverse("stable_detail_slug", args=[obj.slug])
         return reverse("stable_detail", args=[obj.pk])
+    if isinstance(obj, TVShow):
+        if obj.slug:
+            return reverse("tv_show_detail_slug", args=[obj.slug])
+        return reverse("tv_show_detail", args=[obj.pk])
     return None
 
 
@@ -521,6 +526,8 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
     elif isinstance(obj, Event):
         if obj.promotion:
             sections.append({"label": "Promotion", "items": [_make_item(obj.promotion)]})
+        if obj.tv_show:
+            sections.append({"label": "TV Show", "items": [_make_item(obj.tv_show)]})
         if obj.venue:
             sections.append({"label": "Venue", "items": [_make_item(obj.venue)]})
 
@@ -868,6 +875,23 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
                 )
             )
         sections.append({"label": "Performing Wrestlers", "items": wrestler_items})
+
+    elif isinstance(obj, TVShow):
+        if obj.promotion:
+            sections.append({"label": "Promotion", "items": [_make_item(obj.promotion)]})
+
+        # Episodes are gated Event rows, so .public() keeps a rejected one
+        # from leaking through its show's page.
+        episodes = obj.episodes.public().select_related("venue").order_by("-date")[:limit]
+        episode_items = []
+        for episode in episodes:
+            meta = []
+            if episode.episode_number:
+                meta.append(_meta_text(f"Episode {episode.episode_number}"))
+            if episode.venue:
+                meta.append(_meta_text(episode.venue.name, _build_url(episode.venue)))
+            episode_items.append(_make_item(episode, year=_year_from_date(episode.date), meta=meta))
+        sections.append({"label": "Recent Episodes", "items": episode_items})
 
     return [section for section in sections if section.get("items")]
 

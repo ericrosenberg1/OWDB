@@ -2,6 +2,7 @@
 {% load humanize %}
 {% load linking_tags %}
 {% load verification_tags %}
+{% load rating_tags %}
 
 {% block content %}
 <div class="detail-header">
@@ -32,6 +33,7 @@
         </div>
         {% endif %}
     </div>
+    {% rating_widget venue "venue" %}
 </div>
 
 <!-- Stats Cards — every card auto-hides when its number is zero/missing. -->

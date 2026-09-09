@@ -26,6 +26,12 @@
             <span class="detail-meta-label">Promotion:</span>
             <a href="{% url 'promotion_detail_slug' event.promotion.slug %}">{{ event.promotion.name }}</a>
         </div>
+        {% if event.tv_show %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">TV Show:</span>
+            <a href="{% url 'tv_show_detail' event.tv_show.pk %}">{{ event.tv_show.name }}</a>{% if event.episode_number %}, episode {{ event.episode_number }}{% endif %}
+        </div>
+        {% endif %}
         <div class="detail-meta-item">
             <span class="detail-meta-label">Date:</span> {{ event.date|date:"F j, Y" }}
         </div>

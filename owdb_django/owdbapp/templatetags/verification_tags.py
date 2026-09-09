@@ -66,11 +66,24 @@ VERIFICATION_STATE_DISPLAY = {
 }
 
 
+# Lowercased model class name to the `entity_type` string the wrestlebot
+# writes on SourceFetch rows (wrestlebot/models.py ENTITY_TYPE_CHOICES).
+# Most match one-to-one. TVShow does not: the pipeline stores "tv_show", so
+# a bare lowercased class name ("tvshow") would never find a show's fetches.
+_ENTITY_TYPE_BY_CLASS = {
+    "wrestler": "wrestler",
+    "promotion": "promotion",
+    "event": "event",
+    "match": "match",
+    "title": "title",
+    "venue": "venue",
+    "stable": "stable",
+    "tvshow": "tv_show",
+}
+
+
 def _entity_type_for(obj) -> Optional[str]:
-    cls = obj.__class__.__name__.lower()
-    if cls in {"wrestler", "promotion", "event", "match", "title", "venue", "stable", "tvshow"}:
-        return cls
-    return None
+    return _ENTITY_TYPE_BY_CLASS.get(obj.__class__.__name__.lower())
 
 
 @register.inclusion_tag("partials/verification_state_badge.html")

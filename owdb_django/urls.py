@@ -56,6 +56,10 @@ urlpatterns = [
     path("stables/", views.StableListView.as_view(), name="stables"),
     path("stables/<int:pk>/", views.StableDetailView.as_view(), name="stable_detail"),
     path("stables/<slug:slug>/", views.StableDetailView.as_view(), name="stable_detail_slug"),
+    # TV Shows (episodes are Events linked through Event.tv_show)
+    path("tv-shows/", views.TVShowListView.as_view(), name="tv_shows"),
+    path("tv-shows/<int:pk>/", views.TVShowDetailView.as_view(), name="tv_show_detail"),
+    path("tv-shows/<slug:slug>/", views.TVShowDetailView.as_view(), name="tv_show_detail_slug"),
     # Podcast Episodes
     path("episodes/<int:pk>/", views.PodcastEpisodeDetailView.as_view(), name="episode_detail"),
     path(

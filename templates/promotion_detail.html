@@ -199,6 +199,21 @@
         </div>
         {% endif %}
 
+        <!-- TV shows this promotion produces (gated, see PromotionDetailView) -->
+        {% if tv_shows %}
+        <div class="card mb-4">
+            <div class="card-header">TV Shows</div>
+            <ul class="list-group list-group-flush">
+                {% for show in tv_shows %}
+                <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
+                    <a href="{% url 'tv_show_detail' show.pk %}">{{ show.name }}</a>
+                    <span class="badge bg-secondary">{{ show.get_show_type_display }}{% if show.network %} &middot; {{ show.network }}{% endif %}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
         {# ── Video games featuring this promotion ───────────────────── #}
         {% with promo_games=promotion.video_games.all %}
         {% if promo_games %}

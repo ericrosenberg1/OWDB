@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load linking_tags %}
+{% load verification_tags %}
+{% load rating_tags %}
+
+{% block content %}
+<div class="detail-header">
+    {% if tv_show.image_url %}
+    <div class="detail-image detail-image-wide">
+        <img src="{{ tv_show.image_url }}" alt="{{ tv_show.name }}">
+        {% if tv_show.image_credit or tv_show.image_license %}
+        <div class="image-credit">
+            {% if tv_show.image_source_url %}<a href="{{ tv_show.image_source_url }}" target="_blank" rel="noopener">{% endif %}
+            {{ tv_show.image_credit|default:"Image" }}
+            {% if tv_show.image_license %}({{ tv_show.image_license|upper }}){% endif %}
+            {% if tv_show.image_source_url %}</a>{% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    <h1 class="detail-title">{{ tv_show.name }}</h1>
+    <div class="detail-meta">
+        <div class="detail-meta-item">{% verification_state_badge tv_show %}</div>
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Promotion:</span>
+            <a href="{% url 'promotion_detail' tv_show.promotion.pk %}">{{ tv_show.promotion.name }}</a>
+        </div>
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Type:</span> {{ tv_show.get_show_type_display }}
+        </div>
+        {% if tv_show.network %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Network:</span> {{ tv_show.network }}
+        </div>
+        {% endif %}
+        {% if tv_show.air_day %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Airs:</span> {{ tv_show.air_day }}
+        </div>
+        {% endif %}
+        {% if tv_show.premiere_date %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Premiered:</span> {{ tv_show.premiere_date|date:"F j, Y" }}
+        </div>
+        {% endif %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Status:</span>
+            {% if tv_show.is_active %}
+            <span class="status-badge active">Active</span>
+            {% else %}
+            <span class="status-badge retired">Ended {{ tv_show.finale_date|date:"F j, Y" }}</span>
+            {% endif %}
+        </div>
+        {% if tv_show.wikipedia_url %}
+        <div class="detail-meta-item">
+            <span class="detail-meta-label">Wikipedia:</span>
+            <a href="{{ tv_show.wikipedia_url }}" target="_blank" rel="noopener noreferrer">view ↗</a>
+        </div>
+        {% endif %}
+    </div>
+    {% rating_widget tv_show "tv_show" %}
+</div>
+
+<!-- Stats Cards. Every card auto-hides when its number is missing. -->
+{% if episode_count %}
+<div class="stats-row mb-4">
+    <div class="stat-card">
+        <div class="stat-value">{{ episode_count|intcomma }}</div>
+        <div class="stat-label">Episodes</div>
+    </div>
+    {% if first_episode %}
+    <div class="stat-card">
+        <div class="stat-value">{{ first_episode.date|date:"Y" }}</div>
+        <div class="stat-label">First Episode</div>
+    </div>
+    {% endif %}
+    {% if latest_episode %}
+    <div class="stat-card">
+        <div class="stat-value">{{ latest_episode.date|date:"Y" }}</div>
+        <div class="stat-label">Latest Episode</div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+{% with about_text=tv_show|about_with_links %}
+    {% if about_text %}
+    <div class="card mb-4">
+        <div class="card-header">About</div>
+        <div class="card-body">
+            {{ about_text|linebreaks }}
+        </div>
+    </div>
+    {% endif %}
+{% endwith %}
+
+{% with linked_sections=tv_show|linked_from_sections %}
+    {% include "partials/linked_from.html" with sections=linked_sections %}
+{% endwith %}
+
+<!-- Episodes (paginated, gated Event rows) -->
+{% if episodes %}
+<div class="card mb-4">
+    <div class="card-header">Episodes ({{ episodes.paginator.count }})</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Episode</th>
+                        <th>Date</th>
+                        <th>Venue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for episode in episodes %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'event_detail' episode.pk %}">{{ episode.name }}</a>
+                            {% if episode.episode_number %}<span class="text-muted">#{{ episode.episode_number }}</span>{% endif %}
+                        </td>
+                        <td>{{ episode.date|date:"M j, Y" }}</td>
+                        <td>{% if episode.venue %}<a href="{% url 'venue_detail' episode.venue.pk %}">{{ episode.venue.name }}</a>{% else %}—{% endif %}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if episodes.has_other_pages %}
+    <div class="card-footer">
+        <nav aria-label="Episode pagination">
+            <ul class="pagination mb-0 justify-content-center">
+                {% if episodes.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ episodes.previous_page_number }}">&laquo; Previous</a></li>
+                {% endif %}
+                <li class="page-item disabled"><span class="page-link">Page {{ episodes.number }} of {{ episodes.paginator.num_pages }}</span></li>
+                {% if episodes.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ episodes.next_page_number }}">Next &raquo;</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+{% verification_stamp tv_show %}
+
+{% with entity_type="tv_show" entity=tv_show %}
+    {% include "partials/sources_used.html" %}
+{% endwith %}
+
+<a href="{% url 'tv_shows' %}" class="btn btn-secondary">&larr; Back to TV Shows</a>
+{% endblock %}

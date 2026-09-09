@@ -198,7 +198,7 @@ def build_linked_from_summary(obj, limit: int = 5) -> str:
     if isinstance(obj, Wrestler):
         promotions, promo_more = _limit_objects(obj.get_promotions(), limit)
         events, events_more = _limit_values(
-            obj.matches.values_list("event__name", flat=True).distinct(), limit
+            obj.matches.public().values_list("event__name", flat=True).distinct(), limit
         )
         titles, titles_more = _limit_objects(obj.get_titles_won(), limit)
         podcasts, podcasts_more = _limit_values(obj.podcasts.values_list("name", flat=True), limit)
@@ -225,17 +225,17 @@ def build_linked_from_summary(obj, limit: int = 5) -> str:
 
     elif isinstance(obj, Promotion):
         events, events_more = _limit_values(
-            obj.events.order_by("-date").values_list("name", flat=True).distinct(),
+            obj.events.public().order_by("-date").values_list("name", flat=True).distinct(),
             limit,
         )
-        titles, titles_more = _limit_objects(obj.titles.all(), limit)
+        titles, titles_more = _limit_objects(obj.titles.public(), limit)
         wrestlers, wrestlers_more = _limit_values(
-            obj.events.values_list("matches__wrestlers__name", flat=True).distinct(),
+            obj.events.public().values_list("matches__wrestlers__name", flat=True).distinct(),
             limit,
         )
         games, games_more = _limit_values(obj.video_games.values_list("name", flat=True), limit)
         venues, venues_more = _limit_values(
-            obj.events.values_list("venue__name", flat=True).distinct(), limit
+            obj.events.public().values_list("venue__name", flat=True).distinct(), limit
         )
 
         sources.extend(
@@ -250,10 +250,11 @@ def build_linked_from_summary(obj, limit: int = 5) -> str:
 
     elif isinstance(obj, Event):
         wrestlers, wrestlers_more = _limit_values(
-            obj.matches.values_list("wrestlers__name", flat=True).distinct(), limit
+            obj.matches.public().values_list("wrestlers__name", flat=True).distinct(), limit
         )
         titles, titles_more = _limit_values(
-            obj.matches.filter(title__isnull=False)
+            obj.matches.public()
+            .filter(title__isnull=False)
             .values_list("title__name", flat=True)
             .distinct(),
             limit,
@@ -275,7 +276,7 @@ def build_linked_from_summary(obj, limit: int = 5) -> str:
             obj.get_all_champions().values_list("name", flat=True).distinct(), limit
         )
         events, events_more = _limit_values(
-            obj.title_matches.values_list("event__name", flat=True).distinct(), limit
+            obj.title_matches.public().values_list("event__name", flat=True).distinct(), limit
         )
         promo = [obj.promotion.name] if obj.promotion else []
 
@@ -330,7 +331,7 @@ def build_linked_from_summary(obj, limit: int = 5) -> str:
 
     elif isinstance(obj, Venue):
         events, events_more = _limit_values(
-            obj.events.order_by("-date").values_list("name", flat=True).distinct(),
+            obj.events.public().order_by("-date").values_list("name", flat=True).distinct(),
             limit,
         )
         promotions, promos_more = _limit_objects(obj.get_promotions(), limit)
@@ -380,8 +381,11 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
             promo_items.append(_make_item(promo, year=year_text, meta=meta))
         sections.append({"label": "Promotions", "items": promo_items})
 
+        # Both gates: the event must be public and so must the match that
+        # links it here (MatchQuerySet.public() also checks the event).
         events = (
-            Event.objects.filter(matches__wrestlers=obj)
+            Event.objects.public()
+            .filter(matches__in=obj.matches.public())
             .select_related("promotion")
             .distinct()
             .order_by("-date")[:limit]
@@ -440,7 +444,7 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
         sections.append({"label": "Video Games", "items": game_items})
 
     elif isinstance(obj, Promotion):
-        events = obj.events.select_related("venue").order_by("-date")[:limit]
+        events = obj.events.public().select_related("venue").order_by("-date")[:limit]
         event_items = []
         for event in events:
             meta = []
@@ -449,7 +453,7 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
             event_items.append(_make_item(event, year=_year_from_date(event.date), meta=meta))
         sections.append({"label": "Events/PPVs", "items": event_items})
 
-        titles = obj.titles.all()[:limit]
+        titles = obj.titles.public()[:limit]
         title_items = []
         for title in titles:
             year_text = str(title.debut_year) if title.debut_year else ""
@@ -562,7 +566,8 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
         sections.append({"label": "Champions", "items": champion_items})
 
         events = (
-            Event.objects.filter(matches__title=obj)
+            Event.objects.public()
+            .filter(matches__in=obj.title_matches.public())
             .select_related("promotion")
             .distinct()
             .order_by("-date")[:limit]
@@ -839,7 +844,7 @@ def build_linked_from_sections(obj, limit: int = 6) -> List[Dict[str, Any]]:
         sections.append({"label": "Podcasts", "items": podcast_items})
 
     elif isinstance(obj, Venue):
-        events = obj.events.order_by("-date")[:limit]
+        events = obj.events.public().order_by("-date")[:limit]
         event_items = []
         for event in events:
             meta = []

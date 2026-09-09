@@ -134,14 +134,17 @@ class IndexView(TemplateView):
 
         # Always compute stats fresh - caching was causing stale data issues
         # Database counts are fast enough and accurate data is more important
+        # Gated models count through .public() so the totals match what the
+        # list pages can show: a rejected row is not an entry in the database
+        # as far as a visitor is concerned.
         stats = {
-            "wrestlers": Wrestler.objects.count(),
-            "promotions": Promotion.objects.count(),
-            "events": Event.objects.count(),
-            "matches": Match.objects.count(),
-            "titles": Title.objects.count(),
-            "venues": Venue.objects.count(),
-            "stables": Stable.objects.count(),
+            "wrestlers": Wrestler.objects.public().count(),
+            "promotions": Promotion.objects.public().count(),
+            "events": Event.objects.public().count(),
+            "matches": Match.objects.public().count(),
+            "titles": Title.objects.public().count(),
+            "venues": Venue.objects.public().count(),
+            "stables": Stable.objects.public().count(),
             "video_games": VideoGame.objects.count(),
             "podcasts": Podcast.objects.count(),
             "books": Book.objects.count(),
@@ -150,9 +153,9 @@ class IndexView(TemplateView):
         stats["total"] = sum(stats.values())
         context["stats"] = stats
 
-        # Honest counts: `stats` above is every row regardless of review
-        # state, so a database that's 90% unverified `candidate` rows reads
-        # as a wall of green numbers. verified_stats is the same categories,
+        # Honest counts: `stats` above is every non-rejected row regardless
+        # of review state, so a database that's 90% unverified `candidate`
+        # rows reads as a wall of green numbers. verified_stats is the same categories,
         # counted with the review gate applied. Wrestlers/Promotions/Events/
         # Matches/Titles/Venues/Stables carry the four-state
         # `verification_state` (VerificationMixin); Video Games/Podcasts/
@@ -176,11 +179,11 @@ class IndexView(TemplateView):
         context["verified_stats"] = verified_stats
 
         # Get latest additions (wrestlers, promotions, titles)
-        context["latest_wrestlers"] = Wrestler.objects.order_by("-created_at")[:10]
-        context["latest_promotions"] = Promotion.objects.order_by("-created_at")[:10]
-        context["latest_titles"] = Title.objects.select_related("promotion").order_by(
-            "-created_at"
-        )[:10]
+        context["latest_wrestlers"] = Wrestler.objects.public().order_by("-created_at")[:10]
+        context["latest_promotions"] = Promotion.objects.public().order_by("-created_at")[:10]
+        context["latest_titles"] = (
+            Title.objects.public().select_related("promotion").order_by("-created_at")[:10]
+        )
 
         # Get recent and upcoming events
         from datetime import date
@@ -189,22 +192,30 @@ class IndexView(TemplateView):
 
         # Recent events (past events, newest first)
         context["recent_events"] = (
-            Event.objects.select_related("promotion").filter(date__lte=today).order_by("-date")[:10]
+            Event.objects.public()
+            .select_related("promotion")
+            .filter(date__lte=today)
+            .order_by("-date")[:10]
         )
 
         # Upcoming events (future events, soonest first)
         context["upcoming_events"] = (
-            Event.objects.select_related("promotion").filter(date__gt=today).order_by("date")[:10]
+            Event.objects.public()
+            .select_related("promotion")
+            .filter(date__gt=today)
+            .order_by("date")[:10]
         )
 
         # Promotion-specific events (past only)
         context["wwe_events"] = (
-            Event.objects.select_related("promotion")
+            Event.objects.public()
+            .select_related("promotion")
             .filter(promotion__name__icontains="WWE", date__lte=today)
             .order_by("-date")[:10]
         )
         context["aew_events"] = (
-            Event.objects.select_related("promotion")
+            Event.objects.public()
+            .select_related("promotion")
             .filter(promotion__name__icontains="AEW", date__lte=today)
             .order_by("-date")[:10]
         )
@@ -231,13 +242,13 @@ class AboutView(TemplateView):
         context = super().get_context_data(**kwargs)
         context["page_title"] = "About OWDB"
         context["stats"] = {
-            "wrestlers": Wrestler.objects.count(),
-            "promotions": Promotion.objects.count(),
-            "events": Event.objects.count(),
-            "matches": Match.objects.count(),
-            "titles": Title.objects.count(),
-            "venues": Venue.objects.count(),
-            "stables": Stable.objects.count(),
+            "wrestlers": Wrestler.objects.public().count(),
+            "promotions": Promotion.objects.public().count(),
+            "events": Event.objects.public().count(),
+            "matches": Match.objects.public().count(),
+            "titles": Title.objects.public().count(),
+            "venues": Venue.objects.public().count(),
+            "stables": Stable.objects.public().count(),
             "games": VideoGame.objects.count(),
             "books": Book.objects.count(),
             "podcasts": Podcast.objects.count(),
@@ -376,8 +387,10 @@ class PromotionDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         promotion = self.object
         context["page_title"] = promotion.name
-        context["events"] = promotion.events.select_related("venue").order_by("-date")[:20]
-        context["titles"] = promotion.titles.all()
+        # Events and titles are gated rows, so the related managers' .public()
+        # keeps a rejected one off the promotion's page.
+        context["events"] = promotion.events.public().select_related("venue").order_by("-date")[:20]
+        context["titles"] = promotion.titles.public()
         # TV shows are gated, so the related manager's .public() keeps a
         # rejected show off the promotion's page.
         context["tv_shows"] = promotion.tv_shows.public().order_by("name")
@@ -670,7 +683,9 @@ class VenueDetailView(DetailView):
         # Paginated events list
         from django.core.paginator import Paginator
 
-        events = venue.events.select_related("promotion").order_by("-date")
+        # Gated like the venue itself: a rejected event stays off the list
+        # and out of the paginator count.
+        events = venue.events.public().select_related("promotion").order_by("-date")
         paginator = Paginator(events, 25)
         page = self.request.GET.get("page", 1)
         context["events"] = paginator.get_page(page)

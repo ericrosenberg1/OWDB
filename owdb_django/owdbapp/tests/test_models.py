@@ -2,10 +2,13 @@
 Tests for OWDB models.
 """
 
+from datetime import date
+
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.utils import timezone
 
+from ..linking import build_linked_from_sections, build_linked_from_summary
 from ..models import (
     Wrestler,
     Promotion,
@@ -620,3 +623,134 @@ class WrestlerGetIncompleteProfilesTest(TestCase):
         results = Wrestler.get_incomplete_profiles(limit=2)
 
         self.assertEqual(len(results), 2)
+
+
+class ReviewGateEventLeakHelpersTest(TestCase):
+    """
+    The model helpers and linking.py builders that feed public pages drop a
+    rejected Event and every match at it, while a provisional Event (and its
+    match) stays. Same fixture shape as test_views.ReviewGateEventLeakViewTest.
+    """
+
+    def setUp(self):
+        self.promotion = Promotion.objects.create(name="Gate Helper Promotion")
+        self.venue = Venue.objects.create(name="Gate Helper Arena")
+        self.wrestler = Wrestler.objects.create(name="Gate Helper Wrestler")
+        self.opponent = Wrestler.objects.create(name="Gate Helper Opponent")
+        self.title = Title.objects.create(name="Gate Helper Championship", promotion=self.promotion)
+        self.rejected_event = Event.objects.create(
+            name="Rejected Helper Event",
+            promotion=self.promotion,
+            venue=self.venue,
+            date=date(2024, 3, 1),
+            attendance=5000,
+            verification_state="rejected",
+        )
+        self.provisional_event = Event.objects.create(
+            name="Provisional Helper Event",
+            promotion=self.promotion,
+            venue=self.venue,
+            date=date(2024, 3, 2),
+            attendance=3000,
+            verification_state="provisional",
+        )
+        self.matches = {}
+        for event in (self.rejected_event, self.provisional_event):
+            match = Match.objects.create(
+                event=event,
+                match_text="Gate helper match",
+                title=self.title,
+                winner=self.wrestler,
+                verification_state="verified",
+            )
+            match.wrestlers.add(self.wrestler, self.opponent)
+            self.matches[event.verification_state] = match
+
+    def test_match_public_drops_matches_at_rejected_events_but_objects_does_not(self):
+        self.assertEqual(list(Match.objects.public()), [self.matches["provisional"]])
+        self.assertEqual(list(self.wrestler.matches.public()), [self.matches["provisional"]])
+        self.assertEqual(list(self.title.title_matches.public()), [self.matches["provisional"]])
+        # The unfiltered manager is what admin and the wrestlebot rely on.
+        self.assertEqual(Match.objects.count(), 2)
+        self.assertEqual(self.wrestler.matches.count(), 2)
+
+    def test_venue_helpers_skip_rejected_event(self):
+        self.assertEqual(self.venue.get_event_count(), 1)
+        stats = self.venue.get_stats()
+        self.assertEqual(stats["total_events"], 1)
+        self.assertEqual(stats["total_attendance"], 3000)
+        promotions = list(self.venue.get_promotions())
+        self.assertEqual([p.pk for p in promotions], [self.promotion.pk])
+        self.assertEqual(promotions[0].event_count, 1)
+        wrestlers = list(self.venue.get_wrestlers())
+        self.assertEqual({w.pk for w in wrestlers}, {self.wrestler.pk, self.opponent.pk})
+        self.assertEqual([w.appearance_count for w in wrestlers], [1, 1])
+
+    def test_promotion_helpers_skip_rejected_event(self):
+        stats = self.promotion.get_stats()
+        self.assertEqual(stats["total_events"], 1)
+        self.assertEqual(stats["total_wrestlers"], 2)
+        self.assertEqual(sum(row["count"] for row in self.promotion.get_event_timeline()), 1)
+        venues = list(self.promotion.get_venues())
+        self.assertEqual([v.pk for v in venues], [self.venue.pk])
+        self.assertEqual(venues[0].event_count, 1)
+        wrestlers = list(self.promotion.get_all_wrestlers())
+        self.assertEqual([w.match_count for w in wrestlers], [1, 1])
+        # canonical_roster_ids counts the same way, so a match at a rejected
+        # event can't help a wrestler over the roster threshold.
+        self.assertEqual(list(self.promotion.canonical_roster_ids(min_matches=2)), [])
+        self.assertEqual(
+            set(self.promotion.canonical_roster_ids(min_matches=1)),
+            {self.wrestler.pk, self.opponent.pk},
+        )
+
+    def test_wrestler_helpers_skip_rejected_event(self):
+        counts = self.wrestler.get_all_meta_categories()
+        self.assertEqual(counts["events"], 1)
+        self.assertEqual(counts["matches"], 1)
+        self.assertEqual(counts["titles"], 1)
+        self.assertEqual(counts["rivals"], 1)
+        record = self.wrestler.get_win_loss_record()
+        self.assertEqual(record["total"], 1)
+        self.assertEqual(record["wins"], 1)
+        self.assertEqual(record["title_matches"], 1)
+        self.assertEqual(self.wrestler.get_recent_form(), ["W"])
+        self.assertEqual([e.pk for e in self.wrestler.get_events()], [self.provisional_event.pk])
+        promotions = list(self.wrestler.get_promotions())
+        self.assertEqual([p.pk for p in promotions], [self.promotion.pk])
+        self.assertEqual(promotions[0].match_count, 1)
+        self.assertEqual(self.wrestler.get_head_to_head()[0]["total"], 1)
+        self.assertEqual(list(self.wrestler.get_titles_won()), [self.title])
+        history = self.wrestler.get_title_history()
+        entries = [
+            entry for group in history for item in group["titles"] for entry in item["entries"]
+        ]
+        self.assertEqual([entry["event"].pk for entry in entries], [self.provisional_event.pk])
+
+    def test_title_and_event_helpers_skip_rejected_event(self):
+        self.assertEqual(
+            [m.event_id for m in self.title.get_championship_history()],
+            [self.provisional_event.pk],
+        )
+        self.assertEqual(list(self.title.get_all_champions()), [self.wrestler])
+        self.assertEqual(self.title.get_most_defenses()[0].defense_count, 1)
+        self.assertEqual(list(self.title.notable_champion_ids(min_reigns=2)), [])
+        self.assertEqual(
+            set(self.provisional_event.get_all_wrestlers().values_list("pk", flat=True)),
+            {self.wrestler.pk, self.opponent.pk},
+        )
+        self.assertEqual(list(self.provisional_event.get_titles_defended()), [self.title])
+
+    def test_linked_from_builders_skip_rejected_event(self):
+        for obj in (self.promotion, self.venue, self.wrestler, self.title):
+            with self.subTest(obj=obj):
+                summary = build_linked_from_summary(obj)
+                self.assertIn("Provisional Helper Event", summary)
+                self.assertNotIn("Rejected Helper Event", summary)
+                names = [
+                    item["name"]
+                    for section in build_linked_from_sections(obj)
+                    for item in section["items"]
+                ]
+                self.assertIn("Provisional Helper Event", names)
+                self.assertNotIn("Rejected Helper Event", names)

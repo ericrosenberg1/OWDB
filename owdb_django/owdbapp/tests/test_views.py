@@ -7,6 +7,8 @@ any view runs, so every assertion below would check the redirect instead of the
 view — see proxied_client.py for the full explanation (ROS-1210).
 """
 
+from datetime import date
+
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth.models import User
@@ -347,6 +349,109 @@ class ReviewGateRelationalLeakViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Rejected Leak Match")
         self.assertContains(response, "Good Leak Match")
+
+
+class ReviewGateEventLeakViewTest(TestCase):
+    """
+    A rejected Event must not leak through the pages of the entities it is
+    linked to (promotion, venue, wrestler, title), their counts, their
+    Linked From sections, the events list, or the homepage, while a
+    provisional Event stays visible in every one of those places.
+
+    Both events sit at the same venue and promotion, and each has one
+    verified match for the same title won by the same wrestler, so the
+    only thing separating them is the event's own verification_state.
+    """
+
+    def setUp(self):
+        self.client = proxied_client()
+        self.promotion = Promotion.objects.create(name="Gate Test Promotion")
+        self.venue = Venue.objects.create(name="Gate Test Arena")
+        self.wrestler = Wrestler.objects.create(name="Gate Test Wrestler")
+        self.opponent = Wrestler.objects.create(name="Gate Test Opponent")
+        self.title = Title.objects.create(name="Gate Test Championship", promotion=self.promotion)
+        self.rejected_event = Event.objects.create(
+            name="Rejected Gate Event",
+            promotion=self.promotion,
+            venue=self.venue,
+            date=date(2024, 3, 1),
+            attendance=5000,
+            verification_state="rejected",
+        )
+        self.provisional_event = Event.objects.create(
+            name="Provisional Gate Event",
+            promotion=self.promotion,
+            venue=self.venue,
+            date=date(2024, 3, 2),
+            attendance=3000,
+            verification_state="provisional",
+        )
+        for event in (self.rejected_event, self.provisional_event):
+            match = Match.objects.create(
+                event=event,
+                match_text="Gate test match",
+                title=self.title,
+                winner=self.wrestler,
+                verification_state="verified",
+            )
+            match.wrestlers.add(self.wrestler, self.opponent)
+
+    def assert_only_provisional_event(self, response):
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Provisional Gate Event")
+        self.assertNotContains(response, "Rejected Gate Event")
+        # The slug is what a link would carry, so check it too.
+        self.assertNotContains(response, self.rejected_event.slug)
+
+    def test_promotion_page_hides_rejected_event_everywhere(self):
+        response = self.client.get(reverse("promotion_detail", args=[self.promotion.pk]))
+        self.assert_only_provisional_event(response)
+        self.assertEqual(response.context["stats"]["total_events"], 1)
+        self.assertEqual(sum(row["count"] for row in response.context["timeline"]), 1)
+        self.assertEqual([e.pk for e in response.context["events"]], [self.provisional_event.pk])
+
+    def test_venue_page_hides_rejected_event_everywhere(self):
+        response = self.client.get(reverse("venue_detail", args=[self.venue.pk]))
+        self.assert_only_provisional_event(response)
+        self.assertEqual(response.context["events"].paginator.count, 1)
+        self.assertEqual(response.context["stats"]["total_events"], 1)
+        self.assertEqual(response.context["stats"]["total_attendance"], 3000)
+
+    def test_wrestler_page_hides_rejected_event_everywhere(self):
+        response = self.client.get(reverse("wrestler_detail", args=[self.wrestler.pk]))
+        self.assert_only_provisional_event(response)
+        self.assertEqual(response.context["meta_counts"]["events"], 1)
+        self.assertEqual(response.context["meta_counts"]["matches"], 1)
+        self.assertEqual(response.context["record"]["total"], 1)
+        self.assertEqual(response.context["record"]["wins"], 1)
+        self.assertEqual(
+            [m.event_id for m in response.context["matches"]], [self.provisional_event.pk]
+        )
+
+    def test_title_page_hides_rejected_event_everywhere(self):
+        response = self.client.get(reverse("title_detail", args=[self.title.pk]))
+        self.assert_only_provisional_event(response)
+        self.assertEqual(
+            [m.event_id for m in response.context["title_matches"]], [self.provisional_event.pk]
+        )
+        self.assertEqual(
+            [m.event_id for m in response.context["championship_history"]],
+            [self.provisional_event.pk],
+        )
+
+    def test_events_list_hides_rejected_event(self):
+        response = self.client.get(reverse("events"))
+        self.assert_only_provisional_event(response)
+
+    def test_homepage_hides_rejected_event_and_does_not_count_it(self):
+        response = self.client.get(reverse("index"))
+        self.assert_only_provisional_event(response)
+        self.assertEqual(response.context["stats"]["events"], 1)
+        self.assertEqual(response.context["stats"]["matches"], 1)
+
+    def test_rejected_event_detail_still_404s(self):
+        response = self.client.get(reverse("event_detail", args=[self.rejected_event.pk]))
+        self.assertEqual(response.status_code, 404)
 
 
 class AccountViewsTest(TestCase):

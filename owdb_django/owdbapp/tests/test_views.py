@@ -612,9 +612,26 @@ class RateEntityViewTest(TestCase):
         self.assertFalse(UserRating.objects.filter(rating=11).exists())
 
     def test_rate_entity_rejects_entity_type_not_in_declared_choices(self):
-        """`venue` is a gated (VerificationMixin) entity, but it's absent
-        from UserRating.ENTITY_TYPE_CHOICES — a real schema gap found while
-        building this. The endpoint must not silently accept it."""
+        """A type outside UserRating.ENTITY_TYPE_CHOICES must not be silently
+        accepted. (`venue` used to be the example here: a gated entity that
+        was missing from the choices. It is declared now, see the test below,
+        so this uses a type that no model backs.)"""
+        self.client.login(username="rater", password="testpassword123")
+        venue = Venue.objects.create(name="Rateable Venue")
+        self.client.post(
+            reverse("rate_entity"),
+            {
+                "entity_type": "arena",
+                "entity_id": venue.pk,
+                "action": "toggle_favorite",
+                "next": reverse("index"),
+            },
+        )
+        self.assertFalse(UserRating.objects.exists())
+
+    def test_venue_can_be_favorited(self):
+        """Venue is gated and has a public detail page, and it was the one
+        such entity a user could not favorite or rate. Regression for that."""
         self.client.login(username="rater", password="testpassword123")
         venue = Venue.objects.create(name="Rateable Venue")
         self.client.post(
@@ -623,10 +640,11 @@ class RateEntityViewTest(TestCase):
                 "entity_type": "venue",
                 "entity_id": venue.pk,
                 "action": "toggle_favorite",
-                "next": reverse("index"),
+                "next": reverse("venue_detail", args=[venue.pk]),
             },
         )
-        self.assertFalse(UserRating.objects.exists())
+        row = UserRating.objects.get(entity_type="venue", entity_id=venue.pk)
+        self.assertTrue(row.is_favorite)
 
     def test_rate_entity_404s_for_rejected_entity(self):
         rejected = Wrestler.objects.create(name="Rejected Rateable", verification_state="rejected")

@@ -3249,6 +3249,7 @@ class UserRating(TimeStampedModel):
         ("title", "Title"),
         ("stable", "Stable"),
         ("promotion", "Promotion"),
+        ("venue", "Venue"),
         ("tv_show", "TV show"),
         ("special", "Special / documentary"),
         ("book", "Book"),

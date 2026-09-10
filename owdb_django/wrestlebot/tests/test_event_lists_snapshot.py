@@ -3,15 +3,36 @@ Snapshot parity tests for the schema-driven event-list + title-history
 extractors.
 
 Captured Wikipedia HTML fixtures live in `fixtures/wiki_*.html.gz`. Their
-expected outputs were recorded with the legacy imperative extractors and
-stored as `fixtures/expected_*.json`. When the extractors are reimplemented
-on top of `TableExtractorSpec`, these tests guarantee the new output is
-byte-identical with the old.
+expected outputs are recorded in `fixtures/expected_*.json` and pin the
+extractors' behaviour so a later refactor cannot quietly change what the
+ingest writes.
 
 The fixtures also exercise the bug the framework was designed to prevent:
 the PPV list contains continuation rows whose "Event" cell is really a
 "City, State" string (the "Rosemont, Illinois" bug); the row_filter must
 drop these.
+
+The expected files were first recorded off the legacy imperative
+extractors, then re-recorded once on 2026-09-10 when `extract_tables()`
+started expanding `rowspan` and `colspan` into a rectangular grid
+(`_schema.expand_table_grid`). Every difference in that re-record was a
+correction, never a loss:
+
+  * ECW PPVs: 7 rows had been reading one column to the left of where they
+    belonged, because the year cell above them was spanned down. They were
+    landing main-event text in `name` ("Rhino vs. Kid Kash" as an event
+    name) and a city in `venue_name`. Row count did not move, 119 either
+    way.
+  * AEW Dynamite: 69 episodes had the main-event text filed as the `city`
+    and no venue at all, from the residency runs where Wikipedia spans one
+    venue cell down over the whole run.
+  * WWE Intercontinental title history: two genuine champions, Charles
+    Wright and John Layfield, had been dropped outright. Nothing was
+    removed.
+  * ECW title history: identical before and after.
+
+If a future change moves these files again, diff them and justify each
+row the same way rather than re-recording on faith.
 """
 
 from __future__ import annotations

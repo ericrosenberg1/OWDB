@@ -192,3 +192,145 @@ class TableExtractorTests(TestCase):
                     self.assertIsInstance(snippets[field_name], FieldSnippet)
                     # Snippet text must be non-empty so the contract can quote it.
                     self.assertTrue(snippets[field_name].snippet)
+
+
+# ---------------------------------------------------------------------------
+# rowspan / colspan grid expansion
+# ---------------------------------------------------------------------------
+#
+# Wikipedia writes a venue once and spans it down over a whole residency,
+# and spans an episode number down over a two-night taping. Reading each
+# `<tr>` positionally lines those rows up one or two columns to the left,
+# which put main-event text into the city field on 69 AEW Dynamite episodes
+# and dropped five AEW Collision episodes outright before this was fixed.
+
+
+_ROWSPAN_HTML = """
+<html><body>
+<h2>2021</h2>
+<table class="wikitable">
+ <tr><th>Date</th><th>Event</th><th>Venue</th><th>City</th><th>Attendance</th></tr>
+ <tr>
+   <td>April 6, 2021</td>
+   <td>Spanned Venue Night 1</td>
+   <td rowspan="3">Daily's Place</td>
+   <td rowspan="3">Jacksonville, Florida</td>
+   <td>1,000</td>
+ </tr>
+ <tr>
+   <td>April 7, 2021</td>
+   <td>Spanned Venue Night 2</td>
+   <td>1,100</td>
+ </tr>
+ <tr>
+   <td>April 8, 2021</td>
+   <td>Spanned Venue Night 3</td>
+   <td>1,200</td>
+ </tr>
+</table>
+</body></html>
+"""
+
+
+_COLSPAN_HTML = """
+<html><body>
+<h2>2022</h2>
+<table class="wikitable">
+ <tr><th>Date</th><th colspan="2">Event</th><th>Venue</th><th>City</th></tr>
+ <tr>
+   <td>May 1, 2022</td>
+   <td>Colspan Header Show</td>
+   <td>(subtitle)</td>
+   <td>Arena One</td>
+   <td>Tampa, Florida</td>
+ </tr>
+</table>
+</body></html>
+"""
+
+
+class GridExpansionTests(TestCase):
+    """`expand_table_grid` must hand every consumer a rectangular table."""
+
+    def _spec(self):
+        return TableExtractorSpec(
+            result_dataclass=_Event,
+            table_filter=wikitable_with_headers("date", "event"),
+            columns={
+                "date": ("date",),
+                "name": ("event",),
+                "venue_name": ("venue",),
+                "attendance": ("attendance",),
+            },
+            cleaners={
+                "date": clean_iso_or_natural_date,
+                "name": clean_text,
+                "venue_name": clean_text,
+                "attendance": clean_attendance,
+            },
+            required_fields=("name",),
+        )
+
+    def test_spanned_cell_repeats_down_every_row_it_covers(self):
+        from owdb_django.wrestlebot.sources._schema import expand_table_grid
+
+        from bs4 import BeautifulSoup
+
+        table = BeautifulSoup(_ROWSPAN_HTML, "lxml").find("table")
+        grid = expand_table_grid(table)
+        self.assertEqual([len(r) for r in grid], [5, 5, 5, 5])
+        venues = [r[2].get_text(" ", strip=True) for r in grid[1:]]
+        self.assertEqual(venues, ["Daily's Place"] * 3)
+
+    def test_rows_under_a_spanned_venue_keep_their_own_columns(self):
+        rows = extract_tables(_ROWSPAN_HTML, self._spec())
+        self.assertEqual(
+            [(i.name, i.venue_name, i.attendance) for i, _ in rows],
+            [
+                ("Spanned Venue Night 1", "Daily's Place", 1000),
+                ("Spanned Venue Night 2", "Daily's Place", 1100),
+                ("Spanned Venue Night 3", "Daily's Place", 1200),
+            ],
+        )
+
+    def test_attendance_is_not_read_from_the_venue_column(self):
+        """The regression itself: without expansion, row 2's 1,100 landed in
+        the venue slot and the real venue vanished."""
+        rows = extract_tables(_ROWSPAN_HTML, self._spec())
+        for inst, _ in rows:
+            self.assertEqual(inst.venue_name, "Daily's Place")
+            self.assertIsNotNone(inst.attendance)
+
+    def test_colspan_header_widens_the_grid_so_later_columns_align(self):
+        from owdb_django.wrestlebot.sources._schema import expand_table_grid
+
+        from bs4 import BeautifulSoup
+
+        table = BeautifulSoup(_COLSPAN_HTML, "lxml").find("table")
+        grid = expand_table_grid(table)
+        headers = [c.get_text(" ", strip=True).lower() for c in grid[0]]
+        self.assertEqual(headers, ["date", "event", "event", "venue", "city"])
+        rows = extract_tables(_COLSPAN_HTML, self._spec())
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0][0].venue_name, "Arena One")
+
+    def test_short_row_is_padded_not_shifted(self):
+        """A row with fewer cells than the header pads on the right, so a
+        consumer indexing positionally never reads a neighbour's value."""
+        from owdb_django.wrestlebot.sources._schema import expand_table_grid
+
+        from bs4 import BeautifulSoup
+
+        html = """
+        <table class="wikitable">
+         <tr><th>A</th><th>B</th><th>C</th><th>D</th></tr>
+         <tr><td>a1</td><td>b1</td></tr>
+        </table>
+        """
+        table = BeautifulSoup(html, "lxml").find("table")
+        grid = expand_table_grid(table)
+        self.assertEqual(len(grid[1]), 4)
+        self.assertEqual(
+            [c.get_text(" ", strip=True) for c in grid[1]],
+            ["a1", "b1", "", ""],
+        )

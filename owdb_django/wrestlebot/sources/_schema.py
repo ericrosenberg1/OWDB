@@ -133,11 +133,114 @@ class TableExtractorSpec:
 # -----------------------------------------------------------------------------
 
 
+_MAX_GRID_COLS = 64
+
+
+def _span_of(cell, attr: str) -> int:
+    """Read a rowspan/colspan attribute, defaulting to 1 on anything odd."""
+    try:
+        n = int(str(cell.get(attr, 1)).strip())
+    except (TypeError, ValueError, AttributeError):
+        return 1
+    return n if 1 <= n <= 100 else 1
+
+
+def expand_table_grid(table) -> list[list]:
+    """
+    Flatten a `<table>` into a rectangular grid of cell tags, honouring
+    `rowspan` and `colspan`.
+
+    Wikipedia's event and title tables lean on `rowspan` constantly: a
+    residency at one arena writes the venue once and spans it down over
+    every episode in the run, and a champion's reign spans one cell over
+    several defence rows. Reading `tr.find_all("td")` positionally on
+    those rows lines the columns up wrong, because the spanned cell is
+    simply absent from the row's own markup.
+
+    That was not theoretical. On the live AEW Dynamite list, 23 episode
+    rows carry only 3 of the table's 5 cells (the location and venue are
+    spanned down from the top of the residency), so the old positional
+    read filed the main-event text as the city and lost the venue and the
+    notes. On AEW Collision, rows whose episode number is itself spanned
+    lost their leading digit, failed `required_fields`, and vanished from
+    the ingest entirely.
+
+    Cells are repeated, not copied, so a spanned cell appears at every
+    grid position it covers. A row shorter than the header is padded with
+    an empty `<td>` rather than left-shifted, so every consumer can index
+    the grid positionally and still call `.get_text()` or `.find_all()`
+    on whatever it gets back.
+    """
+    grid: list[list] = []
+    carry: dict[int, tuple] = {}  # column index -> (cell, rows still to fill)
+    ncols: Optional[int] = None
+    pad_soup = BeautifulSoup("", "lxml")
+
+    def _pad():
+        return pad_soup.new_tag("td")
+
+    for tr in table.find_all("tr"):
+        cells = tr.find_all(["td", "th"], recursive=False) or tr.find_all(["td", "th"])
+        cell_iter = iter(cells)
+        row: list = []
+        col = 0
+        limit = ncols if ncols is not None else _MAX_GRID_COLS
+        exhausted = False
+
+        while col < limit:
+            carried = carry.get(col)
+            if carried is not None:
+                cell, remaining = carried
+                row.append(cell)
+                if remaining <= 1:
+                    carry.pop(col, None)
+                else:
+                    carry[col] = (cell, remaining - 1)
+                col += 1
+                continue
+            if exhausted:
+                # No markup left for this row and nothing spanned into the
+                # remaining columns: pad so later columns never shift left.
+                row.append(_pad())
+                col += 1
+                continue
+            cell = next(cell_iter, None)
+            if cell is None:
+                exhausted = True
+                continue
+            rowspan = _span_of(cell, "rowspan")
+            colspan = _span_of(cell, "colspan")
+            for _ in range(colspan):
+                if col >= limit:
+                    break
+                row.append(cell)
+                if rowspan > 1:
+                    carry[col] = (cell, rowspan - 1)
+                col += 1
+
+        if not row or all(not _cell_text(c) for c in row):
+            continue
+        if ncols is None:
+            # The header row fixes the width every later row is padded to.
+            while row and not _cell_text(row[-1]):
+                row.pop()
+            ncols = len(row)
+        grid.append(row)
+
+    return grid
+
+
+def _cell_text(cell) -> str:
+    if cell is None:
+        return ""
+    return cell.get_text(" ", strip=True) or ""
+
+
 def _header_cells(table) -> list[str]:
-    rows = table.find_all("tr")
-    if not rows:
+    grid = expand_table_grid(table)
+    if not grid:
         return []
-    return [(c.get_text(" ", strip=True) or "").lower() for c in rows[0].find_all(["th", "td"])]
+    return [_cell_text(c).lower() for c in grid[0]]
 
 
 def _column_index(headers: list[str], needles: tuple[str, ...]) -> Optional[int]:
@@ -182,7 +285,10 @@ def extract_tables(
             logger.debug("schema: table_filter raised on %s: %s", spec, e)
             continue
 
-        headers = _header_cells(table)
+        grid = expand_table_grid(table)
+        if not grid:
+            continue
+        headers = [_cell_text(c).lower() for c in grid[0]]
         if not headers:
             continue
 
@@ -208,9 +314,7 @@ def extract_tables(
                 logger.debug("schema: context_resolver(%s) raised: %s", fname, e)
                 ctx_values[fname] = None
 
-        rows = table.find_all("tr")[1:]  # skip header row
-        for tr in rows:
-            cells = tr.find_all(["td", "th"])
+        for cells in grid[1:]:  # skip header row
             if not cells:
                 continue
 
@@ -223,14 +327,14 @@ def extract_tables(
             # cell, to disambiguate "Mr. Perfect" → /wiki/Curt_Hennig — use
             # `__cells__` + `__col_index__` to grab their own cell tag.
             raw_ctx: dict = {
-                "__cell_texts__": tuple(c.get_text(" ", strip=True) or "" for c in cells),
+                "__cell_texts__": tuple(_cell_text(c) for c in cells),
                 "__cells__": tuple(cells),
                 "__col_index__": dict(col_index),
             }
             for fname, idx in col_index.items():
                 if idx >= len(cells):
                     continue
-                raw_ctx[fname] = cells[idx].get_text(" ", strip=True) or ""
+                raw_ctx[fname] = _cell_text(cells[idx])
 
             # Pass heading-context values through the context dict too, so
             # cleaners + row_filter can use them.

@@ -244,47 +244,22 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": 604800.0,  # Every 7 days
     },
     # ==========================================================================
-    # Web Scraping tasks - Rate-limit friendly with category rotation
-    # Each task scrapes ONE category per run, rotating through all categories.
-    # With 10 wrestler + 5 event + 5 promotion categories = 20 total categories
-    # Running every 3 minutes = 20 runs/hour = all categories covered hourly
-    # Each run uses ~10-25 API calls, staying well under 500/hour limit
+    # Legacy owdbapp scrapers RETIRED 2026-09-10 (Eric's call, options 1+2 of
+    # docs/autonomy-schedule-consolidation.md). WrestleBot's JR covers the same
+    # wrestlers, events and promotions from the same sources, with an accuracy
+    # contract and a provenance trail the legacy path never had.
+    #
+    # Removed: scrape-wikipedia-{wrestlers,promotions,events},
+    # scrape-cagematch-{wrestlers,events}, scrape-profightdb-{wrestlers,events}.
+    #
+    # This closes the one pair with no coordination at all: owdbapp used
+    # ProFightDBScraper while wrestlebot.sources.profightdb is a separate
+    # from-scratch implementation with its own Redis-backed rate limit, so two
+    # schedules running together could not see each other's traffic.
+    #
+    # The task functions themselves are kept. They are still reachable by hand
+    # and by the shared scraper classes, only the autonomous schedule is gone.
     # ==========================================================================
-    "scrape-wikipedia-wrestlers": {
-        "task": "owdb_django.owdbapp.tasks.scrape_wikipedia_wrestlers",
-        "schedule": 180.0,  # Every 3 minutes with category rotation
-        "args": (20,),  # 20 wrestlers per category per run
-    },
-    "scrape-wikipedia-promotions": {
-        "task": "owdb_django.owdbapp.tasks.scrape_wikipedia_promotions",
-        "schedule": 600.0,  # Every 10 minutes (fewer promotion categories)
-        "args": (15,),
-    },
-    "scrape-wikipedia-events": {
-        "task": "owdb_django.owdbapp.tasks.scrape_wikipedia_events",
-        "schedule": 300.0,  # Every 5 minutes with category rotation
-        "args": (20,),
-    },
-    "scrape-cagematch-wrestlers": {
-        "task": "owdb_django.owdbapp.tasks.scrape_cagematch_wrestlers",
-        "schedule": 1200.0,  # Every 20 minutes (respect site limits)
-        "args": (12,),
-    },
-    "scrape-cagematch-events": {
-        "task": "owdb_django.owdbapp.tasks.scrape_cagematch_events",
-        "schedule": 1200.0,  # Every 20 minutes
-        "args": (12,),
-    },
-    "scrape-profightdb-wrestlers": {
-        "task": "owdb_django.owdbapp.tasks.scrape_profightdb_wrestlers",
-        "schedule": 1200.0,  # Every 20 minutes
-        "args": (15,),
-    },
-    "scrape-profightdb-events": {
-        "task": "owdb_django.owdbapp.tasks.scrape_profightdb_events",
-        "schedule": 1200.0,  # Every 20 minutes
-        "args": (15,),
-    },
     "get-scraper-stats": {
         "task": "owdb_django.owdbapp.tasks.get_scraper_stats",
         "schedule": 3600.0,  # Every hour
@@ -323,33 +298,14 @@ CELERY_BEAT_SCHEDULE = {
         "args": (30,),
     },
     # ==========================================================================
-    # Image Fetch Tasks (Wikimedia Commons CC Images)
+    # Legacy Commons image fetch RETIRED 2026-09-10, same decision.
+    # wrestlebot/sources/commons.py has its own rate-limited, license-gated,
+    # provenance-tracked image pipeline doing the same job, and running both
+    # meant two uncoordinated fetchers against Wikimedia Commons.
+    #
+    # Removed: fetch-{wrestler,promotion,venue,title,event}-images.
+    # WrestleBot's wb_image_sweep owns this now.
     # ==========================================================================
-    "fetch-wrestler-images": {
-        "task": "owdb_django.owdbapp.tasks.fetch_wrestler_images",
-        "schedule": 21600.0,  # Every 6 hours
-        "args": (20,),  # 20 wrestlers per batch
-    },
-    "fetch-promotion-images": {
-        "task": "owdb_django.owdbapp.tasks.fetch_promotion_images",
-        "schedule": 43200.0,  # Every 12 hours
-        "args": (10,),
-    },
-    "fetch-venue-images": {
-        "task": "owdb_django.owdbapp.tasks.fetch_venue_images",
-        "schedule": 43200.0,  # Every 12 hours
-        "args": (10,),
-    },
-    "fetch-title-images": {
-        "task": "owdb_django.owdbapp.tasks.fetch_title_images",
-        "schedule": 43200.0,  # Every 12 hours
-        "args": (10,),
-    },
-    "fetch-event-images": {
-        "task": "owdb_django.owdbapp.tasks.fetch_event_images",
-        "schedule": 43200.0,  # Every 12 hours
-        "args": (15,),
-    },
     # ==========================================================================
     # WrestleBot v3 — accuracy-first autonomous pipeline
     # Single cycle: discover -> fetch -> extract -> persist -> generate -> verify

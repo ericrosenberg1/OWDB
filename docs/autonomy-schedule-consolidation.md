@@ -99,7 +99,30 @@ adapter. So today these aren't duplicated effort. They're two different
 data sources for the same entity types, and the dedicated-API path is
 likely the richer one where it applies.
 
-## Options for a human to decide later
+## DECIDED 2026-09-10: options 1 and 2, both applied
+
+Eric chose to retire the legacy `owdbapp` wrestler/event/promotion scrapers **and** the legacy
+Wikimedia Commons image fetch. WrestleBot is now the single wrestler-facing scrape and image
+pipeline, keeping its accuracy contract and provenance trail. `owdbapp.tasks` keeps only what is
+genuinely not duplicated: TV episodes off TMDB, plus movies, video games, books and podcasts from
+their dedicated APIs, which are richer than WrestleBot's generic Wikipedia fetch for those types.
+
+Twelve entries were removed from `CELERY_BEAT_SCHEDULE` in `owdb_django/settings.py`:
+`scrape-wikipedia-{wrestlers,promotions,events}`, `scrape-cagematch-{wrestlers,events}`,
+`scrape-profightdb-{wrestlers,events}`, and `fetch-{wrestler,promotion,venue,title,event}-images`.
+**The task functions themselves are kept.** They are still reachable by hand and through the shared
+scraper classes. Only the autonomous schedule is gone, so nothing is unrecoverable.
+
+This closes both uncoordinated pairs described below. ProFightDB was the worse of the two, since
+`owdbapp.scrapers.ProFightDBScraper` and `wrestlebot.sources.profightdb` are separate
+implementations with separate rate limits and no way to see each other's traffic.
+
+Safe to do cold: nothing was running. `docker-compose.nuc.yml` pins `db`, `redis` and `celery` to
+`replicas: 0`, and on the NUC only `wrestlingdb-web-1` and `wrestlingdb-cloudflared-1` were up.
+`get-scraper-stats` was deliberately left on the schedule. It only reports, and the scraper task
+functions it reports on still exist.
+
+## The options as they were written, kept for the reasoning
 
 1. **Retire the legacy `owdbapp` wrestler/event/promotion scraper tasks**
    (`scrape-wikipedia-*`, `scrape-cagematch-*`, `scrape-profightdb-*`) now

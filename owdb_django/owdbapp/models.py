@@ -2738,9 +2738,14 @@ class APIKey(TimeStampedModel):
     def check_rate_limit(self):
         """Return True if this key is within its daily request-volume ceiling.
 
-        This is the coarse, informational counter shown on the account page
-        (templates/account.html renders requests_today/rate_limit) — it is
-        NOT how the live API enforces limits. Real, per-hour enforcement is
+        This is a coarse, informational counter with no caller today — it is
+        NOT how the live API enforces limits. The account page used to render
+        `requests_today`/`rate_limit` together as "N/1000 today", which read a
+        daily count against an hourly ceiling, so that template now shows the
+        count alone (see templates/account.html and
+        test_account_page_does_not_publish_invented_rate_limits). Kept because
+        `rate_limit` below is public model surface and is the cross-reference
+        that pins the published tiers. Real, per-hour enforcement is
         owdb_django.owdbapp.api.throttling.APIKeyRateThrottle, driven by
         settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]. Both now key off
         the same `is_paid` flag and the same two numbers (see `rate_limit`

@@ -10,13 +10,12 @@ against that model instead of DRF's Token, because that's the credential
 that actually exists.
 
 Header: `X-API-Key`. The account page's own copy referenced this header
-before the "API is in development" disclosure patch (see the regression
-test test_account_page_discloses_api_is_in_development in
-tests/test_views.py, which now asserts that string is gone from the
-rendered page precisely because there was nothing behind it) — so
-X-API-Key is what real users were already told to expect, not a new
-invention. README.md's old example (`Authorization: Bearer`) was for a
-JWT flow that was never built; it's been corrected to match this.
+long before v1 shipped, so it is what real users were already told to
+expect, not a new invention. That page now documents it again, against
+live endpoints this time (see test_account_page_describes_the_live_api
+in tests/test_views.py). README.md's old example
+(`Authorization: Bearer`) was for a JWT flow that was never built. It has
+been corrected to match this.
 """
 
 from rest_framework import exceptions

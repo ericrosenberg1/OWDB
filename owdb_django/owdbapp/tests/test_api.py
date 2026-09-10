@@ -411,3 +411,54 @@ class ApiThrottlingTest(TestCase):
         self.assertEqual(rates["anon"], "100/hour")
         self.assertEqual(rates["user"], "1000/hour")
         self.assertEqual(rates["paid"], "10000/hour")
+
+
+class ApiRootIndexTest(TestCase):
+    """The index at /api/, which the site's own copy points readers at.
+
+    Regression for a live 401: DRF's stock ``APIRootView`` sets no
+    permissions of its own, so ``DefaultRouter`` handed the root view the
+    site-wide ``IsAuthenticated`` default from
+    ``settings.REST_FRAMEWORK`` while every route it lists is ``AllowAny``.
+    Anonymous callers got 401, and so did valid key holders, because the
+    root view never consulted ``ApiKeyAuthentication`` either. See
+    ``api_urls.PublicAPIRootView``.
+    """
+
+    def setUp(self):
+        self.client = proxied_client()
+        cache.clear()
+
+    def test_root_index_is_readable_without_a_key(self):
+        response = self.client.get("/api/")
+        self.assertEqual(response.status_code, 200)
+
+    def test_root_index_lists_every_registered_resource(self):
+        response = self.client.get("/api/")
+        for resource in (
+            "wrestlers",
+            "promotions",
+            "events",
+            "matches",
+            "titles",
+            "venues",
+            "stables",
+            "books",
+            "games",
+            "podcasts",
+            "specials",
+        ):
+            self.assertIn(resource, response.json())
+
+    def test_root_index_is_readable_with_a_key(self):
+        user = User.objects.create_user(username="rootkeyowner", password="x")
+        api_key = APIKey.objects.create(user=user, key=APIKey.generate_key())
+        response = self.client.get("/api/", HTTP_X_API_KEY=api_key.key)
+        self.assertEqual(response.status_code, 200)
+
+    def test_root_index_rejects_a_bad_key(self):
+        """An X-API-Key that was tried and is wrong still fails here, the same
+        as on any resource route. Open to anonymous is not open to anything.
+        """
+        response = self.client.get("/api/", HTTP_X_API_KEY="not-a-real-key")
+        self.assertEqual(response.status_code, 401)

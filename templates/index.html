@@ -373,17 +373,17 @@
             </div>
             <div class="col-lg-6">
                 <div class="api-card">
-                    <h3>API Access <small class="text-muted">(in development)</small></h3>
-                    <p>We're building a REST API for our comprehensive wrestling data, perfect for apps, integrations, and wrestling history analysis. It isn't live yet, but you can create a key now to be ready when it launches.</p>
+                    <h3>API Access</h3>
+                    <p>Pull our wrestling data straight into your own app. The REST API is live at <code>/api/</code>, it's read only, and you don't need a key to start.</p>
                     <ul class="api-features">
-                        <li>Complete wrestler, event, match, and stable data</li>
-                        <li>Aggregated from many authoritative sources</li>
-                        <li>Regularly updated database</li>
+                        <li>Wrestlers, promotions, events, matches, titles, venues and stables</li>
+                        <li>JSON responses, 100 rows a page</li>
+                        <li>100 requests an hour with no key, 1,000 with one</li>
                     </ul>
                     {% if user.is_authenticated %}
                     <a href="{% url 'account' %}" class="btn btn-primary">Manage API Keys</a>
                     {% else %}
-                    <a href="{% url 'signup' %}" class="btn btn-primary">Get Early API Access</a>
+                    <a href="{% url 'signup' %}" class="btn btn-primary">Sign Up for an API Key</a>
                     {% endif %}
                 </div>
             </div>

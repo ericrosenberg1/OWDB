@@ -128,12 +128,12 @@
                     <a href="{% url 'signup' %}" class="btn btn-primary">Sign Up to Contribute</a>
                 </div>
                 <div class="involved-card">
-                    <h3>Use the API <small class="text-muted">(in development)</small></h3>
-                    <p>Building a wrestling app, website, or tool? We're building a REST API to give you access to all our data. It isn't live yet, but you can create a key now to be ready when it launches.</p>
+                    <h3>Use the API</h3>
+                    <p>Building a wrestling app, site or tool? Our REST API is live at <code>/api/</code> and hands back the catalog as JSON. Browsing is free and needs no key. Create one to lift your limit from 100 requests an hour to 1,000.</p>
                     {% if user.is_authenticated %}
                     <a href="{% url 'account' %}" class="btn btn-gold">Manage API Keys</a>
                     {% else %}
-                    <a href="{% url 'signup' %}" class="btn btn-gold">Get Early API Access</a>
+                    <a href="{% url 'signup' %}" class="btn btn-gold">Sign Up for an API Key</a>
                     {% endif %}
                 </div>
                 <div class="involved-card">

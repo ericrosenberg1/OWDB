@@ -105,19 +105,22 @@ class PublicViewsTest(TestCase):
         response = self.client.get(reverse("privacy"))
         self.assertEqual(response.status_code, 200)
 
-    def test_homepage_discloses_api_is_in_development(self):
-        """Regression for the owdbapp bug-fix sweep, item 2: the homepage's
-        API CTA used to read like a working API existed (no working /api/
-        endpoint exists anywhere in urls.py)."""
+    def test_homepage_api_card_describes_the_live_api(self):
+        """Regression for the API copy flip: the homepage card said the API was
+        "in development" for months after the v1 REST API actually shipped
+        (owdb_django/owdbapp/api_urls.py registers 11 resources). The stale
+        claim, not the CTA wording, is what this pins."""
         response = self.client.get(reverse("index"))
-        self.assertContains(response, "in development")
-        self.assertNotContains(response, "Get API Access")
+        self.assertNotContains(response, "in development")
+        self.assertNotContains(response, "isn't live yet")
+        self.assertContains(response, "REST API is live")
 
-    def test_about_page_discloses_api_is_in_development(self):
+    def test_about_page_api_card_describes_the_live_api(self):
         """Same regression as above, for the about page's "Use the API" card."""
         response = self.client.get(reverse("about"))
-        self.assertContains(response, "in development")
-        self.assertNotContains(response, "Get API Access")
+        self.assertNotContains(response, "in development")
+        self.assertNotContains(response, "isn't live yet")
+        self.assertContains(response, "REST API is live")
 
 
 class SearchViewsTest(TestCase):
@@ -475,16 +478,27 @@ class AccountViewsTest(TestCase):
         response = self.client.get(reverse("account"))
         self.assertEqual(response.status_code, 200)
 
-    def test_account_page_discloses_api_is_in_development(self):
-        """Regression for the owdbapp bug-fix sweep, item 2: real users could
-        generate/delete/toggle API keys here with no indication the API they
-        are supposedly for has zero working endpoints anywhere in the app."""
+    def test_account_page_describes_the_live_api(self):
+        """Regression for the API copy flip: this page told key holders the API
+        was "in development" with "no live API endpoints yet" long after v1
+        shipped. The curl example and the X-API-Key header are back precisely
+        because they now describe something that works."""
         self.client.login(username="testuser", password="testpassword123")
         response = self.client.get(reverse("account"))
-        self.assertContains(response, "in development")
-        # The old copy showed a curl example against a real-looking endpoint
-        # as though it worked today.
-        self.assertNotContains(response, "X-API-Key")
+        self.assertNotContains(response, "in development")
+        self.assertNotContains(response, "no live API endpoints")
+        self.assertContains(response, "The API is live")
+        self.assertContains(response, "X-API-Key")
+
+    def test_account_page_does_not_publish_invented_rate_limits(self):
+        """The same copy block advertised "Free tier: 100 requests/day. Paid
+        tier: 1,000 requests/day", two numbers that match nothing. The real
+        tiers are per hour and come from
+        settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]."""
+        self.client.login(username="testuser", password="testpassword123")
+        response = self.client.get(reverse("account"))
+        self.assertNotContains(response, "requests/day")
+        self.assertContains(response, "1,000 requests an hour")
 
 
 # =============================================================================

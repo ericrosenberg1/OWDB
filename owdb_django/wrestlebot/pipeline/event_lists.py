@@ -116,6 +116,33 @@ EPISODE_LIST_PAGES: dict[str, tuple[str, ...]] = {
 }
 
 
+# Named "special episode" list pages.
+#
+# Wikipedia does NOT carry a full week-by-week episode list for every show.
+# Verified live 2026-09-10 against the MediaWiki API: "List of WWE Raw
+# episodes" and "List of WWE SmackDown episodes" do not exist in any
+# spelling, and neither does a per-year child ("List of WWE Raw episodes
+# (2024)"). Prefix-searching "List of WWE Raw" returns guest stars and
+# champions, no episode list. Raw has run weekly since 1993 and SmackDown
+# since 1999, and Wikipedia's editors deliberately cover only the notable
+# instalments.
+#
+# What does exist for both is a "List of X special episodes" article: the
+# premieres, the milestone numbers, the holiday and WrestleMania-themed
+# shows, each with a real date, venue, city and main event. That is a
+# smaller set than a full run, and it is sourced rather than guessed,
+# which is the trade this project's accuracy contract already makes
+# everywhere else.
+#
+# `ingest_episode_list()` reaches for this registry only when the numbered
+# registry above yields nothing, so a show that later gains a full list on
+# Wikipedia picks it up automatically with no code change.
+SPECIAL_EPISODE_LIST_PAGES: dict[str, tuple[str, ...]] = {
+    "raw": ("List of WWE Raw special episodes",),
+    "smackdown": ("List of WWE SmackDown special episodes",),
+}
+
+
 # ------------------------------------------------------------------ HTTP
 
 
@@ -310,6 +337,82 @@ def _is_episode_table(table) -> bool:
     return "date" in joined and ("venue" in joined or "city" in joined or "location" in joined)
 
 
+_DATE_HEADERS = ("air date", "date", "dates")
+
+# Cells Wikipedia uses to mean "we don't know", which must never reach the
+# database as a venue name or a city. Without this, `_get_or_create_venue_stub`
+# happily mints a Venue called "— N/a", once per special-episode page.
+_PLACEHOLDER_CELLS = {
+    "",
+    "-",
+    "–",
+    "—",
+    "n/a",
+    "na",
+    "n/a.",
+    "none",
+    "tba",
+    "tbd",
+    "unknown",
+    "?",
+}
+
+
+def _clean_optional_cell(text: str, ctx: dict) -> Optional[FieldSnippet]:
+    """`clean_text` that also drops Wikipedia's placeholder cells."""
+    s = re.sub(r"\[[^\]]*\]", "", (text or "")).strip()
+    s = s.replace("\xa0", " ").strip()
+    # "— N/a" and friends: strip the leading dash before testing.
+    probe = s.lstrip("-–— ").strip().lower()
+    if not s or probe in _PLACEHOLDER_CELLS:
+        return None
+    return FieldSnippet(value=s, snippet=s[:200], confidence=85)
+
+
+def _date_header_count(headers: list[str]) -> int:
+    return sum(1 for h in headers if any(d in h for d in _DATE_HEADERS))
+
+
+def _is_special_episode_table(table) -> bool:
+    """
+    Match the "List of X special episodes" table shapes.
+
+    Two shapes qualify, both with exactly one date column:
+
+        date | episode | venue | location | final match | rating | notes
+        episode | air date | location | venue | rating | notes
+
+    A third shape on the SmackDown page splits its date column into a
+    `colspan="2"` "Dates" header over a Taping / Airing sub-row. After grid
+    expansion both halves carry the same header text, so nothing in the
+    header tells the extractor which of the two is the broadcast date, and
+    a positional guess would file taping dates as air dates on roughly a
+    fifth of that page's rows. This project would rather have the row than
+    a wrong date, so the two-date shape is skipped on purpose. Do not
+    "fix" it by taking the first date column.
+    """
+    headers = _headers_of(table)
+    if len(headers) < 3:
+        return False
+    joined = " | ".join(headers)
+    if "episode" not in joined and "title" not in joined:
+        return False
+    if _date_header_count(headers) != 1:
+        return False
+    # A numbered episode list is handled by `_is_episode_table`, not here.
+    if headers[0].startswith("no.") or headers[0].strip() == "#":
+        return False
+    return "venue" in joined or "location" in joined
+
+
+def _keep_real_special_episode_row(ctx: dict) -> bool:
+    """Drop the sub-header and section rows embedded in these tables."""
+    name = (ctx.get("name") or "").strip()
+    if not name or len(name) > 200:
+        return False
+    return name.lower() not in {"episode", "title", "taping", "airing", "date", "air date"}
+
+
 def _keep_real_ppv_row(ctx: dict) -> bool:
     """Drop blank-Event rows and continuation rows where Event is really a city."""
     name = (ctx.get("name") or "").strip()
@@ -353,8 +456,11 @@ class ExtractedEvent:
 @dataclass
 class ExtractedEpisode:
     show_key: str
-    episode_number: Optional[int]
-    air_date: Optional[date]
+    # Both default to None: a named special episode ("Monday Night Raw
+    # Premiere") carries a title and a date but no number, and the
+    # numbered-list spec requires `episode_number` of its own accord.
+    episode_number: Optional[int] = None
+    air_date: Optional[date] = None
     name: str = ""
     venue_name: str = ""
     city: str = ""
@@ -427,6 +533,88 @@ def _episode_spec(show_key: str) -> TableExtractorSpec:
         },
         required_fields=("episode_number",),
     )
+
+
+def _special_episode_spec(show_key: str) -> TableExtractorSpec:
+    """
+    Spec for the "List of X special episodes" shape.
+
+    Same `ExtractedEpisode` result as the numbered lists, so everything
+    downstream (persist, provenance, accuracy contract) is shared. The one
+    structural difference is that these rows carry a real episode *title*
+    where a numbered list carries a number, so `name` comes from a cell
+    instead of being synthesised, and `episode_number` is usually absent.
+    """
+    return TableExtractorSpec(
+        result_dataclass=ExtractedEpisode,
+        table_filter=_is_special_episode_table,
+        columns={
+            "show_key": ("__inject__",),
+            "episode_number": ("no.", "#"),
+            "name": ("episode", "title"),
+            "air_date": ("air date", "date"),
+            "venue_name": ("venue", "arena"),
+            "city": ("location", "city"),
+            # "final match" first: it is the main event, the same content
+            # the numbered lists put in `about`.
+            "notes": ("final match", "notes", "main event", "significance"),
+        },
+        cleaners={
+            "episode_number": _clean_episode_number,
+            "air_date": _clean_event_date,
+            "name": _clean_optional_cell,
+            "venue_name": _clean_optional_cell,
+            "city": _clean_optional_cell,
+            "notes": _clean_optional_cell,
+        },
+        row_filter=_keep_real_special_episode_row,
+        context_resolvers={
+            "year_context": resolve_year_from_preceding_heading,
+            "show_key": lambda _t: show_key,
+        },
+        required_fields=("name", "air_date"),
+    )
+
+
+def _show_title_keyword(show_key: str) -> str:
+    """
+    The distinctive word in a show's display name.
+
+    "WWE Raw" -> "raw", "WWE SmackDown" -> "smackdown". Used to decide
+    whether a special episode's own title already says which show it is.
+    """
+    name = SHOW_NAME_MAP.get(show_key, show_key)
+    parts = [p for p in re.split(r"[^A-Za-z0-9]+", name) if p]
+    return parts[-1].lower() if parts else ""
+
+
+def special_episode_name(show_key: str, title: str) -> str:
+    """
+    Event name for one special episode.
+
+    Wikipedia's own title is the better name here: "Monday Night Raw
+    Premiere" reads far better on an episode list than the show name and a
+    date, which the page already prints in its own column. Titles that
+    don't name the show ("Brock Lesnar 20th Anniversary Show") get the show
+    prefixed so the row still stands on its own in a search result.
+    """
+    show_name = SHOW_NAME_MAP.get(show_key, show_key)
+    title = (title or "").strip()
+    if not title:
+        return show_name
+    keyword = _show_title_keyword(show_key)
+    if keyword and keyword in re.sub(r"[^A-Za-z0-9]+", "", title).lower():
+        return title
+    return f"{show_name}: {title}"
+
+
+def extract_special_episodes_from_html(html: str, show_key: str) -> list[ExtractedEpisode]:
+    """Parse the named-special-episode tables on a 'List of X special episodes' page."""
+    out: list[ExtractedEpisode] = []
+    for inst, _snippets in extract_tables(html, _special_episode_spec(show_key)):
+        inst.name = special_episode_name(show_key, inst.name)
+        out.append(inst)
+    return out
 
 
 def extract_ppvs_from_html(html: str, promotion_key: str) -> list[ExtractedEvent]:
@@ -764,33 +952,71 @@ def _get_or_create_venue_stub(*, name: str, city: str, source_fetch) -> "Venue":
     return venue
 
 
+def _resolve_episode_source(show_key: str) -> Optional[tuple[str, str, list, str]]:
+    """
+    Find the first Wikipedia page shape that actually yields episodes.
+
+    Tries the numbered episode list first, then the named special-episode
+    list. Returns `(resolved_title, html, extracted, list_kind)`, or None
+    when neither registry has a page that parses.
+
+    Ordering matters and is deliberate. A show that gains a full numbered
+    list on Wikipedia later starts using it with no code change, and never
+    falls back to the thinner specials page while the full one parses.
+    """
+    attempts = (
+        ("numbered", EPISODE_LIST_PAGES, extract_episodes_from_html),
+        ("special", SPECIAL_EPISODE_LIST_PAGES, extract_special_episodes_from_html),
+    )
+    for kind, registry, extractor in attempts:
+        titles = registry.get(show_key)
+        if not titles:
+            continue
+        found = _first_existing_page(titles)
+        if not found:
+            continue
+        resolved, html = found
+        extracted = extractor(html, show_key)
+        if extracted:
+            return resolved, html, extracted, kind
+        logger.info("%s: %r parsed to zero episodes, trying the next shape", show_key, resolved)
+    return None
+
+
 def ingest_episode_list(show_key: str) -> dict:
     """
     Ingest a TV-episode list from Wikipedia as Event rows with full
     provenance and accuracy-contract enforcement.
+
+    Covers both list shapes Wikipedia uses. Numbered lists (AEW Dynamite,
+    AEW Collision) give a complete run. Named special-episode lists (WWE
+    Raw, WWE SmackDown) give the notable instalments, which is all
+    Wikipedia carries for those shows.
     """
-    if show_key not in EPISODE_LIST_PAGES:
+    if show_key not in EPISODE_LIST_PAGES and show_key not in SPECIAL_EPISODE_LIST_PAGES:
         return {"error": f"unknown show_key={show_key!r}"}
-    pages = EPISODE_LIST_PAGES[show_key]
-    result = _first_existing_page(pages)
-    if not result:
-        return {"error": f"no Wikipedia page found for {show_key}"}
-    resolved, html = result
-    extracted = extract_episodes_from_html(html, show_key)
-    if not extracted:
-        return {"error": "no episodes extracted", "resolved_title": resolved}
+    source = _resolve_episode_source(show_key)
+    if not source:
+        return {"error": f"no Wikipedia episode list found for {show_key}"}
+    resolved, html, extracted, list_kind = source
 
     from owdb_django.owdbapp.models import Event, TVShow
     from . import accuracy_contract
     from ._provenance import bulk_synthetic_provenance
 
     tv_show_name = SHOW_NAME_MAP.get(show_key, show_key.upper())
-    tv_show, tv_show_created = TVShow.objects.get_or_create(name=tv_show_name)
-    promotion = (
-        tv_show.promotion
-        if getattr(tv_show, "promotion_id", None)
-        else _get_or_create_promotion(_show_to_promotion(show_key))
-    )
+    # `TVShow.promotion` is a non-null FK, so a bare
+    # `get_or_create(name=...)` raises IntegrityError the first time a show
+    # is ingested. Every show in the registry that already existed hid this,
+    # because get_or_create found the row instead of creating it. Resolve
+    # the promotion first and create with it.
+    tv_show = TVShow.objects.filter(name=tv_show_name).first()
+    tv_show_created = tv_show is None
+    if tv_show is None:
+        promotion = _get_or_create_promotion(_show_to_promotion(show_key))
+        tv_show = TVShow.objects.create(name=tv_show_name, promotion=promotion)
+    else:
+        promotion = tv_show.promotion
 
     source_fetch = _record_list_page_fetch(resolved, html, _show_to_promotion(show_key))
 
@@ -809,11 +1035,17 @@ def ingest_episode_list(show_key: str) -> dict:
                 snippet=f"TV show created during episode-list ingest of {resolved!r}",
                 confidence=85,
             )
-            # Also pin the TV show -> promotion link to this source so
-            # the show isn't orphaned in the verification audit.
-            if getattr(tv_show, "promotion_id", None):
-                tv_show.promotion = promotion
-                tv_show.save(update_fields=["promotion"])
+            # Pin the TV show -> promotion link to this source too, so the
+            # show isn't orphaned in the verification audit.
+            record_provenance(
+                entity_type="tv_show",
+                entity_id=tv_show.id,
+                field_name="promotion",
+                value=promotion.name,
+                source_fetch=source_fetch,
+                snippet=f"promotion for {tv_show_name} per {resolved!r}",
+                confidence=85,
+            )
         except Exception as e:
             logger.warning(
                 "Couldn't backfill provenance for tv_show %s: %s",
@@ -832,7 +1064,13 @@ def ingest_episode_list(show_key: str) -> dict:
                 city=ep.city,
                 source_fetch=source_fetch,
             )
-        ep_name = f"{SHOW_NAME_MAP.get(show_key, show_key)} — {ep.air_date.isoformat()}"
+        # Numbered lists have no title of their own, so the show name plus
+        # the air date is the only name available. Special-episode lists
+        # carry a real title, already normalised by `special_episode_name`.
+        if list_kind == "special":
+            ep_name = ep.name
+        else:
+            ep_name = f"{SHOW_NAME_MAP.get(show_key, show_key)} - {ep.air_date.isoformat()}"
 
         defaults = dict(
             venue=venue_obj,
@@ -889,6 +1127,7 @@ def ingest_episode_list(show_key: str) -> dict:
     return {
         "show_key": show_key,
         "resolved_title": resolved,
+        "list_kind": list_kind,
         "source_fetch_id": source_fetch.id,
         "extracted": len(extracted),
         "created": created,

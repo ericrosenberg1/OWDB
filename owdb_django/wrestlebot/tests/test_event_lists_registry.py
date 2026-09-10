@@ -119,3 +119,68 @@ class EpisodeRegistryShapeTests(SimpleTestCase):
             "nwa_powerrr",
         ):
             self.assertIn(key, event_lists.EPISODE_LIST_PAGES, f"expected show {key!r} registered")
+
+
+class SpecialEpisodeRegistryShapeTests(SimpleTestCase):
+    """
+    `SPECIAL_EPISODE_LIST_PAGES` is the fallback registry for shows whose
+    full weekly run Wikipedia does not list. Verified live 2026-09-10:
+    "List of WWE Raw episodes" and "List of WWE SmackDown episodes" return
+    nothing from the MediaWiki API in any spelling, and no per-year child
+    article exists either. The "special episodes" articles do exist and
+    parse.
+    """
+
+    def test_every_show_has_a_nonempty_tuple_of_page_titles(self):
+        for key, titles in event_lists.SPECIAL_EPISODE_LIST_PAGES.items():
+            self.assertIsInstance(titles, tuple, f"{key}: page titles must be a tuple")
+            self.assertGreater(len(titles), 0, f"{key}: needs at least one candidate title")
+            for t in titles:
+                self.assertTrue(t.strip(), f"{key}: blank page title")
+                self.assertTrue(
+                    t.lower().startswith("list of"),
+                    f"{key}: title {t!r} doesn't look like a Wikipedia 'List of ...' article",
+                )
+                self.assertIn(
+                    "special episodes",
+                    t.lower(),
+                    f"{key}: {t!r} belongs in EPISODE_LIST_PAGES, not the specials registry",
+                )
+
+    def test_every_show_key_has_a_display_name_and_a_promotion(self):
+        for key in event_lists.SPECIAL_EPISODE_LIST_PAGES:
+            self.assertIn(key, event_lists.SHOW_NAME_MAP, f"{key}: missing SHOW_NAME_MAP entry")
+            self.assertIn(
+                key,
+                event_lists._SHOW_TO_PROMOTION,
+                f"{key}: missing _SHOW_TO_PROMOTION entry",
+            )
+            self.assertIn(
+                event_lists._SHOW_TO_PROMOTION[key],
+                event_lists.PROMOTION_NAME_MAP,
+                f"{key}: points at an unknown promotion",
+            )
+
+    def test_raw_and_smackdown_are_covered(self):
+        """
+        The reason this registry exists. Both shows had zero linked
+        episodes until 2026-09-10 while all 358 in the database sat on AEW
+        Dynamite.
+        """
+        for key in ("raw", "smackdown"):
+            self.assertIn(key, event_lists.SPECIAL_EPISODE_LIST_PAGES)
+
+    def test_shows_with_a_full_numbered_list_are_not_duplicated_here(self):
+        """
+        AEW Dynamite and AEW Collision both have complete numbered lists on
+        Wikipedia. Adding them here would be dead weight, since
+        `ingest_episode_list` never reaches the fallback when the numbered
+        page parses.
+        """
+        for key in ("dynamite", "collision"):
+            self.assertNotIn(key, event_lists.SPECIAL_EPISODE_LIST_PAGES)
+
+    def test_show_title_keyword_is_derived_from_the_display_name(self):
+        self.assertEqual(event_lists._show_title_keyword("raw"), "raw")
+        self.assertEqual(event_lists._show_title_keyword("smackdown"), "smackdown")
+        self.assertEqual(event_lists._show_title_keyword("dynamite"), "dynamite")

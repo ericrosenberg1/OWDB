@@ -13,11 +13,41 @@ Path segments match the equivalent website section
 VideoGame, not "videogames" — so the API's vocabulary matches the site's.
 """
 
-from rest_framework.routers import DefaultRouter
+from rest_framework.permissions import AllowAny
+from rest_framework.routers import APIRootView, DefaultRouter
 
 from .api import views as api_views
+from .api.authentication import ApiKeyAuthentication
 
-router = DefaultRouter()
+
+class PublicAPIRootView(APIRootView):
+    """
+    The index at ``/api/``, open to the same callers as every route it lists.
+
+    ``DefaultRouter`` builds its root view from stock ``APIRootView``, which
+    carries no ``permission_classes`` of its own and therefore inherits the
+    site-wide ``IsAuthenticated`` + ``TokenAuthentication``/
+    ``SessionAuthentication`` defaults from ``settings.REST_FRAMEWORK``.
+    That made ``/api/`` answer 401 to everyone: to an anonymous caller, who
+    can read every resource it links to, and to a valid ``X-API-Key``
+    holder too, since the root view never consulted
+    ``ApiKeyAuthentication``. The one URL that exists to tell a consumer
+    what the API offers was the only one they could not open. These two
+    attributes match ``api.views.PublicReadOnlyViewSet`` so the index is
+    exactly as reachable as its contents.
+    """
+
+    authentication_classes = [ApiKeyAuthentication]
+    permission_classes = [AllowAny]
+
+
+class PublicAPIRouter(DefaultRouter):
+    """``DefaultRouter`` with the root index above instead of the stock one."""
+
+    APIRootView = PublicAPIRootView
+
+
+router = PublicAPIRouter()
 router.register(r"wrestlers", api_views.WrestlerViewSet, basename="api-wrestler")
 router.register(r"promotions", api_views.PromotionViewSet, basename="api-promotion")
 router.register(r"events", api_views.EventViewSet, basename="api-event")

@@ -2,11 +2,12 @@
 
 {% block content %}
 <h1>Account</h1>
-<p class="mb-4">Manage your API keys for accessing the WrestlingDB REST API.</p>
+<p class="mb-4">Create and manage the keys that raise your rate limit on the WrestlingDB REST API.</p>
 
 <div class="alert alert-info" role="alert">
-    <strong>The API is in development.</strong> You can create and manage keys below, but
-    there are no live API endpoints yet, so a key won't authenticate any requests today.
+    <strong>The API is live.</strong> Every key below works today against
+    <code>https://wrestlingdb.org/api/</code>. Browsing needs no key at all. Send one as an
+    <code>X-API-Key</code> header and your ceiling goes from 100 requests an hour to 1,000.
 </div>
 
 <div class="row">
@@ -28,7 +29,7 @@
                         </div>
                     </div>
                 </form>
-                <small class="text-muted mt-2 d-block">You can have up to 5 API keys. Free tier: 100 requests/day. Paid tier: 1,000 requests/day.</small>
+                <small class="text-muted mt-2 d-block">You can have up to 5 API keys. Each one is good for 1,000 requests an hour.</small>
             </div>
         </div>
 
@@ -58,7 +59,7 @@
                             </td>
                             <td>{{ key.name|default:"—" }}</td>
                             <td>
-                                {{ key.requests_today }}/{{ key.rate_limit }} today
+                                {{ key.requests_today }} today
                                 <br><small class="text-muted">{{ key.requests_total }} total</small>
                             </td>
                             <td>
@@ -105,11 +106,19 @@
         <div class="card mb-4">
             <div class="card-header">API Documentation</div>
             <div class="card-body">
+                <p>
+                    Send <code>GET</code> requests to <code>https://wrestlingdb.org/api/</code>.
+                    You get wrestlers, promotions, events, matches, titles, venues, stables,
+                    books, games, podcasts and specials back as JSON, 100 rows a page. It's
+                    read only, so v1 has no POST, PUT or DELETE.
+                </p>
+                <pre class="mb-3"><code>curl https://wrestlingdb.org/api/wrestlers/ \
+  -H "X-API-Key: YOUR_KEY"</code></pre>
                 <p class="mb-0">
-                    The WrestlingDB API is still in development, so there's nothing to call
-                    yet and no documentation to publish. Once it launches, you'll
-                    authenticate with the key you create above. We'll post the full docs
-                    here when it's live.
+                    Rate limits run 100 requests an hour with no key, 1,000 with one and
+                    10,000 on a paid key. There's no checkout for the paid tier yet, so it's
+                    set by hand. You'll find the full route list in the
+                    <a href="https://github.com/ericrosenberg1/OWDB#api" target="_blank" rel="noopener">README on GitHub</a>.
                 </p>
             </div>
         </div>

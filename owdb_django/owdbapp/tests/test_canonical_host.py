@@ -8,6 +8,7 @@ the canonical wrestlingdb.org with their full path + query preserved.
 
 from __future__ import annotations
 
+from django.core.exceptions import DisallowedHost
 from django.test import RequestFactory, TestCase, override_settings
 
 from owdb_django.middleware import CanonicalHostMiddleware
@@ -101,3 +102,64 @@ class CanonicalHostMiddlewareTests(TestCase):
         response = self.mw(request)
         self.assertEqual(response.status_code, 301)
         self.assertEqual(response["Location"], "http://wrestlingdb.org/")
+
+
+class ForwardedHostTrustTests(TestCase):
+    """`X-Forwarded-Host` must not decide which host Django thinks it is.
+
+    Regression test for ROS-2862 / Sentry OWDB-F. A scanner sent a valid
+    `Host: wrestlingdb.org` alongside a forged
+    `X-Forwarded-Host: canary-rustworst-abcd1234.internal`. Production was
+    running `USE_X_FORWARDED_HOST = True` behind a cloudflared tunnel that
+    forwards client headers verbatim, so the forged value won, failed
+    ALLOWED_HOSTS validation, and raised DisallowedHost out of
+    CanonicalHostMiddleware's `request.get_host()` call.
+
+    Only ALLOWED_HOSTS stood between that header and host-header poisoning of
+    every absolute URL the app builds, so the fix is to stop reading the
+    header at all rather than to widen the allowlist.
+    """
+
+    def setUp(self):
+        self.mw = CanonicalHostMiddleware(_passthrough)
+        self.factory = RequestFactory()
+
+    def _forged_request(self):
+        return self.factory.get(
+            "/",
+            HTTP_HOST="wrestlingdb.org",
+            HTTP_X_FORWARDED_HOST="canary-rustworst-abcd1234.internal",
+            secure=True,
+        )
+
+    @override_settings(ALLOWED_HOSTS=["wrestlingdb.org", "www.wrestlingdb.org"])
+    def test_forged_forwarded_host_is_ignored(self):
+        request = self._forged_request()
+        self.assertEqual(request.get_host(), "wrestlingdb.org")
+        response = self.mw(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, b"passed-through")
+
+    @override_settings(ALLOWED_HOSTS=["wrestlingdb.org", "www.wrestlingdb.org"])
+    def test_forged_forwarded_host_cannot_hijack_the_canonical_redirect(self):
+        # The www→apex 301 builds its Location from get_host(). If the forged
+        # header were trusted, an attacker could aim that redirect off-site.
+        request = self.factory.get(
+            "/",
+            HTTP_HOST="www.wrestlingdb.org",
+            HTTP_X_FORWARDED_HOST="www.attacker.example",
+            secure=True,
+        )
+        response = self.mw(request)
+        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response["Location"], "https://wrestlingdb.org/")
+
+    @override_settings(
+        ALLOWED_HOSTS=["wrestlingdb.org", "www.wrestlingdb.org"],
+        USE_X_FORWARDED_HOST=True,
+    )
+    def test_positive_control_trusting_the_header_reproduces_the_sentry_error(self):
+        # Proves the two tests above are actually load-bearing: flip the
+        # setting back and the exact production failure returns.
+        with self.assertRaises(DisallowedHost):
+            self.mw(self._forged_request())

@@ -43,7 +43,27 @@ if EXTRA_HOSTS:
 
 # If behind a reverse proxy (Traefik, Nginx, Caddy)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-USE_X_FORWARDED_HOST = True
+
+# Do NOT trust X-Forwarded-Host (ROS-2862). Production is cloudflared talking
+# straight to `web:8000` with no nginx/Traefik in between, and the tunnel
+# forwards client headers verbatim — it neither strips nor rewrites
+# X-Forwarded-Host. With this True, `request.get_host()` returned whatever any
+# internet client put in that header, so a scanner's forged
+# `X-Forwarded-Host: <attacker value>` reached Django's host validation and
+# raised DisallowedHost from CanonicalHostMiddleware (Sentry OWDB-F).
+#
+# The real `Host` header is the trustworthy source here: Cloudflare routes to
+# this origin by Host/SNI, so a client cannot forge it past the edge, and the
+# cloudflared ingress rules key on it. ALLOWED_HOSTS was the only thing
+# stopping host-header poisoning of absolute URLs (password-reset links, the
+# canonical 301 target, the login open-redirect guard) — that is a backstop,
+# not a design.
+#
+# USE_X_FORWARDED_PORT stays on: cloudflared traffic always carries a `Host`
+# header, so get_host() never reaches the SERVER_NAME branch where a forged
+# port could matter, and the test suite's proxied_client() depends on it
+# (see owdbapp/tests/proxied_client.py, ROS-1210).
+USE_X_FORWARDED_HOST = False
 USE_X_FORWARDED_PORT = True
 
 # CSRF trusted origins

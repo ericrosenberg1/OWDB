@@ -325,16 +325,16 @@ class ApiKeyAuthenticationTest(TestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_inactive_key_returns_401(self):
-        api_key = APIKey.objects.create(user=self.user, key=APIKey.generate_key(), is_active=False)
-        response = self.client.get(reverse("api-wrestler-list"), HTTP_X_API_KEY=api_key.key)
+        api_key, raw_key = APIKey.create_key(self.user, is_active=False)
+        response = self.client.get(reverse("api-wrestler-list"), HTTP_X_API_KEY=raw_key)
         self.assertEqual(response.status_code, 401)
 
     def test_valid_key_authenticates_and_updates_usage(self):
-        api_key = APIKey.objects.create(user=self.user, key=APIKey.generate_key())
+        api_key, raw_key = APIKey.create_key(self.user)
         self.assertIsNone(api_key.last_used)
         self.assertEqual(api_key.requests_total, 0)
 
-        response = self.client.get(reverse("api-wrestler-list"), HTTP_X_API_KEY=api_key.key)
+        response = self.client.get(reverse("api-wrestler-list"), HTTP_X_API_KEY=raw_key)
 
         self.assertEqual(response.status_code, 200)
         api_key.refresh_from_db()
@@ -380,10 +380,10 @@ class ApiThrottlingTest(TestCase):
         exact rate is covered directly in test_paid_tier_rate_is_10000_per_hour
         below instead of by another few-thousand-request loop."""
         user = User.objects.create_user(username="throttleuser", password="x")
-        api_key = APIKey.objects.create(user=user, key=APIKey.generate_key())
+        api_key, raw_key = APIKey.create_key(user)
         url = reverse("api-wrestler-list")
         for _ in range(150):
-            response = self.client.get(url, HTTP_X_API_KEY=api_key.key)
+            response = self.client.get(url, HTTP_X_API_KEY=raw_key)
             self.assertEqual(response.status_code, 200)
 
     def test_paid_tier_rate_is_10000_per_hour(self):
@@ -393,7 +393,7 @@ class ApiThrottlingTest(TestCase):
         allow_request() itself uses (resolve scope -> get_rate() ->
         parse_rate()) and checks what it resolved to."""
         user = User.objects.create_user(username="paidowner", password="x")
-        paid_key = APIKey.objects.create(user=user, key=APIKey.generate_key(), is_paid=True)
+        paid_key, _ = APIKey.create_key(user, is_paid=True)
         request = RequestFactory().get("/api/wrestlers/")
         request.auth = paid_key
 
@@ -452,8 +452,8 @@ class ApiRootIndexTest(TestCase):
 
     def test_root_index_is_readable_with_a_key(self):
         user = User.objects.create_user(username="rootkeyowner", password="x")
-        api_key = APIKey.objects.create(user=user, key=APIKey.generate_key())
-        response = self.client.get("/api/", HTTP_X_API_KEY=api_key.key)
+        api_key, raw_key = APIKey.create_key(user)
+        response = self.client.get("/api/", HTTP_X_API_KEY=raw_key)
         self.assertEqual(response.status_code, 200)
 
     def test_root_index_rejects_a_bad_key(self):

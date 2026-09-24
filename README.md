@@ -64,7 +64,10 @@ python manage.py runserver
 Read-only (`GET`) endpoints for the core catalog. Browsing needs no
 account. An API key (generate one from
 [your account page](https://wrestlingdb.org/account/) once signed in)
-doesn't gate access, it just raises your rate limit. Full route list:
+doesn't gate access, it just raises your rate limit. The account page
+shows a new key once, right after you create it. The database stores
+only a SHA-256 hash and the first 8 characters, so copy the key then,
+and if you lose it, delete it and create another. Full route list:
 `owdb_django/owdbapp/api_urls.py`.
 
 | Resource | List | Detail |

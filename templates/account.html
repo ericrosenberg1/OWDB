@@ -10,6 +10,18 @@
     <code>X-API-Key</code> header and your ceiling goes from 100 requests an hour to 1,000.
 </div>
 
+{% if new_api_key %}
+<div class="alert alert-success" role="alert" id="new-api-key">
+    <strong>Your new API key is ready. Copy it now.</strong>
+    We store only a hash of it, so this is the one time you'll see the full key.
+    If you lose it, delete it below and create another.
+    <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+        <code class="api-key-display user-select-all" id="new-api-key-value">{{ new_api_key }}</code>
+        <button type="button" class="btn btn-sm btn-outline-light" id="copy-new-api-key" data-key="{{ new_api_key }}">Copy</button>
+    </div>
+</div>
+{% endif %}
+
 <div class="row">
     <div class="col-lg-8">
         <!-- Create New Key -->
@@ -29,7 +41,7 @@
                         </div>
                     </div>
                 </form>
-                <small class="text-muted mt-2 d-block">You can have up to 5 API keys. Each one is good for 1,000 requests an hour.</small>
+                <small class="text-muted mt-2 d-block">You can have up to 5 API keys. Each one is good for 1,000 requests an hour. You'll see the full key once, right after you create it.</small>
             </div>
         </div>
 
@@ -52,10 +64,7 @@
                     {% for key in api_keys %}
                         <tr>
                             <td>
-                                <code class="api-key-display">{{ key.key|truncatechars:20 }}</code>
-                                <button class="btn btn-sm btn-outline-light ms-2" onclick="copyToClipboard('{{ key.key }}')" title="Copy full key">
-                                    Copy
-                                </button>
+                                <code class="api-key-display" title="Only the start of the key is stored for display">{{ key.prefix }}…</code>
                             </td>
                             <td>{{ key.name|default:"—" }}</td>
                             <td>
@@ -139,10 +148,14 @@
 
 {% block extra_js %}
 <script>
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(function() {
-        alert('API key copied to clipboard!');
+(function () {
+    var button = document.getElementById('copy-new-api-key');
+    if (!button) { return; }
+    button.addEventListener('click', function () {
+        navigator.clipboard.writeText(button.dataset.key).then(function () {
+            button.textContent = 'Copied';
+        });
     });
-}
+})();
 </script>
 {% endblock %}

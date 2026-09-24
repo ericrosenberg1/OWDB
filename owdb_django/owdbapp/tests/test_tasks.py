@@ -1,7 +1,7 @@
 """
 Tests for owdb_django/owdbapp/tasks.py (Celery task definitions).
 
-No Celery worker runs in production today (docker-compose.nuc.yml pins celery
+No Celery worker runs in production today (the production compose override pins celery
 to zero replicas), so these tasks are dormant. Still worth testing: they were
 never exercised by any prior test, and the two chain() workflows below had a
 real, confirmed bug that would have crashed (or silently corrupted arguments

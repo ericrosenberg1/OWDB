@@ -1,0 +1,5 @@
+# Allowlist for infra-leak-guard (see .githooks/infra-leak-guard.sh).
+# One entry per line:
+#   path:<glob>   skip a whole file
+#   <regex>       skip findings whose "<path>:<line text>" matches
+# Keep entries narrow, and never list private values here.

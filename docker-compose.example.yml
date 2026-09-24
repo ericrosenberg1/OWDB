@@ -1,0 +1,58 @@
+# Example production override for docker-compose.yml. Placeholders only.
+#
+# Copy to docker-compose.prod.yml (git-ignored), replace every <PLACEHOLDER>,
+# then run:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# What it changes from the base compose:
+#   * Turns off db, redis and celery. The public site runs on SQLite.
+#   * Drops the host port binding on web. Traffic arrives through cloudflared
+#     on the Docker network, so nothing listens on a host port.
+#   * Keeps SQLite in a bind-mounted ./data dir so it survives rebuilds.
+#   * Adds a cloudflared container that runs your Cloudflare Tunnel.
+
+services:
+  db:
+    deploy:
+      replicas: 0
+  redis:
+    deploy:
+      replicas: 0
+  celery:
+    deploy:
+      replicas: 0
+
+  web:
+    environment:
+      APP_ENV: production
+      DB_ENGINE: sqlite
+      DEBUG: "0"
+      ALLOWED_HOSTS: <YOUR_DOMAIN>,www.<YOUR_DOMAIN>
+      # The DB must sit in a directory the app user can write, or SQLite
+      # cannot create its journal file and every write fails.
+      SQLITE_PATH: /app/data/db.sqlite3
+    ports: !reset []
+    depends_on: !reset []
+    volumes:
+      - ./data:/app/data
+      - static_files:/app/static_collected
+    command:
+      - sh
+      - -c
+      - |
+        python manage.py migrate --noinput
+        python manage.py collectstatic --noinput --clear
+        exec gunicorn --bind 0.0.0.0:8000 --workers 3 --threads 2 --worker-class gthread --access-logfile - --error-logfile - --timeout 60 owdb_django.wsgi:application
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    environment:
+      TUNNEL_ORIGIN_CERT: /etc/cloudflared/cert.pem
+    volumes:
+      # Directory holding config.yml, cert.pem and the tunnel credentials
+      # JSON. Keep it out of git.
+      - <PATH_TO_CLOUDFLARED_DIR>:/etc/cloudflared:ro
+    command: tunnel --config /etc/cloudflared/config.yml run <TUNNEL_NAME>
+    depends_on:
+      - web

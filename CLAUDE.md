@@ -2,7 +2,9 @@
 
 ## Tech stack
 - Django 5.2 (`requirements.txt` pins `>=5.2,<5.3`) with Celery for background tasks
-- SQLite in production (`/app/data/db.sqlite3` on the NUC) and in dev; PostgreSQL only in CI
+- SQLite in production and in dev, PostgreSQL only in CI
+- Deploy and host details live in private ops docs. If a `CLAUDE.local.md`
+  exists next to this file, read it for machine-specific notes.
 - Sentry error monitoring via sentry-sdk[django]
 
 ## Auto-fix guidelines

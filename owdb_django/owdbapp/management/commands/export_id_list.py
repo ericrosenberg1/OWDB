@@ -6,8 +6,7 @@ A consumer who just wants "every wrestler id that exists" can pull this
 instead of paging through the whole /api/wrestlers/ list.
 
 Deliberately NOT wired to Celery Beat or any other scheduler — Celery stays
-off per current project policy (see settings.py CELERY_BEAT_SCHEDULE and
-docs/DEPLOY_NUC_CLOUDFLARE.md). This is a manually-invokable command someone
+off per current project policy (see settings.py CELERY_BEAT_SCHEDULE). This is a manually-invokable command someone
 can run periodically later (cron, a one-off SSH session, whatever), not an
 automatic job.
 

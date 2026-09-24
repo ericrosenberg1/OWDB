@@ -24,7 +24,7 @@ from django.test import SimpleTestCase
 from owdb_django.settings import is_non_reporting_process
 
 # Real argv shapes, copied from what actually runs.
-#   web:     Dockerfile CMD / docker-compose.nuc.yml
+#   web:     Dockerfile CMD / production compose override
 #   boot:    the migrate + collectstatic steps before gunicorn is exec'd
 #   worker:  docker-compose.yml celery service
 REPORTING_ARGV = {

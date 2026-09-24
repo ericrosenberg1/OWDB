@@ -108,29 +108,23 @@ curl https://wrestlingdb.org/api/wrestlers/ \
 
 ## Deployment
 
-wrestlingdb.org runs on the NUC at `/home/eric/wrestlingdb` as a Docker Compose
-stack behind a Cloudflare Tunnel. Production runs two containers, `web` (Django
-under Gunicorn, on SQLite) and `cloudflared`. The `db`, `redis`, and `celery`
-services are still defined in `docker-compose.yml` but are pinned to zero
-replicas on the NUC by a `docker-compose.nuc.yml` override.
+wrestlingdb.org runs as a Docker Compose stack behind a Cloudflare Tunnel.
+Production runs two containers, `web` (Django under Gunicorn, on SQLite) and
+`cloudflared`. The `db`, `redis`, and `celery` services are defined in
+`docker-compose.yml` but production turns them off with a host-local compose
+override that is not committed.
 
-Two things about that directory surprise people:
+`docker-compose.example.yml` shows the shape of that override with placeholders.
+Copy it to `docker-compose.prod.yml` (every `docker-compose.*.yml` except the
+example is git-ignored), fill in your own values, and run:
 
-1. It is **not** a git checkout. There is no `.git`, so there is nothing to
-   `git pull`.
-2. `docker-compose.nuc.yml` exists only on the NUC, not in this repo. A deploy
-   run without it would try to start Postgres, Redis, and Celery, and would bind
-   host port 8000, which is already taken on that box.
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
 
-The canonical update and deploy path is documented in Brian's weekly routine at
-`nuc:/home/eric/docker/paperclip/agent-instructions/brian/dependency-updates.md`,
-Part I. Follow that. Do not improvise a deploy from this README.
-
-There used to be a `deploy.sh` in this repo. It was removed because every fact
-in it was wrong: it targeted `/opt/owdb` (never existed on the NUC), pointed at
-a DigitalOcean IP that Eric released and that has since been reassigned to a
-third party, and opened with a `git pull` in a directory that is not a
-repository.
+Host names, paths, tunnel names, and the production deploy runbook live in
+private ops docs, not in this public repo. Do not improvise a production deploy
+from this README.
 
 ### Local development
 

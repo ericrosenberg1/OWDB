@@ -58,8 +58,10 @@ class ApiKeyAuthentication(BaseAuthentication):
         if not raw_key:
             return None
 
+        # Keys are stored as SHA-256 digests (see APIKey), so this hashes the
+        # header and looks the digest up. The raw key is never compared.
         try:
-            api_key = APIKey.objects.select_related("user").get(key=raw_key, is_active=True)
+            api_key = APIKey.get_active_by_raw_key(raw_key)
         except APIKey.DoesNotExist:
             raise exceptions.AuthenticationFailed("Invalid or inactive API key.")
 

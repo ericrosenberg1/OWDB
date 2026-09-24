@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.utils.text import slugify
+import hashlib
 import secrets
 
 
@@ -2707,8 +2708,27 @@ class EmailVerificationToken(TimeStampedModel):
 
 
 class APIKey(TimeStampedModel):
+    """A user's API key, stored as a SHA-256 digest, never in plaintext.
+
+    The raw key exists in exactly two places: the response to the POST that
+    created it (the account page shows it once) and the client that saved
+    it. The database keeps ``key_hash`` for lookup and ``prefix`` (the first
+    ``PREFIX_LENGTH`` characters) so a user can tell their keys apart. A
+    plain, unsalted SHA-256 is enough here because keys are 160 random bits
+    from ``secrets``, so there's nothing to brute-force or rainbow-table.
+    Migration 0033 hashed every pre-existing key and dropped the plaintext
+    column.
+    """
+
+    PREFIX_LENGTH = 8
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="api_keys")
-    key = models.CharField(max_length=64, unique=True, db_index=True)
+    key_hash = models.CharField(
+        max_length=64, unique=True, help_text="SHA-256 hex digest of the key"
+    )
+    prefix = models.CharField(
+        max_length=PREFIX_LENGTH, blank=True, default="", help_text="First characters, for display"
+    )
     name = models.CharField(
         max_length=100, blank=True, null=True, help_text="Optional name for this key"
     )
@@ -2723,7 +2743,6 @@ class APIKey(TimeStampedModel):
         verbose_name = "API Key"
         verbose_name_plural = "API Keys"
         indexes = [
-            models.Index(fields=["key"]),
             models.Index(fields=["user"]),
         ]
 
@@ -2734,6 +2753,39 @@ class APIKey(TimeStampedModel):
     def generate_key(cls):
         """Generate a secure API key (40 hex chars = 20 bytes)."""
         return secrets.token_hex(20)
+
+    @staticmethod
+    def hash_key(raw_key):
+        """SHA-256 hex digest of a raw key, the only form the DB stores."""
+        return hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+
+    @classmethod
+    def create_key(cls, user, name=None, **fields):
+        """Create a key for ``user`` and return ``(api_key, raw_key)``.
+
+        ``raw_key`` is never saved. Show it to the user once, then drop it.
+        """
+        raw_key = cls.generate_key()
+        api_key = cls.objects.create(
+            user=user,
+            key_hash=cls.hash_key(raw_key),
+            prefix=raw_key[: cls.PREFIX_LENGTH],
+            name=name,
+            **fields,
+        )
+        return api_key, raw_key
+
+    @classmethod
+    def get_active_by_raw_key(cls, raw_key):
+        """Return the active key matching ``raw_key``, or raise DoesNotExist.
+
+        Lookup is by digest, so the comparison that matters happens on a
+        hash the caller can't steer byte by byte. No plaintext comparison,
+        no timing oracle on the secret itself.
+        """
+        return cls.objects.select_related("user").get(
+            key_hash=cls.hash_key(raw_key), is_active=True
+        )
 
     def check_rate_limit(self):
         """Return True if this key is within its daily request-volume ceiling.

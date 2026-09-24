@@ -377,12 +377,24 @@ class APIKeyAdmin(admin.ModelAdmin):
         "created_at",
     ]
     list_filter = ["is_active", "is_paid", "created_at"]
-    search_fields = ["key", "user__username", "name"]
-    readonly_fields = ["key", "requests_today", "requests_total", "last_used", "created_at"]
+    search_fields = ["prefix", "user__username", "name"]
+    readonly_fields = [
+        "prefix",
+        "key_hash",
+        "requests_today",
+        "requests_total",
+        "last_used",
+        "created_at",
+    ]
     ordering = ["-created_at"]
 
+    def has_add_permission(self, request):
+        # Keys are issued from the account page, which shows the raw key
+        # once. An admin-created row would have no key anyone could use.
+        return False
+
     def key_display(self, obj):
-        return f"{obj.key[:8]}..."
+        return f"{obj.prefix}..."
 
     key_display.short_description = "API Key"
 

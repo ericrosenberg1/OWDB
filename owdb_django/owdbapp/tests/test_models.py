@@ -150,13 +150,13 @@ class APIKeyModelTest(TestCase):
 
     def test_api_key_creation(self):
         """Test creating an API key."""
-        api_key = APIKey.objects.create(user=self.user, key=APIKey.generate_key(), name="Test Key")
+        api_key, _ = APIKey.create_key(self.user, name="Test Key")
         self.assertTrue(api_key.is_active)
         self.assertFalse(api_key.is_paid)
 
     def test_api_key_rate_limiting(self):
         """Test API key daily limit checking."""
-        api_key = APIKey.objects.create(user=self.user, key=APIKey.generate_key())
+        api_key, _ = APIKey.create_key(self.user)
         # Free tier should have 1000 limit
         self.assertTrue(api_key.check_rate_limit())
 
@@ -168,8 +168,8 @@ class APIKeyModelTest(TestCase):
         caller of either. Both must now agree with each other and with the
         real published tiers (README.md -> API -> Rate Limits / the live
         DRF throttle in settings.REST_FRAMEWORK)."""
-        free_key = APIKey.objects.create(user=self.user, key=APIKey.generate_key(), is_paid=False)
-        paid_key = APIKey.objects.create(user=self.user, key=APIKey.generate_key(), is_paid=True)
+        free_key, _ = APIKey.create_key(self.user, is_paid=False)
+        paid_key, _ = APIKey.create_key(self.user, is_paid=True)
 
         self.assertEqual(free_key.rate_limit, 1000)
         self.assertEqual(paid_key.rate_limit, 10000)

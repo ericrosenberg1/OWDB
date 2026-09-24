@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 from django.contrib import messages
 from django.contrib.auth.models import User
@@ -1330,8 +1331,14 @@ def logout_view(request):
 # =============================================================================
 
 
+@never_cache
 @login_required
 def account(request):
+    # The full key exists only in the response to the POST that created it.
+    # The DB keeps a SHA-256 digest and an 8-character prefix, so every later
+    # view of this page can show the prefix and nothing more. never_cache
+    # keeps that one response out of browser and proxy caches.
+    new_api_key = None
     if request.method == "POST":
         action = request.POST.get("action")
         if action == "create":
@@ -1339,10 +1346,8 @@ def account(request):
             if APIKey.objects.filter(user=request.user).count() >= 5:
                 messages.error(request, "You can only have up to 5 API keys.")
             else:
-                key = APIKey.generate_key()
-                name = request.POST.get("key_name", "").strip() or None
-                APIKey.objects.create(user=request.user, key=key, name=name)
-                messages.success(request, f"API key created: {key[:8]}...")
+                name = request.POST.get("key_name", "").strip()[:100] or None
+                _, new_api_key = APIKey.create_key(request.user, name=name)
         elif action == "delete":
             key_id = request.POST.get("key_id")
             try:
@@ -1363,7 +1368,11 @@ def account(request):
                 messages.error(request, "API key not found.")
 
     api_keys = APIKey.objects.filter(user=request.user).order_by("-created_at")
-    return render(request, "account.html", {"api_keys": api_keys, "page_title": "Account"})
+    return render(
+        request,
+        "account.html",
+        {"api_keys": api_keys, "new_api_key": new_api_key, "page_title": "Account"},
+    )
 
 
 # =============================================================================

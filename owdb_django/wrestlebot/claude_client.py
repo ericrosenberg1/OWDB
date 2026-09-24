@@ -124,7 +124,7 @@ def discover_credential() -> Optional[Credential]:
     Preference order:
       1. CLAUDE_CODE_OAUTH_TOKEN env var (manual override, e.g. CI)
       2. Claude Code OAuth via macOS Keychain or ~/.claude/.credentials.json
-         — Hermes/Paperclip flow; auto-refreshes expired access tokens.
+         — auto-refreshes expired access tokens.
       3. ANTHROPIC_API_KEY env var (pay-per-use Console API key)
     """
     # 1. Manual env override (CI, docker)

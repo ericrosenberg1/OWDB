@@ -138,16 +138,20 @@ owdb_django/owdbapp/wrestlingdb.code-workspace
 !SENTRY.md
 !.github/**
 !CLAUDE.md
-# docs/ is real documentation and belongs in git. The blanket *.md above was
-# hiding DEPLOY_NUC_CLOUDFLARE.md, which existed only on two disks and nowhere
-# in version control.
+# docs/ is real documentation and belongs in git. Host-specific runbooks
+# belong in private ops docs, never here.
 !docs/**
+# Private, per-machine agent notes (read by Claude Code, never committed).
+CLAUDE.local.md
 
 # =============================================================================
 # Secrets and deployment-specific config (never commit)
 # =============================================================================
-.env.nuc
-.env.production
-.env.staging
+.env.*
+!.env.example
 cloudflared/
 .context/
+# Host-local compose overrides carry host paths and tunnel names. Only the
+# placeholder example is committed.
+docker-compose.*.yml
+!docker-compose.example.yml

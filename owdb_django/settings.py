@@ -172,7 +172,7 @@ WSGI_APPLICATION = "owdb_django.wsgi.application"
 
 # SQLite by default (low-traffic OK); set DB_ENGINE=postgres in env to flip.
 # The previous form forced SQLite-only-in-dev, which made shipping the dev
-# corpus straight into the NUC's first deploy harder than it needed to be.
+# corpus straight into the first production deploy harder than it needed to be.
 USE_SQLITE = os.getenv("DB_ENGINE", "sqlite").lower() != "postgres"
 
 # SQLite needs to create a rollback journal (`<db>-journal`) *next to* the
@@ -530,9 +530,10 @@ EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS = 24
 # Error Notifications (500 errors sent to admins)
 # =============================================================================
 
-# Admins receive email notifications for 500 errors
+# Admins receive email notifications for 500 errors. Comma-separated list in
+# ADMIN_EMAILS. Unset means no admin mail, which is the right default for dev.
 ADMINS = [
-    ("Eric", "e@ericgroup.us"),
+    ("Admin", addr.strip()) for addr in os.getenv("ADMIN_EMAILS", "").split(",") if addr.strip()
 ]
 
 # Server email (From address for error emails)

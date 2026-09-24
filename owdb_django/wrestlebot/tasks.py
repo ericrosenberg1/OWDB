@@ -3,7 +3,7 @@ Celery tasks for autonomous WrestleBot v3 operation.
 
 Live tasks (all three are wired into settings.CELERY_BEAT_SCHEDULE, but
 only actually run when a Celery worker + beat process are up — see
-docker-compose.nuc.yml, which zeroes the `celery` service's replicas in
+the production compose override, which zeroes the `celery` service's replicas in
 production, so today these only fire via a manual `python manage.py
 wb_*_agent` invocation):
 

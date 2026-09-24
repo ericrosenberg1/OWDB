@@ -2,7 +2,7 @@
 
 Two independent Celery schedules touch the same wrestling data today: the
 legacy `owdbapp` scraper rotation and WrestleBot v3 (JR/Al/Earl). Neither
-is running (`docker-compose.nuc.yml` pins `db`, `redis`, and `celery` to
+is running (the production compose override pins `db`, `redis`, and `celery` to
 `replicas: 0`, so nothing fires until a human flips that back on), but if
 both were ever turned on at once they'd compete for the same external
 sources. This doc lays out what each one actually does, exactly where
@@ -117,8 +117,8 @@ This closes both uncoordinated pairs described below. ProFightDB was the worse o
 `owdbapp.scrapers.ProFightDBScraper` and `wrestlebot.sources.profightdb` are separate
 implementations with separate rate limits and no way to see each other's traffic.
 
-Safe to do cold: nothing was running. `docker-compose.nuc.yml` pins `db`, `redis` and `celery` to
-`replicas: 0`, and on the NUC only `wrestlingdb-web-1` and `wrestlingdb-cloudflared-1` were up.
+Safe to do cold: nothing was running. The production compose override pins `db`, `redis` and
+`celery` to `replicas: 0`, and only the `web` and `cloudflared` containers were up in production.
 `get-scraper-stats` was deliberately left on the schedule. It only reports, and the scraper task
 functions it reports on still exist.
 
@@ -152,4 +152,4 @@ functions it reports on still exist.
    (and the double-fetch risk for images) in place indefinitely.
 
 Nothing here has been merged, retired, or reconfigured. `CELERY_BEAT_SCHEDULE`
-and `docker-compose.nuc.yml` are untouched by this pass.
+and the production compose override are untouched by this pass.

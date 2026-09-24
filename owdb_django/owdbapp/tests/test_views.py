@@ -354,6 +354,50 @@ class ReviewGateRelationalLeakViewTest(TestCase):
         self.assertContains(response, "Good Leak Match")
 
 
+class ReviewGateStableEventsLeakViewTest(TestCase):
+    """
+    A good event must not surface in a stable's Events list on the strength
+    of a member's rejected match alone. The event is otherwise fine (not an
+    event-level leak, see ReviewGateEventLeakViewTest above), but before this
+    fix `matches__wrestlers__in=...` bypassed MatchQuerySet.public()
+    entirely, so any match at all pulled its event onto the stable page.
+    """
+
+    def setUp(self):
+        self.client = proxied_client()
+        self.promotion = Promotion.objects.create(name="Leak Stable Promotion")
+        self.stable = Stable.objects.create(name="Leak Stable")
+        self.member = Wrestler.objects.create(name="Stable Member")
+        self.stable.members.add(self.member)
+
+        self.rejected_only_event = Event.objects.create(
+            name="Rejected-Only Stable Event",
+            promotion=self.promotion,
+            date=timezone.now().date(),
+        )
+        rejected_match = Match.objects.create(
+            event=self.rejected_only_event,
+            match_text="Rejected Stable Match",
+            verification_state="rejected",
+        )
+        rejected_match.wrestlers.add(self.member)
+
+        self.good_event = Event.objects.create(
+            name="Good Stable Event", promotion=self.promotion, date=timezone.now().date()
+        )
+        good_match = Match.objects.create(
+            event=self.good_event, match_text="Good Stable Match", verification_state="verified"
+        )
+        good_match.wrestlers.add(self.member)
+
+    def test_event_with_only_a_rejected_match_absent_from_stable_events(self):
+        response = self.client.get(reverse("stable_detail", args=[self.stable.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Rejected-Only Stable Event")
+        self.assertContains(response, "Good Stable Event")
+        self.assertEqual([e.pk for e in response.context["events"]], [self.good_event.pk])
+
+
 class ReviewGateEventLeakViewTest(TestCase):
     """
     A rejected Event must not leak through the pages of the entities it is

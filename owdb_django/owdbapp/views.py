@@ -868,9 +868,16 @@ class StableDetailView(DetailView):
         stable = self.object
         context["page_title"] = stable.name
         context["members"] = stable.members.public()
+        # Review gate: filter through Match.objects.public(), not the bare
+        # `matches__wrestlers__in` relation. The event itself may be fine,
+        # but without this an event surfaces here on the strength of a
+        # single rejected match involving a member, even though that match
+        # would never render anywhere else on the site.
         context["events"] = (
             Event.objects.public()
-            .filter(matches__wrestlers__in=stable.members.public())
+            .filter(
+                matches__in=Match.objects.public().filter(wrestlers__in=stable.members.public())
+            )
             .distinct()
             .select_related("promotion", "venue")
             .order_by("-date")[:20]

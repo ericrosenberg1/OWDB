@@ -569,7 +569,9 @@ LOGGING = {
         "mail_admins": {
             "level": "ERROR",
             "filters": ["require_debug_false"],
-            "class": "django.utils.log.AdminEmailHandler",
+            # Django's handler with fail_silently=False plus a logged failure,
+            # so broken SMTP shows up in Sentry. See admin_email_handler.py.
+            "class": "owdb_django.admin_email_handler.LoggedAdminEmailHandler",
             "include_html": True,
         },
     },
@@ -591,6 +593,14 @@ LOGGING = {
         "celery": {
             "handlers": ["console"],
             "level": "INFO",
+            "propagate": False,
+        },
+        # A failed admin error mail (admin_email_handler.py). Console only and
+        # no propagation, so it can never feed back into mail_admins. Sentry's
+        # logging integration still reports it as an event.
+        "owdb_django.admin_email_handler": {
+            "handlers": ["console"],
+            "level": "ERROR",
             "propagate": False,
         },
         # Why a Sentry envelope was lost (sentry_transport.py). Console only,

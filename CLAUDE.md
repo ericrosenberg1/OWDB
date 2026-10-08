@@ -13,6 +13,11 @@
   `Sentry ...` warning and retries a dropped connection once. The SDK files every loss as
   `network_error` with no cause otherwise. It overrides private SDK methods, so
   `test_sentry_transport.py` fails if an SDK upgrade renames them.
+- A failed mail send is never swallowed. Signup and resend-verification keep their
+  user-facing message but call `logger.exception`, and admin error mail uses
+  `LoggedAdminEmailHandler` (`owdb_django/admin_email_handler.py`), which sends with
+  `fail_silently=False` and logs the failure. Sentry's logging integration files each as an
+  event. Any new `send_mail` follows the same pattern, pinned by `test_mail_failure_logging.py`.
 
 ## Auto-fix guidelines
 - **Test command:** `python manage.py test owdb_django.owdbapp.tests --verbosity=0`

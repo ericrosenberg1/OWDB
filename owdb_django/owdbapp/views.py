@@ -14,6 +14,7 @@ from django.utils import timezone
 from django.core.cache import cache
 from django import forms
 from datetime import timedelta
+import logging
 
 from .models import (
     Wrestler,
@@ -38,6 +39,8 @@ from .models import (
     EmailVerificationToken,
     Hot100Ranking,
 )
+
+logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -1185,6 +1188,12 @@ And that's the bottom line, 'cause OWDB said so!
                     request, "Account created! Please check your email to verify your account."
                 )
             except Exception:
+                # Keep the signup, but never drop the failure: logged at ERROR so
+                # Sentry's logging integration reports it. It hid a mail outage
+                # for weeks when this branch only showed the user a warning.
+                logger.exception(
+                    "Verification email failed to send on signup (user_id=%s)", user.pk
+                )
                 messages.warning(
                     request,
                     "Account created, but we could not send verification email. Please contact support.",
@@ -1283,6 +1292,9 @@ And that's the bottom line, 'cause OWDB said so!
         )
         messages.success(request, "Verification email sent! Please check your inbox.")
     except Exception:
+        logger.exception(
+            "Verification email failed to send on resend (user_id=%s)", request.user.pk
+        )
         messages.error(request, "Failed to send verification email. Please try again later.")
 
     return redirect("verification_pending")

@@ -10,7 +10,7 @@ Django integration captures unhandled exceptions in views and celery task
 failures (if `sentry-sdk[django]` exposes the Celery integration when
 celery is also installed).
 
-`pip install -r requirements.txt` will pull in `sentry-sdk[django]>=2.18`.
+`pip install -r requirements.txt` pulls in `sentry-sdk[django]>=2.66.1`.
 
 ## What does not report
 
@@ -24,3 +24,15 @@ The list in `settings.NON_REPORTING_COMMANDS` is a **denylist**. Adding to it
 silences things, so add sparingly: gunicorn, celery and the boot-time `migrate`
 / `collectstatic` steps all report, and anything unrecognised reports by
 default. Quietly losing a real production error is the worse failure.
+
+## Why an envelope was lost
+
+The SDK counts a failed send as a lost event (client-report reason `network_error`)
+and only logs the cause with `debug=True`. OWDB lost 1,106 error envelopes in
+September 2026 that way, each matching a lost transaction from the same hour, with
+nothing in the container log. `owdb_django/sentry_transport.py` (`LoggedHttpTransport`,
+passed as `transport=` to `sentry_sdk.init`) now logs a `Sentry send raised ...`,
+`Sentry envelope lost after retry ...` or `Sentry rejected envelope: HTTP ...` warning
+with the cause and item types, and retries a dropped connection once before counting
+the envelope as lost. Its logger is excluded from Sentry so a failing Sentry can't
+feed itself. Grep the web container log for `Sentry ` to see the causes.

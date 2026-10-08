@@ -7,7 +7,12 @@
 - SQLite in production and in dev, PostgreSQL only in CI
 - Deploy and host details live in private ops docs. If a `CLAUDE.local.md`
   exists next to this file, read it for machine-specific notes.
-- Sentry error monitoring via sentry-sdk[django]
+- Sentry error monitoring via sentry-sdk[django]. Since 2026-10-08 `sentry_sdk.init` uses
+  `LoggedHttpTransport` (`owdb_django/sentry_transport.py`, ported from FreelancerDashboard).
+  It logs the exception or HTTP status behind every lost envelope to the console as a
+  `Sentry ...` warning and retries a dropped connection once. The SDK files every loss as
+  `network_error` with no cause otherwise. It overrides private SDK methods, so
+  `test_sentry_transport.py` fails if an SDK upgrade renames them.
 
 ## Auto-fix guidelines
 - **Test command:** `python manage.py test owdb_django.owdbapp.tests --verbosity=0`

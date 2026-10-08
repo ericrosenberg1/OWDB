@@ -593,6 +593,13 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        # Why a Sentry envelope was lost (sentry_transport.py). Console only,
+        # and settings.py keeps it out of Sentry itself.
+        "owdb_django.sentry_transport": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
     },
 }
 
@@ -723,6 +730,9 @@ if SENTRY_ENABLED:
     try:
         import sentry_sdk
         from sentry_sdk.integrations.django import DjangoIntegration
+        from sentry_sdk.integrations.logging import ignore_logger
+
+        from owdb_django.sentry_transport import LoggedHttpTransport
 
         sentry_sdk.init(
             dsn=os.getenv("SENTRY_DSN"),
@@ -736,7 +746,12 @@ if SENTRY_ENABLED:
             # control. Matches fleet-wide hardening after the hsatracker audit.
             max_request_body_size="never",
             release=os.getenv("SENTRY_RELEASE"),
+            # Logs why an envelope was lost and retries a dropped connection
+            # once. See sentry_transport.py.
+            transport=LoggedHttpTransport,
         )
+        # The transport's own warnings must never become Sentry events.
+        ignore_logger("owdb_django.sentry_transport")
     except ImportError:
         # sentry-sdk not installed — silently skip
         pass

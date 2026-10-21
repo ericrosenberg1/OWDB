@@ -19,13 +19,16 @@ and don't need one.
 import os
 import subprocess
 import sys
+from unittest import mock
 
 from django.conf import settings as ambient_settings
-from django.test import SimpleTestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 
 from ..checks import (
     INSECURE_SECRET_KEY_IN_PRODUCTION,
+    UNRESOLVABLE_SEARCH_FIELD,
     _DEFAULT_DEV_SECRET_KEY,
+    search_fields_resolve,
     secret_key_is_set_in_production,
 )
 
@@ -109,3 +112,96 @@ class SecretKeyCheckIntegrationTest(SimpleTestCase):
         result, stderr = run_manage_check("development", app_secret_key=None)
         self.assertEqual(result.returncode, 0, msg=f"stderr was:\n{stderr}")
         self.assertNotIn(INSECURE_SECRET_KEY_IN_PRODUCTION, stderr)
+
+
+class SearchFieldsResolveCheckTest(SimpleTestCase):
+    """Tests for `search_fields_resolve` (owdbapp.E003), added for ROS-3608.
+
+    StableListView searched a "aliases" field that exists on Wrestler but not on
+    Stable. PaginatedListView only resolves those names when a request supplies
+    ?q=, so it 500'd for real visitors while importing and linting cleanly.
+    """
+
+    def test_the_shipped_views_all_resolve(self):
+        """The real assertion: no list view in views.py searches a missing field.
+
+        This is the check that would have failed before the ROS-3608 fix, and it
+        fails again the moment someone adds another bad field name.
+        """
+        self.assertEqual(search_fields_resolve(None), [])
+
+    def test_fires_on_a_field_the_model_does_not_have(self):
+        from ..models import Stable
+        from ..views import StableListView
+
+        with mock.patch.object(StableListView, "search_fields", ["name", "aliases"]):
+            errors = search_fields_resolve(None)
+
+        self.assertEqual(len(errors), 1, msg=f"got {errors}")
+        self.assertEqual(errors[0].id, UNRESOLVABLE_SEARCH_FIELD)
+        self.assertIn("StableListView", errors[0].msg)
+        self.assertIn("aliases", errors[0].msg)
+        self.assertIn(Stable.__name__, errors[0].msg)
+
+    def test_accepts_a_valid_related_lookup(self):
+        """`promotion__name` style traversal must not be reported as missing."""
+        from ..views import StableListView
+
+        with mock.patch.object(StableListView, "search_fields", ["name", "promotion__name"]):
+            self.assertEqual(search_fields_resolve(None), [])
+
+    def test_fires_on_a_broken_related_lookup(self):
+        from ..views import StableListView
+
+        with mock.patch.object(StableListView, "search_fields", ["promotion__nope"]):
+            errors = search_fields_resolve(None)
+
+        self.assertEqual(len(errors), 1, msg=f"got {errors}")
+        self.assertEqual(errors[0].id, UNRESOLVABLE_SEARCH_FIELD)
+
+    def test_reports_every_bad_field_not_just_the_first(self):
+        from ..views import StableListView
+
+        with mock.patch.object(StableListView, "search_fields", ["nope_one", "nope_two"]):
+            errors = search_fields_resolve(None)
+
+        self.assertEqual(len(errors), 2, msg=f"got {errors}")
+        self.assertEqual({e.id for e in errors}, {UNRESOLVABLE_SEARCH_FIELD})
+
+
+class SearchFieldsResolveIssuesNoQueriesTest(TestCase):
+    """The check must not query the database.
+
+    Deploy checks run independently of the database being reachable, so
+    resolving field names has to stay lazy: `.filter()` raises FieldError while
+    *building* the query, which is why this works with Postgres down. Verified
+    directly against the production image during ROS-3608 (no connection was
+    opened at all).
+
+    Asserting "no connection is open" does not port to the test harness —
+    Django's SQLite backend deliberately makes close() a no-op for the
+    in-memory test database, so a connection object is always present here
+    regardless of what the check does. Query count is the portable signal, and
+    it is the property that actually matters: zero queries cannot require a
+    reachable database. Pinned so a future rewrite that evaluates the queryset
+    (e.g. adding .exists()) fails loudly.
+
+    The sibling SimpleTestCase class above is a second, independent guard: it
+    declares no databases, so any query at all would error there.
+    """
+
+    def test_runs_without_issuing_a_single_query(self):
+        with self.assertNumQueries(0):
+            errors = search_fields_resolve(None)
+        self.assertEqual(errors, [])
+
+
+class SearchFieldsCheckIntegrationTest(SimpleTestCase):
+    """Prove E003 is wired into `manage.py check`, not just callable."""
+
+    def test_manage_check_passes_with_the_shipped_search_fields(self):
+        result, stderr = run_manage_check(
+            "production", app_secret_key="a-real-randomly-generated-secret-key-value"
+        )
+        self.assertEqual(result.returncode, 0, msg=f"stderr was:\n{stderr}")
+        self.assertNotIn(UNRESOLVABLE_SEARCH_FIELD, stderr)

@@ -11,6 +11,7 @@ from django.core.checks import Error, register
 
 SQLITE_DIR_NOT_WRITABLE = "owdbapp.E001"
 INSECURE_SECRET_KEY_IN_PRODUCTION = "owdbapp.E002"
+UNRESOLVABLE_SEARCH_FIELD = "owdbapp.E003"
 
 # Must match the hardcoded fallback in settings.py:
 #   SECRET_KEY = os.getenv("APP_SECRET_KEY", "django-insecure-development-key-change-in-production")
@@ -119,3 +120,70 @@ def secret_key_is_set_in_production(app_configs, **kwargs):
             id=INSECURE_SECRET_KEY_IN_PRODUCTION,
         )
     ]
+
+
+def _searchable_list_views():
+    """Yield (view name, model, search_fields) for every searchable list view.
+
+    Imported inside the function, not at module scope: checks.py is imported
+    from OwdbappConfig.ready(), and importing views.py there would pull in
+    models/forms while the app registry is still populating.
+    """
+    from django.views.generic import ListView
+
+    from . import views
+
+    for name in sorted(dir(views)):
+        view = getattr(views, name)
+        if not isinstance(view, type) or not issubclass(view, ListView):
+            continue
+        model = getattr(view, "model", None)
+        search_fields = getattr(view, "search_fields", None) or []
+        if model is None or not search_fields:
+            continue
+        yield name, model, list(search_fields)
+
+
+@register()
+def search_fields_resolve(app_configs, **kwargs):
+    """Fail at deploy time when a list view searches a field its model lacks.
+
+    PaginatedListView.get_queryset() builds ``Q(<field>__icontains=q)`` for
+    every entry in the view's ``search_fields``. Django only resolves those
+    names when a request actually supplies ?q=, so a typo'd or copy-pasted
+    field name is invisible until a real visitor searches — and then it is an
+    unhandled FieldError 500, not a degraded result set. StableListView
+    shipped ``search_fields = ["name", "aliases"]`` (``aliases`` belongs to
+    Wrestler, not Stable) and every stable search 500'd until ROS-3608.
+
+    Nothing else catches this. The field names are plain strings in a class
+    attribute, so they survive linting and import cleanly; the view's own
+    tests pass as long as they never pass ?q=.
+
+    Resolving a field name needs no database: ``.filter()`` is lazy and raises
+    FieldError while building the query, so this is safe to run on a host that
+    cannot reach Postgres (verified against the production image, ROS-3608).
+    ``.none()`` guarantees the queryset stays unevaluated regardless.
+    """
+    from django.core.exceptions import FieldError
+
+    errors = []
+    for name, model, search_fields in _searchable_list_views():
+        for field in search_fields:
+            try:
+                model._default_manager.none().filter(**{f"{field}__icontains": "x"})
+            except FieldError as exc:
+                errors.append(
+                    Error(
+                        f"{name}.search_fields contains {field!r}, which does not "
+                        f"resolve on {model.__name__}. Any ?q= search on this view "
+                        f"raises FieldError 500. ({exc})",
+                        hint=(
+                            f"Remove {field!r} from {name}.search_fields, or correct "
+                            f"it to a real {model.__name__} field (or a valid "
+                            "related lookup such as 'promotion__name')."
+                        ),
+                        id=UNRESOLVABLE_SEARCH_FIELD,
+                    )
+                )
+    return errors

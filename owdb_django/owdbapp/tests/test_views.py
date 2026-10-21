@@ -1153,3 +1153,78 @@ class HomepageVerifiedStatsTest(TestCase):
         response = self.client.get(reverse("index"))
         self.assertEqual(response.context["stats"]["books"], 2)
         self.assertEqual(response.context["verified_stats"]["books"], 1)
+
+
+class SearchableListViewSmokeTest(TestCase):
+    """Every searchable list view must survive a ?q= request.
+
+    PaginatedListView only resolves its ``search_fields`` names when a request
+    actually supplies ?q=, so a field name that does not exist on the model
+    imports cleanly, lints cleanly, and passes every test that omits ?q= — then
+    500s on the first real visitor who searches. StableListView shipped
+    ``search_fields = ["name", "aliases"]`` ("aliases" is a Wrestler field, not
+    a Stable one) and /stables/?q= was an unhandled FieldError until ROS-3608.
+
+    This walks the live URLconf instead of listing routes by hand so a list view
+    added later is covered without anyone remembering to extend this test.
+    `owdbapp.E003` (checks.py) catches the same defect at deploy time; this
+    catches it through the real request path, with the real middleware.
+    """
+
+    def setUp(self):
+        self.client = proxied_client()
+
+    def searchable_routes(self):
+        from django.urls import get_resolver
+
+        from ..views import PaginatedListView
+
+        seen = set()
+        for pattern in get_resolver().url_patterns:
+            view_class = getattr(getattr(pattern, "callback", None), "view_class", None)
+            if view_class is None or not issubclass(view_class, PaginatedListView):
+                continue
+            if not getattr(view_class, "search_fields", None):
+                continue
+            if view_class.__name__ in seen:
+                continue
+            seen.add(view_class.__name__)
+            yield pattern.name, view_class
+        self.assertTrue(seen, "found no searchable list views — the walk is broken")
+
+    def test_every_searchable_list_view_handles_a_query(self):
+        for url_name, view_class in self.searchable_routes():
+            with self.subTest(view=view_class.__name__, fields=view_class.search_fields):
+                response = self.client.get(reverse(url_name), {"q": "zzz"})
+                self.assertEqual(
+                    response.status_code,
+                    200,
+                    f"{view_class.__name__} ?q= returned {response.status_code}; "
+                    f"search_fields={view_class.search_fields}",
+                )
+
+    def test_stables_search_matches_by_name(self):
+        """The specific route from ROS-3608, with data, not just a 200."""
+        promotion = Promotion.objects.create(name="Search Promo")
+        Stable.objects.create(name="The Four Horsemen", promotion=promotion)
+        Stable.objects.create(name="Degeneration X", promotion=promotion)
+
+        response = self.client.get(reverse("stables"), {"q": "Horsemen"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "The Four Horsemen")
+        self.assertNotContains(response, "Degeneration X")
+
+    def test_stables_search_survives_a_sql_injection_probe(self):
+        """The payload that actually triggered ROS-3608, from a scanner in the wild.
+
+        The ORM parameterises it, so this was never an injection risk — the 500
+        came from the unresolvable field name alone. Pinning the real payload
+        keeps that distinction on the record.
+        """
+        response = self.client.get(
+            reverse("stables"),
+            {"q": "' UNION ALL SELECT NULL,'msorounjacswwmtodmvvmogdeowynqqc'-- 8ezxfm"},
+        )
+
+        self.assertEqual(response.status_code, 200)

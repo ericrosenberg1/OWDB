@@ -6,5 +6,7 @@ class OwdbappConfig(AppConfig):
     name = "owdb_django.owdbapp"
 
     def ready(self):
-        # Registers the SQLite-directory-writable deploy check (ROS-1204).
+        # Registers the deploy-time system checks: SQLite directory writable
+        # (ROS-1204), production SECRET_KEY set, and search_fields resolvable
+        # (ROS-3608).
         from . import checks  # noqa: F401

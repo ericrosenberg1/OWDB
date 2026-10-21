@@ -839,7 +839,11 @@ class StableListView(PaginatedListView):
     model = Stable
     template_name = "stables.html"
     context_object_name = "stables"
-    search_fields = ["name", "aliases"]
+    # "aliases" was copied from WrestlerListView, which has that field; Stable
+    # does not, so every ?q= search here 500'd with FieldError (ROS-3608).
+    # Stable has no alias-like column at all, so name is the whole of it —
+    # which is what search_placeholder already promises.
+    search_fields = ["name"]
     search_placeholder = "stables by name..."
 
     def get_queryset(self):

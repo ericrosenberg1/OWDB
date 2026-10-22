@@ -539,6 +539,13 @@ ADMINS = [
 # Server email (From address for error emails)
 SERVER_EMAIL = os.getenv("SERVER_EMAIL", "errors@wrestlingdb.org")
 
+# The admin error email carries a full settings dump. Django's stock filter
+# redacts by setting NAME, which misses a password embedded in a connection
+# string's VALUE — and REDIS_URL feeds CACHES, CELERY_BROKER_URL and
+# CELERY_RESULT_BACKEND here. This subclass redacts by value as well. See
+# error_reporting.py and ROS-3694.
+DEFAULT_EXCEPTION_REPORTER_FILTER = "owdb_django.error_reporting.CredentialSafeReporterFilter"
+
 # =============================================================================
 # Logging
 # =============================================================================

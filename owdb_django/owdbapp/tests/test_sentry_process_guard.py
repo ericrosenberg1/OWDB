@@ -19,10 +19,12 @@ import sys
 import tempfile
 from contextlib import chdir
 
+from unittest import SkipTest
+
 from django.conf import settings as ambient_settings
 from django.test import SimpleTestCase
 
-from owdb_django.settings import is_non_reporting_process
+from owdb_django.settings import _SCRATCH_DIR_PREFIXES, is_non_reporting_process
 
 # Real argv shapes, copied from what actually runs.
 #   web:     Dockerfile CMD / production compose override
@@ -45,19 +47,16 @@ REPORTING_ARGV = {
     "empty argv": [],
     # argv[1] matches the denylist but the process is not a management command.
     "gunicorn with a colliding arg": ["gunicorn", "test"],
-    # ROS-4038 exempts manage.py from the scratch-script rule: CI and every
-    # throwaway clone put a checkout in a scratch directory, and a management
-    # command is an unattended entrypoint wherever it is run from.
-    "manage.py from a scratch clone": ["/tmp/owdb-clone/manage.py", "migrate"],
-    "django-admin from a scratch clone": ["/tmp/owdb-clone/django-admin", "collectstatic"],
-    # The prefix match carries a trailing separator on purpose, so a real
-    # deploy directory whose name merely starts with a scratch dir's keeps
-    # reporting.
-    "scratch lookalike dir": ["/tmpfiles/app/run.py"],
-    "scratch lookalike under /var": ["/var/tmpdeploy/run.py"],
     # An ordinary script outside a scratch dir: argv cannot tell it from a cron
     # entry, so it must not be silenced implicitly.
     "script from the image": ["/app/scripts/backfill.py"],
+    # A path under /tmp that is not a file is not a script anybody ran. These
+    # must not be silenced on the strength of the prefix alone (ROS-4038).
+    "nonexistent path under /tmp": ["/tmp/owdb-no-such-file.py"],
+    # The prefix match carries a trailing separator on purpose, so a real
+    # deploy directory whose name merely starts with a scratch dir's keeps
+    # reporting. ScratchScriptResolutionTest pins the separator directly.
+    "scratch lookalike dir": ["/tmpfiles/app/run.py"],
 }
 
 NON_REPORTING_ARGV = {
@@ -71,11 +70,6 @@ NON_REPORTING_ARGV = {
     "django-admin shell": ["django-admin", "shell"],
     "django-admin.py shell": ["django-admin.py", "dbshell"],
     "python -c": ["-c", "import owdb_django.settings"],
-    # ROS-4037/ROS-4038: a one-off written to a file in a scratch directory.
-    # argv[0] is a real path, so the two rules above both miss it.
-    "scratch script": ["/tmp/brian-ROS-4036-ledger.py"],
-    "scratch script under /var/tmp": ["/var/tmp/probe.py"],
-    "scratch script on tmpfs": ["/dev/shm/one-off.py"],
 }
 
 
@@ -99,7 +93,27 @@ class NonReportingProcessTest(SimpleTestCase):
 
 
 class ScratchScriptResolutionTest(SimpleTestCase):
-    """The two scratch-dir cases a static argv table cannot express."""
+    """The scratch-dir cases a static argv table cannot express (ROS-4038).
+
+    The predicate requires argv[0] to be a real file, so these build real
+    files rather than naming paths. That is deliberate: a test that asserted
+    on a path which does not exist would pass for the wrong reason.
+    """
+
+    def setUp(self):
+        self.scratch_dirs = [d for d in ("/tmp", "/var/tmp", "/dev/shm") if os.path.isdir(d)]
+        self.assertTrue(self.scratch_dirs, "expected at least one scratch dir to exist")
+        self.made = []
+        for d in self.scratch_dirs:
+            handle = tempfile.NamedTemporaryFile(dir=d, suffix="-ros4038.py", delete=False)
+            handle.close()
+            self.made.append(handle.name)
+            self.addCleanup(os.unlink, handle.name)
+
+    def test_a_real_script_in_every_scratch_dir_is_detected(self):
+        for path in self.made:
+            with self.subTest(path=path):
+                self.assertTrue(is_non_reporting_process([path]))
 
     def test_a_relative_scratch_script_is_detected(self):
         """A one-off is usually run as `python ledger.py` from inside /tmp, so
@@ -108,13 +122,46 @@ class ScratchScriptResolutionTest(SimpleTestCase):
         Really chdir rather than mock realpath — a mocked resolver would pass
         even if the predicate never resolved anything.
         """
-        with chdir("/tmp"):
-            self.assertTrue(is_non_reporting_process(["ledger.py"]))
+        path = self.made[0]
+        with chdir(os.path.dirname(path)):
+            self.assertTrue(is_non_reporting_process([os.path.basename(path)]))
+
+    def test_a_console_script_name_in_a_scratch_cwd_still_reports(self):
+        """The regression this rule nearly introduced.
+
+        `gunicorn` and `celery` are resolved from PATH, so argv[0] has no
+        separator and realpath() resolves it against the cwd. A worker whose
+        cwd is a scratch directory would have been read as a one-off and gone
+        silent — the exact failure NON_REPORTING_COMMANDS' own comment calls
+        "much the worse failure". Requiring argv[0] to be a real file is what
+        keeps it reporting.
+        """
+        with chdir(os.path.dirname(self.made[0])):
+            self.assertFalse(is_non_reporting_process(["gunicorn", "--bind", "0.0.0.0:8000"]))
+            self.assertFalse(is_non_reporting_process(["celery", "-A", "owdb_django", "worker"]))
+
+    def test_manage_py_in_a_real_scratch_checkout_still_reports(self):
+        """A checkout can live in a scratch directory and a management command
+        is an unattended entrypoint wherever it runs from."""
+        with tempfile.TemporaryDirectory(dir=self.scratch_dirs[0]) as clone:
+            manage = os.path.join(clone, "manage.py")
+            with open(manage, "w"):
+                pass
+            self.assertFalse(is_non_reporting_process([manage, "migrate"]))
+            # ...but the denylist still bites there.
+            self.assertTrue(is_non_reporting_process([manage, "shell"]))
+
+    def test_the_prefixes_carry_a_trailing_separator(self):
+        """This is what stops /tmpfiles matching /tmp. Asserted directly: a
+        lookalike directory cannot be created at the filesystem root."""
+        for prefix in _SCRATCH_DIR_PREFIXES:
+            with self.subTest(prefix=prefix):
+                self.assertTrue(prefix.endswith(os.sep))
 
     def test_an_embedded_interpreter_in_a_scratch_cwd_still_reports(self):
         """realpath("") is the cwd, so the scratch check has to come after the
         empty-argv cases or a web server started from /tmp goes quiet."""
-        with chdir("/tmp"):
+        with chdir(self.scratch_dirs[0]):
             self.assertFalse(is_non_reporting_process([""]))
             self.assertFalse(is_non_reporting_process([]))
 
@@ -125,6 +172,28 @@ class SentryEnabledSettingTest(SimpleTestCase):
     #: Imports settings.py and prints the decision it reached. Nothing else:
     #: the point is that SENTRY_ENABLED is computed, not hardcoded.
     PROBE = "import django\nfrom django.conf import settings\nprint(settings.SENTRY_ENABLED)\n"
+
+    @staticmethod
+    def _a_non_scratch_dir():
+        """A writable directory the scratch-script rule does not match.
+
+        BASE_DIR is the natural choice but cannot be assumed: in the production
+        image /app is root-owned and the app runs as appuser, and a throwaway
+        clone puts BASE_DIR itself inside /tmp — which would invert the probe
+        and fail for a reason that has nothing to do with the guard. Fall back
+        to $HOME, then skip rather than report a misleading failure.
+        """
+        for candidate in (str(ambient_settings.BASE_DIR), os.path.expanduser("~")):
+            resolved = os.path.realpath(candidate)
+            # Compare prefixes directly. _is_scratch_script() is the wrong tool
+            # here: it requires argv[0] to be an existing file, so asking it
+            # about a probe path that has not been written yet always says
+            # "not scratch" and would hand back a scratch directory.
+            if (resolved.rstrip(os.sep) + os.sep).startswith(_SCRATCH_DIR_PREFIXES):
+                continue
+            if os.access(resolved, os.W_OK):
+                return resolved
+        raise SkipTest("no writable directory outside /tmp, /var/tmp or /dev/shm")
 
     def _sentry_enabled_in_a_child(self, directory):
         """Run PROBE as a real script file under `directory`, return its output.
@@ -173,12 +242,12 @@ class SentryEnabledSettingTest(SimpleTestCase):
         The predicate tests above prove the decision; this proves settings.py
         applies it, so a future refactor cannot leave SENTRY_ENABLED hardcoded.
 
-        The probe dir sits inside the checkout on purpose. Until ROS-4038 this
-        used tempfile's default of /tmp, which the scratch-script rule now
-        reads as an operator session — the child would print False and this
-        test would fail for the right reason but in a confusing place.
+        The probe dir sits outside every scratch prefix on purpose. Until
+        ROS-4038 this used tempfile's default of /tmp, which the scratch-script
+        rule now reads as an operator session — the child would print False and
+        this test would fail for the right reason but in a confusing place.
         """
-        self.assertEqual(self._sentry_enabled_in_a_child(ambient_settings.BASE_DIR), "True")
+        self.assertEqual(self._sentry_enabled_in_a_child(self._a_non_scratch_dir()), "True")
 
     def test_a_script_in_a_scratch_dir_disables_sentry(self):
         """The ROS-4037 shape, end to end: the same probe run from /tmp comes

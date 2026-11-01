@@ -750,7 +750,14 @@ def _is_scratch_script(argv0):
         resolved = os.path.realpath(argv0)
     except (OSError, ValueError):
         return False
-    return resolved.startswith(_SCRATCH_DIR_PREFIXES)
+    # The resolved path must actually be a file. A bare console-script name
+    # like `gunicorn` or `celery` has no separator, so realpath() resolves it
+    # against the cwd — and a service whose cwd happens to be a scratch
+    # directory would otherwise be classified as a one-off and lose
+    # production telemetry, which is the failure this guard exists to avoid.
+    # An interpreter can only execute a script that exists, so requiring that
+    # costs nothing and removes the whole class of false positives.
+    return resolved.startswith(_SCRATCH_DIR_PREFIXES) and os.path.isfile(resolved)
 
 
 def is_non_reporting_process(argv):

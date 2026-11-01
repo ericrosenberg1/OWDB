@@ -708,6 +708,11 @@ WRESTLEBOT = {
 # and inflated the report (ROS-1409, ROS-1411). A typo at a REPL is not a fault
 # of the running site, and it should never page anyone.
 #
+# The same mistake reaches here three ways: at a `manage.py shell` prompt, as a
+# `python -c` one-liner, and as a script file in a scratch directory (ROS-4037,
+# ported by ROS-4038). All three are an operator at a keyboard; none is a fault
+# of the running site.
+#
 # This is a denylist, not an allowlist, on purpose. "Only report from processes
 # I recognise as servers" silences anything it fails to predict — a new worker,
 # a cron entry, a different WSGI server — and quietly losing production errors
@@ -718,6 +723,34 @@ NON_REPORTING_COMMANDS = frozenset({"shell", "dbshell", "test"})
 # was invoked as one. Guarding on argv[1] alone would match `gunicorn test ...`
 # or any other process that happens to take a matching first argument.
 _MANAGEMENT_ENTRYPOINTS = frozenset({"manage.py", "django-admin", "django-admin.py"})
+
+# World-writable scratch directories. Nothing this site runs lives in one: the
+# code is baked into the image at /app, and the container's own boot steps and
+# compose commands all name absolute paths under /app. A Python *file* executed
+# from here is a hand-written one-off by construction.
+#
+# Resolved through realpath so a symlinked /tmp still matches, and compared with
+# a trailing separator so a sibling like /tmpfiles/app.py does not.
+_SCRATCH_DIR_PREFIXES = tuple(
+    os.path.realpath(_d).rstrip(os.sep) + os.sep for _d in ("/tmp", "/var/tmp", "/dev/shm")
+)
+
+
+def _is_scratch_script(argv0):
+    """True when argv[0] names a file inside a scratch directory.
+
+    Empty input is never a scratch script: `realpath("")` returns the cwd,
+    which would disable telemetry for an embedded interpreter started from
+    /tmp. `is_non_reporting_process` checks the empty-argv cases first for the
+    same reason.
+    """
+    if not argv0:
+        return False
+    try:
+        resolved = os.path.realpath(argv0)
+    except (OSError, ValueError):
+        return False
+    return resolved.startswith(_SCRATCH_DIR_PREFIXES)
 
 
 def is_non_reporting_process(argv):
@@ -737,8 +770,21 @@ def is_non_reporting_process(argv):
     if argv[0] == "-c":
         return True
     if os.path.basename(argv[0]) in _MANAGEMENT_ENTRYPOINTS:
+        # Note this returns either way, so a management command run out of a
+        # scratch checkout never reaches the scratch-script rule below. That
+        # exemption is deliberate: CI and every throwaway clone put a checkout
+        # in a scratch directory, and a management command is an unattended
+        # entrypoint wherever it is run from. `manage.py shell` out of such a
+        # clone is still caught by the denylist on this line.
         return len(argv) > 1 and argv[1] in NON_REPORTING_COMMANDS
-    return False
+    # The same one-off written to a file and run as `python /tmp/whatever.py`.
+    # argv[0] is then a real path, so neither case above sees it. ROS-4037 was
+    # exactly this on hsa-tracker: an agent's /tmp/brian-ROS-4036-ledger.py
+    # filtered a model on a field that does not exist, and the FieldError
+    # opened a high-priority production alert — two events, zero users, and
+    # nothing wrong with the running site. Ported here by ROS-4038, because
+    # the same script would have paged this project identically.
+    return _is_scratch_script(argv[0])
 
 
 SENTRY_ENABLED = not is_non_reporting_process(sys.argv)
